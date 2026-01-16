@@ -13,6 +13,7 @@ from .EventModels import FSSSignalDiscoveredEvent
 from .EventManager import EventManager, Projection
 from .Logger import log
 from .EDFuelCalc import RATING_BY_CLASSNUM , FSD_OVERCHARGE_STATS , FSD_MKii ,FSD_OVERCHARGE_V2PRE_STATS, FSD_STATS ,FSD_GUARDIAN_BOOSTER
+from .PromptGenerator import LocationEvent
 from .StatusParser import parse_status_flags, parse_status_json, Status
 from .SystemDatabase import SystemDatabase
 
@@ -2381,6 +2382,9 @@ class FSSSignals(Projection[FSSSignalsStateModel]):
     @override
     def process(self, event: Event) -> list[ProjectedEvent]:
         projected_events: list[ProjectedEvent] = []
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Location':
+            location = cast(LocationEvent, event.content)
+            self.state = FSSSignalsStateModel(SystemAddress=location.get("SystemAddress", 0))
         if isinstance(event, GameEvent) and event.content.get('event') == 'FSSSignalDiscovered':
             signal = cast(FSSSignalDiscoveredEvent, event.content)
             signal_type = signal.get("SignalType", "Unknown")

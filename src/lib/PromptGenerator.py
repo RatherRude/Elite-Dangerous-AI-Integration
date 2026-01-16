@@ -2705,6 +2705,7 @@ class PromptGenerator:
         ship_display.pop('FuelReservoirCapacity', None)
         ship_display.pop('FuelReservoir', None)
         ship_display.pop('UnladenMass', None)
+        ship_display.pop('ShipCargo', None)
         ship_display.pop('IsMiningShip', None)
         ship_display.pop('hasLimpets', None)
         ship_display.pop('hasDockingComputer', None)
