@@ -7,15 +7,17 @@
                 @if (systemRecord?.star_class) {
                     <span>Star class: {{ systemRecord.star_class }}</span>
                 }
-                @if (lastUpdatedMs) {
-                    <span>Updated {{ lastUpdatedMs | date:'short' }}</span>
-                }
             </div>
         </div>
-        <button mat-stroked-button color="primary" (click)="manualRefresh()" [disabled]="currentSystemAddress === null || isLoading">
-            <mat-icon>refresh</mat-icon>
-            Refresh
-        </button>
+        <div class="meta header-meta">
+            @if (lastUpdatedMs) {
+                <span>Updated {{ lastUpdatedMs | date:'short' }}</span>
+            }
+        </div>
+<!--        <button mat-stroked-button color="primary" (click)="manualRefresh()" [disabled]="currentSystemAddress === null || isLoading">-->
+<!--            <mat-icon>refresh</mat-icon>-->
+<!--            Refresh-->
+<!--        </button>-->
     </div>
 
     @if (errorMessage) {
@@ -37,6 +39,16 @@
             No navigation data yet. Perform a system scan to populate discoveries.
         </div>
     } @else if (systemRecord) {
+        @if (systemMeta.length) {
+            <div class="section system-meta">
+                @for (item of systemMeta; track item.label) {
+                    <div class="system-meta-item">
+                        <span class="label">{{ item.label }}</span>
+                        <span class="value">{{ item.value }}</span>
+                    </div>
+                }
+            </div>
+        }
         <div class="section system-map-panel">
             @if (systemMap.length) {
                 <div class="system-map-root">
@@ -51,16 +63,6 @@
                 <div class="muted">No map data available yet.</div>
             }
         </div>
-        @if (systemMeta.length) {
-            <div class="section system-meta">
-                @for (item of systemMeta; track item.label) {
-                    <div class="system-meta-item">
-                        <span class="label">{{ item.label }}</span>
-                        <span class="value">{{ item.value }}</span>
-                    </div>
-                }
-            </div>
-        }
         <mat-accordion>
             <mat-expansion-panel>
                 <mat-expansion-panel-header>
