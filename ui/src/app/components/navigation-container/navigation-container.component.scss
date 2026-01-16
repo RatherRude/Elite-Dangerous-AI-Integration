@@ -89,6 +89,36 @@
     margin-left: 4px;
 }
 
+.station-chip {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.station-chip-container {
+    height: auto;
+    align-items: flex-start;
+    white-space: normal;
+    line-height: 1.2;
+}
+
+.station-chip-container .mat-mdc-chip-action,
+.station-chip-container .mdc-evolution-chip__action,
+.station-chip-container .mdc-evolution-chip__text-label {
+    white-space: normal;
+    line-height: 1.2;
+}
+
+.station-chip-name {
+    display: inline-flex;
+    align-items: center;
+}
+
+.station-chip-meta {
+    color: #b0b0b0;
+    font-size: 0.85rem;
+}
+
 .muted {
     color: #8c8c8c;
 }

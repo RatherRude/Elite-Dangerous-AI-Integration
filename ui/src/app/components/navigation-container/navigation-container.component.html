@@ -79,8 +79,20 @@
                     @if (stations.length) {
                         <div class="chip-row">
                             @for (station of stations; track station.name) {
-                                <mat-chip color="primary" selected>
-                                    {{ station.name }} @if (station.type) {<span class="chip-type">({{ station.type }})</span>}
+                                <mat-chip color="primary" selected class="station-chip-container">
+                                    <div class="station-chip">
+                                        <div class="station-chip-name">
+                                            {{ station.name }}
+                                            @if (station.type) {<span class="chip-type">({{ station.type }})</span>}
+                                        </div>
+                                        @if (station.controllingFaction || getOrbitDisplay(station)) {
+                                            <div class="station-chip-meta">
+                                                @if (station.controllingFaction) {<span>{{ station.controllingFaction }}</span>}
+                                                @if (station.controllingFaction && getOrbitDisplay(station)) {<span> - </span>}
+                                                @if (getOrbitDisplay(station)) {<span>{{ getOrbitDisplay(station) }}</span>}
+                                            </div>
+                                        }
+                                    </div>
                                 </mat-chip>
                             }
                         </div>
@@ -114,6 +126,11 @@
                                             <span>{{ body.DistanceFromArrivalLS | number:'1.0-0' }} ls</span>
                                         }
                                     </div>
+                                    @if (getBodyHighlights(body).length) {
+                                        <div class="body-meta">
+                                            <span>{{ getBodyHighlights(body).join(" • ") }}</span>
+                                        </div>
+                                    }
                             @if (getLocalizedBodySignals(body).length || getLocalizedBodyGenuses(body).length || getLocalizedRingSignals(body).length) {
                                 <div class="body-localized">
                                     @if (getLocalizedBodySignals(body).length) {

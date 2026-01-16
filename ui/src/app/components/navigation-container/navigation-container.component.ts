@@ -182,7 +182,10 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
             nonBodies: systemInfo?.totals?.non_bodies ?? null,
         };
         this.signals = systemInfo?.signals ?? [];
-        this.stations = systemInfo?.stations ?? [];
+        const stations = Array.isArray(systemInfo?.stations) ? systemInfo.stations : [];
+        this.stations = stations
+            .slice()
+            .sort((a: any, b: any) => this.getOrbitLs(a) - this.getOrbitLs(b));
         this.bodies = Array.isArray(systemInfo?.bodies) ? systemInfo.bodies : [];
         this.systemMap = this.buildSystemMap(this.bodies, systemName);
         this.lastUpdatedMs = record?.last_updated ? record.last_updated * 1000 : null;
@@ -194,6 +197,14 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
 
     getSignalDisplayName(signal: any): string {
         return signal?.name_localised || signal?.name || "Unknown";
+    }
+
+    getOrbitDisplay(station: any): string | null {
+        const distance = this.getOrbitLs(station);
+        if (!Number.isFinite(distance) || distance <= 0) {
+            return null;
+        }
+        return `${Math.round(distance)} LS`;
     }
 
     getLocalizedBodySignals(body: any): string[] {
@@ -222,6 +233,60 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
             results.push(`${names.join(", ")}`);
         }
         return results;
+    }
+
+    getBodyHighlights(body: any): string[] {
+        const highlights: string[] = [];
+        const type = body?.type ?? "";
+        const isStar = type === "Star" || Boolean(body?.spectralClass);
+
+        if (isStar) {
+            if (body?.spectralClass) {
+                highlights.push(`Spectral ${body.spectralClass}`);
+            }
+            if (body?.luminosity) {
+                highlights.push(`Luminosity ${body.luminosity}`);
+            }
+            if (typeof body?.solarMasses === "number") {
+                highlights.push(`${body.solarMasses.toFixed(2)} M☉`);
+            }
+            if (typeof body?.solarRadius === "number") {
+                highlights.push(`${body.solarRadius.toFixed(2)} R☉`);
+            }
+            if (typeof body?.surfaceTemperature === "number") {
+                highlights.push(`${Math.round(body.surfaceTemperature)} K`);
+            }
+            if (body?.isScoopable !== undefined) {
+                highlights.push(body.isScoopable ? "Scoopable" : "Not scoopable");
+            }
+            return highlights;
+        }
+
+        if (typeof body?.gravity === "number") {
+            highlights.push(`${body.gravity.toFixed(2)} g`);
+        }
+        if (typeof body?.earthMasses === "number") {
+            highlights.push(`${body.earthMasses.toFixed(2)} M⊕`);
+        }
+        if (typeof body?.radius === "number") {
+            highlights.push(`${Math.round(body.radius)} km`);
+        }
+        if (typeof body?.surfaceTemperature === "number") {
+            highlights.push(`${Math.round(body.surfaceTemperature)} K`);
+        }
+        if (body?.terraformingState) {
+            highlights.push(body.terraformingState);
+        }
+        if (body?.isLandable !== undefined) {
+            highlights.push(body.isLandable ? "Landable" : "Not landable");
+        }
+        if (body?.atmosphereType) {
+            highlights.push(body.atmosphereType);
+        }
+        if (body?.volcanismType) {
+            highlights.push(body.volcanismType);
+        }
+        return highlights;
     }
 
     private buildSystemMap(bodies: any[], systemName: string | null): any[] {
@@ -339,5 +404,20 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
             return `${actual}/${total}`;
         }
         return `${actual}`;
+    }
+
+    private getOrbitLs(station: any): number {
+        const raw = station?.orbit ?? station?.distanceToArrival;
+        if (raw === undefined || raw === null) {
+            return Number.POSITIVE_INFINITY;
+        }
+        if (typeof raw === "number") {
+            return raw;
+        }
+        if (typeof raw === "string") {
+            const parsed = parseFloat(raw.replace(/[^0-9.]/g, ""));
+            return Number.isFinite(parsed) ? parsed : Number.POSITIVE_INFINITY;
+        }
+        return Number.POSITIVE_INFINITY;
     }
 }
