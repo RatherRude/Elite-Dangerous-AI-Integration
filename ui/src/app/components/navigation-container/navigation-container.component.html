@@ -1,0 +1,192 @@
+<div class="navigation-container">
+    <div class="header">
+        <div class="system-info">
+            <h2>{{ currentSystemName || 'Unknown System' }}</h2>
+            <div class="meta">
+<!--                <span>Address: {{ currentSystemAddress ?? 'Unknown' }}</span>-->
+                @if (systemRecord?.star_class) {
+                    <span>Star class: {{ systemRecord.star_class }}</span>
+                }
+                @if (lastUpdatedMs) {
+                    <span>Updated {{ lastUpdatedMs | date:'short' }}</span>
+                }
+            </div>
+        </div>
+        <button mat-stroked-button color="primary" (click)="manualRefresh()" [disabled]="currentSystemAddress === null || isLoading">
+            <mat-icon>refresh</mat-icon>
+            Refresh
+        </button>
+    </div>
+
+    @if (errorMessage) {
+        <div class="error-banner">
+            <mat-icon color="warn">error</mat-icon>
+            <span>{{ errorMessage }}</span>
+        </div>
+    }
+
+    @if (isLoading) {
+        <div class="loading-state">
+            <mat-spinner diameter="32"></mat-spinner>
+            <span>Loading navigation data...</span>
+        </div>
+    }
+
+    @if (!isLoading && !systemRecord) {
+        <div class="empty-state">
+            No navigation data yet. Perform a system scan to populate discoveries.
+        </div>
+    } @else if (systemRecord) {
+        <div class="section system-map-panel">
+            @if (systemMap.length) {
+                <div class="system-map-root">
+                    @for (node of systemMap; track node.id) {
+                        <ng-container
+                            [ngTemplateOutlet]="mapNode"
+                            [ngTemplateOutletContext]="{ $implicit: node }"
+                        ></ng-container>
+                    }
+                </div>
+            } @else {
+                <div class="muted">No map data available yet.</div>
+            }
+        </div>
+        <mat-accordion>
+            <mat-expansion-panel>
+                <mat-expansion-panel-header>
+                    <mat-panel-title>Signals ({{ signals.length }})</mat-panel-title>
+                </mat-expansion-panel-header>
+                <div class="section">
+                    @if (signals.length) {
+                        <div class="chip-row">
+                            @for (signal of signals; track signal.name) {
+                                <mat-chip>
+                                    {{ getSignalDisplayName(signal) }} @if (signal.type) {<span class="chip-type">({{ signal.type }})</span>}
+                                </mat-chip>
+                            }
+                        </div>
+                    } @else {
+                        <div class="muted">No signals recorded yet.</div>
+                    }
+                </div>
+            </mat-expansion-panel>
+
+            <mat-expansion-panel>
+                <mat-expansion-panel-header>
+                    <mat-panel-title>Stations ({{ stations.length }})</mat-panel-title>
+                </mat-expansion-panel-header>
+                <div class="section">
+                    @if (stations.length) {
+                        <div class="chip-row">
+                            @for (station of stations; track station.name) {
+                                <mat-chip color="primary" selected>
+                                    {{ station.name }} @if (station.type) {<span class="chip-type">({{ station.type }})</span>}
+                                </mat-chip>
+                            }
+                        </div>
+                    } @else {
+                        <div class="muted">No stations recorded.</div>
+                    }
+                </div>
+            </mat-expansion-panel>
+
+            <mat-expansion-panel>
+                <mat-expansion-panel-header>
+                    <mat-panel-title>Bodies ({{ bodiesDisplay }})</mat-panel-title>
+                </mat-expansion-panel-header>
+                <div class="section">
+                    @if (bodies.length) {
+                        <div class="body-grid">
+                            @for (body of bodies; track body.body_id) {
+                                <mat-card class="body-card">
+                                    <div class="body-header">
+                                        <div class="body-name">{{ body.name || 'Unknown body' }}</div>
+                                        <div class="body-type">{{ body.type || 'Unknown type' }}</div>
+                                    </div>
+                                    <div class="chips">
+                                        @if (body.detailed_scanned) { <mat-chip color="primary" selected>Detailed scan</mat-chip> }
+                                        @if (body.was_mapped) { <mat-chip color="primary" selected>Mapped</mat-chip> }
+                                        @if (body.was_discovered) { <mat-chip color="primary" selected>Discovered</mat-chip> }
+                                        @if (body.was_footfalled) { <mat-chip color="primary" selected>Footfalled</mat-chip> }
+                                    </div>
+                                    <div class="body-meta">
+                                        @if (body.DistanceFromArrivalLS !== undefined) {
+                                            <span>{{ body.DistanceFromArrivalLS | number:'1.0-0' }} ls</span>
+                                        }
+                                    </div>
+                            @if (getLocalizedBodySignals(body).length || getLocalizedBodyGenuses(body).length || getLocalizedRingSignals(body).length) {
+                                <div class="body-localized">
+                                    @if (getLocalizedBodySignals(body).length) {
+                                        <div class="body-localized-row">
+                                            <span class="label">Signals</span>
+                                            <span class="value">{{ getLocalizedBodySignals(body).join(", ") }}</span>
+                                        </div>
+                                    }
+                                    @if (getLocalizedBodyGenuses(body).length) {
+                                        <div class="body-localized-row">
+                                            <span class="label">Genuses</span>
+                                            <span class="value">{{ getLocalizedBodyGenuses(body).join(", ") }}</span>
+                                        </div>
+                                    }
+                                    @if (getLocalizedRingSignals(body).length) {
+                                        <div class="body-localized-row">
+                                            <span class="label">Ring signals</span>
+                                            <span class="value">{{ getLocalizedRingSignals(body).join(" | ") }}</span>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                                </mat-card>
+                            }
+                        </div>
+                    } @else {
+                        <div class="muted">No bodies scanned yet.</div>
+                    }
+                </div>
+            </mat-expansion-panel>
+        </mat-accordion>
+    }
+</div>
+
+<ng-template #mapNode let-node>
+    <div class="map-node" [class.map-node--row]="node.childrenLayout === 'row'" [style.--node-scale]="node.scale">
+        <div class="map-node-content">
+            <div class="map-node-dot" [class.map-node-dot--ring]="node.body?.rings?.length"></div>
+            <div class="map-node-label">
+                <div class="map-node-name">{{ node.name || "Unknown body" }}</div>
+                @if (node.type && node.type !== "Planet") {
+                    <div class="map-node-type">{{ node.type }}</div>
+                }
+            </div>
+            @if (getLocalizedBodySignals(node.body).length || getLocalizedBodyGenuses(node.body).length || getLocalizedRingSignals(node.body).length) {
+                <div class="map-node-meta">
+                    @if (getLocalizedBodySignals(node.body).length) {
+                        <div class="map-node-meta-row">
+                            <span class="value">{{ getLocalizedBodySignals(node.body).join(", ") }}</span>
+                        </div>
+                    }
+                    @if (getLocalizedBodyGenuses(node.body).length) {
+                        <div class="map-node-meta-row">
+                            <span class="value">{{ getLocalizedBodyGenuses(node.body).join(", ") }}</span>
+                        </div>
+                    }
+                    @if (getLocalizedRingSignals(node.body).length) {
+                        <div class="map-node-meta-row">
+                            <span class="value">{{ getLocalizedRingSignals(node.body).join(" | ") }}</span>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+        @if (node.children?.length) {
+            <div class="map-children" [class.map-children--row]="node.childrenLayout === 'row'">
+                @for (child of node.children; track child.id) {
+                    <ng-container
+                        [ngTemplateOutlet]="mapNode"
+                        [ngTemplateOutletContext]="{ $implicit: child }"
+                    ></ng-container>
+                }
+            </div>
+        }
+    </div>
+</ng-template>

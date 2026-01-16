@@ -1,0 +1,343 @@
+import { CommonModule } from "@angular/common";
+import { Component, OnDestroy, OnInit } from "@angular/core";
+import { MatButtonModule } from "@angular/material/button";
+import { MatCardModule } from "@angular/material/card";
+import { MatChipsModule } from "@angular/material/chips";
+import { MatIconModule } from "@angular/material/icon";
+import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
+import { MatExpansionModule } from "@angular/material/expansion";
+import { Subscription } from "rxjs";
+import { EventMessage, EventService, GameEvent } from "../../services/event.service";
+import { ProjectionsService } from "../../services/projections.service";
+import { GetSystemEventsMessage, SystemEventsMessage, TauriService } from "../../services/tauri.service";
+
+@Component({
+    selector: "app-navigation-container",
+    standalone: true,
+    imports: [
+        CommonModule,
+        MatButtonModule,
+        MatCardModule,
+        MatChipsModule,
+        MatIconModule,
+        MatProgressSpinnerModule,
+        MatExpansionModule,
+    ],
+    templateUrl: "./navigation-container.component.html",
+    styleUrls: ["./navigation-container.component.scss"],
+})
+export class NavigationContainerComponent implements OnInit, OnDestroy {
+    currentSystemName: string = "Unknown";
+    currentSystemAddress: number | null = null;
+
+    isLoading = false;
+    errorMessage: string | null = null;
+    lastUpdatedMs: number | null = null;
+
+    systemRecord: any | null = null;
+    totals = { bodies: null as number | null, nonBodies: null as number | null };
+    signals: any[] = [];
+    stations: any[] = [];
+    bodies: any[] = [];
+    systemMap: any[] = [];
+
+    private subs: Subscription[] = [];
+    private lastEventIndex = -1;
+    private refreshScheduled = false;
+    private readonly refreshEvents = new Set([
+        "FSSDiscoveryScan",
+        "FSSSignalDiscovered",
+        "Scan",
+        "SAASignalsFound",
+        "FSSBodySignals",
+        "ScanOrganic",
+    ]);
+
+    constructor(
+        private projectionsService: ProjectionsService,
+        private tauriService: TauriService,
+        private eventService: EventService,
+    ) {}
+
+    ngOnInit(): void {
+        this.subs.push(
+            this.projectionsService.location$.subscribe((location) => {
+                this.currentSystemName = location?.StarSystem ?? "Unknown";
+                const newAddress = location?.SystemAddress ?? null;
+                if (newAddress !== this.currentSystemAddress) {
+                    this.currentSystemAddress = newAddress;
+                    this.fetchSystemData();
+                }
+            }),
+            this.tauriService.output$.subscribe((message) => this.handleBackendMessage(message)),
+            this.eventService.events$.subscribe((events) => this.handleGameEvents(events)),
+        );
+    }
+
+    ngOnDestroy(): void {
+        this.subs.forEach((sub) => sub.unsubscribe());
+    }
+
+    manualRefresh(): void {
+        this.fetchSystemData(true);
+    }
+
+    private handleBackendMessage(message: any): void {
+        const typed = message as SystemEventsMessage;
+        if (typed.type !== "system_events") {
+            return;
+        }
+
+        // Ignore updates for other systems
+        if (
+            this.currentSystemAddress !== null &&
+            typed.system_address !== null &&
+            String(typed.system_address) !== String(this.currentSystemAddress)
+        ) {
+            return;
+        }
+
+        this.isLoading = false;
+
+        if ((typed.data as any)?.error) {
+            this.errorMessage = (typed.data as any).error;
+            this.applySystemRecord(null);
+            return;
+        }
+
+        const record = (typed.data as any)?.data ?? null;
+        this.errorMessage = null;
+        this.applySystemRecord(record);
+    }
+
+    private handleGameEvents(events: EventMessage[]): void {
+        if (!events.length) return;
+
+        const newEvents = events.slice(this.lastEventIndex + 1);
+        this.lastEventIndex = events.length - 1;
+
+        for (const msg of newEvents) {
+            const evt = (msg as any).event as GameEvent | undefined;
+            if (!evt || evt.kind !== "game") continue;
+
+            const eventName = evt.content?.event;
+            if (!eventName || !this.refreshEvents.has(eventName)) continue;
+
+            // If the event carries a SystemAddress, ensure it matches the current one
+            const eventSystemAddress = evt.content['SystemAddress'];
+            if (
+                this.currentSystemAddress !== null &&
+                eventSystemAddress !== undefined &&
+                eventSystemAddress !== null &&
+                String(eventSystemAddress) !== String(this.currentSystemAddress)
+            ) {
+                continue;
+            }
+
+            this.scheduleRefresh();
+        }
+    }
+
+    private scheduleRefresh(): void {
+        if (this.refreshScheduled) return;
+        if (this.currentSystemAddress === null) return;
+
+        this.refreshScheduled = true;
+        setTimeout(() => {
+            this.refreshScheduled = false;
+            this.fetchSystemData();
+        }, 150);
+    }
+
+    private fetchSystemData(force = false): void {
+        if (this.currentSystemAddress === null) {
+            this.applySystemRecord(null);
+            this.errorMessage = null;
+            this.isLoading = false;
+            return;
+        }
+
+        if (this.isLoading && !force) {
+            return;
+        }
+
+        this.isLoading = true;
+        this.errorMessage = null;
+
+        const message: GetSystemEventsMessage = {
+            type: "get_system_events",
+            system_address: this.currentSystemAddress,
+            timestamp: new Date().toISOString(),
+        };
+
+        this.tauriService.send_command(message);
+    }
+
+    private applySystemRecord(record: any | null): void {
+        this.systemRecord = record;
+        const systemInfo = record?.system_info ?? null;
+        const systemName = systemInfo?.name ?? this.currentSystemName;
+        this.totals = {
+            bodies: systemInfo?.totals?.bodies ?? null,
+            nonBodies: systemInfo?.totals?.non_bodies ?? null,
+        };
+        this.signals = systemInfo?.signals ?? [];
+        this.stations = systemInfo?.stations ?? [];
+        this.bodies = Array.isArray(systemInfo?.bodies) ? systemInfo.bodies : [];
+        this.systemMap = this.buildSystemMap(this.bodies, systemName);
+        this.lastUpdatedMs = record?.last_updated ? record.last_updated * 1000 : null;
+    }
+
+    get bodiesDisplay(): string {
+        return this.formatCount(this.bodies.length, this.totals.bodies);
+    }
+
+    getSignalDisplayName(signal: any): string {
+        return signal?.name_localised || signal?.name || "Unknown";
+    }
+
+    getLocalizedBodySignals(body: any): string[] {
+        const signals = Array.isArray(body?.signals) ? body.signals : [];
+        return signals
+            .map((signal: any) => signal?.Type_Localised || signal?.Type)
+            .filter((name: any): name is string => Boolean(name));
+    }
+
+    getLocalizedBodyGenuses(body: any): string[] {
+        const genuses = Array.isArray(body?.genuses) ? body.genuses : [];
+        return genuses
+            .map((genus: any) => genus?.Genus_Localised || genus?.Genus)
+            .filter((name: any): name is string => Boolean(name));
+    }
+
+    getLocalizedRingSignals(body: any): string[] {
+        const rings = Array.isArray(body?.rings) ? body.rings : [];
+        const results: string[] = [];
+        for (const ring of rings) {
+            const signals = Array.isArray(ring?.signals) ? ring.signals : [];
+            const names = signals
+                .map((signal: any) => signal?.Type_Localised || signal?.Type)
+                .filter((name: any): name is string => Boolean(name));
+            if (!names.length) continue;
+            results.push(`${names.join(", ")}`);
+        }
+        return results;
+    }
+
+    private buildSystemMap(bodies: any[], systemName: string | null): any[] {
+        if (!Array.isArray(bodies) || !bodies.length) {
+            return [];
+        }
+
+        const nodes = new Map<string | number, any>();
+        const roots: any[] = [];
+
+        for (const body of bodies) {
+            const bodyId = this.getBodyId(body);
+            if (bodyId === null) {
+                continue;
+            }
+            nodes.set(bodyId, {
+                id: bodyId,
+                name: this.formatMapName(body, systemName),
+                type: body?.type ?? null,
+                body,
+                children: [],
+                depth: 0,
+                scale: 1,
+            });
+        }
+
+        for (const node of nodes.values()) {
+            const parentId = this.getParentId(node.body);
+            const parent = parentId !== null ? nodes.get(parentId) : null;
+            if (parent) {
+                parent.children.push(node);
+            } else {
+                roots.push(node);
+            }
+        }
+
+        const sortNodes = (list: any[]) => {
+            list.sort((a, b) => {
+                const aDist = a?.body?.distanceToArrival ?? a?.body?.DistanceFromArrivalLS ?? null;
+                const bDist = b?.body?.distanceToArrival ?? b?.body?.DistanceFromArrivalLS ?? null;
+                if (typeof aDist === "number" && typeof bDist === "number") {
+                    return aDist - bDist;
+                }
+                return String(a?.name ?? "").localeCompare(String(b?.name ?? ""));
+            });
+            for (const item of list) {
+                if (Array.isArray(item.children) && item.children.length) {
+                    sortNodes(item.children);
+                }
+            }
+        };
+
+        const applyDepth = (node: any, depth: number) => {
+            node.depth = depth;
+            node.scale = Math.max(0.55, 1 - depth * 0.15);
+            node.childrenLayout = depth === 0 ? "row" : "column";
+            if (Array.isArray(node.children)) {
+                for (const child of node.children) {
+                    applyDepth(child, depth + 1);
+                }
+            }
+        };
+
+        sortNodes(roots);
+        for (const root of roots) {
+            applyDepth(root, 0);
+        }
+        return roots;
+    }
+
+    private formatMapName(body: any, systemName: string | null): string {
+        const rawName = body?.name ?? "Unknown body";
+        if (!systemName || body?.type !== "Planet") {
+            return rawName;
+        }
+        const prefix = `${systemName} `;
+        if (rawName.startsWith(prefix)) {
+            return rawName.slice(prefix.length);
+        }
+        return rawName;
+    }
+
+    private getBodyId(body: any): number | string | null {
+        if (body?.bodyId !== undefined && body?.bodyId !== null) {
+            return body.bodyId;
+        }
+        if (body?.body_id !== undefined && body?.body_id !== null) {
+            return body.body_id;
+        }
+        if (body?.id !== undefined && body?.id !== null) {
+            return body.id;
+        }
+        if (body?.name) {
+            return body.name;
+        }
+        return null;
+    }
+
+    private getParentId(body: any): number | string | null {
+        const parents = Array.isArray(body?.parents) ? body.parents : [];
+        for (const parent of parents) {
+            if (!parent || typeof parent !== "object") continue;
+            for (const [key, value] of Object.entries(parent)) {
+                if (key === "Null") continue;
+                if (value !== undefined && value !== null) {
+                    return value as number | string;
+                }
+            }
+        }
+        return null;
+    }
+
+    private formatCount(actual: number, total: number | null): string {
+        if (typeof total === "number" && !Number.isNaN(total)) {
+            return `${actual}/${total}`;
+        }
+        return `${actual}`;
+    }
+}
