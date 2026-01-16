@@ -10,8 +10,7 @@ import requests
 import humanize
 import json
 
-# Type alias for projected states dictionary
-ProjectedStates = dict[str, BaseModel]
+from .Projections import get_state_dict, ProjectedStates
 
 from .EventModels import (
     ApproachBodyEvent, ApproachSettlementEvent, BookTaxiEvent, BountyEvent, BuyExplorationDataEvent, CodexEntryEvent, CommanderEvent, CommitCrimeEvent,
@@ -52,27 +51,6 @@ DockingCancelledEvent = dict
 DockingTimeoutEvent = dict
 LocationEvent = dict
 NavRouteEvent = dict
-
-
-def get_state_dict(projected_states: ProjectedStates, key: str, default: dict | None = None) -> dict:
-    """Helper to get a projection state as a dict for backward-compatible access patterns.
-
-    Args:
-        projected_states: The projected states dictionary
-        key: The projection name (e.g., 'CurrentStatus', 'Location')
-        default: Default value if key not found (defaults to empty dict)
-
-    Returns:
-        The state as a dict (via model_dump() if BaseModel, or as-is if already dict)
-    """
-    if default is None:
-        default = {}
-    state = projected_states.get(key)
-    if state is None:
-        return default
-    if hasattr(state, 'model_dump'):
-        return state.model_dump()
-    return state if isinstance(state, dict) else default
 
 class PromptGenerator:
     def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str], system_db: SystemDatabase, weapon_types: list[dict] | None = None, disabled_game_events: list[str] | None = None):
@@ -2943,8 +2921,9 @@ class PromptGenerator:
             if altitude:
                 location_info["Altitude"] = f"{altitude} km"
 
-            location_info.pop('StarPos', None)
-            location_info.pop('StarAddress', None)
+            location_info = {
+                key: value for key, value in location_info.items() if value is not None and key not in ['SystemAddress', 'StarAddress', 'StarPos']
+            }
 
             status_entries.append(("Location", location_info))
             status_entries.append(("Local system", system_info))
@@ -3574,8 +3553,7 @@ class PromptGenerator:
         if "primaryStar" in system_info and system_info["primaryStar"]:
             star_data = system_info["primaryStar"]
             formatted["Star"] = star_data.get("name", "Unknown")
-            formatted["Star Type"] = star_data.get("type", "Unknown")
-            formatted["Scoopable"] = star_data.get("isScoopable")
+            formatted["Star Type"] = star_data.get("type", "Unknown") + f" ({'' if star_data.get("isScoopable", False) else 'Not '}Scoopable)"
 
         # Include coordinates if available
         if "coords" in system_info:

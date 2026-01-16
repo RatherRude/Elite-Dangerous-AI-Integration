@@ -20,22 +20,7 @@ from ..EventManager import EventManager
 from ..ActionManager import ActionManager
 from ..PromptGenerator import PromptGenerator
 from ..Models import LLMModel, EmbeddingModel
-
-# Type alias for projected states dictionary
-ProjectedStates = dict[str, BaseModel]
-
-
-def get_state_dict(projected_states: ProjectedStates, key: str, default: dict | None = None) -> dict:
-    """Helper to get a projection state as a dict for backward-compatible access patterns."""
-    if default is None:
-        default = {}
-    state = projected_states.get(key)
-    if state is None:
-        return default
-    if hasattr(state, 'model_dump'):
-        return state.model_dump()
-    return state if isinstance(state, dict) else default
-
+from ..Projections import get_state_dict, ProjectedStates
 
 keys: EDKeys = cast(EDKeys, None)
 discovery_primary_var: bool = True

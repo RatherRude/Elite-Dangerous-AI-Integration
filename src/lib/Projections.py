@@ -9,19 +9,41 @@ from typing_extensions import override
 from pydantic import BaseModel, Field
 
 from .Event import Event, StatusEvent, GameEvent, ProjectedEvent, ExternalEvent, ConversationEvent, ToolEvent
-from .EventModels import FSSSignalDiscoveredEvent
+from .EventModels import FSSSignalDiscoveredEvent, LocationEvent
 from .EventManager import EventManager, Projection
 from .Logger import log
 from .EDFuelCalc import RATING_BY_CLASSNUM , FSD_OVERCHARGE_STATS , FSD_MKii ,FSD_OVERCHARGE_V2PRE_STATS, FSD_STATS ,FSD_GUARDIAN_BOOSTER
-from .PromptGenerator import LocationEvent
 from .StatusParser import parse_status_flags, parse_status_json, Status
 from .SystemDatabase import SystemDatabase
 
+# Type alias for projected states dictionary
+ProjectedStates = dict[str, BaseModel]
+
+def get_state_dict(projected_states: ProjectedStates, key: str, default: dict | None = None) -> dict:
+    """Helper to get a projection state as a dict for backward-compatible access patterns.
+
+    Args:
+        projected_states: The projected states dictionary
+        key: The projection name (e.g., 'CurrentStatus', 'Location')
+        default: Default value if key not found (defaults to empty dict)
+
+    Returns:
+        The state as a dict (via model_dump() if BaseModel, or as-is if already dict)
+    """
+    if default is None:
+        default = {}
+    state = projected_states.get(key)
+    if state is None:
+        return default
+    if isinstance(state, LatestEventState):
+        return state.data
+    if hasattr(state, 'model_dump'):
+        return state.model_dump()
+    return state if isinstance(state, dict) else default
 
 # Pydantic model for LatestEvent projection - stores arbitrary game event data
 class LatestEventState(BaseModel):
     data: dict[str, Any] = Field(default_factory=dict)
-
 
 def latest_event_projection_factory(projectionName: str, gameEvent: str):
     class LatestEvent(Projection[LatestEventState]):

@@ -16,22 +16,7 @@ from .TTS import TTS
 from typing import Any,  Callable, final
 from threading import Thread
 from .actions.Actions import set_speed, fire_weapons, get_visuals
-
-# Type alias for projected states dictionary
-ProjectedStates = dict[str, BaseModel]
-
-
-def get_state_dict(projected_states: ProjectedStates, key: str, default: dict | None = None) -> dict:
-    """Helper to get a projection state as a dict for backward-compatible access patterns."""
-    if default is None:
-        default = {}
-    state = projected_states.get(key)
-    if state is None:
-        return default
-    if hasattr(state, 'model_dump'):
-        return state.model_dump()
-    return state if isinstance(state, dict) else default
-
+from .Projections import get_state_dict, ProjectedStates
 
 @final
 class Assistant:
