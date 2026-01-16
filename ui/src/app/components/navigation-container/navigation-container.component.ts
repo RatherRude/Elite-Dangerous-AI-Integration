@@ -40,6 +40,10 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
     stations: any[] = [];
     bodies: any[] = [];
     systemMap: any[] = [];
+    systemMeta: { label: string; value: string }[] = [];
+    hoveredMapNodeId: string | number | null = null;
+    hoveredMapNode: any | null = null;
+    tooltipPosition = { x: 0, y: 0 };
 
     private subs: Subscription[] = [];
     private lastEventIndex = -1;
@@ -188,6 +192,7 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
             .sort((a: any, b: any) => this.getOrbitLs(a) - this.getOrbitLs(b));
         this.bodies = Array.isArray(systemInfo?.bodies) ? systemInfo.bodies : [];
         this.systemMap = this.buildSystemMap(this.bodies, systemName);
+        this.systemMeta = this.buildSystemMeta(systemInfo);
         this.lastUpdatedMs = record?.last_updated ? record.last_updated * 1000 : null;
     }
 
@@ -233,6 +238,51 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
             results.push(`${names.join(", ")}`);
         }
         return results;
+    }
+
+    getBodyOrbitDisplay(body: any): string | null {
+        const distance = this.getOrbitLs(body);
+        if (!Number.isFinite(distance) || distance < 0) {
+            return null;
+        }
+        return `${Math.round(distance)} LS`;
+    }
+
+    getBodyStationMatches(body: any): any[] {
+        const bodyName = body?.name;
+        if (!bodyName) {
+            return [];
+        }
+        return this.stations.filter((station: any) => station?.body === bodyName);
+    }
+
+    getBodyStationDisplay(body: any): string {
+        const matches = this.getBodyStationMatches(body);
+        if (!matches.length) {
+            return "";
+        }
+        return matches
+            .map((station: any) => `${station.name}${station.type ? ` (${station.type})` : ""}`)
+            .join(", ");
+    }
+
+    setHoveredMapNode(node: any, event: MouseEvent): void {
+        this.hoveredMapNodeId = node?.id ?? null;
+        this.hoveredMapNode = node ?? null;
+        this.updateHoveredPosition(event);
+    }
+
+    clearHoveredMapNode(): void {
+        this.hoveredMapNodeId = null;
+        this.hoveredMapNode = null;
+    }
+
+    updateHoveredPosition(event: MouseEvent): void {
+        const offset = 12;
+        this.tooltipPosition = {
+            x: event.clientX + offset,
+            y: event.clientY + offset,
+        };
     }
 
     getBodyHighlights(body: any): string[] {
@@ -419,5 +469,38 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
             return Number.isFinite(parsed) ? parsed : Number.POSITIVE_INFINITY;
         }
         return Number.POSITIVE_INFINITY;
+    }
+
+    private buildSystemMeta(systemInfo: any): { label: string; value: string }[] {
+        const info = systemInfo?.information ?? {};
+        const meta: { label: string; value: string }[] = [];
+        if (info?.allegiance) {
+            meta.push({ label: "Allegiance", value: info.allegiance });
+        }
+        if (info?.government) {
+            meta.push({ label: "Government", value: info.government });
+        }
+        if (info?.faction) {
+            meta.push({ label: "Faction", value: info.faction });
+        }
+        if (info?.factionState) {
+            meta.push({ label: "Faction state", value: info.factionState });
+        }
+        if (info?.security) {
+            meta.push({ label: "Security", value: info.security });
+        }
+        if (info?.economy) {
+            meta.push({ label: "Economy", value: info.economy });
+        }
+        if (info?.secondEconomy) {
+            meta.push({ label: "Second economy", value: info.secondEconomy });
+        }
+        if (info?.population) {
+            meta.push({ label: "Population", value: String(info.population) });
+        }
+        if (info?.reserve) {
+            meta.push({ label: "Reserve", value: info.reserve });
+        }
+        return meta;
     }
 }

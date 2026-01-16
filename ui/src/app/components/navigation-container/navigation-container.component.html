@@ -51,6 +51,16 @@
                 <div class="muted">No map data available yet.</div>
             }
         </div>
+        @if (systemMeta.length) {
+            <div class="section system-meta">
+                @for (item of systemMeta; track item.label) {
+                    <div class="system-meta-item">
+                        <span class="label">{{ item.label }}</span>
+                        <span class="value">{{ item.value }}</span>
+                    </div>
+                }
+            </div>
+        }
         <mat-accordion>
             <mat-expansion-panel>
                 <mat-expansion-panel-header>
@@ -125,6 +135,9 @@
                                         @if (body.DistanceFromArrivalLS !== undefined) {
                                             <span>{{ body.DistanceFromArrivalLS | number:'1.0-0' }} ls</span>
                                         }
+                                        @if (getBodyOrbitDisplay(body)) {
+                                            <span>{{ getBodyOrbitDisplay(body) }}</span>
+                                        }
                                     </div>
                                     @if (getBodyHighlights(body).length) {
                                         <div class="body-meta">
@@ -166,7 +179,14 @@
 </div>
 
 <ng-template #mapNode let-node>
-    <div class="map-node" [class.map-node--row]="node.childrenLayout === 'row'" [style.--node-scale]="node.scale">
+    <div
+        class="map-node"
+        [class.map-node--row]="node.childrenLayout === 'row'"
+        [style.--node-scale]="node.scale"
+        (mouseenter)="setHoveredMapNode(node, $event)"
+        (mousemove)="updateHoveredPosition($event)"
+        (mouseleave)="clearHoveredMapNode()"
+    >
         <div class="map-node-content">
             <div class="map-node-dot" [class.map-node-dot--ring]="node.body?.rings?.length"></div>
             <div class="map-node-label">
@@ -207,3 +227,39 @@
         }
     </div>
 </ng-template>
+
+@if (hoveredMapNode) {
+    <div
+        class="map-node-tooltip map-node-tooltip--floating"
+        [style.left.px]="tooltipPosition.x"
+        [style.top.px]="tooltipPosition.y"
+    >
+        <div class="map-tooltip-title">{{ hoveredMapNode.body?.name || "Unknown body" }}</div>
+        @if (hoveredMapNode.type) {
+            <div class="map-tooltip-row">{{ hoveredMapNode.type }}</div>
+        }
+        @if (getBodyOrbitDisplay(hoveredMapNode.body)) {
+            <div class="map-tooltip-row">Orbit: {{ getBodyOrbitDisplay(hoveredMapNode.body) }}</div>
+        }
+        @if (hoveredMapNode.body?.DistanceFromArrivalLS !== undefined) {
+            <div class="map-tooltip-row">Arrival: {{ hoveredMapNode.body.DistanceFromArrivalLS | number:'1.0-0' }} ls</div>
+        }
+        @if (getBodyHighlights(hoveredMapNode.body).length) {
+            <div class="map-tooltip-row">{{ getBodyHighlights(hoveredMapNode.body).join(" • ") }}</div>
+        }
+        @if (getLocalizedBodySignals(hoveredMapNode.body).length) {
+            <div class="map-tooltip-row">Signals: {{ getLocalizedBodySignals(hoveredMapNode.body).join(", ") }}</div>
+        }
+        @if (getLocalizedBodyGenuses(hoveredMapNode.body).length) {
+            <div class="map-tooltip-row">Genuses: {{ getLocalizedBodyGenuses(hoveredMapNode.body).join(", ") }}</div>
+        }
+        @if (getLocalizedRingSignals(hoveredMapNode.body).length) {
+            <div class="map-tooltip-row">Ring signals: {{ getLocalizedRingSignals(hoveredMapNode.body).join(" | ") }}</div>
+        }
+        @if (getBodyStationDisplay(hoveredMapNode.body)) {
+            <div class="map-tooltip-row">
+                Stations: {{ getBodyStationDisplay(hoveredMapNode.body) }}
+            </div>
+        }
+    </div>
+}

@@ -197,6 +197,7 @@
     gap: 8px;
     padding: 6px 4px;
     transform-origin: top center;
+    position: relative;
 }
 
 .map-node--row {
@@ -252,6 +253,7 @@
     padding: 12px;
     border-radius: 8px;
     overflow-x: auto;
+    overflow-y: visible;
 }
 
 .map-node-meta {
@@ -271,6 +273,48 @@
     color: #a0a0a0;
     min-width: 80px;
     text-align: right;
+}
+
+.system-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 8px 16px;
+}
+
+.system-meta-item {
+    display: flex;
+    gap: 6px;
+}
+
+.system-meta-item .label {
+    color: #a0a0a0;
+}
+
+.map-node-tooltip {
+    background: rgba(0, 0, 0, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    padding: 8px 10px;
+    min-width: 220px;
+    max-width: 360px;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.map-node-tooltip--floating {
+    position: fixed;
+    z-index: 1000;
+}
+
+.map-tooltip-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.map-tooltip-row {
+    color: #c8c8c8;
+    font-size: 0.9rem;
+    margin-bottom: 2px;
 }
 
 .map-children {
