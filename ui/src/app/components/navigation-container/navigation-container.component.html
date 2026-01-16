@@ -49,7 +49,11 @@
                 }
             </div>
         }
-        <div class="section system-map-panel">
+        <div
+            class="section system-map-panel"
+            (mouseenter)="clearHoveredMapNode()"
+            (mouseleave)="clearHoveredMapNode()"
+        >
             @if (systemMap.length) {
                 <div class="system-map-root">
                     @for (node of systemMap; track node.id) {
@@ -185,11 +189,13 @@
         class="map-node"
         [class.map-node--row]="node.childrenLayout === 'row'"
         [style.--node-scale]="node.scale"
-        (mouseenter)="setHoveredMapNode(node, $event)"
-        (mousemove)="updateHoveredPosition($event)"
-        (mouseleave)="clearHoveredMapNode()"
     >
-        <div class="map-node-content">
+        <div
+            class="map-node-content"
+            (mouseenter)="setHoveredMapNode(node, $event)"
+            (mousemove)="updateHoveredPosition($event)"
+            (mouseleave)="clearHoveredMapNode()"
+        >
             <div class="map-node-dot" [class.map-node-dot--ring]="node.body?.rings?.length"></div>
             <div class="map-node-label">
                 <div class="map-node-name">{{ node.name || "Unknown body" }}</div>
