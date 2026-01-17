@@ -2473,6 +2473,78 @@ class PromptGenerator:
             result[body_label][station_type].append(clean_station)
         
         return result
+
+    def format_bodies_data(self, bodies_data) -> dict | str:
+        """Format bodies data to highlight signals/genuses/ring signals."""
+        if not bodies_data or isinstance(bodies_data, str):
+            return bodies_data or "No body data available"
+        if not isinstance(bodies_data, list):
+            return "Unknown body data format"
+
+        total_bodies = len(bodies_data)
+        noteworthy: list[dict[str, object]] = []
+
+        for body in bodies_data:
+            if not isinstance(body, dict):
+                continue
+            body_name = body.get("name") or "Unknown body"
+            signals = body.get("signals") or []
+            genuses = body.get("genuses") or []
+            rings = body.get("rings") or []
+
+            signal_names = []
+            if isinstance(signals, list):
+                for signal in signals:
+                    if not isinstance(signal, dict):
+                        continue
+                    name = signal.get("Type_Localised") or signal.get("Type")
+                    if name:
+                        signal_names.append(name)
+
+            genus_names = []
+            if isinstance(genuses, list):
+                for genus in genuses:
+                    if not isinstance(genus, dict):
+                        continue
+                    name = genus.get("Genus_Localised") or genus.get("Genus")
+                    if not name:
+                        continue
+                    scanned = genus.get("scanned", False)
+                    status = "scanned" if scanned else "unscanned"
+                    genus_names.append(f"{name} ({status})")
+
+            ring_signals = []
+            if isinstance(rings, list):
+                for ring in rings:
+                    if not isinstance(ring, dict):
+                        continue
+                    ring_name = ring.get("name") or "Unknown ring"
+                    ring_signal_list = ring.get("signals") or []
+                    if not isinstance(ring_signal_list, list):
+                        continue
+                    ring_signal_names = []
+                    for signal in ring_signal_list:
+                        if not isinstance(signal, dict):
+                            continue
+                        name = signal.get("Type_Localised") or signal.get("Type")
+                        if name:
+                            ring_signal_names.append(name)
+                    if ring_signal_names:
+                        ring_signals.append(f"{ring_name}: {', '.join(ring_signal_names)}")
+
+            if signal_names or genus_names or ring_signals:
+                entry: dict[str, object] = {"Body": body_name}
+                if signal_names:
+                    entry["Signals"] = signal_names
+                if genus_names:
+                    entry["Genuses"] = genus_names
+                if ring_signals:
+                    entry["Ring signals"] = ring_signals
+                noteworthy.append(entry)
+
+        result: dict[str, object] = {"Total bodies": total_bodies}
+        result["Noteworthy bodies"] = noteworthy or "None"
+        return result
         
     def _create_standard_station_entry(self, station, raw_format=False):
         """Create a standardized station entry from either projection or raw API data"""
@@ -2899,6 +2971,7 @@ class PromptGenerator:
             system_name = location_info.get('StarSystem')
             system_info = None
             stations_info = None
+            bodies_info = None
             
             # Direct lookup from system database instead of SystemInfo projection
             if system_name:
@@ -2912,6 +2985,10 @@ class PromptGenerator:
                     stations_data = self.system_db.get_stations(system_name)
                     if stations_data:
                         stations_info = self.format_stations_data(stations_data)
+
+                    bodies_data = self.system_db.get_bodies(system_name)
+                    if bodies_data:
+                        bodies_info = self.format_bodies_data(bodies_data)
 
             if location_info.get('Station'):
                 if not location_info.get('Docked'):
@@ -2929,6 +3006,7 @@ class PromptGenerator:
             status_entries.append(("Local system", system_info))
             if not search_agent_context:
                 status_entries.append(("Stations in local system", stations_info))
+                status_entries.append(("Bodies in local system", bodies_info))
 
         # Community Goal
         community_goal = get_state_dict(projected_states, 'CommunityGoal')
