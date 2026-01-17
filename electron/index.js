@@ -345,7 +345,7 @@ function createOverlayWindow(opts) {
   
   overlayWindow.loadURL(config.overlay);
   overlayWindow.setIgnoreMouseEvents(true);
-  overlayWindow.webContents.openDevTools({ mode: 'detach' });
+  // overlayWindow.webContents.openDevTools({ mode: 'detach' });
   
   if (opts.alwaysOnTop) {
     overlayWindow.setAlwaysOnTop(true, 'screen-saver', 2);
