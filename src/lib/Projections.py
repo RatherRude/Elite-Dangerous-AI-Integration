@@ -16,6 +16,8 @@ from .EDFuelCalc import RATING_BY_CLASSNUM , FSD_OVERCHARGE_STATS , FSD_MKii ,FS
 from .StatusParser import parse_status_flags, parse_status_json, Status
 from .SystemDatabase import SystemDatabase
 
+DOCKING_PROMPT_COOLDOWN_SECONDS = 360
+
 # Type alias for projected states dictionary
 ProjectedStates = dict[str, BaseModel]
 
@@ -2434,6 +2436,196 @@ class FSSSignals(Projection[FSSSignalsStateModel]):
 
         return projected_events
 
+@final
+class InDockingRange(Projection[dict[str, Any]]):
+    @override
+    def get_default_state(self) -> dict[str, Any]:
+        return {
+            "LastUndockedAt": None,
+            "LastStationTarget": None,  # tracked after supercruise exit/drop toward a station
+            "LastSupercruiseExit": None,
+            "IsDocked": False,
+        }
+
+    def _seconds_between(self, earlier: Any, later: Any) -> float | None:
+        """Return seconds between two isoformat timestamps or None on failure/missing."""
+        if not earlier or not later:
+            return None
+        try:
+            earlier_dt = datetime.fromisoformat(str(earlier).replace("Z", "+00:00"))
+            later_dt = datetime.fromisoformat(str(later).replace("Z", "+00:00"))
+            return (later_dt - earlier_dt).total_seconds()
+        except Exception:
+            return None
+
+    def _is_station_like(self, name: str = "", body_type: str = "", drop_type: str = "") -> bool:
+        text = f"{name} {body_type} {drop_type}".lower()
+        station_keywords = ["station", "starport", "outpost", "port", "mega ship", "megaship", "settlement", "carrier", "construction site"]
+        return any(keyword in text for keyword in station_keywords)
+
+
+    @override
+    def process(self, event: Event) -> list[ProjectedEvent]:
+        projected_events: list[ProjectedEvent] = []
+
+        if isinstance(event, GameEvent):
+            name = event.content.get("event")
+
+            if name == "Docked":
+                # Hard stop: once docked, clear pending docking prompts.
+                self.state["LastStationTarget"] = None
+                self.state["LastSupercruiseExit"] = None
+                self.state["IsDocked"] = True
+                return projected_events
+
+            if name == "Undocked":
+                if getattr(event, "historic", False):
+                    return projected_events
+                ts = event.content.get("timestamp") or event.timestamp
+                self.state["LastUndockedAt"] = ts
+                self.state["LastStationTarget"] = None
+                self.state["IsDocked"] = False
+                return projected_events
+
+            if name == "DockingRequested":
+                # Manual docking request; clear any pending prompt context to avoid duplicate reminders.
+                self.state["LastStationTarget"] = None
+                self.state["LastSupercruiseExit"] = None
+                return projected_events
+
+            if name in ["DockingGranted", "DockingDenied", "DockingCancelled", "DockingCanceled", "DockingTimeout"]:
+                # Docking flow completed/failed; clear context to avoid stale prompts.
+                self.state["LastStationTarget"] = None
+                self.state["LastSupercruiseExit"] = None
+                return projected_events
+
+            if name == "SupercruiseExit":
+                body_type = event.content.get("BodyType", "") or ""
+                body_name = event.content.get("Body", "") or ""
+                taxi = event.content.get("Taxi", "") or False
+                ts = event.content.get("timestamp") or event.timestamp
+                # Once we've dropped toward a destination, undock cooldown is no longer relevant.
+                self.state["LastUndockedAt"] = None
+
+                if taxi:
+                    # Ignore taxi rides for docking prompts; clear approach context.
+                    self.state["LastStationTarget"] = None
+                    self.state["LastSupercruiseExit"] = None
+                    return projected_events
+
+                # Merge with any existing station context (e.g., from ApproachSettlement) to keep richer metadata.
+                existing_target = self.state.get("LastStationTarget") or {}
+                if existing_target:
+                    merged_target = {
+                        **existing_target,
+                        "name": existing_target.get("name") or body_name,
+                        "timestamp": ts,
+                        "body_type": existing_target.get("body_type") or body_type,
+                        "taxi": False,
+                    }
+                    self.state["LastStationTarget"] = merged_target
+                elif self._is_station_like(body_name, body_type, ""):
+                    self.state["LastStationTarget"] = {
+                        "name": body_name,
+                        "timestamp": ts,
+                        "body_type": body_type,
+                        "taxi": False,
+                    }
+                else:
+                    self.state["LastStationTarget"] = None
+
+                self.state["LastSupercruiseExit"] = ts
+
+            if name == "ApproachSettlement":
+
+                body_type = event.content.get("BodyType", "") or event.content.get("StationType", "") or ""
+                body_name = event.content.get("BodyName", "") or event.content.get("Body", "") or ""
+                target_name = event.content.get("Name") or body_name
+                market_id = event.content.get("MarketID")
+                services = [s.lower() for s in event.content.get("StationServices", [])]
+                dockable = any(s in ["dock", "autodock"] for s in services)
+                ts = event.content.get("timestamp") or event.timestamp
+                self.state["LastSupercruiseExit"] = ts
+                # Once we're on a new approach, undock cooldown is no longer relevant.
+                self.state["LastUndockedAt"] = None
+
+                if dockable:
+                    self.state["LastStationTarget"] = {
+                        "name": target_name,
+                        "timestamp": ts,
+                        "market_id": market_id,
+                        "body_type": body_type,
+                        "drop_type": "",
+                    }
+                else:
+                    self.state["LastStationTarget"] = None
+
+            if name == "ReceiveText":
+                channel = event.content.get("Channel", "")
+                if channel not in ["npc", "station", "local", "starsystem"]:
+                    return projected_events
+
+                # Only respond to NFZ if we have an active station approach context
+                if not self.state.get("LastSupercruiseExit"):
+                    return projected_events
+
+                message = (event.content.get("Message") or "").lower()
+                if "nofirezone_entered" not in message:
+                    return projected_events
+
+                # We have already prompted based on NFZ warning; clear target so we don't prompt again on mass lock
+                self.state["LastStationTarget"] = None
+                self.state["LastSupercruiseExit"] = None
+
+
+                # Skip if we just undocked within the cooldown window
+                last_undocked_at = self.state.get("LastUndockedAt")
+                if last_undocked_at:
+                    try:
+                        last_dt = datetime.fromisoformat(
+                            str(last_undocked_at).replace("Z", "+00:00")
+                        )
+                        current_dt = datetime.fromisoformat(
+                            str(event.timestamp).replace("Z", "+00:00")
+                        )
+                        delta = (current_dt - last_dt).total_seconds()
+                        if delta < DOCKING_PROMPT_COOLDOWN_SECONDS:
+                            return projected_events
+                    except Exception:
+                        pass
+
+
+                projected_events.append(ProjectedEvent(content={"event": "InDockingRange"}))
+
+        if isinstance(event, StatusEvent):
+            status_event_name = event.status.get("event")
+            if status_event_name == "FsdMassLocked":
+                target = self.state.get("LastStationTarget") or {}
+                target_ts = target.get("timestamp")
+                target_age = self._seconds_between(target_ts, event.timestamp)
+
+                last_exit_at = self.state.get("LastSupercruiseExit")
+                exit_delta = self._seconds_between(last_exit_at, event.timestamp)
+
+                # Only prompt if mass lock follows a recent station approach after supercruise exit/drop
+                last_undocked_at = self.state.get("LastUndockedAt")
+                undock_delta = self._seconds_between(last_undocked_at, event.timestamp)
+
+
+                if target_ts and (target_age is None or target_age <= DOCKING_PROMPT_COOLDOWN_SECONDS):
+                    if undock_delta is None or undock_delta >= DOCKING_PROMPT_COOLDOWN_SECONDS:
+                        projected_events.append(ProjectedEvent(content={"event": "InDockingRange"}))
+                        # Avoid duplicate prompts for the same approach
+                        self.state["LastStationTarget"] = None
+                        self.state["LastSupercruiseExit"] = None
+
+            if status_event_name == "FsdMassLockEscaped":
+                # Leaving mass lock; clear pending prompt context so we don't fire after departing.
+                self.state["LastStationTarget"] = None
+                self.state["LastSupercruiseExit"] = None
+
+        return projected_events
+
 class IdleStateModel(BaseModel):
     """Commander's activity/idle status."""
     LastInteraction: str = Field(default="1970-01-01T00:00:00Z", description="Timestamp of last user interaction")
@@ -2506,6 +2698,7 @@ def registerProjections(
     event_manager.register_projection(InCombat())
     event_manager.register_projection(Wing())
     event_manager.register_projection(FSSSignals())
+    event_manager.register_projection(InDockingRange())
     event_manager.register_projection(Idle(idle_timeout))
     event_manager.register_projection(StoredModules())
     event_manager.register_projection(StoredShips())
