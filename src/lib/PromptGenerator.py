@@ -3321,6 +3321,7 @@ class PromptGenerator:
 
         # Missions
         missions_info = get_state_dict(projected_states, 'Missions')
+        missions_info = {key: value for key, value in missions_info.items() if value is not None}
         if missions_info and 'Active' in missions_info:
             status_entries.append(("Active missions", missions_info))
 
