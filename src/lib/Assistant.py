@@ -325,14 +325,6 @@ class Assistant:
                 return True
 
             if isinstance(event, GameEvent) and event.content.get("event") in self.enabled_game_events:
-                if event.content.get("event") == "ReceiveText":
-                    if event.content.get("Channel") not in ['wing', 'voicechat', 'friend', 'player'] and (
-                        (not character["react_to_text_local_var"] and event.content.get("Channel") == 'local') or
-                        (not character["react_to_text_starsystem_var"] and event.content.get("Channel") == 'starsystem') or
-                        (not character["react_to_text_npc_var"] and event.content.get("Channel") == 'npc') or
-                        (not character["react_to_text_squadron_var"] and event.content.get("Channel") == 'squadron')):
-                        continue
-
                 if event.content.get("event") == "ProspectedAsteroid":
                     chunks = [chunk.strip() for chunk in character["react_to_material"].split(",")]
                     contains_material = False

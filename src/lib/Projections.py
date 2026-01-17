@@ -2638,6 +2638,99 @@ class InDockingRange(Projection[InDockingRangeStateModel]):
 
         return projected_events
 
+class ReceiveTextProjectionState(BaseModel):
+    """Stateless projection for ReceiveText classifications."""
+    pass
+
+@final
+class ReceiveTextProjection(Projection[ReceiveTextProjectionState]):
+    StateModel = ReceiveTextProjectionState
+
+    @override
+    def get_default_state(self) -> ReceiveTextProjectionState:
+        return ReceiveTextProjectionState()
+
+    @staticmethod
+    def _extract_token(message: str | None) -> str | None:
+        """Normalized base token: strip params/digits, uppercase, trim after underscore."""
+        if not message:
+            return None
+        m = re.search(r"\$[^$;]+;", message)
+        if not m:
+            return None
+        token = m.group(0)
+        cleaned = re.sub(r":#.*?(?=;)", "", token)
+        cleaned = re.sub(r"\d+(?=;)", "", cleaned)
+        body = cleaned.strip("$;").upper()
+        if "_" in body:
+            body = body.split("_", 1)[0]
+        return body if body else None
+
+    @override
+    def process(self, event: Event) -> list[ProjectedEvent]:
+        if not (isinstance(event, GameEvent) and event.content.get("event") == "ReceiveText"):
+            return []
+
+        token = self._extract_token(event.content.get("Message"))
+        channel = (event.content.get("Channel") or "").lower()
+        channel_map = {
+            "local": "ReceiveTextChannelLocal",
+            "starsystem": "ReceiveTextChannelStarSystem",
+            "squadron": "ReceiveTextChannelSquadron",
+        }
+        if channel in channel_map:
+            mapped_channel_event = channel_map[channel]
+            content = {
+                "event": mapped_channel_event,
+                "From": event.content.get("From", ""),
+                "From_Localised": event.content.get("From_Localised", ""),
+                "Channel": event.content.get("Channel", ""),
+                "Message": event.content.get("Message", ""),
+                "Message_Localised": event.content.get("Message_Localised", ""),
+            }
+            return [ProjectedEvent(content=content)]
+
+        family_map = {
+            "STATION": "ReceiveTextStation",
+            "POLICE": "ReceiveTextPolice",
+            "DOCKINGCHATTER": "ReceiveTextDockingChatter",
+            "MILITARY": "ReceiveTextMilitary",
+            "CRUISELINER": "ReceiveTextCruiseLiner",
+            "COMMUTER": "ReceiveTextCommuter",
+            "AX": "ReceiveTextAX",
+            "TRADER": "ReceiveTextTrader",
+            "PIRATE": "ReceiveTextPirate",
+            "POWERS": "ReceiveTextPowers",
+            "MINER": "ReceiveTextMiner",
+            "EXPLORER": "ReceiveTextExplorer",
+            "SMUGGLER": "ReceiveTextSmuggler",
+            "PASSENGERLINER": "ReceiveTextPassengerLiner",
+            "ESCORT": "ReceiveTextEscort",
+            "HITMAN": "ReceiveTextHitman",
+            "PROPAGANDIST": "ReceiveTextPropagandist",
+            "RESCUER": "ReceiveTextRescuer",
+            "CONVOY": "ReceiveTextConvoy",
+            "REFUGEEFLOTILLAWAR": "ReceiveTextRefugeeFlotillaWar",
+            "PROTESTER": "ReceiveTextProtester",
+        }
+
+        mapped = "ReceiveTextOther"
+        if token:
+            for family, name in family_map.items():
+                if token.startswith(family):
+                    mapped = name
+                    break
+
+        content = {
+            "event": mapped,
+            "From": event.content.get("From", ""),
+            "From_Localised": event.content.get("From_Localised", ""),
+            "Channel": event.content.get("Channel", ""),
+            "Message": event.content.get("Message", ""),
+            "Message_Localised": event.content.get("Message_Localised", ""),
+        }
+        return [ProjectedEvent(content=content)]
+
 class IdleStateModel(BaseModel):
     """Commander's activity/idle status."""
     LastInteraction: str = Field(default="1970-01-01T00:00:00Z", description="Timestamp of last user interaction")
@@ -2705,6 +2798,7 @@ def registerProjections(
     event_manager.register_projection(SuitLoadout())
     event_manager.register_projection(Materials())
     event_manager.register_projection(Friends())
+    event_manager.register_projection(ReceiveTextProjection())
     event_manager.register_projection(ColonisationConstruction())
     event_manager.register_projection(DockingEvents())
     event_manager.register_projection(InCombat())
