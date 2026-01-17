@@ -2436,16 +2436,26 @@ class FSSSignals(Projection[FSSSignalsStateModel]):
 
         return projected_events
 
+class StationTargetModel(BaseModel):
+    """Metadata about the current station/settlement we are approaching."""
+    name: Optional[str] = None
+    timestamp: Optional[str] = None
+    market_id: Optional[int] = None
+    body_type: Optional[str] = None
+    drop_type: Optional[str] = None
+    taxi: Optional[bool] = None
+
+
+class InDockingRangeStateModel(BaseModel):
+    LastUndockedAt: Optional[str] = None
+    LastStationTarget: Optional[StationTargetModel] = None
+    LastSupercruiseExit: Optional[str] = None
+    IsDocked: bool = False
+
+
 @final
-class InDockingRange(Projection[dict[str, Any]]):
-    @override
-    def get_default_state(self) -> dict[str, Any]:
-        return {
-            "LastUndockedAt": None,
-            "LastStationTarget": None,  # tracked after supercruise exit/drop toward a station
-            "LastSupercruiseExit": None,
-            "IsDocked": False,
-        }
+class InDockingRange(Projection[InDockingRangeStateModel]):
+    StateModel = InDockingRangeStateModel
 
     def _seconds_between(self, earlier: Any, later: Any) -> float | None:
         """Return seconds between two isoformat timestamps or None on failure/missing."""
@@ -2473,30 +2483,30 @@ class InDockingRange(Projection[dict[str, Any]]):
 
             if name == "Docked":
                 # Hard stop: once docked, clear pending docking prompts.
-                self.state["LastStationTarget"] = None
-                self.state["LastSupercruiseExit"] = None
-                self.state["IsDocked"] = True
+                self.state.LastStationTarget = None
+                self.state.LastSupercruiseExit = None
+                self.state.IsDocked = True
                 return projected_events
 
             if name == "Undocked":
                 if getattr(event, "historic", False):
                     return projected_events
                 ts = event.content.get("timestamp") or event.timestamp
-                self.state["LastUndockedAt"] = ts
-                self.state["LastStationTarget"] = None
-                self.state["IsDocked"] = False
+                self.state.LastUndockedAt = ts
+                self.state.LastStationTarget = None
+                self.state.IsDocked = False
                 return projected_events
 
             if name == "DockingRequested":
                 # Manual docking request; clear any pending prompt context to avoid duplicate reminders.
-                self.state["LastStationTarget"] = None
-                self.state["LastSupercruiseExit"] = None
+                self.state.LastStationTarget = None
+                self.state.LastSupercruiseExit = None
                 return projected_events
 
             if name in ["DockingGranted", "DockingDenied", "DockingCancelled", "DockingCanceled", "DockingTimeout"]:
                 # Docking flow completed/failed; clear context to avoid stale prompts.
-                self.state["LastStationTarget"] = None
-                self.state["LastSupercruiseExit"] = None
+                self.state.LastStationTarget = None
+                self.state.LastSupercruiseExit = None
                 return projected_events
 
             if name == "SupercruiseExit":
@@ -2505,36 +2515,38 @@ class InDockingRange(Projection[dict[str, Any]]):
                 taxi = event.content.get("Taxi", "") or False
                 ts = event.content.get("timestamp") or event.timestamp
                 # Once we've dropped toward a destination, undock cooldown is no longer relevant.
-                self.state["LastUndockedAt"] = None
+                self.state.LastUndockedAt = None
 
                 if taxi:
                     # Ignore taxi rides for docking prompts; clear approach context.
-                    self.state["LastStationTarget"] = None
-                    self.state["LastSupercruiseExit"] = None
+                    self.state.LastStationTarget = None
+                    self.state.LastSupercruiseExit = None
                     return projected_events
 
                 # Merge with any existing station context (e.g., from ApproachSettlement) to keep richer metadata.
-                existing_target = self.state.get("LastStationTarget") or {}
+                existing_target = self.state.LastStationTarget
                 if existing_target:
-                    merged_target = {
-                        **existing_target,
-                        "name": existing_target.get("name") or body_name,
-                        "timestamp": ts,
-                        "body_type": existing_target.get("body_type") or body_type,
-                        "taxi": False,
-                    }
-                    self.state["LastStationTarget"] = merged_target
+                    merged_target = StationTargetModel(
+                        **{
+                            **existing_target.model_dump(),
+                            "name": existing_target.name or body_name,
+                            "timestamp": ts,
+                            "body_type": existing_target.body_type or body_type,
+                            "taxi": False,
+                        }
+                    )
+                    self.state.LastStationTarget = merged_target
                 elif self._is_station_like(body_name, body_type, ""):
-                    self.state["LastStationTarget"] = {
-                        "name": body_name,
-                        "timestamp": ts,
-                        "body_type": body_type,
-                        "taxi": False,
-                    }
+                    self.state.LastStationTarget = StationTargetModel(
+                        name=body_name,
+                        timestamp=ts,
+                        body_type=body_type,
+                        taxi=False,
+                    )
                 else:
-                    self.state["LastStationTarget"] = None
+                    self.state.LastStationTarget = None
 
-                self.state["LastSupercruiseExit"] = ts
+                self.state.LastSupercruiseExit = ts
 
             if name == "ApproachSettlement":
 
@@ -2545,20 +2557,20 @@ class InDockingRange(Projection[dict[str, Any]]):
                 services = [s.lower() for s in event.content.get("StationServices", [])]
                 dockable = any(s in ["dock", "autodock"] for s in services)
                 ts = event.content.get("timestamp") or event.timestamp
-                self.state["LastSupercruiseExit"] = ts
+                self.state.LastSupercruiseExit = ts
                 # Once we're on a new approach, undock cooldown is no longer relevant.
-                self.state["LastUndockedAt"] = None
+                self.state.LastUndockedAt = None
 
                 if dockable:
-                    self.state["LastStationTarget"] = {
-                        "name": target_name,
-                        "timestamp": ts,
-                        "market_id": market_id,
-                        "body_type": body_type,
-                        "drop_type": "",
-                    }
+                    self.state.LastStationTarget = StationTargetModel(
+                        name=target_name,
+                        timestamp=ts,
+                        market_id=market_id,
+                        body_type=body_type,
+                        drop_type="",
+                    )
                 else:
-                    self.state["LastStationTarget"] = None
+                    self.state.LastStationTarget = None
 
             if name == "ReceiveText":
                 channel = event.content.get("Channel", "")
@@ -2566,7 +2578,7 @@ class InDockingRange(Projection[dict[str, Any]]):
                     return projected_events
 
                 # Only respond to NFZ if we have an active station approach context
-                if not self.state.get("LastSupercruiseExit"):
+                if not self.state.LastSupercruiseExit:
                     return projected_events
 
                 message = (event.content.get("Message") or "").lower()
@@ -2574,12 +2586,12 @@ class InDockingRange(Projection[dict[str, Any]]):
                     return projected_events
 
                 # We have already prompted based on NFZ warning; clear target so we don't prompt again on mass lock
-                self.state["LastStationTarget"] = None
-                self.state["LastSupercruiseExit"] = None
+                self.state.LastStationTarget = None
+                self.state.LastSupercruiseExit = None
 
 
                 # Skip if we just undocked within the cooldown window
-                last_undocked_at = self.state.get("LastUndockedAt")
+                last_undocked_at = self.state.LastUndockedAt
                 if last_undocked_at:
                     try:
                         last_dt = datetime.fromisoformat(
@@ -2600,15 +2612,15 @@ class InDockingRange(Projection[dict[str, Any]]):
         if isinstance(event, StatusEvent):
             status_event_name = event.status.get("event")
             if status_event_name == "FsdMassLocked":
-                target = self.state.get("LastStationTarget") or {}
-                target_ts = target.get("timestamp")
+                target = self.state.LastStationTarget
+                target_ts = target.timestamp if target else None
                 target_age = self._seconds_between(target_ts, event.timestamp)
 
-                last_exit_at = self.state.get("LastSupercruiseExit")
+                last_exit_at = self.state.LastSupercruiseExit
                 exit_delta = self._seconds_between(last_exit_at, event.timestamp)
 
                 # Only prompt if mass lock follows a recent station approach after supercruise exit/drop
-                last_undocked_at = self.state.get("LastUndockedAt")
+                last_undocked_at = self.state.LastUndockedAt
                 undock_delta = self._seconds_between(last_undocked_at, event.timestamp)
 
 
@@ -2616,13 +2628,13 @@ class InDockingRange(Projection[dict[str, Any]]):
                     if undock_delta is None or undock_delta >= DOCKING_PROMPT_COOLDOWN_SECONDS:
                         projected_events.append(ProjectedEvent(content={"event": "InDockingRange"}))
                         # Avoid duplicate prompts for the same approach
-                        self.state["LastStationTarget"] = None
-                        self.state["LastSupercruiseExit"] = None
+                        self.state.LastStationTarget = None
+                        self.state.LastSupercruiseExit = None
 
             if status_event_name == "FsdMassLockEscaped":
                 # Leaving mass lock; clear pending prompt context so we don't fire after departing.
-                self.state["LastStationTarget"] = None
-                self.state["LastSupercruiseExit"] = None
+                self.state.LastStationTarget = None
+                self.state.LastSupercruiseExit = None
 
         return projected_events
 
