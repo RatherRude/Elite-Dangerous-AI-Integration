@@ -222,7 +222,14 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
     getLocalizedBodyGenuses(body: any): string[] {
         const genuses = Array.isArray(body?.genuses) ? body.genuses : [];
         return genuses
-            .map((genus: any) => genus?.Genus_Localised || genus?.Genus)
+            .map((genus: any) => {
+                const name = genus?.Genus_Localised || genus?.Genus;
+                if (!name) {
+                    return null;
+                }
+                const scanned = genus?.scanned === true ? "scanned" : "unscanned";
+                return `${name} (${scanned})`;
+            })
             .filter((name: any): name is string => Boolean(name));
     }
 

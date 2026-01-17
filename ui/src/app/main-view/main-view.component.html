@@ -27,6 +27,14 @@
                         </div>
                         <app-chat-container class="small" [limit]="2"></app-chat-container>
                     </mat-tab>
+                }
+                <mat-tab label="Navigation">
+                    <div class="tab-content-container">
+                        <app-navigation-container></app-navigation-container>
+                    </div>
+                    <app-chat-container class="small" [limit]="2"></app-chat-container>
+                </mat-tab>
+                @if (!isShipIdentUnknown) {
                     <mat-tab label="Storage">
                         <div class="tab-content-container">
                             <div class="storage-container-tab">
@@ -62,13 +70,6 @@
                         <app-chat-container class="small" [limit]="2"></app-chat-container>
                     </mat-tab>
                 }
-
-                <mat-tab label="Navigation">
-                    <div class="tab-content-container">
-                        <app-navigation-container></app-navigation-container>
-                    </div>
-                    <app-chat-container class="small" [limit]="2"></app-chat-container>
-                </mat-tab>
 
                 <mat-tab label="Search">
                     <div class="tab-content-container">

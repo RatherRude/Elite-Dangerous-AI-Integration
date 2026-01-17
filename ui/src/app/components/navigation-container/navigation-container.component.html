@@ -196,32 +196,21 @@
             (mousemove)="updateHoveredPosition($event)"
             (mouseleave)="clearHoveredMapNode()"
         >
-            <div class="map-node-dot" [class.map-node-dot--ring]="node.body?.rings?.length"></div>
+            <div class="map-node-dot" [class.map-node-dot--ring]="node.body?.rings?.length">
+                @if (getLocalizedBodyGenuses(node.body).length) {
+                    <span class="map-node-icon map-node-icon--inside" aria-hidden="true">🌿</span>
+                } @else if (getLocalizedBodySignals(node.body).length || getLocalizedRingSignals(node.body).length) {
+                    <span class="map-node-icon map-node-icon--inside" aria-hidden="true">📡</span>
+                }
+            </div>
             <div class="map-node-label">
-                <div class="map-node-name">{{ node.name || "Unknown body" }}</div>
+                <div class="map-node-name">
+                    {{ node.name || "Unknown body" }}
+                </div>
                 @if (node.type && node.type !== "Planet") {
                     <div class="map-node-type">{{ node.type }}</div>
                 }
             </div>
-            @if (getLocalizedBodySignals(node.body).length || getLocalizedBodyGenuses(node.body).length || getLocalizedRingSignals(node.body).length) {
-                <div class="map-node-meta">
-                    @if (getLocalizedBodySignals(node.body).length) {
-                        <div class="map-node-meta-row">
-                            <span class="value">{{ getLocalizedBodySignals(node.body).join(", ") }}</span>
-                        </div>
-                    }
-                    @if (getLocalizedBodyGenuses(node.body).length) {
-                        <div class="map-node-meta-row">
-                            <span class="value">{{ getLocalizedBodyGenuses(node.body).join(", ") }}</span>
-                        </div>
-                    }
-                    @if (getLocalizedRingSignals(node.body).length) {
-                        <div class="map-node-meta-row">
-                            <span class="value">{{ getLocalizedRingSignals(node.body).join(" | ") }}</span>
-                        </div>
-                    }
-                </div>
-            }
         </div>
         @if (node.children?.length) {
             <div class="map-children" [class.map-children--row]="node.childrenLayout === 'row'">

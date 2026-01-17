@@ -219,12 +219,16 @@
 }
 
 .map-node-dot {
-    width: 16px;
-    height: 16px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     background: radial-gradient(circle at 30% 30%, #f8f8f8, #5c5c5c);
     box-shadow: 0 0 6px rgba(255, 255, 255, 0.25);
     transform: scale(var(--node-scale, 1));
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .map-node-dot--ring {
@@ -234,7 +238,7 @@
 .map-node-dot--ring::after {
     content: "";
     position: absolute;
-    inset: -6px;
+    inset: -12px;
     border-radius: 50%;
     border: 1px solid rgba(255, 255, 255, 0.35);
 }
@@ -249,6 +253,18 @@
     font-weight: 600;
 }
 
+.map-node-icon {
+    margin-left: 6px;
+    opacity: 0.8;
+}
+
+.map-node-icon--inside {
+    margin-left: 0;
+    font-size: 20px;
+    line-height: 1;
+    cursor: default;
+}
+
 .map-node-type {
     color: #a0a0a0;
     font-size: 0.85rem;
@@ -260,6 +276,10 @@
     border-radius: 8px;
     overflow-x: auto;
     overflow-y: visible;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+    background-size: 32px 32px;
 }
 
 .map-node-meta {
