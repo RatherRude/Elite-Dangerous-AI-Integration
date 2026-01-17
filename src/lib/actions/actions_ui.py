@@ -3,16 +3,14 @@ from pydantic import BaseModel
 from ..ActionManager import ActionManager
 from ..EventManager import EventManager
 from ..UI import send_message
+from ..Projections import get_state_dict, ProjectedStates
 from typing import Optional
-
-# Type alias for projected states dictionary
-ProjectedStates = dict[str, BaseModel]
 
 event_manager: Optional[EventManager] = None
 
 # Checking status projection to exit game actions early if not applicable
 def checkStatus(projected_states: ProjectedStates, blocked_status_dict: dict[str, bool]):
-    current_status = projected_states.get("CurrentStatus")
+    current_status = get_state_dict(projected_states, 'CurrentStatus')
 
     if current_status:
         # Convert BaseModel to dict for flag checking

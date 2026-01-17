@@ -365,7 +365,7 @@ def get_galnet_news(obj, projected_states):
         return "News feed currently unavailable"
 
 def get_stored_ship_modules(obj, projected_states):
-    stored_modules = projected_states.get('StoredModules', {})
+    stored_modules = get_state_dict(projected_states, 'StoredModules')
     items = stored_modules.get('Items', [])
     
     if not items:
@@ -407,7 +407,7 @@ def get_stored_ship_modules(obj, projected_states):
     return result
 
 def get_stored_ships(obj, projected_states):
-    stored_ships = projected_states.get('StoredShips', {})
+    stored_ships = get_state_dict(projected_states, 'StoredShips')
     ships_here = stored_ships.get('ShipsHere', [])
     ships_remote = stored_ships.get('ShipsRemote', [])
     

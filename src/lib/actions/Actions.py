@@ -40,7 +40,7 @@ chat_direct_tabbed: bool = False
 
 # Checking status projection to exit game actions early if not applicable
 def checkStatus(projected_states: ProjectedStates, blocked_status_dict: dict[str, bool]):
-    current_status = projected_states.get("CurrentStatus")
+    current_status = get_state_dict(projected_states, 'CurrentStatus')
 
     if current_status:
         # Convert BaseModel to dict for flag checking
@@ -398,7 +398,7 @@ def charge_field_neutraliser(args, projected_states):
     desired_pips = {'system': 4.0, 'engine': 2.0, 'weapons': 0.0}
     
     # Get current pips from CurrentStatus
-    current_status = projected_states.get('CurrentStatus', {})
+    current_status = get_state_dict(projected_states, 'CurrentStatus')
     current_pips = current_status.get('Pips')
     
     # Check if pips need to be adjusted
