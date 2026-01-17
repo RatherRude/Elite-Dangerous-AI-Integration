@@ -1,0 +1,364 @@
+.navigation-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.system-info h2 {
+    margin: 0;
+}
+
+.meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    color: #a0a0a0;
+    font-size: 0.9rem;
+}
+
+.header-meta {
+    justify-content: flex-end;
+}
+
+.error-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #c62828;
+    background: rgba(198, 40, 40, 0.08);
+    padding: 8px 12px;
+    border-radius: 6px;
+}
+
+.loading-state,
+.empty-state {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #a0a0a0;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+}
+
+.summary-card {
+    padding: 12px;
+}
+
+.summary-card .label {
+    color: #a0a0a0;
+    font-size: 0.9rem;
+}
+
+.summary-card .value {
+    font-size: 1.4rem;
+    font-weight: 600;
+}
+
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section-header .count {
+    color: #a0a0a0;
+    font-size: 0.9rem;
+}
+
+.chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.chip-type {
+    color: #b0b0b0;
+    margin-left: 4px;
+}
+
+.station-chip {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.station-chip-container {
+    height: auto;
+    align-items: flex-start;
+    white-space: normal;
+    line-height: 1.2;
+}
+
+.station-chip-container .mat-mdc-chip-action,
+.station-chip-container .mdc-evolution-chip__action,
+.station-chip-container .mdc-evolution-chip__text-label {
+    white-space: normal;
+    line-height: 1.2;
+}
+
+.station-chip-name {
+    display: inline-flex;
+    align-items: center;
+}
+
+.station-chip-meta {
+    color: #b0b0b0;
+    font-size: 0.85rem;
+}
+
+.muted {
+    color: #8c8c8c;
+}
+
+.body-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+}
+
+.body-card {
+    padding: 12px;
+}
+
+.body-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.body-name {
+    font-weight: 600;
+}
+
+.body-type {
+    color: #a0a0a0;
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.body-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    color: #a0a0a0;
+    font-size: 0.9rem;
+}
+
+.body-localized {
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.9rem;
+}
+
+.body-localized-row {
+    display: flex;
+    gap: 8px;
+}
+
+.body-localized-row .label {
+    color: #a0a0a0;
+    min-width: 70px;
+}
+
+.system-map-root {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: flex-start;
+    min-width: max-content;
+}
+
+.map-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 4px;
+    transform-origin: top center;
+    position: relative;
+}
+
+.map-node--row {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.map-node-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.map-node-dot {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #f8f8f8, #5c5c5c);
+    box-shadow: 0 0 6px rgba(255, 255, 255, 0.25);
+    transform: scale(var(--node-scale, 1));
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.map-node-dot--ring {
+    position: relative;
+}
+
+.map-node-dot--ring::after {
+    content: "";
+    position: absolute;
+    inset: -12px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.map-node-label {
+    text-align: center;
+    min-width: 25px;
+    max-width: 125px;
+}
+
+.map-node-name {
+    font-weight: 600;
+}
+
+.map-node-icon {
+    margin-left: 6px;
+    opacity: 0.8;
+}
+
+.map-node-icon--inside {
+    margin-left: 0;
+    font-size: 20px;
+    line-height: 1;
+    cursor: default;
+}
+
+.map-node-type {
+    color: #a0a0a0;
+    font-size: 0.85rem;
+}
+
+.system-map-panel {
+    background: #000;
+    padding: 12px;
+    border-radius: 8px;
+    overflow-x: auto;
+    overflow-y: visible;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+    background-size: 32px 32px;
+}
+
+.map-node-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-align: center;
+    min-width: 25px;
+    max-width: 125px;
+}
+
+.map-node-meta-row {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+}
+
+.map-node-meta-row .label {
+    color: #a0a0a0;
+    min-width: 80px;
+    text-align: right;
+}
+
+.system-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 8px 16px;
+}
+
+.system-meta-item {
+    display: flex;
+    gap: 6px;
+}
+
+.system-meta-item .label {
+    color: #a0a0a0;
+}
+
+.map-node-tooltip {
+    background: rgba(0, 0, 0, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    padding: 8px 10px;
+    min-width: 220px;
+    max-width: 360px;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.map-node-tooltip--floating {
+    position: fixed;
+    z-index: 1000;
+}
+
+.map-tooltip-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.map-tooltip-row {
+    color: #c8c8c8;
+    font-size: 0.9rem;
+    margin-bottom: 2px;
+}
+
+.map-children {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 8px;
+    padding-top: 4px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.map-children--row {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}

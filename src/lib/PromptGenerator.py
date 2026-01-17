@@ -4,10 +4,13 @@ from typing import Any, Callable, cast, Dict, Union, List, Optional
 import random
 
 from openai.types.chat import ChatCompletionMessageParam
+from pydantic import BaseModel
 import yaml
 import requests
 import humanize
 import json
+
+from .Projections import get_state_dict, ProjectedStates
 
 from .EventModels import (
     ApproachBodyEvent, ApproachSettlementEvent, BookTaxiEvent, BountyEvent, BuyExplorationDataEvent, CodexEntryEvent, CommanderEvent, CommitCrimeEvent,
@@ -52,7 +55,7 @@ NavRouteEvent = dict
 class PromptGenerator:
     def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str], system_db: SystemDatabase, weapon_types: list[dict] | None = None, disabled_game_events: list[str] | None = None):
         self.registered_prompt_event_handlers: list[Callable[[Event], str|None]] = []
-        self.registered_status_generators: list[Callable[[dict[str, dict]], list[tuple[str, Any]]]] = []
+        self.registered_status_generators: list[Callable[[ProjectedStates], list[tuple[str, Any]]]] = []
         self.commander_name = commander_name
         self.character_prompt = character_prompt
         self.important_game_events = important_game_events
@@ -868,7 +871,7 @@ class PromptGenerator:
             
         if event_name == 'FSSSignalDiscovered':
             return None
-        
+
         if event_name == 'FleetCarrierDiscovered':
             return f"{self.commander_name} discovered a fleet carrier signal: {content.get('SignalName', 'unknown signal')}."
         if event_name == 'ResourceExtractionDiscovered':
@@ -2470,6 +2473,78 @@ class PromptGenerator:
             result[body_label][station_type].append(clean_station)
         
         return result
+
+    def format_bodies_data(self, bodies_data) -> dict | str:
+        """Format bodies data to highlight signals/genuses/ring signals."""
+        if not bodies_data or isinstance(bodies_data, str):
+            return bodies_data or "No body data available"
+        if not isinstance(bodies_data, list):
+            return "Unknown body data format"
+
+        total_bodies = len(bodies_data)
+        noteworthy: list[dict[str, object]] = []
+
+        for body in bodies_data:
+            if not isinstance(body, dict):
+                continue
+            body_name = body.get("name") or "Unknown body"
+            signals = body.get("signals") or []
+            genuses = body.get("genuses") or []
+            rings = body.get("rings") or []
+
+            signal_names = []
+            if isinstance(signals, list):
+                for signal in signals:
+                    if not isinstance(signal, dict):
+                        continue
+                    name = signal.get("Type_Localised") or signal.get("Type")
+                    if name:
+                        signal_names.append(name)
+
+            genus_names = []
+            if isinstance(genuses, list):
+                for genus in genuses:
+                    if not isinstance(genus, dict):
+                        continue
+                    name = genus.get("Genus_Localised") or genus.get("Genus")
+                    if not name:
+                        continue
+                    scanned = genus.get("scanned", False)
+                    status = "scanned" if scanned else "unscanned"
+                    genus_names.append(f"{name} ({status})")
+
+            ring_signals = []
+            if isinstance(rings, list):
+                for ring in rings:
+                    if not isinstance(ring, dict):
+                        continue
+                    ring_name = ring.get("name") or "Unknown ring"
+                    ring_signal_list = ring.get("signals") or []
+                    if not isinstance(ring_signal_list, list):
+                        continue
+                    ring_signal_names = []
+                    for signal in ring_signal_list:
+                        if not isinstance(signal, dict):
+                            continue
+                        name = signal.get("Type_Localised") or signal.get("Type")
+                        if name:
+                            ring_signal_names.append(name)
+                    if ring_signal_names:
+                        ring_signals.append(f"{ring_name}: {', '.join(ring_signal_names)}")
+
+            if signal_names or genus_names or ring_signals:
+                entry: dict[str, object] = {"Body": body_name}
+                if signal_names:
+                    entry["Signals"] = signal_names
+                if genus_names:
+                    entry["Genuses"] = genus_names
+                if ring_signals:
+                    entry["Ring signals"] = ring_signals
+                noteworthy.append(entry)
+
+        result: dict[str, object] = {"Total bodies": total_bodies}
+        result["Noteworthy bodies"] = noteworthy or "None"
+        return result
         
     def _create_standard_station_entry(self, station, raw_format=False):
         """Create a standardized station entry from either projection or raw API data"""
@@ -2640,28 +2715,31 @@ class PromptGenerator:
 
         return active_mode, status_info
 
-    def generate_status_message(self, projected_states: dict[str, dict], search_agent_context: bool = False):
+    def generate_status_message(self, projected_states: ProjectedStates, search_agent_context: bool = False):
         status_entries: list[tuple[str, Any]] = []
 
-        gravity = projected_states.get('CurrentStatus', {}).get('Gravity', None)
+        current_status = get_state_dict(projected_states, 'CurrentStatus')
+        gravity = current_status.get('Gravity', None)
         if gravity:
             status_entries.append(("Gravity", gravity))
 
-        active_mode, vehicle_status = self.generate_vehicle_status(projected_states.get('CurrentStatus', {}), projected_states.get('InCombat', {}))
+        in_combat = get_state_dict(projected_states, 'InCombat')
+        active_mode, vehicle_status = self.generate_vehicle_status(current_status, in_combat)
         status_entries.append((active_mode+" status", vehicle_status))
 
         if not search_agent_context:
-            wingmembers = projected_states.get('Wing', {}).get('Members', [])
+            wing_state = get_state_dict(projected_states, 'Wing')
+            wingmembers = wing_state.get('Members', [])
             if len(wingmembers) > 0:
                 status_entries.append(("Current wing members: ", wingmembers))
 
-            guifocus = projected_states.get('CurrentStatus', {}).get('GuiFocus', '')
+            guifocus = current_status.get('GuiFocus', '')
             if guifocus != "NoFocus":
                 status_entries.append(("Current active window: ", guifocus))
 
         # Get ship and cargo info
-        ship_info: ShipInfoState = projected_states.get('ShipInfo', {})  # pyright: ignore[reportAssignmentType]
-        cargo_info: CargoState = projected_states.get('Cargo', {})  # pyright: ignore[reportAssignmentType]
+        ship_info = get_state_dict(projected_states, 'ShipInfo')
+        cargo_info = get_state_dict(projected_states, 'Cargo')
         fighters = ship_info.get('Fighters', [])
         
         # Create a copy of ship_info so we don't modify the original
@@ -2677,6 +2755,7 @@ class PromptGenerator:
         ship_display.pop('FuelReservoirCapacity', None)
         ship_display.pop('FuelReservoir', None)
         ship_display.pop('UnladenMass', None)
+        ship_display.pop('ShipCargo', None)
         ship_display.pop('IsMiningShip', None)
         ship_display.pop('hasLimpets', None)
         ship_display.pop('hasDockingComputer', None)
@@ -2725,8 +2804,8 @@ class PromptGenerator:
             ship_display.pop('CargoCapacity', None)
 
         if active_mode == 'Suit':
-            backpack_info = projected_states.get('Backpack', {})
-            suit_loadout = projected_states.get('SuitLoadout', {})
+            backpack_info = get_state_dict(projected_states, 'Backpack')
+            suit_loadout = get_state_dict(projected_states, 'SuitLoadout')
             
             # Create a comprehensive suit information display
             suit_display = {}
@@ -2814,8 +2893,7 @@ class PromptGenerator:
 
         if active_mode == 'Main ship':
             # Get the ship loadout information
-            loadout_info = projected_states.get('Loadout', {})
-
+            loadout_info = get_state_dict(projected_states, 'Loadout')
             if loadout_info:
                 # Create comprehensive ship loadout display focusing only on modules
                 loadout_display = {}
@@ -2886,13 +2964,14 @@ class PromptGenerator:
         status_entries.append(("Main Ship", ship_display))
 
         # Get location info
-        location_info: LocationState = projected_states.get('Location', {})  # pyright: ignore[reportAssignmentType]
+        location_info = get_state_dict(projected_states, 'Location')
         
         # Process location info
         if location_info:
             system_name = location_info.get('StarSystem')
             system_info = None
             stations_info = None
+            bodies_info = None
             
             # Direct lookup from system database instead of SystemInfo projection
             if system_name:
@@ -2907,23 +2986,30 @@ class PromptGenerator:
                     if stations_data:
                         stations_info = self.format_stations_data(stations_data)
 
+                    bodies_data = self.system_db.get_bodies(system_name)
+                    if bodies_data:
+                        bodies_info = self.format_bodies_data(bodies_data)
+
             if location_info.get('Station'):
                 if not location_info.get('Docked'):
                     location_info["Station"] = f"Outside {location_info['Station']}"
 
-            altitude = projected_states.get('CurrentStatus', {}).get('Altitude', None)
+            altitude = current_status.get('Altitude', None)
             if altitude:
                 location_info["Altitude"] = f"{altitude} km"
 
-            location_info.pop('StarPos', None)
+            location_info = {
+                key: value for key, value in location_info.items() if value is not None and key not in ['SystemAddress', 'StarAddress', 'StarPos']
+            }
 
             status_entries.append(("Location", location_info))
             status_entries.append(("Local system", system_info))
             if not search_agent_context:
                 status_entries.append(("Stations in local system", stations_info))
+                status_entries.append(("Bodies in local system", bodies_info))
 
         # Community Goal
-        community_goal = projected_states.get('CommunityGoal', {})
+        community_goal = get_state_dict(projected_states, 'CommunityGoal')
         if community_goal and 'CurrentGoals' in community_goal:
             current_goals = community_goal.get('CurrentGoals', [])
             if current_goals:
@@ -2954,8 +3040,9 @@ class PromptGenerator:
                 status_entries.append(("Community Goals", goals_info))
 
         # Nav Route 
-        if "NavInfo" in projected_states and projected_states["NavInfo"].get("NavRoute"):
-            nav_route = projected_states["NavInfo"]["NavRoute"]
+        nav_info = get_state_dict(projected_states, 'NavInfo')
+        if nav_info and nav_info.get("NavRoute"):
+            nav_route = nav_info["NavRoute"]
             
             # Enhance NavRoute with data from system database instead of SystemInfo projection
             enhanced_nav_route = []
@@ -2964,10 +3051,10 @@ class PromptGenerator:
             total_systems = len(nav_route)
             
             for system in systems_to_process:
-                system_data = {**system}  # Create a copy of the original system data
+                system_data = dict(system) if hasattr(system, 'model_dump') else {**system}  # Create a copy of the original system data
                 
                 # Try to get additional info from system database
-                system_name = system.get("StarSystem")
+                system_name = system_data.get("StarSystem") if isinstance(system_data, dict) else getattr(system, 'StarSystem', None)
                 if system_name:
                     raw_system_info = self.system_db.get_system_info(system_name, async_fetch=True)
                     if raw_system_info and not isinstance(raw_system_info, str):
@@ -2995,18 +3082,19 @@ class PromptGenerator:
 
         # Target
         if not search_agent_context:
-            target_info: TargetState = projected_states.get('Target', {})  # pyright: ignore[reportAssignmentType]
+            target_info = get_state_dict(projected_states, 'Target')
             target_info.pop('EventID', None)
             target_info.pop('ScanStage', None)
             if target_info.get('Ship', False):
                 status_entries.append(("Weapons' target", target_info))
 
         # Market and station information
-        current_station = projected_states.get('Location', {}).get('Station')
-        market = projected_states.get('Market', {})
-        outfitting = projected_states.get('Outfitting', {})
-        storedShips = projected_states.get('StoredShips', {})
-        storedModules = projected_states.get('StoredModules', {})
+        location_for_station = get_state_dict(projected_states, 'Location')
+        current_station = location_for_station.get('Station')
+        market = get_state_dict(projected_states, 'Market')
+        outfitting = get_state_dict(projected_states, 'Outfitting')
+        storedShips = get_state_dict(projected_states, 'StoredShips')
+        storedModules = get_state_dict(projected_states, 'StoredModules')
         if current_station and current_station == market.get('StationName') and not search_agent_context:
             buy_items = {
                 item.get('Name_Localised'): {
@@ -3133,12 +3221,12 @@ class PromptGenerator:
             status_entries.append(("Local outfitting information", nested_outfitting))
         if current_station and current_station == storedShips.get('StationName') and not search_agent_context:
             status_entries.append(("Local, stored ships", storedShips.get('ShipsHere', [])))
-        
+
         # Show modules in transit to current system
         if len(storedModules.get('ItemsInTransit', [])) > 0:
             current_system = location_info.get('StarSystem')
             current_time = datetime.now(timezone.utc)
-            
+
             def format_time_remaining(seconds):
                 """Format seconds into human-readable time"""
                 if seconds < 0:
@@ -3146,7 +3234,7 @@ class PromptGenerator:
                 hours = seconds // 3600
                 minutes = (seconds % 3600) // 60
                 secs = seconds % 60
-                
+
                 parts = []
                 if hours > 0:
                     parts.append(f"{hours}h")
@@ -3155,14 +3243,14 @@ class PromptGenerator:
                 if secs > 0 or not parts:
                     parts.append(f"{secs}s")
                 return " ".join(parts)
-            
+
             itemsInTransit = []
             for item in storedModules.get('ItemsInTransit', []):
                 if item.get('StarSystem') == current_system:
                     # Calculate time remaining in seconds
                     completion_time = datetime.fromisoformat(item.get('TransferCompleteTime', ''))
                     time_remaining = int((completion_time - current_time).total_seconds())
-                    
+
                     # Find the module name from StorageSlot in Items
                     storage_slot = item.get('StorageSlot')
                     module_name = 'Unknown'
@@ -3170,21 +3258,21 @@ class PromptGenerator:
                         if module.get('StorageSlot') == storage_slot:
                             module_name = module.get('Name_Localised', module.get('Name', 'Unknown'))
                             break
-                    
+
                     itemsInTransit.append({
                         "Name": module_name,
                         "TimeRemaining": format_time_remaining(time_remaining)
                     })
-            
+
             if itemsInTransit:
                 status_entries.append(("Modules in transit to this system", itemsInTransit))
-        
+
         # Show ships in transit to current system
-        storedShips = projected_states.get('StoredShips', {})
+        storedShips = get_state_dict(projected_states, 'StoredShips')
         if len(storedShips.get('ShipsInTransit', [])) > 0:
             current_system = location_info.get('StarSystem')
             current_time = datetime.now(timezone.utc)
-            
+
             def format_time_remaining(seconds):
                 """Format seconds into human-readable time"""
                 if seconds < 0:
@@ -3192,7 +3280,7 @@ class PromptGenerator:
                 hours = seconds // 3600
                 minutes = (seconds % 3600) // 60
                 secs = seconds % 60
-                
+
                 parts = []
                 if hours > 0:
                     parts.append(f"{hours}h")
@@ -3201,14 +3289,14 @@ class PromptGenerator:
                 if secs > 0 or not parts:
                     parts.append(f"{secs}s")
                 return " ".join(parts)
-            
+
             shipsInTransit = []
             for ship in storedShips.get('ShipsInTransit', []):
                 if ship.get('System') == current_system:
                     # Calculate time remaining in seconds
                     completion_time = datetime.fromisoformat(ship.get('TransferCompleteTime', ''))
                     time_remaining = int((completion_time - current_time).total_seconds())
-                    
+
                     # Find the ship name/type from ShipID in ShipsRemote
                     ship_id = ship.get('ShipID')
                     ship_display = 'Unknown'
@@ -3221,23 +3309,24 @@ class PromptGenerator:
                             else:
                                 ship_display = ship_type
                             break
-                    
+
                     shipsInTransit.append({
                         "Ship": ship_display,
                         "TimeRemaining": format_time_remaining(time_remaining)
                     })
-            
+
             if shipsInTransit:
                 status_entries.append(("Ships in transit to this system", shipsInTransit))
-            
-            
+
+
         # Missions
-        missions_info: MissionsState = projected_states.get('Missions', {})  # pyright: ignore[reportAssignmentType]
+        missions_info = get_state_dict(projected_states, 'Missions')
+        missions_info = {key: value for key, value in missions_info.items() if value is not None}
         if missions_info and 'Active' in missions_info:
             status_entries.append(("Active missions", missions_info))
 
         # Add colonisation construction status if available
-        colonisation_info = projected_states.get('ColonisationConstruction', {})
+        colonisation_info = get_state_dict(projected_states, 'ColonisationConstruction')
         if colonisation_info and colonisation_info.get('StarSystem', 'Unknown') != 'Unknown':
             progress = colonisation_info.get('ConstructionProgress', 0.0)
             complete = colonisation_info.get('ConstructionComplete', False)
@@ -3271,7 +3360,7 @@ class PromptGenerator:
 
         # Add friends status (always include this entry)
         if not search_agent_context:
-            friends_info = projected_states.get('Friends', {})
+            friends_info = get_state_dict(projected_states, 'Friends')
             online_friends = friends_info.get('Online', [])
 
             # Always add the entry, with appropriate message based on online status
@@ -3324,7 +3413,7 @@ class PromptGenerator:
             "Rosa Dayette": "Kojeara",
             "Yi Shen": "Einheriar"
         }
-        engineer_info = projected_states.get('EngineerProgress', {})
+        engineer_info = get_state_dict(projected_states, 'EngineerProgress')
 
         # Process engineers that are either Unlocked or Invited
         if engineer_info and 'Engineers' in engineer_info:
@@ -3351,7 +3440,7 @@ class PromptGenerator:
 
     # TODO use events as passed from db, not in mem copy, pending (new not yet reated to), short_term (reacted to but not yet part of summary memory), memories (historc summaries of events)
     @observe()
-    def generate_prompt(self, events: list[Event], projected_states: dict[str, dict], pending_events: list[Event], memories: list[MemoryEvent]) -> list[dict[str, str]]:
+    def generate_prompt(self, events: list[Event], projected_states: ProjectedStates, pending_events: list[Event], memories: list[MemoryEvent]) -> list[dict[str, str]]:
         # Fine the most recent event
         last_event = events[-1]
         reference_time = datetime.fromisoformat(last_event.content.get('timestamp') if isinstance(last_event, GameEvent) else last_event.timestamp)
@@ -3433,7 +3522,8 @@ class PromptGenerator:
 
             if isinstance(event, MemoryEvent):
                 event_time = datetime.fromtimestamp(
-                    event.metadata.get('time_until', 0)
+                    cast(float,event.metadata.get('time_until', 0.0)),
+                    tz=timezone.utc
                 )
                 if not event_time.tzinfo:
                     event_time = event_time.astimezone()
@@ -3542,8 +3632,7 @@ class PromptGenerator:
         if "primaryStar" in system_info and system_info["primaryStar"]:
             star_data = system_info["primaryStar"]
             formatted["Star"] = star_data.get("name", "Unknown")
-            formatted["Star Type"] = star_data.get("type", "Unknown")
-            formatted["Scoopable"] = star_data.get("isScoopable")
+            formatted["Star Type"] = star_data.get("type", "Unknown") + f" ({'' if star_data.get("isScoopable", False) else 'Not '}Scoopable)"
 
         # Include coordinates if available
         if "coords" in system_info:

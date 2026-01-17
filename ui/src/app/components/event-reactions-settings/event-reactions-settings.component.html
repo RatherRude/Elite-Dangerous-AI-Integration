@@ -1,0 +1,246 @@
+@if (activeCharacter) {
+    <div class="event-reactions">
+        <h2>Event reactions for character "{{ activeCharacter.name || 'Unknown' }}"</h2>
+
+        <mat-slide-toggle
+            [ngModel]="getCharacterProperty('event_reaction_enabled_var', false)"
+            (ngModelChange)="setCharacterProperty('event_reaction_enabled_var', $event)">
+            Enable Event Reactions
+        </mat-slide-toggle>
+        <p>Events are caused by the game and your actions within it. By default, the AI will react to those
+            events and provide additional details or commentary. You can customize the reactions below.</p>
+
+        @if (getCharacterProperty('event_reaction_enabled_var', false)) {
+            <div class="event-search-and-reset">
+                <mat-form-field class="search-box" subscriptSizing="dynamic">
+                    <mat-label>Search events</mat-label>
+                    <input matInput [(ngModel)]="eventSearchQuery"
+                           (ngModelChange)="filterEvents($event)"
+                           placeholder="Type to search events...">
+                    <button *ngIf="eventSearchQuery" matSuffix mat-icon-button (click)="clearEventSearch()">
+                        <mat-icon>close</mat-icon>
+                    </button>
+                </mat-form-field>
+
+                <button mat-raised-button color="warn" (click)="resetGameEvents()"
+                        [matTooltip]="'Reset all event reaction settings to their default values'">
+                    <mat-icon>restart_alt</mat-icon> Reset to Defaults
+
+                </button>
+            </div>
+
+            <mat-accordion multi="false">
+                @for (section of filteredEventReactions | keyvalue:orderByKey; track section.key) {
+                    <mat-expansion-panel [expanded]="isSectionExpanded(section.key)"
+                                         (afterExpand)="onSectionToggled(section.key)"
+                                         (afterCollapse)="onSectionToggled(null)">
+                        <mat-expansion-panel-header>
+                            <mat-panel-title>
+                                <span class="category-name">{{ section.key }}</span>
+                            </mat-panel-title>
+                            <mat-panel-description class="category-actions" (click)="$event.stopPropagation()">
+                                <mat-button-toggle-group
+                                    class="category-toggle"
+                                    [value]="getCategoryAggregateState(section.key)"
+                                    (change)="setCategoryState(section.key, $event.value)">
+                                    <mat-button-toggle value="on" [matTooltip]="'Enable all events in ' + section.key" matTooltipPosition="below">
+                                        <mat-icon>volume_up</mat-icon>
+                                        <span class="category-count">{{ getCategoryCounts(section.key).on }}</span>
+                                    </mat-button-toggle>
+                                    <mat-button-toggle value="off" [matTooltip]="'Disable reactions for all events in ' + section.key" matTooltipPosition="below">
+                                        <mat-icon>visibility</mat-icon>
+                                        <span class="category-count">{{ getCategoryCounts(section.key).off }}</span>
+                                    </mat-button-toggle>
+                                    <mat-button-toggle value="hidden" [matTooltip]="'Hide all events in ' + section.key + ' from the LLM'" matTooltipPosition="below">
+                                        <mat-icon>close</mat-icon>
+                                        <span class="category-count">{{ getCategoryCounts(section.key).hidden }}</span>
+                                    </mat-button-toggle>
+                                </mat-button-toggle-group>
+                            </mat-panel-description>
+                        </mat-expansion-panel-header>
+                        @for (e of section.value | keyvalue:orderByKey; track e.key) {
+                            <div class="event-row">
+                                <mat-icon class="event-state-icon">{{ getEventIcon(getEventState(e.key)) }}</mat-icon>
+                                <div class="event-name">
+                                    {{ e.key }}
+                                </div>
+                                <mat-button-toggle-group
+                                    class="event-toggle"
+                                    [value]="getEventState(e.key)"
+                                    (change)="onEventConfigChange(section.key, e.key, $event.value)"
+                                    [attr.aria-label]="'Set reaction for ' + e.key">
+                                    <mat-button-toggle value="on" [matTooltip]="GameEventTooltips[e.key]" matTooltipPosition="below">
+                                        <mat-icon>{{ getEventIcon("on") }}</mat-icon>
+                                    </mat-button-toggle>
+                                    <mat-button-toggle value="off" [matTooltip]="'Disable reactions to this event'" matTooltipPosition="below">
+                                        <mat-icon>{{ getEventIcon("off") }}</mat-icon>
+                                    </mat-button-toggle>
+                                    <mat-button-toggle value="hidden" [matTooltip]="'Hide this event from the LLM'" matTooltipPosition="below">
+                                        <mat-icon>{{ getEventIcon("hidden") }}</mat-icon>
+                                    </mat-button-toggle>
+                                </mat-button-toggle-group>
+                            </div>
+                            @if (e.key === "ProspectedAsteroid") {
+                                <div class="event-suboptions">
+                                    <div class="event-suboption">
+                                        <mat-form-field appearance="outline">
+                                            <mat-label>React to material</mat-label>
+                                            <mat-select multiple
+                                                        [value]="getMaterialsArray(getCharacterProperty('react_to_material', ''))"
+                                                        (selectionChange)="onMaterialsChange($event.value)">
+                                                <mat-option value="Alexandrite">Alexandrite</mat-option>
+                                                <mat-option value="Benitoite">Benitoite</mat-option>
+                                                <mat-option value="Bromellite">Bromellite</mat-option>
+                                                <mat-option value="Grandidierite">Grandidierite</mat-option>
+                                                <mat-option value="LowTemperatureDiamond">LowTemperatureDiamond</mat-option>
+                                                <mat-option value="Monazite">Monazite</mat-option>
+                                                <mat-option value="Musgravite">Musgravite</mat-option>
+                                                <mat-option value="Opal">Opal</mat-option>
+                                                <mat-option value="Painite">Painite</mat-option>
+                                                <mat-option value="Platinum">Platinum</mat-option>
+                                                <mat-option value="Rhodplumsite">Rhodplumsite</mat-option>
+                                                <mat-option value="Serendibite">Serendibite</mat-option>
+                                                <mat-option value="Tritium">Tritium</mat-option>
+                                            </mat-select>
+                                        </mat-form-field>
+                                    </div>
+                                </div>
+                            }
+                            @if (e.key === "InDanger") {
+                                <div class="event-suboptions">
+                                    <div class="event-suboption">
+                                        <mat-slide-toggle
+                                            [ngModel]="getCharacterProperty('react_to_danger_mining_var', false)"
+                                            (ngModelChange)="setCharacterProperty('react_to_danger_mining_var', $event)"
+                                            [matTooltip]="'Enable or disable reactions to danger events while mining asteroids'"
+                                            matTooltipPosition="right"
+                                        >
+                                            React while mining
+                                        </mat-slide-toggle>
+                                    </div>
+
+                                    <div class="event-suboption">
+                                        <mat-slide-toggle
+                                            [ngModel]="getCharacterProperty('react_to_danger_onfoot_var', false)"
+                                            (ngModelChange)="setCharacterProperty('react_to_danger_onfoot_var', $event)"
+                                            [matTooltip]="'Enable or disable reactions to danger events while on foot in settlements or stations'"
+                                            matTooltipPosition="right"
+                                        >
+                                            React while on-foot
+                                        </mat-slide-toggle>
+                                    </div>
+
+                                    <div class="event-suboption">
+                                        <mat-slide-toggle
+                                            [ngModel]="getCharacterProperty('react_to_danger_supercruise_var', false)"
+                                            (ngModelChange)="setCharacterProperty('react_to_danger_supercruise_var', $event)"
+                                            [matTooltip]="'Enable or disable reactions to danger events while in supercruise'"
+                                            matTooltipPosition="right"
+                                        >
+                                            React while in supercruise
+                                        </mat-slide-toggle>
+                                    </div>
+                                </div>
+                            }
+
+                            @if (e.key === "ReceiveText") {
+                                <div class="event-suboptions">
+                                    <div class="event-suboption">
+                                        <mat-slide-toggle
+                                            [ngModel]="getCharacterProperty('react_to_text_local_var', false)"
+                                            (ngModelChange)="setCharacterProperty('react_to_text_local_var', $event)"
+                                            [matTooltip]="'Enable or disable reactions to messages received in local chat'"
+                                            matTooltipPosition="right"
+                                        >
+                                        React to local text
+                                        </mat-slide-toggle>
+                                    </div>
+
+                                    <div class="event-suboption">
+                                        <mat-slide-toggle
+                                            [ngModel]="getCharacterProperty('react_to_text_starsystem_var', false)"
+                                            (ngModelChange)="setCharacterProperty('react_to_text_starsystem_var', $event)"
+                                            [matTooltip]="'Enable or disable reactions to messages received in system chat'"
+                                            matTooltipPosition="right"
+                                        >
+                                            React to starsystem text
+                                        </mat-slide-toggle>
+                                    </div>
+
+                                    <div class="event-suboption">
+                                        <mat-slide-toggle
+                                            [ngModel]="getCharacterProperty('react_to_text_squadron_var', false)"
+                                            (ngModelChange)="setCharacterProperty('react_to_text_squadron_var', $event)"
+                                            [matTooltip]="'Enable or disable reactions to messages received in squadron chat'"
+                                            matTooltipPosition="right"
+                                        >
+                                            React to squadron text
+                                        </mat-slide-toggle>
+                                    </div>
+
+                                    <div class="event-suboption">
+                                        <mat-slide-toggle
+                                            [ngModel]="getCharacterProperty('react_to_text_npc_var', false)"
+                                            (ngModelChange)="setCharacterProperty('react_to_text_npc_var', $event)"
+                                            [matTooltip]="'Enable or disable reactions to messages received from NPCs'"
+                                            matTooltipPosition="right"
+                                        >
+                                            React to NPC text
+                                        </mat-slide-toggle>
+                                    </div>
+                                </div>
+                            }
+
+                            @if (e.key === "Idle") {
+                                <div class="event-suboptions">
+                                    <div class="event-suboption">
+                                        <mat-form-field appearance="outline">
+                                            <mat-label>Idle Timeout (seconds)</mat-label>
+                                            <input matInput type="number" 
+                                                   [ngModel]="getCharacterProperty('idle_timeout_var', 300)"
+                                                   (ngModelChange)="setCharacterProperty('idle_timeout_var', $event)"
+                                                   min="60">
+                                            <mat-hint>Time in seconds before AI considers you idle (min 60)</mat-hint>
+                                        </mat-form-field>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </mat-expansion-panel>
+                }
+            </mat-accordion>
+
+            <div class="import-section">
+                @if (!showImportSelector) {
+                    <button mat-stroked-button color="primary" (click)="startImportSelection()">
+                        <mat-icon>download</mat-icon>
+                        Import from other character
+                    </button>
+                } @else {
+                    <div class="import-controls">
+                        <mat-form-field appearance="outline" class="import-select">
+                            <mat-label>Select character to import from</mat-label>
+                            <mat-select [(ngModel)]="selectedImportIndex">
+                                @for (c of getImportCandidates(); track c.index) {
+                                    <mat-option [value]="c.index">{{ c.name }}</mat-option>
+                                }
+                            </mat-select>
+                        </mat-form-field>
+                        <div class="import-buttons">
+                            <button mat-raised-button color="primary"
+                                    [disabled]="selectedImportIndex === null"
+                                    (click)="performImportFromCharacter()">
+                                Import
+                            </button>
+                            <button mat-stroked-button color="warn" (click)="cancelImportSelection()">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+} @else {
+    <p>No active character selected.</p>
+}

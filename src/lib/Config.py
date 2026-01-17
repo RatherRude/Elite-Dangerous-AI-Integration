@@ -11,7 +11,7 @@ from openai import OpenAI, APIError
 
 from .Logger import log
 
-# List of game events categorized
+# List of game events categorized (legacy boolean defaults)
 game_events = {
     # System
     # 'Cargo': False,
@@ -337,6 +337,20 @@ game_events = {
 }
 
 
+def to_event_reactions(source: dict[str, bool], hidden: list[str] | None = None) -> dict[str, str]:
+    hidden_set = set(hidden or [])
+    reactions: dict[str, str] = {}
+    for key, value in source.items():
+        if key in hidden_set:
+            reactions[key] = "hidden"
+        else:
+            reactions[key] = "on" if value else "off"
+    return reactions
+
+
+default_event_reactions = to_event_reactions(game_events, ["Idle"])
+
+
 class WeaponType(TypedDict):
     name: str
     fire_group: int
@@ -369,7 +383,7 @@ class Character(TypedDict, total=False):
     tts_speed: str
     tts_prompt: str
     avatar: str  # IndexedDB key for the avatar image
-    game_events: dict[str, bool]
+    event_reactions: dict[str, str]
     event_reaction_enabled_var: bool
     react_to_text_local_var: bool
     react_to_text_starsystem_var: bool
@@ -380,7 +394,6 @@ class Character(TypedDict, total=False):
     react_to_danger_onfoot_var: bool
     react_to_danger_supercruise_var: bool
     idle_timeout_var: int
-    disabled_game_events: list[str]
 
 
 class Config(TypedDict):
@@ -453,6 +466,7 @@ class Config(TypedDict):
     
     # Overlay settings
     overlay_show_avatar: bool
+    overlay_show_hud: bool
     overlay_show_chat: bool
     overlay_position: Literal['left', 'right']
     overlay_screen_id: int
@@ -555,7 +569,7 @@ def migrate(data: dict) -> dict:
                 "tts_voice": 'en-US-AvaMultilingualNeural' if data.get('tts_voice', 'en-US-AvaMultilingualNeural') == 'en-GB-SoniaNeural' else data.get('tts_voice', 'en-US-AvaMultilingualNeural'),
                 "tts_speed": data.get('tts_speed', "1.2"),
                 "tts_prompt": data.get('tts_prompt', ""),
-                "game_events": game_events,
+                "event_reactions": default_event_reactions,
                 "event_reaction_enabled_var": data.get('event_reaction_enabled_var', True),
                 "react_to_text_local_var": data.get('react_to_text_local_var', True),
                 "react_to_text_starsystem_var": data.get('react_to_text_starsystem_var', True),
@@ -576,7 +590,10 @@ def migrate(data: dict) -> dict:
 
         if 'game_events' in data:
             for character in data['characters']:
-                character['game_events'] = data['game_events']
+                legacy_disabled = character.get('disabled_game_events', [])
+                character['event_reactions'] = to_event_reactions(data['game_events'], legacy_disabled)
+                character.pop('game_events', None)
+                character.pop('disabled_game_events', None)
             data.pop('game_events', None)
 
         # Ensure default values are properly set
@@ -598,7 +615,7 @@ def migrate(data: dict) -> dict:
         data['config_version'] = 2
 
         if len(data.get('characters', [])) > 0:
-            data['characters'][0]['game_events'] = game_events
+            data['characters'][0]['event_reactions'] = default_event_reactions
 
     if data['config_version'] < 3:
         data['config_version'] = 3
@@ -623,7 +640,6 @@ def migrate(data: dict) -> dict:
         if len(data.get('characters', [])) > 0:
             data['characters'][0]['character'] = "Keep your responses extremely brief and minimal. Maintain a professional and serious tone in all responses. Stick to factual information. You are COVAS:NEXT (Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal) - professional, efficient, and no-nonsense. Provides essential information without unnecessary elaboration. Focuses on factual data and operational status. 'Destination reached.' 'Fuel level acceptable.' Clean, precise communication. Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS:NEXT. Always respond in English regardless of the language spoken to you. Balance emotional understanding with factual presentation. Use everyday language that balances casual and professional tones. Project an air of expertise and certainty when providing information. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship."
             data['characters'][0]['personality_character_inspiration'] = "COVAS:NEXT (Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal) - professional, efficient, and no-nonsense. Provides essential information without unnecessary elaboration. Focuses on factual data and operational status. 'Destination reached.' 'Fuel level acceptable.' Clean, precise communication."
-
 
     if data['config_version'] < 6:
         data['config_version'] = 6
@@ -708,15 +724,24 @@ def migrate(data: dict) -> dict:
         data['config_version'] = 10
 
         for character in data.get('characters', []):
+            # Legacy migration to add Idle to disabled list if needed
             current_game_events = character.get('game_events', {})
-
             if not current_game_events.get('Idle', False):
                 disabled_events = character.get('disabled_game_events', [])
-
                 if 'Idle' not in disabled_events:
                     disabled_events.append('Idle')
-
                 character['disabled_game_events'] = disabled_events
+
+    if data['config_version'] < 11:
+        data['config_version'] = 11
+
+        for character in data.get('characters', []):
+            legacy_game_events = character.pop('game_events', None)
+            legacy_disabled = character.pop('disabled_game_events', [])
+            if legacy_game_events is not None:
+                character['event_reactions'] = to_event_reactions(legacy_game_events, legacy_disabled)
+            elif 'event_reactions' not in character:
+                character['event_reactions'] = default_event_reactions
 
     return data
 
@@ -800,7 +825,7 @@ def getDefaultCharacter(config: Config) -> Character:
         "tts_speed": '1.2',
         "tts_prompt": '',
         "avatar": '',  # No avatar by default
-        "game_events": game_events,
+        "event_reactions": default_event_reactions,
         "event_reaction_enabled_var": True,
         "react_to_text_local_var": True,
         "react_to_text_starsystem_var": True,
@@ -811,7 +836,6 @@ def getDefaultCharacter(config: Config) -> Character:
         "react_to_danger_onfoot_var": False,
         "react_to_danger_supercruise_var": False,
         "idle_timeout_var": 300,  # 5 minutes
-        "disabled_game_events": ['Idle']
     })
 
 def load_config() -> Config:
@@ -886,6 +910,7 @@ def load_config() -> Config:
         
         # Overlay settings - defaults
         "overlay_show_avatar": True,
+        "overlay_show_hud": False,
         "overlay_show_chat": True,
         "overlay_position": "right",
         "overlay_screen_id": -1,  # -1 means primary screen
@@ -1495,24 +1520,24 @@ def update_config(config: Config, data: dict) -> Config:
     return new_config
 
 
-def update_event_config(config: Config, section: str, event: str, value: bool) -> Config:
-    # Check if we're dealing with a character's game events
+def update_event_config(config: Config, section: str, event: str, value: str) -> Config:
+    # Check if we're dealing with a character's event reactions
     active_index = config.get("active_character_index", -1)
     if active_index >= 0 and "characters" in config:
-        # Update character's game events
+        # Update character's event reactions
         if active_index < len(config["characters"]):
-            if "game_events" not in config["characters"][active_index]:
-                config["characters"][active_index]["game_events"] = {}
+            if "event_reactions" not in config["characters"][active_index]:
+                config["characters"][active_index]["event_reactions"] = {}
             
             # Update the event with clean name
-            config["characters"][active_index]["game_events"][event] = value
+            config["characters"][active_index]["event_reactions"][event] = value
     else:
-        # Update global game events
-        if "game_events" not in config:
-            config["game_events"] = {}
+        # Update global event reactions (fallback)
+        if "event_reactions" not in config:
+            config["event_reactions"] = {}
         
         # Update the event with clean name
-        config["game_events"][event] = value
+        config["event_reactions"][event] = value
     
     print(json.dumps({"type": "config", "config": config}) + '\n', flush=True)
     save_config(config)
@@ -1520,13 +1545,13 @@ def update_event_config(config: Config, section: str, event: str, value: bool) -
 
 
 def reset_game_events(config: Config, character_index: int|None=None) -> Config:
-    """Reset game events to the default values defined in the game_events dictionary"""
-    # Check if we're dealing with a character's game events
+    """Reset event reactions to the default values defined in the default_event_reactions dictionary"""
+    # Check if we're dealing with a character's event reactions
     active_index = character_index if character_index != None else config.get("active_character_index", -1)
     if active_index >= 0 and "characters" in config:
-        # Reset game events for the active character
+        # Reset event reactions for the active character
         if active_index < len(config["characters"]):
-            config["characters"][active_index]["game_events"] = {k: v for k, v in game_events.items()}
+            config["characters"][active_index]["event_reactions"] = {k: v for k, v in default_event_reactions.items()}
     else:
         log('warn', 'Trying to reset character events that does exist')
     

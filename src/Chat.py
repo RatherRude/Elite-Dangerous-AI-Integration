@@ -65,11 +65,14 @@ class Chat:
         self.backstory = self.character["character"].replace("{commander_name}", self.config['commander_name'])
 
         self.enabled_game_events: list[str] = []
-        disabled_events = self.character.get("disabled_game_events", [])
-        if self.character["event_reaction_enabled_var"]:
-            for event, state in self.character["game_events"].items():
-                if state and event not in disabled_events:
+        disabled_events: list[str] = []
+        event_reactions = self.character.get("event_reactions", {})
+        if self.character.get("event_reaction_enabled_var", False):
+            for event, state in event_reactions.items():
+                if state == "on":
                     self.enabled_game_events.append(event)
+                if state == "hidden":
+                    disabled_events.append(event)
 
         log("debug", "Initializing Controller Manager...")
         self.controller_manager = ControllerManager()
@@ -247,6 +250,39 @@ class Chat:
             event = cast(MemoryEvent, event)
             show_chat_message('memory', event.content)
 
+        if isinstance(event, GameEvent) and event.content.get('event') == 'FSDTarget':
+            if 'Name' in event.content:
+                system_name = event.content.get('Name', 'Unknown')
+                if system_name != 'Unknown' and not self.system_database.has_system(system_name):
+                    self.system_database.fetch_system_data_nonblocking(system_name)
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Location':
+            system_name = event.content.get('StarSystem', 'Unknown')
+            if system_name != 'Unknown' and not self.system_database.has_system(system_name):
+                self.system_database.fetch_system_data_nonblocking(system_name)
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'FSSDiscoveryScan':
+            self.system_database.record_discovery_scan(cast(dict[str, Any], event.content))
+        if isinstance(event, GameEvent) and event.content.get('event') == 'FSSSignalDiscovered':
+            self.system_database.record_signal(cast(dict[str, Any], event.content))
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Scan':
+            self.system_database.record_scan(cast(dict[str, Any], event.content))
+        if isinstance(event, GameEvent) and event.content.get('event') == 'ScanBaryCentre':
+            bary_event = dict(event.content)
+            body_id = bary_event.get("BodyID")
+            if body_id is not None:
+                bary_event.setdefault("BodyName", f"Barycentre {body_id}")
+            bary_event.setdefault("BodyType", "Barycentre")
+            self.system_database.record_scan(cast(dict[str, Any], bary_event))
+        # if isinstance(event, GameEvent) and event.content.get('event') == 'FSDTarget':
+        #     self.system_database.record_fsd_target(cast(dict[str, Any], event.content))
+        if isinstance(event, GameEvent) and event.content.get('event') == 'SAASignalsFound':
+            self.system_database.record_saa_signals_found(cast(dict[str, Any], event.content))
+        if isinstance(event, GameEvent) and event.content.get('event') == 'FSSBodySignals':
+            self.system_database.record_fss_body_signals(cast(dict[str, Any], event.content))
+        if isinstance(event, GameEvent) and event.content.get('event') == 'ScanOrganic':
+            self.system_database.record_scan_organic(cast(dict[str, Any], event.content))
+
     def submit_input(self, input: str):
         self.event_manager.add_conversation_event('user', input)
     
@@ -324,6 +360,26 @@ class Chat:
             import traceback
             log('error', traceback.format_exc())
             return {"error": str(e)}
+
+    def get_system_event_data(self, system_address: int | str | None):
+        """Fetch cached system event data for a given system address."""
+        if system_address is None:
+            return {"error": "system_address is required"}
+        try:
+            address_int = int(system_address)
+        except (TypeError, ValueError):
+            return {"error": "Invalid system_address"}
+
+        try:
+            record = self.system_database.get_system_by_address(address_int)
+            if record is None:
+                return {"data": None}
+            return {"data": record}
+        except Exception as e:
+            log('error', f'Error fetching system event data: {e}')
+            import traceback
+            log('error', traceback.format_exc())
+            return {"error": str(e)}
         
     def run(self):
         show_chat_message('info', f"Initializing CMDR {self.config['commander_name']}'s personal AI...\n")
@@ -377,7 +433,11 @@ class Chat:
         self.event_manager.add_status_event(self.status_parser.current_status)
 
         show_chat_message('info', 'Register projections...')
-        registerProjections(self.event_manager, self.system_database, self.character.get('idle_timeout_var', 300))
+        registerProjections(
+            self.event_manager,
+            self.system_database,
+            self.character.get('idle_timeout_var', 300),
+        )
 
         self.event_manager.process()
 
@@ -400,6 +460,7 @@ class Chat:
                 chat_system_tabbed_flag=self.config.get("chat_system_tabbed_var", True),
                 chat_squadron_tabbed_flag=self.config.get("chat_squadron_tabbed_var", False),
                 chat_direct_tabbed_flag=self.config.get("chat_direct_tabbed_var", False),
+                overlay_show_hud=self.config.get("overlay_show_hud", False),
                 weapon_types_list=self.config.get("weapon_types", []),
                 agent_llm_model=self.agent_llm_model,
                 agent_llm_max_tries=self.config.get("agent_llm_max_tries", 7),
@@ -512,6 +573,15 @@ def read_stdin(chat: Chat):
                 print(json.dumps({
                     "type": "available_dates",
                     "timestamp": datetime.now().isoformat(),
+                    "data": results
+                }) + '\n', flush=True)
+            if data.get("type") == "get_system_events":
+                system_address = data.get("system_address")
+                results = chat.get_system_event_data(system_address)
+                print(json.dumps({
+                    "type": "system_events",
+                    "timestamp": datetime.now().isoformat(),
+                    "system_address": system_address,
                     "data": results
                 }) + '\n', flush=True)
             if data.get("type") == "init_overlay":

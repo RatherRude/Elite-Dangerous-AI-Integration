@@ -227,11 +227,14 @@ class EDCoPilotPlugin(PluginBase):
             character = config['characters'][config['active_character_index']]
 
             enabled_game_events: list[str] = []
-            disabled_events = character.get("disabled_game_events", [])
+            disabled_events: list[str] = []
+            event_reactions = character.get("event_reactions", {})
             if character.get("event_reaction_enabled_var", False):
-                for event, state in character.get("game_events", {}).items():
-                    if state and event not in disabled_events:
+                for event, state in event_reactions.items():
+                    if state == "on":
                         enabled_game_events.append(event)
+                    if state == "hidden":
+                        disabled_events.append(event)
             
             return self.provider.publish(
                 ConfigurationUpdated(is_dominant=not is_edcopilot_dominant, enabled_game_events=enabled_game_events)

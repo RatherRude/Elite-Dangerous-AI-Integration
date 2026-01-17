@@ -14,6 +14,7 @@ import { PolicyService } from "../../services/policy.service.js";
 import { AdvancedSettingsComponent } from "../advanced-settings/advanced-settings.component";
 import { ActionsSettingsComponent } from "../actions-settings/actions-settings.component";
 import { CharacterSettingsComponent } from "../character-settings/character-settings.component";
+import { EventReactionsSettingsComponent } from "../event-reactions-settings/event-reactions-settings.component";
 import { GeneralSettingsComponent } from "../general-settings/general-settings.component";
 import { MatOption } from "@angular/material/core";
 import { MatIcon } from "@angular/material/icon";
@@ -56,6 +57,7 @@ import { MatButtonModule } from "@angular/material/button";
         AdvancedSettingsComponent,
         ActionsSettingsComponent,
         CharacterSettingsComponent,
+        EventReactionsSettingsComponent,
         GeneralSettingsComponent,
         MatButtonModule,
     ],

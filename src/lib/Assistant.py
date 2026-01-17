@@ -4,6 +4,7 @@ from datetime import datetime
 from openai.types.chat import ChatCompletion, ChatCompletionMessageToolCall
 from time import time
 
+from pydantic import BaseModel
 from .Models import LLMModel, EmbeddingModel, LLMError
 from .Logger import log, observe, show_chat_message
 from .Config import Config
@@ -15,6 +16,7 @@ from .TTS import TTS
 from typing import Any,  Callable, final
 from threading import Thread
 from .actions.Actions import set_speed, fire_weapons, get_visuals
+from .Projections import get_state_dict, ProjectedStates
 
 @final
 class Assistant:
@@ -35,7 +37,7 @@ class Assistant:
         self.is_summarizing = False
         self.short_term_memories = []
 
-    def on_event(self, event: Event, projected_states: dict[str, Any]):
+    def on_event(self, event: Event, projected_states: ProjectedStates):
         # Skip disabled game events from entering the pending state
         if isinstance(event, GameEvent) or isinstance(event, StatusEvent):
             event_type = event.content.get('event') if isinstance(event, GameEvent) else event.status.get('event')
@@ -71,7 +73,7 @@ class Assistant:
         # Auto action on Screenshot: get visual description
         try:
             if (isinstance(event, GameEvent) and event.content.get('event') == 'Screenshot' and
-                    self.config.get("vision_provider", '') != 'none') and self.config['characters'][0]['game_events']['Screenshot']:
+                    self.config.get("vision_provider", '') != 'none') and self.config['characters'][0].get('event_reactions', {}).get('Screenshot') == 'on':
 
                 visual_args = {"query": "Describe what you see in the game."}
                 visual_result = get_visuals(visual_args, projected_states)
@@ -161,7 +163,7 @@ class Assistant:
 
 
     @observe()
-    def execute_actions(self, actions: list[ChatCompletionMessageToolCall], projected_states: dict[str, dict]):
+    def execute_actions(self, actions: list[ChatCompletionMessageToolCall], projected_states: ProjectedStates):
         action_descriptions: list[str | None] = []
         action_results: list[Any] = []
         for action in actions:
@@ -203,7 +205,7 @@ class Assistant:
             return
 
 
-    def reply(self, events: list[Event], projected_states: dict[str, dict]):
+    def reply(self, events: list[Event], projected_states: ProjectedStates):
         if self.is_replying:
             log('debug', 'Cache: Reply already in progress, skipping new reply')
             return
@@ -211,7 +213,7 @@ class Assistant:
         thread.start()
         
     @observe()
-    def reply_thread(self, events: list[Event], projected_states: dict[str, dict]):
+    def reply_thread(self, events: list[Event], projected_states: ProjectedStates):
         self.reply_pending = False
         self.is_replying = True
         try:
@@ -239,20 +241,20 @@ class Assistant:
             
             use_tools = self.config["tools_var"] and ('user' in reasons or 'tool' in reasons)
 
-            current_status = projected_states.get("CurrentStatus")
-            flags = current_status["flags"]
-            flags2 = current_status["flags2"]
+            current_status = get_state_dict(projected_states, "CurrentStatus")
+            flags = current_status.get("flags", {})
+            flags2 = current_status.get("flags2", {})
 
             active_mode = None
             if flags:
-                if flags["InMainShip"]:
+                if flags.get("InMainShip"):
                     active_mode = "mainship"
-                elif flags["InFighter"]:
+                elif flags.get("InFighter"):
                     active_mode = "fighter"
-                elif flags["InSRV"]:
+                elif flags.get("InSRV"):
                     active_mode = "buggy"
             if flags2:
-                if flags2["OnFoot"]:
+                if flags2.get("OnFoot"):
                     active_mode = "humanoid"
 
             uses_actions = self.config["game_actions_var"]
@@ -386,11 +388,11 @@ class Assistant:
 
         return False
     
-    def register_should_reply_handler(self, handler: Callable[[Event, dict[str, Any]], bool | None]):
+    def register_should_reply_handler(self, handler: Callable[[Event, ProjectedStates], bool | None]):
         self.registered_should_reply_handlers.append(handler)
 
     @observe()
-    def web_search(self, query: str, projected_states: dict[str, Any]):
+    def web_search(self, query: str, projected_states: ProjectedStates):
         action_name = 'web_search_agent'
         action_descriptor = self.action_manager.actions.get(action_name)
         

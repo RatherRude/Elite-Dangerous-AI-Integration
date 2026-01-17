@@ -21,6 +21,7 @@ import { TasksContainerComponent } from "../components/tasks-container/tasks-con
 import { ProjectionsService } from "../services/projections.service";
 import { MemoriesContainerComponent } from "../components/memories-container/memories-container.component";
 import { SearchResultsComponent } from "../components/search-results-container/search-results-container.component";
+import { NavigationContainerComponent } from "../components/navigation-container/navigation-container.component";
 import { MetricsService } from "../services/metrics.service.js";
 import { PolicyService } from "../services/policy.service.js";
 import {UIService} from "../services/ui.service";
@@ -45,6 +46,7 @@ import {UIService} from "../services/ui.service";
         TasksContainerComponent,
         MemoriesContainerComponent,
         SearchResultsComponent,
+        NavigationContainerComponent,
     ],
     templateUrl: "./main-view.component.html",
     styleUrl: "./main-view.component.css",
@@ -140,6 +142,12 @@ export class MainViewComponent implements OnInit, OnDestroy {
                     current++;
                 }
 
+                if (tabName === 'navigation') {
+                    this.selectedTabIndex = current;
+                    return;
+                }
+                current++;
+
                 if (tabName === 'search') {
                     this.selectedTabIndex = current;
                     return;
@@ -209,7 +217,7 @@ export class MainViewComponent implements OnInit, OnDestroy {
 
     async start(): Promise<void> {
         try {
-            if(this.config && (this.config.overlay_show_avatar || this.config.overlay_show_chat)) {
+            if(this.config && (this.config.overlay_show_avatar || this.config.overlay_show_chat || this.config.overlay_show_hud)) {
                 await this.createOverlay();
             }
 

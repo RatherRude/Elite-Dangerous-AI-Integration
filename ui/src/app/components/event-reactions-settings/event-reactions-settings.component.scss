@@ -1,0 +1,170 @@
+.event-suboption {
+  padding-left: 16px;
+  margin-top: 8px;
+}
+
+.event-search-and-reset {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+
+  .search-box {
+    flex: 1;
+    margin-bottom: 0;
+  }
+
+  button {
+    padding: 25px 10px;
+    margin: 0;
+  }
+}
+
+:host ::ng-deep .mat-pseudo-checkbox,
+:host ::ng-deep .mat-pseudo-checkbox-checked {
+  display: none !important;
+}
+
+
+:host ::ng-deep mat-button-toggle .mat-button-toggle-label-content {
+  padding: 4px 12px;
+  line-height: unset;
+  min-width: 40px;
+}
+
+.event-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+
+  .event-state-icon {
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .event-name {
+    flex: 1;
+    min-width: 160px;
+  }
+
+  .event-toggle {
+    margin-right: 30px;
+    display: inline-flex;
+    gap: 4px;
+
+    .mat-button-toggle {
+      padding: 0;
+    }
+
+    .mat-button-toggle-button {
+      min-height: 28px;
+      padding: 0 4px;
+      line-height: 1;
+    }
+
+    .mat-button-toggle-label-content {
+      padding: 4px 6px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      line-height: 18px;
+    }
+  }
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1) ;
+  }
+}
+
+.event-suboptions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .event-suboption {
+    width: 100%;
+  }
+
+  mat-form-field {
+    width: 100%;
+  }
+}
+
+.category-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  justify-content: flex-end;
+  flex-grow: unset;
+  margin-right: 22px;
+}
+
+.category-toggle {
+  display: inline-flex;
+  gap: 4px;
+
+  .mat-button-toggle {
+    padding: 0;
+  }
+
+  .mat-button-toggle-button {
+    min-height: 28px;
+    padding: 0 6px;
+    line-height: 1;
+  }
+
+  .mat-button-toggle-label-content {
+    padding: 4px 6px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
+  }
+
+  .category-count {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.85);
+    width: 3ch;
+    display: inline-block;
+    text-align: center;
+  }
+}
+
+.import-section {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-start;
+
+  .import-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .import-select {
+    width: 100%;
+  }
+
+  .import-buttons {
+    display: flex;
+    gap: 8px;
+  }
+}

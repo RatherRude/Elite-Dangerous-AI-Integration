@@ -50,6 +50,18 @@
 
     <mat-tab>
         <ng-template mat-tab-label>
+            <mat-icon class="tab-icon">notifications</mat-icon>
+            Reactions
+        </ng-template>
+        <div class="tab-content">
+            @if (config) {
+                <app-event-reactions-settings></app-event-reactions-settings>
+            }
+        </div>
+    </mat-tab>
+
+    <mat-tab>
+        <ng-template mat-tab-label>
             <mat-icon class="tab-icon">bolt</mat-icon>
             Actions
         </ng-template>

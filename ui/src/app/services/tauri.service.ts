@@ -54,6 +54,17 @@ export interface GetAvailableDatesMessage extends BaseCommand {
     type: "get_available_dates";
 }
 
+export interface GetSystemEventsMessage extends BaseCommand {
+    type: "get_system_events";
+    system_address: number | string;
+}
+
+export interface SystemEventsMessage extends BaseMessage {
+    type: "system_events";
+    system_address: number | string | null;
+    data: any;
+}
+
 export interface UnknownMessage extends BaseMessage {
     type: "unknown";
     message: string;

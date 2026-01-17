@@ -9,6 +9,8 @@ export interface ConfigWithCharacters extends Config {
     active_character_index: number;
 }
 
+export type EventReactionState = "on" | "off" | "hidden";
+
 export interface Character {
     name: string;
     character: string;
@@ -44,8 +46,7 @@ export interface Character {
     react_to_danger_mining_var: boolean;
     react_to_danger_onfoot_var: boolean;
     react_to_danger_supercruise_var: boolean;
-    game_events: { [key: string]: boolean };
-    disabled_game_events: string[];
+    event_reactions: { [key: string]: EventReactionState };
 }
 
 
@@ -131,22 +132,25 @@ export class CharacterService {
         );
     }
 
-    public getCharacterEventProperty<T extends keyof Character["game_events"]>(
+    public getCharacterEventProperty<T extends keyof Character["event_reactions"]>(
         eventName: T,
-        defaultValue: Character["game_events"][T],
-    ): Character["game_events"][T] {
+        defaultValue: Character["event_reactions"][T],
+    ): Character["event_reactions"][T] {
         const character = this.characterSubject.getValue();
         if (!character) return defaultValue;
-        return character.game_events[eventName] ?? defaultValue;
+        return character.event_reactions[eventName] ?? defaultValue;
     }
 
-    public async setCharacterEventProperty<T extends keyof Character["game_events"]>(
+    public async setCharacterEventProperty<T extends keyof Character["event_reactions"]>(
         eventName: T,
-        value: Character["game_events"][T],
+        value: Character["event_reactions"][T],
     ): Promise<void> {
         const character = this.characterSubject.getValue();
         if (!character) return;
-        character.game_events[eventName] = value;
+        if (!character.event_reactions) {
+            character.event_reactions = {} as any;
+        }
+        character.event_reactions[eventName] = value;
         this.characterSubject.next(character);
         // Update the active character in the config
         await this.updateCharacter(
