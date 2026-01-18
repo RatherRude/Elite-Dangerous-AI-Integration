@@ -138,6 +138,9 @@
                                         @if (body.was_footfalled) { <mat-chip color="primary" selected>Footfalled</mat-chip> }
                                     </div>
                                     <div class="body-meta">
+                                        @if (body.subType) {
+                                            <span>{{ body.subType }}@if (body.DistanceFromArrivalLS !== undefined) { - }</span>
+                                        }
                                         @if (body.DistanceFromArrivalLS !== undefined) {
                                             <span>{{ body.DistanceFromArrivalLS | number:'1.0-0' }} ls</span>
                                         }
@@ -197,6 +200,388 @@
             (mouseleave)="clearHoveredMapNode()"
         >
             <div class="map-node-dot" [class.map-node-dot--ring]="node.body?.rings?.length">
+                @if (node.body?.subType === "Supermassive Black Hole") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9" fill="#0c0c12"></circle>
+                        <circle cx="12" cy="12" r="4.4" fill="#000"></circle>
+                        <ellipse cx="12" cy="12" rx="10.5" ry="4.6" fill="none" stroke="#7fb7ff" stroke-width="1.5" opacity="0.65"></ellipse>
+                        <ellipse cx="12" cy="12" rx="7.6" ry="3.2" fill="none" stroke="#ffd18a" stroke-width="1.2" opacity="0.5"></ellipse>
+                    </svg>
+                } @else if (node.body?.subType === "Black Hole") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="8.4" fill="#0b0b12"></circle>
+                        <circle cx="12" cy="12" r="4.1" fill="#000"></circle>
+                        <ellipse cx="12" cy="12" rx="9.5" ry="4.2" fill="none" stroke="#6aa6ff" stroke-width="1.4" opacity="0.55"></ellipse>
+                    </svg>
+                } @else if (node.body?.subType === "Neutron Star") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="4.2" fill="#f7fbff"></circle>
+                        <line x1="1.5" y1="12" x2="22.5" y2="12" stroke="#8fd3ff" stroke-width="1.6" opacity="0.75"></line>
+                        <line x1="12" y1="1.5" x2="12" y2="22.5" stroke="#8fd3ff" stroke-width="1.6" opacity="0.75"></line>
+                        <circle cx="12" cy="12" r="7.5" fill="none" stroke="#bfe6ff" stroke-width="1.2" opacity="0.35"></circle>
+                    </svg>
+                } @else if (
+                    node.body?.subType === "White Dwarf (D) Star" ||
+                    node.body?.subType === "White Dwarf (DA) Star" ||
+                    node.body?.subType === "White Dwarf (DAB) Star" ||
+                    node.body?.subType === "White Dwarf (DAV) Star" ||
+                    node.body?.subType === "White Dwarf (DAZ) Star" ||
+                    node.body?.subType === "White Dwarf (DB) Star" ||
+                    node.body?.subType === "White Dwarf (DBV) Star" ||
+                    node.body?.subType === "White Dwarf (DBZ) Star" ||
+                    node.body?.subType === "White Dwarf (DC) Star" ||
+                    node.body?.subType === "White Dwarf (DCV) Star" ||
+                    node.body?.subType === "White Dwarf (DQ) Star"
+                ) {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="3.8" fill="#f4f9ff"></circle>
+                        <circle cx="12" cy="12" r="7.8" fill="none" stroke="#b7d9ff" stroke-width="1.3" opacity="0.55"></circle>
+                    </svg>
+                } @else if (
+                    node.body?.subType === "L (Brown dwarf) Star" ||
+                    node.body?.subType === "T (Brown dwarf) Star" ||
+                    node.body?.subType === "Y (Brown dwarf) Star"
+                ) {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="7.2" fill="#3a1d55"></circle>
+                        <path d="M5.5 13.5c2.6 1.5 10.4 1.5 13 0" fill="none" stroke="#1a0e2b" stroke-width="1.5" opacity="0.5"></path>
+                        <circle cx="9" cy="9" r="1.4" fill="#5a2d7a" opacity="0.7"></circle>
+                    </svg>
+                } @else if (node.body?.subType === "Gas giant with ammonia-based life") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="7.6" fill="#5ed3b3"></circle>
+                        <path d="M5.8 11.3c2.8 1.6 9.6 1.6 12.4 0" fill="none" stroke="#2a8e74" stroke-width="1.4" opacity="0.55"></path>
+                        <path d="M6.5 14.2c2.4 1.2 8.6 1.2 11 0" fill="none" stroke="#1f6f5b" stroke-width="1.2" opacity="0.45"></path>
+                    </svg>
+                } @else if (node.body?.subType === "Gas giant with water-based life") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="7.6" fill="#4aa8ff"></circle>
+                        <path d="M6 11.5c2.7 1.5 9.3 1.5 12 0" fill="none" stroke="#2c7dd4" stroke-width="1.4" opacity="0.55"></path>
+                        <path d="M6.8 14.4c2.2 1.1 8.2 1.1 10.4 0" fill="none" stroke="#36c48b" stroke-width="1.2" opacity="0.5"></path>
+                    </svg>
+                } @else if (node.body?.subType === "Water giant") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="7.6" fill="#3c7bd9"></circle>
+                        <path d="M6.2 12c2.6 1.4 9 1.4 11.6 0" fill="none" stroke="#6fb7ff" stroke-width="1.4" opacity="0.6"></path>
+                    </svg>
+                } @else if (node.body?.subType === "Helium gas giant") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="7.4" fill="#b5e5ff"></circle>
+                        <path d="M6.5 11.5c2.5 1.4 8.5 1.4 11 0" fill="none" stroke="#8cc6ef" stroke-width="1.2" opacity="0.4"></path>
+                        <ellipse cx="12" cy="14.5" rx="9.4" ry="3.4" fill="none" stroke="#e5f7ff" stroke-width="1.4" opacity="0.7"></ellipse>
+                    </svg>
+                } @else if (node.body?.subType === "Helium-rich gas giant") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="7.4" fill="#c7b5ff"></circle>
+                        <path d="M6.4 11.6c2.5 1.4 8.7 1.4 11.2 0" fill="none" stroke="#9f8cd9" stroke-width="1.2" opacity="0.4"></path>
+                        <ellipse cx="12" cy="14.5" rx="9.4" ry="3.4" fill="none" stroke="#ede6ff" stroke-width="1.4" opacity="0.7"></ellipse>
+                    </svg>
+                } @else if (node.body?.subType === "Class I gas giant") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="7.6" fill="#c49158"></circle>
+                        <path d="M6 11.2c2.7 1.5 9.3 1.5 12 0" fill="none" stroke="#8c5a2b" stroke-width="1.4" opacity="0.55"></path>
+                        <path d="M6.6 14.4c2.3 1.1 8.5 1.1 11 0" fill="none" stroke="#6d3f1c" stroke-width="1.2" opacity="0.5"></path>
+                    </svg>
+                } @else if (node.body?.subType === "Class II gas giant") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="7.6" fill="#d8bb7c"></circle>
+                        <path d="M6 11.4c2.7 1.5 9.3 1.5 12 0" fill="none" stroke="#b8945c" stroke-width="1.4" opacity="0.55"></path>
+                        <path d="M6.8 14.5c2.2 1.1 8.2 1.1 10.4 0" fill="none" stroke="#99744a" stroke-width="1.2" opacity="0.5"></path>
+                    </svg>
+                } @else if (node.body?.subType === "Class III gas giant") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="7.6" fill="#5f8fdc"></circle>
+                        <path d="M6 11.4c2.7 1.5 9.3 1.5 12 0" fill="none" stroke="#3e6fb7" stroke-width="1.4" opacity="0.55"></path>
+                        <path d="M6.8 14.5c2.2 1.1 8.2 1.1 10.4 0" fill="none" stroke="#2b5b9e" stroke-width="1.2" opacity="0.5"></path>
+                    </svg>
+                } @else if (node.body?.subType === "Class IV gas giant") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="7.6" fill="#4f5b5b"></circle>
+                        <path d="M6 11.4c2.7 1.5 9.3 1.5 12 0" fill="none" stroke="#2f3c3c" stroke-width="1.4" opacity="0.55"></path>
+                        <path d="M6.8 14.5c2.2 1.1 8.2 1.1 10.4 0" fill="none" stroke="#1f2a2a" stroke-width="1.2" opacity="0.5"></path>
+                    </svg>
+                } @else if (node.body?.subType === "Class V gas giant") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="7.6" fill="#cfd7e0"></circle>
+                        <path d="M6 11.4c2.7 1.5 9.3 1.5 12 0" fill="none" stroke="#a5b0b9" stroke-width="1.4" opacity="0.55"></path>
+                        <path d="M6.8 14.5c2.2 1.1 8.2 1.1 10.4 0" fill="none" stroke="#8a949d" stroke-width="1.2" opacity="0.5"></path>
+                    </svg>
+                } @else if (node.body?.subType === "Earth-like world") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="7.4" fill="#2f7bd8"></circle>
+                        <path d="M8.5 9.5c2.2 0 2.8 1.1 4.4 1.1 1.6 0 2.2 1.3 1.3 2.5-0.9 1.2-2.6 1.9-4.1 1.4-1.4-.5-3.2-1.7-3.6-5Z" fill="#43b26b" opacity="0.85"></path>
+                        <circle cx="9" cy="7.5" r="1.1" fill="#ffffff" opacity="0.6"></circle>
+                        <circle cx="15.5" cy="8.5" r="0.9" fill="#ffffff" opacity="0.6"></circle>
+                    </svg>
+                } @else if (node.body?.subType === "Water world") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="7.4" fill="#1f6dd1"></circle>
+                        <path d="M7.5 13c1.6-1 3.4-1 5 0s3.4 1 5 0" fill="none" stroke="#78c2ff" stroke-width="1.5" opacity="0.6"></path>
+                    </svg>
+                } @else if (node.body?.subType === "Ammonia world") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="7.4" fill="#9fe8e6"></circle>
+                        <path d="M6.8 11.8c2.4 1.3 8 1.3 10.4 0" fill="none" stroke="#7f6bd3" stroke-width="1.5" opacity="0.6"></path>
+                    </svg>
+                } @else if (
+                    node.body?.subType === "Icy body" ||
+                    node.body?.subType === "Rocky Ice world"
+                ) {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="7.4" fill="#b9d5ff"></circle>
+                        <line x1="12" y1="7" x2="12" y2="17" stroke="#7fa1d9" stroke-width="1.3" opacity="0.6"></line>
+                        <line x1="8" y1="12" x2="16" y2="12" stroke="#7fa1d9" stroke-width="1.3" opacity="0.6"></line>
+                        <circle cx="9" cy="9" r="1.2" fill="#8fb2e0" opacity="0.7"></circle>
+                    </svg>
+                } @else if (node.body?.subType === "High metal content world") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="7.4" fill="#8a8f99"></circle>
+                        <path d="M9 6.5 v11 M12 6.5 v11 M15 6.5 v11" stroke="#5f636b" stroke-width="1.3" opacity="0.6"></path>
+                        <circle cx="9.2" cy="8.5" r="1.1" fill="#c6cbd3" opacity="0.6"></circle>
+                    </svg>
+                } @else if (node.body?.subType === "Metal-rich body") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="7.4" fill="#6f7883"></circle>
+                        <path d="M6 12 L12 6 L18 12 L12 18 Z" fill="#2d333b" opacity="0.5"></path>
+                        <path d="M8.5 12 L12 8.5 L15.5 12 L12 15.5 Z" fill="#9aa5b1" opacity="0.5"></path>
+                    </svg>
+                } @else if (node.body?.subType === "Rocky body") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="7.4" fill="#9c6b4a"></circle>
+                        <circle cx="9" cy="10" r="1.3" fill="#6d4b35" opacity="0.7"></circle>
+                        <circle cx="15.5" cy="14.2" r="1.1" fill="#6d4b35" opacity="0.7"></circle>
+                    </svg>
+                } @else if (node.body?.subType === "O (Blue-White) Star") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="5.2" fill="#9fd8ff"></circle>
+                        <circle cx="12" cy="12" r="9.2" fill="none" stroke="#cfe9ff" stroke-width="1.4" opacity="0.45"></circle>
+                        <g stroke="#9fd8ff" stroke-width="1.3" stroke-linecap="round" opacity="0.8">
+                            <line x1="12" y1="2" x2="12" y2="5"></line>
+                            <line x1="12" y1="19" x2="12" y2="22"></line>
+                            <line x1="2" y1="12" x2="5" y2="12"></line>
+                            <line x1="19" y1="12" x2="22" y2="12"></line>
+                            <line x1="4" y1="4" x2="6" y2="6"></line>
+                            <line x1="18" y1="18" x2="20" y2="20"></line>
+                            <line x1="4" y1="20" x2="6" y2="18"></line>
+                            <line x1="18" y1="6" x2="20" y2="4"></line>
+                        </g>
+                    </svg>
+                } @else if (node.body?.subType === "B (Blue-White super giant) Star") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="5.4" fill="#7bbcff"></circle>
+                        <circle cx="12" cy="12" r="10.6" fill="none" stroke="#a9d4ff" stroke-width="1.6" opacity="0.35"></circle>
+                        <circle cx="12" cy="12" r="8.8" fill="none" stroke="#7bbcff" stroke-width="1.4" opacity="0.45"></circle>
+                        <g stroke="#7bbcff" stroke-width="1.3" stroke-linecap="round" opacity="0.8">
+                            <line x1="12" y1="2" x2="12" y2="5.2"></line>
+                            <line x1="12" y1="18.8" x2="12" y2="22"></line>
+                            <line x1="2" y1="12" x2="5.2" y2="12"></line>
+                            <line x1="18.8" y1="12" x2="22" y2="12"></line>
+                        </g>
+                    </svg>
+                } @else if (node.body?.subType === "B (Blue-White) Star") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="5.2" fill="#7bbcff"></circle>
+                        <circle cx="12" cy="12" r="9.2" fill="none" stroke="#a9d4ff" stroke-width="1.4" opacity="0.45"></circle>
+                        <g stroke="#7bbcff" stroke-width="1.3" stroke-linecap="round" opacity="0.8">
+                            <line x1="12" y1="2" x2="12" y2="5"></line>
+                            <line x1="12" y1="19" x2="12" y2="22"></line>
+                            <line x1="2" y1="12" x2="5" y2="12"></line>
+                            <line x1="19" y1="12" x2="22" y2="12"></line>
+                        </g>
+                    </svg>
+                } @else if (node.body?.subType === "A (Blue-White super giant) Star") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="5.4" fill="#e8f6ff"></circle>
+                        <circle cx="12" cy="12" r="10.6" fill="none" stroke="#f5fbff" stroke-width="1.6" opacity="0.35"></circle>
+                        <circle cx="12" cy="12" r="8.8" fill="none" stroke="#cfe6ff" stroke-width="1.4" opacity="0.45"></circle>
+                        <g stroke="#cfe6ff" stroke-width="1.3" stroke-linecap="round" opacity="0.8">
+                            <line x1="12" y1="2" x2="12" y2="5.2"></line>
+                            <line x1="12" y1="18.8" x2="12" y2="22"></line>
+                            <line x1="2" y1="12" x2="5.2" y2="12"></line>
+                            <line x1="18.8" y1="12" x2="22" y2="12"></line>
+                        </g>
+                    </svg>
+                } @else if (node.body?.subType === "A (Blue-White) Star") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="5.2" fill="#e8f6ff"></circle>
+                        <circle cx="12" cy="12" r="9.2" fill="none" stroke="#cfe6ff" stroke-width="1.4" opacity="0.45"></circle>
+                        <g stroke="#cfe6ff" stroke-width="1.3" stroke-linecap="round" opacity="0.8">
+                            <line x1="12" y1="2" x2="12" y2="5"></line>
+                            <line x1="12" y1="19" x2="12" y2="22"></line>
+                            <line x1="2" y1="12" x2="5" y2="12"></line>
+                            <line x1="19" y1="12" x2="22" y2="12"></line>
+                        </g>
+                    </svg>
+                } @else if (node.body?.subType === "F (White super giant) Star") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="5.4" fill="#fff2b3"></circle>
+                        <circle cx="12" cy="12" r="10.6" fill="none" stroke="#ffe8a0" stroke-width="1.6" opacity="0.35"></circle>
+                        <circle cx="12" cy="12" r="8.8" fill="none" stroke="#ffd79b" stroke-width="1.4" opacity="0.45"></circle>
+                        <g stroke="#ffd79b" stroke-width="1.3" stroke-linecap="round" opacity="0.8">
+                            <line x1="12" y1="2" x2="12" y2="5.2"></line>
+                            <line x1="12" y1="18.8" x2="12" y2="22"></line>
+                            <line x1="2" y1="12" x2="5.2" y2="12"></line>
+                            <line x1="18.8" y1="12" x2="22" y2="12"></line>
+                        </g>
+                    </svg>
+                } @else if (node.body?.subType === "F (White) Star") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="5.2" fill="#fff2b3"></circle>
+                        <circle cx="12" cy="12" r="9.2" fill="none" stroke="#ffd79b" stroke-width="1.4" opacity="0.45"></circle>
+                        <g stroke="#ffd79b" stroke-width="1.3" stroke-linecap="round" opacity="0.8">
+                            <line x1="12" y1="2" x2="12" y2="5"></line>
+                            <line x1="12" y1="19" x2="12" y2="22"></line>
+                            <line x1="2" y1="12" x2="5" y2="12"></line>
+                            <line x1="19" y1="12" x2="22" y2="12"></line>
+                        </g>
+                    </svg>
+                } @else if (node.body?.subType === "G (White-Yellow super giant) Star") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="5.4" fill="#ffd27a"></circle>
+                        <circle cx="12" cy="12" r="10.6" fill="none" stroke="#ffdfa0" stroke-width="1.6" opacity="0.35"></circle>
+                        <circle cx="12" cy="12" r="8.8" fill="none" stroke="#ffd27a" stroke-width="1.4" opacity="0.45"></circle>
+                        <g stroke="#ffd27a" stroke-width="1.3" stroke-linecap="round" opacity="0.8">
+                            <line x1="12" y1="2" x2="12" y2="5.2"></line>
+                            <line x1="12" y1="18.8" x2="12" y2="22"></line>
+                            <line x1="2" y1="12" x2="5.2" y2="12"></line>
+                            <line x1="18.8" y1="12" x2="22" y2="12"></line>
+                        </g>
+                    </svg>
+                } @else if (node.body?.subType === "G (White-Yellow) Star") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="5.2" fill="#ffd27a"></circle>
+                        <circle cx="12" cy="12" r="9.2" fill="none" stroke="#ffd27a" stroke-width="1.4" opacity="0.45"></circle>
+                        <g stroke="#ffd27a" stroke-width="1.3" stroke-linecap="round" opacity="0.8">
+                            <line x1="12" y1="2" x2="12" y2="5"></line>
+                            <line x1="12" y1="19" x2="12" y2="22"></line>
+                            <line x1="2" y1="12" x2="5" y2="12"></line>
+                            <line x1="19" y1="12" x2="22" y2="12"></line>
+                        </g>
+                    </svg>
+                } @else if (node.body?.subType === "K (Yellow-Orange giant) Star") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="5.4" fill="#ffb45b"></circle>
+                        <circle cx="12" cy="12" r="10" fill="none" stroke="#ffd099" stroke-width="1.5" opacity="0.35"></circle>
+                        <circle cx="12" cy="12" r="8.2" fill="none" stroke="#ffb45b" stroke-width="1.4" opacity="0.45"></circle>
+                        <g stroke="#ffb45b" stroke-width="1.3" stroke-linecap="round" opacity="0.8">
+                            <line x1="12" y1="2" x2="12" y2="5"></line>
+                            <line x1="12" y1="19" x2="12" y2="22"></line>
+                            <line x1="2" y1="12" x2="5" y2="12"></line>
+                            <line x1="19" y1="12" x2="22" y2="12"></line>
+                        </g>
+                    </svg>
+                } @else if (node.body?.subType === "K (Yellow-Orange) Star") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="5.2" fill="#ffb45b"></circle>
+                        <circle cx="12" cy="12" r="9.2" fill="none" stroke="#ffd099" stroke-width="1.4" opacity="0.45"></circle>
+                        <g stroke="#ffb45b" stroke-width="1.3" stroke-linecap="round" opacity="0.8">
+                            <line x1="12" y1="2" x2="12" y2="5"></line>
+                            <line x1="12" y1="19" x2="12" y2="22"></line>
+                            <line x1="2" y1="12" x2="5" y2="12"></line>
+                            <line x1="19" y1="12" x2="22" y2="12"></line>
+                        </g>
+                    </svg>
+                } @else if (node.body?.subType === "M (Red dwarf) Star") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="5.1" fill="#ff7b6b"></circle>
+                        <circle cx="12" cy="12" r="8.8" fill="none" stroke="#ffb2a3" stroke-width="1.4" opacity="0.45"></circle>
+                        <g stroke="#ff7b6b" stroke-width="1.3" stroke-linecap="round" opacity="0.8">
+                            <line x1="12" y1="2" x2="12" y2="5"></line>
+                            <line x1="12" y1="19" x2="12" y2="22"></line>
+                            <line x1="2" y1="12" x2="5" y2="12"></line>
+                            <line x1="19" y1="12" x2="22" y2="12"></line>
+                        </g>
+                    </svg>
+                } @else if (node.body?.subType === "M (Red giant) Star") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="5.4" fill="#ff7b6b"></circle>
+                        <circle cx="12" cy="12" r="10" fill="none" stroke="#ffb2a3" stroke-width="1.5" opacity="0.35"></circle>
+                        <circle cx="12" cy="12" r="8.2" fill="none" stroke="#ff7b6b" stroke-width="1.4" opacity="0.45"></circle>
+                        <g stroke="#ff7b6b" stroke-width="1.3" stroke-linecap="round" opacity="0.8">
+                            <line x1="12" y1="2" x2="12" y2="5"></line>
+                            <line x1="12" y1="19" x2="12" y2="22"></line>
+                            <line x1="2" y1="12" x2="5" y2="12"></line>
+                            <line x1="19" y1="12" x2="22" y2="12"></line>
+                        </g>
+                    </svg>
+                } @else if (node.body?.subType === "M (Red super giant) Star") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="5.6" fill="#ff7b6b"></circle>
+                        <circle cx="12" cy="12" r="10.8" fill="none" stroke="#ffb2a3" stroke-width="1.6" opacity="0.35"></circle>
+                        <circle cx="12" cy="12" r="9" fill="none" stroke="#ff7b6b" stroke-width="1.4" opacity="0.45"></circle>
+                        <g stroke="#ff7b6b" stroke-width="1.3" stroke-linecap="round" opacity="0.8">
+                            <line x1="12" y1="2" x2="12" y2="5.2"></line>
+                            <line x1="12" y1="18.8" x2="12" y2="22"></line>
+                            <line x1="2" y1="12" x2="5.2" y2="12"></line>
+                            <line x1="18.8" y1="12" x2="22" y2="12"></line>
+                        </g>
+                    </svg>
+                } @else if (node.body?.subType === "Herbig Ae/Be Star") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="5.1" fill="#a6d6ff"></circle>
+                        <circle cx="12" cy="12" r="8.6" fill="none" stroke="#d3ecff" stroke-width="1.3" opacity="0.45"></circle>
+                        <ellipse cx="12" cy="14" rx="7.5" ry="2.6" fill="none" stroke="#c7e1ff" stroke-width="1.2" opacity="0.6"></ellipse>
+                    </svg>
+                } @else if (node.body?.subType === "T Tauri Star") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="5.1" fill="#ffb070"></circle>
+                        <circle cx="12" cy="12" r="8.4" fill="none" stroke="#ffd4a6" stroke-width="1.3" opacity="0.45"></circle>
+                        <ellipse cx="12" cy="14" rx="7.5" ry="2.6" fill="none" stroke="#ffe0b3" stroke-width="1.2" opacity="0.6"></ellipse>
+                    </svg>
+                } @else if (node.body?.subType === "MS-type Star") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="5.1" fill="#ffe7c2"></circle>
+                        <circle cx="12" cy="12" r="8.8" fill="none" stroke="#fff1d6" stroke-width="1.3" opacity="0.45"></circle>
+                        <circle cx="15.5" cy="9" r="1.1" fill="#ffd9a6" opacity="0.7"></circle>
+                    </svg>
+                } @else if (node.body?.subType === "S-type Star") {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="5.2" fill="#ff9f6b"></circle>
+                        <circle cx="12" cy="12" r="9" fill="none" stroke="#ffc49b" stroke-width="1.3" opacity="0.45"></circle>
+                        <path d="M8 12c1.6 1 6.4 1 8 0" fill="none" stroke="#d9744f" stroke-width="1.2" opacity="0.6"></path>
+                    </svg>
+                } @else if (
+                    node.body?.subType === "C Star" ||
+                    node.body?.subType === "CJ Star" ||
+                    node.body?.subType === "CN Star"
+                ) {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="5.2" fill="#ff6b4a"></circle>
+                        <circle cx="12" cy="12" r="9" fill="none" stroke="#ff9a7f" stroke-width="1.3" opacity="0.45"></circle>
+                        <circle cx="9.5" cy="9.5" r="1.2" fill="#c9412a" opacity="0.7"></circle>
+                    </svg>
+                } @else if (
+                    node.body?.subType === "Wolf-Rayet Star" ||
+                    node.body?.subType === "Wolf-Rayet C Star" ||
+                    node.body?.subType === "Wolf-Rayet N Star" ||
+                    node.body?.subType === "Wolf-Rayet NC Star" ||
+                    node.body?.subType === "Wolf-Rayet O Star"
+                ) {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="5.1" fill="#bfe9ff"></circle>
+                        <circle cx="12" cy="12" r="9.6" fill="none" stroke="#e2f4ff" stroke-width="1.5" opacity="0.5"></circle>
+                        <g stroke="#bfe9ff" stroke-width="1.4" stroke-linecap="round" opacity="0.85">
+                            <line x1="12" y1="1.5" x2="12" y2="5.2"></line>
+                            <line x1="12" y1="18.8" x2="12" y2="22.5"></line>
+                            <line x1="1.5" y1="12" x2="5.2" y2="12"></line>
+                            <line x1="18.8" y1="12" x2="22.5" y2="12"></line>
+                            <line x1="4" y1="4" x2="6.5" y2="6.5"></line>
+                            <line x1="17.5" y1="17.5" x2="20" y2="20"></line>
+                            <line x1="4" y1="20" x2="6.5" y2="17.5"></line>
+                            <line x1="17.5" y1="6.5" x2="20" y2="4"></line>
+                        </g>
+                    </svg>
+                } @else {
+                    <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="8" fill="#d9dde3"></circle>
+                        <path d="M12 6.5c2.2 0 3.8 1.2 3.8 3.1 0 1.2-.6 2.1-2 2.9-.9.5-1.3 1-1.3 2v.5"
+                              fill="none" stroke="#3a3a3a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+                        <circle cx="12" cy="17.5" r="1" fill="#3a3a3a"></circle>
+                    </svg>
+                }
+                @if (node.body?.isLandable) {
+                    <span class="map-node-landable" aria-hidden="true"></span>
+                }
                 @if (getLocalizedBodyGenuses(node.body).length) {
                     <span class="map-node-icon map-node-icon--inside" aria-hidden="true">🌿</span>
                 } @else if (getLocalizedBodySignals(node.body).length || getLocalizedRingSignals(node.body).length) {
@@ -233,7 +618,9 @@
     >
         <div class="map-tooltip-title">{{ hoveredMapNode.body?.name || "Unknown body" }}</div>
         @if (hoveredMapNode.type) {
-            <div class="map-tooltip-row">{{ hoveredMapNode.type }}</div>
+            <div class="map-tooltip-row">
+                {{ hoveredMapNode.type }}@if (hoveredMapNode.body?.subType) { ({{ hoveredMapNode.body.subType }}) }
+            </div>
         }
         @if (getBodyOrbitDisplay(hoveredMapNode.body)) {
             <div class="map-tooltip-row">Orbit: {{ getBodyOrbitDisplay(hoveredMapNode.body) }}</div>

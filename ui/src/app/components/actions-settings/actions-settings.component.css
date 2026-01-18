@@ -99,8 +99,16 @@ mat-slide-toggle {
 .weapon-description {
   flex: 1;
   font-size: 13px;
-  opacity: 0.7;
+  opacity: 0.9;
   margin-left: 8px;
+}
+
+.weapon-description.combat {
+  color: rgba(255, 150, 150, 0.95);
+}
+
+.weapon-description.analysis {
+  color: rgba(150, 200, 255, 0.95);
 }
 
 .weapon-fields {

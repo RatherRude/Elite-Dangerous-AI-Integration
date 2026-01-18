@@ -314,20 +314,19 @@ export class ActionsSettingsComponent {
         const parts: string[] = [];
         
         // Add fire group and fire type
-        parts.push(`FG${weapon.fire_group}`);
-        parts.push(weapon.is_primary ? 'Primary' : 'Secondary');
-        parts.push(weapon.is_combat ? 'Combat' : 'Analysis');
-        
-        // Add target submodule if specified
-        if (weapon.target_submodule && weapon.target_submodule.trim()) {
-            parts.push(`→ ${weapon.target_submodule}`);
+        const fireGroupLabel =
+            weapon.fire_group > 0 ? String.fromCharCode(64 + weapon.fire_group) : '';
+        if (fireGroupLabel) {
+            parts.push(fireGroupLabel);
         }
-        
+        parts.push(weapon.is_primary ? 'Primary' : 'Secondary');
+
         // Add action details
+        let actionText = '';
         if (weapon.action === 'start') {
-            parts.push('Start continuous');
+            actionText = 'Hold';
         } else if (weapon.action === 'stop') {
-            parts.push('Stop firing');
+            actionText = 'Release';
         } else {
             const actionParts: string[] = [];
             if (weapon.repetitions > 0) {
@@ -336,14 +335,16 @@ export class ActionsSettingsComponent {
             if (weapon.duration > 0) {
                 actionParts.push(`${weapon.duration}s`);
             }
-            if (actionParts.length > 0) {
-                parts.push(actionParts.join(' '));
-            } else {
-                parts.push('Single shot');
-            }
+            actionText = actionParts.length > 0 ? actionParts.join(' ') : 'Press';
+        }
+        parts.push(actionText);
+
+        // Add target submodule if specified
+        if (weapon.target_submodule && weapon.target_submodule.trim()) {
+            parts.push(`→ ${weapon.target_submodule}`);
         }
         
-        return parts.join(' • ');
+        return parts.join(' ');
     }
 
     toggleWeaponEdit(index: number) {

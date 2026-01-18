@@ -117,7 +117,8 @@
                                                                         </mat-form-field>
                                                                         
                                                                         @if (!isWeaponInEditMode(i)) {
-                                                                            <span class="weapon-description">
+                                                                            <span class="weapon-description"
+                                                                                  [ngClass]="weapon.is_combat ? 'combat' : 'analysis'">
                                                                                 {{ getWeaponDescription(weapon) }}
                                                                             </span>
                                                                         }
@@ -162,9 +163,9 @@
                                                                                 <mat-label>Action</mat-label>
                                                                                 <mat-select [ngModel]="weapon.action"
                                                                                            (ngModelChange)="updateWeaponAction(i, $event)">
-                                                                                    <mat-option value="fire">Fire</mat-option>
-                                                                                    <mat-option value="start">Start</mat-option>
-                                                                                    <mat-option value="stop">Stop</mat-option>
+                                                                                    <mat-option value="fire">Press</mat-option>
+                                                                                    <mat-option value="start">Hold</mat-option>
+                                                                                    <mat-option value="stop">Release</mat-option>
                                                                                 </mat-select>
                                                                             </mat-form-field>
                                                                             
