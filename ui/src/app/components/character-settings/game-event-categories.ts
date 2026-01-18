@@ -81,6 +81,7 @@ export const GameEventCategories: Record<string, string[]> = {
         "DockingComputerDocking",
         "DockingComputerUndocking",
         "DockingComputerDeactivated",
+        "InDockingRange",
         "NavRoute",
         "NavRouteClear",
         "CrewLaunchFighter",

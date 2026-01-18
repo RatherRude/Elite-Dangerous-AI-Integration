@@ -2240,6 +2240,9 @@ class PromptGenerator:
         if event_name == 'Idle':
             return f"Your conversation with {self.commander_name} hasgone silent for a while. Get their attention by making a joke fitting to the current situation or self-reflecting on the recent past.",
 
+        if event_name == "InDockingRange":
+            return f"{self.commander_name}'s ship is now close enough to the station to make a docking request."
+
         if event_name == "DockingComputerDocking":
             return f"{self.commander_name}'s ship has initiated automated docking computer"
 

@@ -63,6 +63,7 @@ game_events = {
 
     'FetchRemoteModuleCompleted': False,
     'ShipyardTransferCompleted': False,
+    'InDockingRange': True,
 
     # Trading
     'BuyTradeData': False,
