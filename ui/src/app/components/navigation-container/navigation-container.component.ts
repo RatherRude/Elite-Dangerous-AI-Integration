@@ -355,6 +355,9 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
         const roots: any[] = [];
 
         for (const body of bodies) {
+            if (body?.type === "Unknown") {
+                continue;
+            }
             const bodyId = this.getBodyId(body);
             if (bodyId === null) {
                 continue;
