@@ -59,7 +59,7 @@ class Assistant:
                     speed_args = {"speed": "Zero"}
                     set_speed(speed_args, projected_states)
 
-                if self.config.get("qol_autoscane"):
+                if self.config.get("qol_autoscan"):
                     fire_args = {
                         "weaponType": "discovery_scanner",
                         "action": "fire",

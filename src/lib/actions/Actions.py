@@ -1415,7 +1415,7 @@ def target_subsystem(args, projected_states):
 
     if not current_target.get('Ship', False):
         raise Exception('No ship is currently targeted')
-    if not current_target.get('Scanned', False):
+    if current_target.get('ScanStage', 0) < 3:
         raise Exception('Targeted ship isn\'t scanned yet')
 
     if 'subsystem' not in args:
