@@ -2487,7 +2487,6 @@ class PromptGenerator:
         noteworthy_subtypes = {
             "Ammonia world",
             "Earth-like world",
-            "Water giant",
             "Water world",
             "Black Hole",
             "Supermassive Black Hole",
@@ -2497,7 +2496,7 @@ class PromptGenerator:
             if not isinstance(body, dict):
                 continue
             body_name = body.get("name") or "Unknown body"
-            body_subtype = body.get("subType")
+            body_subtype = body.get("subType", "Unknown")
             signals = body.get("signals") or []
             genuses = body.get("genuses") or []
             rings = body.get("rings") or []
