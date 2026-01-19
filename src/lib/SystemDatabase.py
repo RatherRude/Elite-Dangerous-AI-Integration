@@ -735,6 +735,13 @@ class SystemDatabase:
             system_info['bodies'] = []
             self._upsert_system_fields(system_name, {'system_info': system_info})
 
+        # Update body signals/genuses/ring signals/landmarks from Spansh
+        try:
+            self._update_bodies_from_spansh(system_name)
+        except Exception as e:
+            error_msg = str(e)
+            log('error', f"Error fetching Spansh bodies for {system_name}: {error_msg}", traceback.format_exc())
+
     def periodic_check(self):
         """Periodically check database"""
         try:
@@ -1071,6 +1078,188 @@ class SystemDatabase:
                 })
             except Exception as update_err:
                 log('error', f"Error updating system {system_name} with empty bodies: {update_err}")
+
+        # Update body signals/genuses/ring signals/landmarks from Spansh
+        try:
+            await self._update_bodies_from_spansh_async(session, system_name)
+        except Exception as e:
+            error_msg = str(e)
+            log('error', f"Error fetching Spansh bodies async for {system_name}: {error_msg}", traceback.format_exc())
+
+    def _build_spansh_bodies_request(self, system_name: str) -> Dict[str, Any]:
+        return {
+            "filters": {
+                "type": {
+                    "value": [
+                        "Planet",
+                        "Star"
+                    ]
+                },
+                "distance": {
+                    "min": "0",
+                    "max": "1"
+                }
+            },
+            "sort": [
+                {
+                    "distance_to_arrival": {
+                        "direction": "asc"
+                    }
+                }
+            ],
+            "size": 99,
+            "page": 0,
+            "reference_system": system_name
+        }
+
+    @staticmethod
+    def _normalize_body_id(body_id: Any) -> Any:
+        if body_id is None:
+            return None
+        try:
+            return int(body_id)
+        except (TypeError, ValueError):
+            return body_id
+
+    @staticmethod
+    def _map_spansh_signals(signals: Any) -> Optional[List[Dict[str, Any]]]:
+        if not isinstance(signals, list):
+            return None
+        mapped: List[Dict[str, Any]] = []
+        for signal in signals:
+            if not isinstance(signal, dict):
+                continue
+            name = signal.get("name") or signal.get("type")
+            if not name:
+                continue
+            entry: Dict[str, Any] = {
+                "Type": name,
+                "Type_Localised": name
+            }
+            if "count" in signal:
+                entry["Count"] = signal.get("count")
+            mapped.append(entry)
+        return mapped
+
+    @staticmethod
+    def _map_spansh_genuses(genuses: Any) -> Optional[List[Dict[str, Any]]]:
+        if not isinstance(genuses, list):
+            return None
+        mapped: List[Dict[str, Any]] = []
+        for genus in genuses:
+            if not isinstance(genus, dict):
+                continue
+            name = genus.get("name")
+            if not name:
+                continue
+            mapped.append({
+                "Genus": name,
+                "Genus_Localised": name,
+                "scanned": False
+            })
+        return mapped
+
+    def _merge_spansh_bodies(self, system_name: str, spansh_bodies: Any) -> None:
+        if not isinstance(spansh_bodies, list) or not spansh_bodies:
+            return
+
+        existing_data = self._get_system_record(system_name) or {}
+        system_info = existing_data.get('system_info')
+        if not isinstance(system_info, dict):
+            return
+        bodies = system_info.get('bodies')
+        if not isinstance(bodies, list):
+            return
+
+        body_index: Dict[Any, Dict[str, Any]] = {}
+        for body in bodies:
+            if not isinstance(body, dict):
+                continue
+            raw_body_id = body.get("bodyId")
+            if raw_body_id is None:
+                raw_body_id = body.get("body_id")
+            normalized_id = self._normalize_body_id(raw_body_id)
+            if normalized_id is not None:
+                body_index[normalized_id] = body
+
+        updated = False
+        for spansh_body in spansh_bodies:
+            if not isinstance(spansh_body, dict):
+                continue
+            spansh_body_id = spansh_body.get("body_id")
+            normalized_id = self._normalize_body_id(spansh_body_id)
+            if normalized_id is None:
+                continue
+            body_entry = body_index.get(normalized_id)
+            if body_entry is None:
+                continue
+
+            if "signals" in spansh_body:
+                mapped_signals = self._map_spansh_signals(spansh_body.get("signals"))
+                if mapped_signals is not None:
+                    body_entry["signals"] = mapped_signals
+                    updated = True
+
+            if "genuses" in spansh_body:
+                mapped_genuses = self._map_spansh_genuses(spansh_body.get("genuses"))
+                if mapped_genuses is not None:
+                    body_entry["genuses"] = mapped_genuses
+                    updated = True
+
+            if "landmarks" in spansh_body:
+                landmarks = spansh_body.get("landmarks")
+                if isinstance(landmarks, list):
+                    body_entry["landmarks"] = landmarks
+                    updated = True
+
+            if "rings" in spansh_body and isinstance(spansh_body.get("rings"), list):
+                target_rings = body_entry.get("rings")
+                if isinstance(target_rings, list):
+                    for spansh_ring in spansh_body.get("rings", []):
+                        if not isinstance(spansh_ring, dict):
+                            continue
+                        if "signals" not in spansh_ring:
+                            continue
+                        ring_name = spansh_ring.get("name")
+                        if not ring_name:
+                            continue
+                        for ring in target_rings:
+                            if not isinstance(ring, dict):
+                                continue
+                            if ring.get("name") != ring_name:
+                                continue
+                            mapped_signals = self._map_spansh_signals(spansh_ring.get("signals"))
+                            if mapped_signals is not None:
+                                ring["signals"] = mapped_signals
+                                updated = True
+                            break
+
+        if updated:
+            self._upsert_system_fields(system_name, {'system_info': system_info})
+
+    def _update_bodies_from_spansh(self, system_name: str) -> None:
+        url = "https://spansh.co.uk/api/bodies/search"
+        payload = self._build_spansh_bodies_request(system_name)
+        headers = {
+            "User-Agent": EDSM_USER_AGENT
+        }
+        response = requests.post(url, json=payload, headers=headers, timeout=5)
+        response.raise_for_status()
+        data = response.json()
+        spansh_bodies = data.get("results", [])
+        self._merge_spansh_bodies(system_name, spansh_bodies)
+
+    async def _update_bodies_from_spansh_async(self, session: aiohttp.ClientSession, system_name: str) -> None:
+        url = "https://spansh.co.uk/api/bodies/search"
+        payload = self._build_spansh_bodies_request(system_name)
+        headers = {
+            "User-Agent": EDSM_USER_AGENT
+        }
+        async with session.post(url, json=payload, headers=headers) as response:
+            response.raise_for_status()
+            data = await response.json()
+            spansh_bodies = data.get("results", [])
+            self._merge_spansh_bodies(system_name, spansh_bodies)
 
     async def _fetch_multiple_systems_async(self, system_names: List[str], chunk_size: int = 50) -> None:
         """

@@ -274,8 +274,6 @@ class Chat:
                 bary_event.setdefault("BodyName", f"Barycentre {body_id}")
             bary_event.setdefault("BodyType", "Barycentre")
             self.system_database.record_scan(cast(dict[str, Any], bary_event))
-        # if isinstance(event, GameEvent) and event.content.get('event') == 'FSDTarget':
-        #     self.system_database.record_fsd_target(cast(dict[str, Any], event.content))
         if isinstance(event, GameEvent) and event.content.get('event') == 'SAASignalsFound':
             self.system_database.record_saa_signals_found(cast(dict[str, Any], event.content))
         if isinstance(event, GameEvent) and event.content.get('event') == 'FSSBodySignals':

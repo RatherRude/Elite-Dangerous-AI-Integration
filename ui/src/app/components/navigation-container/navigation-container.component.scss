@@ -229,7 +229,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .map-node-svg {
@@ -247,12 +247,24 @@
     position: relative;
 }
 
+.map-node-dot--ring::before,
 .map-node-dot--ring::after {
     content: "";
     position: absolute;
-    inset: -12px;
     border-radius: 50%;
     border: 1px solid rgba(255, 255, 255, 0.35);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.map-node-dot--ring::before {
+    inset: -7px;
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.map-node-dot--ring::after {
+    inset: -12px;
+    border-color: rgba(255, 255, 255, 0.3);
 }
 
 .map-node-label {
@@ -286,12 +298,14 @@
 
 .map-node-landable {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 50%;
-    background: rgba(135, 206, 235, 0.6);
-    border-radius: 50% 50% 0 0;
+    top: -6px;
+    left: -7px;
+    width: calc(100% + 8px);
+    height: calc(100% + 8px);
+    border: 3px solid rgba(135, 206, 235, 0.85);
+    border-bottom: none;
+    border-radius: 99px;
+    box-shadow: 0 0 6px rgba(135, 206, 235, 0.6);
     z-index: 1;
     pointer-events: none;
 }
