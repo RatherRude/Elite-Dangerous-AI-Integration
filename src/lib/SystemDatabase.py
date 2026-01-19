@@ -450,21 +450,26 @@ class SystemDatabase:
                         existing_signals[sig_type] = dict(sig)
             target_entry["signals"] = list(existing_signals.values())
 
-            current_genuses = target_entry.get("genuses") or []
-            existing_genus = {g.get("Genus"): g for g in current_genuses if isinstance(g, dict) and g.get("Genus")}
-            for g in genuses:
-                genus_key = g.get("Genus") if isinstance(g, dict) else None
-                if genus_key in existing_genus:
-                    existing = existing_genus[genus_key]
-                    scanned = existing.get("scanned", False)
-                    existing.update(g)
-                    existing["scanned"] = scanned
-                else:
-                    if genus_key:
-                        entry = dict(g)
-                        entry.setdefault("scanned", False)
-                        existing_genus[genus_key] = entry
-            target_entry["genuses"] = list(existing_genus.values())
+            if target_entry is body_entry:
+                current_genuses = body_entry.get("genuses") or []
+                existing_genus = {
+                    g.get("Genus"): g
+                    for g in current_genuses
+                    if isinstance(g, dict) and g.get("Genus")
+                }
+                for g in genuses:
+                    genus_key = g.get("Genus") if isinstance(g, dict) else None
+                    if genus_key in existing_genus:
+                        existing = existing_genus[genus_key]
+                        scanned = existing.get("scanned", False)
+                        existing.update(g)
+                        existing["scanned"] = scanned
+                    else:
+                        if genus_key:
+                            entry = dict(g)
+                            entry.setdefault("scanned", False)
+                            existing_genus[genus_key] = entry
+                body_entry["genuses"] = list(existing_genus.values())
 
         self._with_system_info(system_name, system_address, updater)
 
