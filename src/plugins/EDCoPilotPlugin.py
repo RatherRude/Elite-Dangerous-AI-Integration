@@ -2,7 +2,9 @@ import queue
 import threading
 import time
 import traceback
-from typing import Any, override, Optional, Iterable
+from typing import Any, override, Optional, Iterable, Literal
+
+from pydantic import BaseModel, Field, model_validator
 
 from lib.PluginHelper import PluginHelper, TTSModel, LLMModel, STTModel, EmbeddingModel
 from lib.PluginSettingDefinitions import (
@@ -26,6 +28,65 @@ from EDMesg.CovasNext import (
 )
 from EDMesg.EDCoPilot import create_edcopilot_client, OpenPanelAction, PanelNavigationAction
 from EDMesg.base import EDMesgWelcomeAction
+
+
+EDCoPilotPanelName = Literal[
+    "bookmarks",
+    "bookmarkgroups",
+    "voicelog",
+    "eventlog",
+    "sessionprogress",
+    "systemhistory",
+    "traderoute",
+    "discoveryestimator",
+    "miningstats",
+    "miningprices",
+    "placesofinterest",
+    "locationsearch",
+    "locationresults",
+    "guidancecomputer",
+    "timetrials",
+    "systeminfo",
+    "stations",
+    "bodies",
+    "factionsystems",
+    "stationfacts",
+    "bodydata",
+    "blueprints",
+    "shiplist",
+    "storedmodules",
+    "materials",
+    "shiplocker",
+    "suitlist",
+    "weaponlist",
+    "aboutedcopilot",
+    "permits",
+    "messages",
+    "prospectorannouncements",
+    "music",
+    "historyrefresh",
+    "commandreference",
+    "settings",
+]
+
+
+class EDCoPilotOpenPanelParams(BaseModel):
+    panelName: EDCoPilotPanelName = Field(description="The name of the panel to open in EDCoPilot")
+    details: str = Field(default="", description="Additional inputs for panel, like system names")
+
+
+EDCoPilotNavigateKind = Literal["scrolldown", "scrollup", "scrolltop", "scrollbottom", "back", "selectItem"]
+
+
+class EDCoPilotNavigatePanelParams(BaseModel):
+    navigate: EDCoPilotNavigateKind = Field(description="Type of navigation")
+    selectItem: int | None = Field(default=None, description="Item to select (only if navigate is selectItem)")
+
+    @model_validator(mode="after")
+    def _validate_select_item(self):
+        if self.navigate == "selectItem" and self.selectItem is None:
+            raise ValueError("selectItem is required when navigate is 'selectItem'")
+        return self
 
 
 def get_install_path() -> (str | None):
@@ -315,30 +376,7 @@ class EDCoPilotPlugin(PluginBase):
         helper.register_action(
             name='edcopilot_open_panel',
             description="Open a specific panel in EDCoPilot",
-            parameters={
-                "type": "object",
-                "properties": {
-                    "panelName": {
-                        "type": "string",
-                        "enum": [
-                            "bookmarks", "bookmarkgroups", "voicelog", "eventlog", "sessionprogress",
-                            "systemhistory", "traderoute", "discoveryestimator", "miningstats", "miningprices",
-                            "placesofinterest", "locationsearch", "locationresults", "guidancecomputer", "timetrials",
-                            "systeminfo", "stations", "bodies", "factionsystems",
-                            "stationfacts", "bodydata", "blueprints", "shiplist", "storedmodules",
-                            "materials", "shiplocker", "suitlist", "weaponlist", "aboutedcopilot", "permits",
-                            "messages", "prospectorannouncements", "music", "historyrefresh",
-                            "commandreference", "settings"
-                        ],
-                        "description": "The name of the panel to open in EDCoPilot"
-                    },
-                    "details": {
-                        "type": "string",
-                        "description": "Additional inputs for panel, like system names"
-                    }
-                },
-                "required": ["panelName"]
-            },
+            parameters=EDCoPilotOpenPanelParams,
             method=self.edcopilot_open_panel,
             action_type='global',
             input_template=lambda args, _: f"Opening EDCoPilot panel: {args.get('panelName', '')} {args.get('details', '')}"
@@ -348,23 +386,7 @@ class EDCoPilotPlugin(PluginBase):
         helper.register_action(
             name='edcopilot_navigate_panel',
             description="Navigate the current panel in EDCoPilot",
-            parameters={
-                "type": "object",
-                "properties": {
-                    "navigate": {
-                        "type": "string",
-                        "enum": [
-                            "scrolldown", "scrollup", "scrolltop", "scrollbottom", "back", "selectItem"
-                        ],
-                        "description": "Type of navigation"
-                    },
-                    "selectItem": {
-                        "type": "number",
-                        "description": "Item to select (only if navigate is selectItem)"
-                    }
-                },
-                "required": ["navigate"]
-            },
+            parameters=EDCoPilotNavigatePanelParams,
             method=self.edcopilot_navigate_panel,
             action_type='global',
             input_template=lambda args, _: f"Navigating in EDCoPilot panel: {args.get('navigate', '')}{args.get('selectItem', '')}"
@@ -412,13 +434,10 @@ class EDCoPilotPlugin(PluginBase):
         log('debug', 'EDCoPilot plugin stopped')
 
     # Action implementations
-    def edcopilot_open_panel(self, args: dict, projected_states: dict) -> str:
+    def edcopilot_open_panel(self, args: EDCoPilotOpenPanelParams, projected_states: dict) -> str:
         """Open a specific panel in EDCoPilot"""
-        panel_name = args.get("panelName", "")
-        details = args.get("details", "")
-        
-        if not panel_name:
-            return "Failed to open panel: No panel specified"
+        panel_name = args.panelName
+        details = args.details
         
         if not self.client:
             return "Failed to open panel: EDCoPilot client not available"
@@ -431,10 +450,10 @@ class EDCoPilotPlugin(PluginBase):
             log('error', f'Failed to open panel: {e}\n{traceback.format_exc()}')
             return f"Failed to open panel: {str(e)}"
 
-    def edcopilot_navigate_panel(self, args: dict, projected_states: dict) -> str:
+    def edcopilot_navigate_panel(self, args: EDCoPilotNavigatePanelParams, projected_states: dict) -> str:
         """Navigate the current panel in EDCoPilot"""
-        select_item = args.get("selectItem", 0)
-        navigate = args.get("navigate", "")
+        select_item = args.selectItem or 0
+        navigate = args.navigate
 
         if not self.client:
             return "Failed to navigate panel: EDCoPilot client not available"

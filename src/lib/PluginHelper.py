@@ -1,6 +1,6 @@
 from pydantic.main import BaseModel
 import os
-from typing import Any, Callable
+from typing import Any, Callable, TypeVar
 
 from .Models import LLMModel, STTModel, TTSModel, EmbeddingModel
 from .Logger import log
@@ -67,7 +67,9 @@ class PluginHelper():
             os.makedirs(plugin_data_path, exist_ok=True)
         return plugin_data_path
 
-    def register_action(self, name: str, description: str, parameters: type[BaseModel], method: Callable[[BaseModel, dict], str], action_type="ship", input_template: Callable[[dict, dict], str]|None=None):
+    _ActionModelT = TypeVar('_ActionModelT', bound=BaseModel)
+
+    def register_action(self, name: str, description: str, parameters: type[_ActionModelT], method: Callable[[_ActionModelT, dict], str], action_type="ship", input_template: Callable[[dict, dict], str]|None=None):
         """Register an action"""
         def _wrapper(args: dict, context: dict) -> str:
             try:
