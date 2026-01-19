@@ -2484,10 +2484,20 @@ class PromptGenerator:
         total_bodies = len(bodies_data)
         noteworthy: list[dict[str, object]] = []
 
+        noteworthy_subtypes = {
+            "Ammonia world",
+            "Earth-like world",
+            "Water giant",
+            "Water world",
+            "Black Hole",
+            "Supermassive Black Hole",
+            "Neutron Star",
+        }
         for body in bodies_data:
             if not isinstance(body, dict):
                 continue
             body_name = body.get("name") or "Unknown body"
+            body_subtype = body.get("subType")
             signals = body.get("signals") or []
             genuses = body.get("genuses") or []
             rings = body.get("rings") or []
@@ -2532,8 +2542,15 @@ class PromptGenerator:
                     if ring_signal_names:
                         ring_signals.append(f"{ring_name}: {', '.join(ring_signal_names)}")
 
-            if signal_names or genus_names or ring_signals:
+            if (
+                signal_names
+                or genus_names
+                or ring_signals
+                or (isinstance(body_subtype, str) and body_subtype in noteworthy_subtypes)
+            ):
                 entry: dict[str, object] = {"Body": body_name}
+                if isinstance(body_subtype, str) and body_subtype in noteworthy_subtypes:
+                    entry["Subtype"] = body_subtype
                 if signal_names:
                     entry["Signals"] = signal_names
                 if genus_names:
