@@ -219,9 +219,7 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
 
     getLocalizedBodySignals(body: any): string[] {
         const signals = Array.isArray(body?.signals) ? body.signals : [];
-        return signals
-            .map((signal: any) => signal?.Type_Localised || signal?.Type)
-            .filter((name: any): name is string => Boolean(name));
+        return this.formatSignalList(signals);
     }
 
     getLocalizedBodyGenuses(body: any): string[] {
@@ -243,9 +241,7 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
         const results: string[] = [];
         for (const ring of rings) {
             const signals = Array.isArray(ring?.signals) ? ring.signals : [];
-            const names = signals
-                .map((signal: any) => signal?.Type_Localised || signal?.Type)
-                .filter((name: any): name is string => Boolean(name));
+            const names = this.formatSignalList(signals);
             if (!names.length) continue;
             results.push(`${names.join(", ")}`);
         }
@@ -483,6 +479,22 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
             return `${actual}/${total}`;
         }
         return `${actual}`;
+    }
+
+    private formatSignalList(signals: any[]): string[] {
+        return signals
+            .map((signal: any) => {
+                const name = signal?.Type_Localised || signal?.Type;
+                if (!name) {
+                    return null;
+                }
+                const count = typeof signal?.Count === "number" ? signal.Count : null;
+                if (count && count > 1) {
+                    return `${count} ${name}`;
+                }
+                return String(name);
+            })
+            .filter((entry: any): entry is string => Boolean(entry));
     }
 
     private isUnknownBodyType(body: any): boolean {
