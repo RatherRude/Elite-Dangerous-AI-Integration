@@ -24,9 +24,9 @@ def checkStatus(projected_states: ProjectedStates, blocked_status_dict: dict[str
 
 
 def show_ui(obj, projected_states):
-    """Show a specific UI tab: chat | status | storage | station | tasks | logbook"""
+    """Show a specific UI tab: chat | status | navigation | storage | station | tasks | logbook | search"""
     tab: str = (obj or {}).get('tab', 'chat')
-    valid_tabs = {"chat", "status", "storage", "station", "tasks", "logbook"}
+    valid_tabs = {"chat", "status", "navigation", "storage", "station", "tasks", "logbook", "search"}
 
     if tab not in valid_tabs:
         raise Exception(f"Unknown tab '{tab}'. Expected one of: {', '.join(sorted(valid_tabs))}.")
@@ -50,14 +50,14 @@ def register_ui_actions(actionManager: ActionManager, eventManager: EventManager
     # Single parameterized UI action
     actionManager.registerAction(
         'showUI',
-        "Display a specific tab",
+        "Display a specific tab to the user via UI",
         {
             "type": "object",
             "properties": {
                 "tab": {
                     "type": "string",
-                    "description": "Chat: current conversation; Status: ship/suit loadout and state; Storage: colony construction, materials and engineers; Station: outfitting and market info of docked station; Tasks: active missions and objectives; Logbook: user history and memories",
-                    "enum": ["chat", "status", "storage", "station", "tasks", "logbook"],
+                    "description": "Chat: current conversation; Status: ship/suit loadout and state; Navigation: currrent system information; Storage: colony construction, materials and engineers; Station: outfitting and market info of docked station; Tasks: active missions and objectives; Logbook: user history and memories; Search: manual search agent and results",
+                    "enum": ["chat", "status", "navigation", "storage", "station", "tasks", "logbook", "search"],
                 }
             },
             "required": ["tab"]
@@ -67,9 +67,11 @@ def register_ui_actions(actionManager: ActionManager, eventManager: EventManager
         cache_prefill={
             "show chat": {"tab": "chat"},
             "show status": {"tab": "status"},
+            "show navigation": {"tab": "navigation"},
             "show storage": {"tab": "storage"},
             "show tasks": {"tab": "tasks"},
             "show logbook": {"tab": "logbook"},
+            "show search": {"tab": "search"},
         }
     )
 

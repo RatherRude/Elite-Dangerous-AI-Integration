@@ -125,8 +125,20 @@ export class MainViewComponent implements OnInit, OnDestroy {
                 current++;
 
                 if (!this.isShipIdentUnknown) {
-                    if (tabName === 'status') { this.selectedTabIndex = current; return; }
+                    if (tabName === 'status') {
+                        this.selectedTabIndex = current;
+                        return;
+                    }
                     current++;
+                }
+
+                if (tabName === 'navigation') {
+                    this.selectedTabIndex = current;
+                    return;
+                }
+                current++;
+                if (!this.isShipIdentUnknown) {
+
                     if (tabName === 'storage') { this.selectedTabIndex = current; return; }
                     current++;
                     if (tabName === 'tasks') { this.selectedTabIndex = current; return; }
@@ -142,11 +154,6 @@ export class MainViewComponent implements OnInit, OnDestroy {
                     current++;
                 }
 
-                if (tabName === 'navigation') {
-                    this.selectedTabIndex = current;
-                    return;
-                }
-                current++;
 
                 if (tabName === 'search') {
                     this.selectedTabIndex = current;
