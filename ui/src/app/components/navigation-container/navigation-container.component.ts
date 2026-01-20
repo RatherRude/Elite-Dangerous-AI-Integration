@@ -252,6 +252,20 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
         return results;
     }
 
+    getLocalizedBelts(body: any): string[] {
+        const belts = Array.isArray(body?.belts) ? body.belts : [];
+        return belts
+            .map((belt: any) => {
+                const name = belt?.name;
+                const type = belt?.type;
+                if (name && type) {
+                    return `${name} (${type})`;
+                }
+                return name || type || null;
+            })
+            .filter((entry: any): entry is string => Boolean(entry));
+    }
+
     getBodyOrbitDisplay(body: any): string | null {
         const distance = this.getOrbitLs(body);
         if (!Number.isFinite(distance) || distance < 0) {

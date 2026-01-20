@@ -153,7 +153,7 @@
                                             <span>{{ getBodyHighlights(body).join(" • ") }}</span>
                                         </div>
                                     }
-                            @if (getLocalizedBodySignals(body).length || getLocalizedBodyGenuses(body).length || getLocalizedRingSignals(body).length) {
+                            @if (getLocalizedBodySignals(body).length || getLocalizedBodyGenuses(body).length || getLocalizedRingSignals(body).length || getLocalizedBelts(body).length) {
                                 <div class="body-localized">
                                     @if (getLocalizedBodySignals(body).length) {
                                         <div class="body-localized-row">
@@ -171,6 +171,12 @@
                                         <div class="body-localized-row">
                                             <span class="label">Ring signals</span>
                                             <span class="value">{{ getLocalizedRingSignals(body).join(" | ") }}</span>
+                                        </div>
+                                    }
+                                    @if (getLocalizedBelts(body).length) {
+                                        <div class="body-localized-row">
+                                            <span class="label">Belts</span>
+                                            <span class="value">{{ getLocalizedBelts(body).join(" | ") }}</span>
                                         </div>
                                     }
                                 </div>
@@ -199,7 +205,7 @@
             (mousemove)="updateHoveredPosition($event)"
             (mouseleave)="clearHoveredMapNode()"
         >
-            <div class="map-node-dot" [class.map-node-dot--ring]="node.body?.rings?.length">
+            <div class="map-node-dot" [class.map-node-dot--ring]="node.body?.rings?.length || node.body?.belts?.length">
                 @if (node.body?.subType === "Supermassive Black Hole") {
                     <svg class="map-node-svg" viewBox="0 0 24 24" aria-hidden="true">
                         <circle cx="12" cy="12" r="9" fill="#0c0c12"></circle>
@@ -639,6 +645,9 @@
         }
         @if (getLocalizedRingSignals(hoveredMapNode.body).length) {
             <div class="map-tooltip-row">Ring signals: {{ getLocalizedRingSignals(hoveredMapNode.body).join(" | ") }}</div>
+        }
+        @if (getLocalizedBelts(hoveredMapNode.body).length) {
+            <div class="map-tooltip-row">Belts: {{ getLocalizedBelts(hoveredMapNode.body).join(" | ") }}</div>
         }
         @if (getBodyStationDisplay(hoveredMapNode.body)) {
             <div class="map-tooltip-row">
