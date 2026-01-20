@@ -197,7 +197,12 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
     }
 
     get bodiesDisplay(): string {
-        return this.formatCount(this.bodies.length, this.totals.bodies);
+        const filteredTotal = this.getFilteredBodiesTotal();
+        return this.formatCount(this.filteredBodies.length, filteredTotal);
+    }
+
+    get filteredBodies(): any[] {
+        return this.bodies.filter((body: any) => !this.isUnknownBodyType(body));
     }
 
     getSignalDisplayName(signal: any): string {
@@ -355,7 +360,7 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
         const roots: any[] = [];
 
         for (const body of bodies) {
-            if (body?.type === "Unknown") {
+            if (this.isUnknownBodyType(body)) {
                 continue;
             }
             const bodyId = this.getBodyId(body);
@@ -464,6 +469,21 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
             return `${actual}/${total}`;
         }
         return `${actual}`;
+    }
+
+    private isUnknownBodyType(body: any): boolean {
+        const type = String(body?.type ?? "").trim().toLowerCase();
+        return type === "unknown";
+    }
+
+    private getFilteredBodiesTotal(): number | null {
+        if (typeof this.totals.bodies !== "number" || Number.isNaN(this.totals.bodies)) {
+            return null;
+        }
+        const unknownCount = this.bodies.reduce((count: number, body: any) => {
+            return count + (this.isUnknownBodyType(body) ? 1 : 0);
+        }, 0);
+        return Math.max(0, this.totals.bodies - unknownCount);
     }
 
     private getOrbitLs(station: any): number {

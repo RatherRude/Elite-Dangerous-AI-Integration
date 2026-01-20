@@ -123,9 +123,9 @@
                     <mat-panel-title>Bodies ({{ bodiesDisplay }})</mat-panel-title>
                 </mat-expansion-panel-header>
                 <div class="section">
-                    @if (bodies.length) {
+                    @if (filteredBodies.length) {
                         <div class="body-grid">
-                            @for (body of bodies; track body.body_id) {
+                            @for (body of filteredBodies; track body.body_id) {
                                 <mat-card class="body-card">
                                     <div class="body-header">
                                         <div class="body-name">{{ body.name || 'Unknown body' }}</div>
