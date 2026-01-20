@@ -1159,11 +1159,31 @@ class SystemDatabase:
             })
         return mapped
 
+    @staticmethod
+    def _extract_spansh_system_id64(spansh_bodies: Any) -> Optional[int]:
+        if not isinstance(spansh_bodies, list):
+            return None
+        for body in spansh_bodies:
+            if not isinstance(body, dict):
+                continue
+            value = body.get("system_id64")
+            if value is None:
+                continue
+            try:
+                return int(value)
+            except (TypeError, ValueError):
+                return None
+        return None
+
     def _merge_spansh_bodies(self, system_name: str, spansh_bodies: Any) -> None:
         if not isinstance(spansh_bodies, list) or not spansh_bodies:
             return
 
         existing_data = self._get_system_record(system_name) or {}
+        if not existing_data.get('star_address'):
+            spansh_system_id64 = self._extract_spansh_system_id64(spansh_bodies)
+            if spansh_system_id64 is not None:
+                self._upsert_system_fields(system_name, {'star_address': spansh_system_id64})
         system_info = existing_data.get('system_info')
         if not isinstance(system_info, dict):
             return
