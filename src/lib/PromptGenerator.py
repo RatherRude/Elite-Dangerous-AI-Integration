@@ -63,6 +63,35 @@ class PromptGenerator:
         self.system_db = system_db
         self.weapon_types: list[dict] = weapon_types if weapon_types is not None else []
 
+        # label maps for receivetext events
+        self.label_map = {
+            "ReceiveTextChannelLocal": "Local comms",
+            "ReceiveTextChannelStarSystem": "System comms",
+            "ReceiveTextChannelSquadron": "Squadron comms",
+            "ReceiveTextStation": "Station authority",
+            "ReceiveTextPolice": "Police/security",
+            "ReceiveTextDockingChatter": "Docking controller",
+            "ReceiveTextMilitary": "Military",
+            "ReceiveTextCruiseLiner": "Passenger liner",
+            "ReceiveTextCommuter": "Commuter traffic",
+            "ReceiveTextAX": "Anti-xeno",
+            "ReceiveTextTrader": "Trader",
+            "ReceiveTextPirate": "Pirate",
+            "ReceiveTextPowers": "Powerplay",
+            "ReceiveTextMiner": "Miner",
+            "ReceiveTextExplorer": "Explorer",
+            "ReceiveTextSmuggler": "Smuggler",
+            "ReceiveTextPassengerLiner": "Passenger liner",
+            "ReceiveTextEscort": "Escort",
+            "ReceiveTextHitman": "Assassin",
+            "ReceiveTextPropagandist": "Propaganda",
+            "ReceiveTextRescuer": "Rescue ops",
+            "ReceiveTextConvoy": "Convoy",
+            "ReceiveTextRefugeeFlotillaWar": "Refugee flotilla",
+            "ReceiveTextProtester": "Protester",
+            "ReceiveTextOther": "NPC comms",
+        }
+
         # Pad map for station docking positions
         self.pad_map = {
             "1":  {"clock": 6, "depth": "very front"},
@@ -139,14 +168,26 @@ class PromptGenerator:
         if event_name == 'Missions':
             return None
         
-        # Message events
-        if event_name == 'ReceiveText':
+
+        if event_name and event_name.startswith('ReceiveText'):
             receive_text_event = cast(ReceiveTextEvent, content)
             # Ignore system-entered channel messages
             if (receive_text_event.get('Channel', '') == 'npc' and receive_text_event.get('From', '') == ''
                 and receive_text_event.get('Message', '').startswith('$COMMS_entered:#name=')):
                 return None
-            return f'Message received from {receive_text_event.get("From_Localised", receive_text_event.get("From"))} on channel {receive_text_event.get("Channel")}: "{receive_text_event.get("Message_Localised", receive_text_event.get("Message"))}"'
+
+
+            # Ignore raw receivetextevents now as we are apping them all to individual events
+            if event_name == "ReceiveText":
+                return None
+
+            label = self.label_map.get(event_name, "Message")
+            sender = receive_text_event.get("From_Localised", receive_text_event.get("From")) or "unknown sender"
+            message_text = receive_text_event.get("Message_Localised", receive_text_event.get("Message")) or ""
+            channel = receive_text_event.get("Channel")
+            channel_label = f" on {channel}" if channel else ""
+            return f'{label} message from {sender}{channel_label}: "{message_text}"'
+
         if event_name == 'SendText':
             send_text_event = cast(SendTextEvent, content)
             return f'{self.commander_name} sent a message to {send_text_event.get("To")}: "{send_text_event.get("Message")}"'
@@ -2239,6 +2280,9 @@ class PromptGenerator:
             return f"{self.commander_name} has received a Discord notification."
         if event_name == 'Idle':
             return f"Your conversation with {self.commander_name} hasgone silent for a while. Get their attention by making a joke fitting to the current situation or self-reflecting on the recent past.",
+
+        if event_name == "InDockingRange":
+            return f"{self.commander_name}'s ship is now close enough to the station to make a docking request."
 
         if event_name == "DockingComputerDocking":
             return f"{self.commander_name}'s ship has initiated automated docking computer"
