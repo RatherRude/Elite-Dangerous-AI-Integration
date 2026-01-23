@@ -2380,6 +2380,59 @@ class Powerplay(Projection[PowerplayStateModel]):
             if event_name == 'PowerplayLeave':
                 self.state = PowerplayStateModel()
 
+# Define types for Rank/Progress Projection
+class RankProgressEntry(BaseModel):
+    """Rank and progress for a single category."""
+    Rank: int = Field(default=0, description="Rank value")
+    Progress: int = Field(default=0, description="Progress to next rank (0-100)")
+
+
+class RankProgressStateModel(BaseModel):
+    """Commander rank and progress per category."""
+    Combat: RankProgressEntry = Field(default_factory=RankProgressEntry, description="Combat rank/progress")
+    Trade: RankProgressEntry = Field(default_factory=RankProgressEntry, description="Trade rank/progress")
+    Explore: RankProgressEntry = Field(default_factory=RankProgressEntry, description="Exploration rank/progress")
+    Empire: RankProgressEntry = Field(default_factory=RankProgressEntry, description="Empire rank/progress")
+    Federation: RankProgressEntry = Field(default_factory=RankProgressEntry, description="Federation rank/progress")
+    CQC: RankProgressEntry = Field(default_factory=RankProgressEntry, description="CQC rank/progress")
+    Timestamp: str = Field(default="1970-01-01T00:00:00Z", description="Timestamp of last rank/progress event")
+
+
+@final
+class RankProgress(Projection[RankProgressStateModel]):
+    StateModel = RankProgressStateModel
+
+    _category_keys = ["Combat", "Trade", "Explore", "Empire", "Federation", "CQC"]
+
+    @override
+    def process(self, event: Event) -> None:
+        if not isinstance(event, GameEvent):
+            return
+
+        event_name = event.content.get('event')
+        if event_name == 'Rank':
+            for key in self._category_keys:
+                if key in event.content:
+                    getattr(self.state, key).Rank = event.content.get(key, 0)
+            if 'timestamp' in event.content:
+                self.state.Timestamp = event.content['timestamp']
+
+        if event_name == 'Progress':
+            for key in self._category_keys:
+                if key in event.content:
+                    getattr(self.state, key).Progress = event.content.get(key, 0)
+            if 'timestamp' in event.content:
+                self.state.Timestamp = event.content['timestamp']
+
+        if event_name == 'Promotion':
+            for key in self._category_keys:
+                if key in event.content:
+                    category = getattr(self.state, key)
+                    category.Rank = event.content.get(key, 0)
+                    category.Progress = 0
+            if 'timestamp' in event.content:
+                self.state.Timestamp = event.content['timestamp']
+
 # Define types for InCombat Projection
 class InCombatStateModel(BaseModel):
     """Combat status of the commander."""
@@ -2556,6 +2609,7 @@ def registerProjections(
     event_manager.register_projection(Location())
     event_manager.register_projection(Missions())
     event_manager.register_projection(EngineerProgress())
+    event_manager.register_projection(RankProgress())
     event_manager.register_projection(CommunityGoal())
     event_manager.register_projection(ShipInfo())
     event_manager.register_projection(Target())
@@ -2580,8 +2634,6 @@ def registerProjections(
     for proj in [
         'Commander',
         'ModuleInfo',
-        'Rank',
-        'Progress',
         'Reputation',
         'SquadronStartup',
         'Statistics',
