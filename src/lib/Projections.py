@@ -2262,6 +2262,15 @@ class ColonisationConstruction(Projection[ColonisationConstructionStateModel]):
                 ]
             self.state.StarSystem = self.state.StarSystemRecall
 
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Docked':
+            # If we have an active construction and dock at a non-construction station
+            # with the same MarketID, the construction has concluded. Reset to defaults.
+            if self.state.MarketID and not self.state.ConstructionComplete and not self.state.ConstructionFailed:
+                docked_market_id = event.content.get('MarketID', 0)
+                station_type = event.content.get('StationType', '')
+                if docked_market_id == self.state.MarketID and 'construction' not in station_type.lower():
+                    self.state = ColonisationConstructionStateModel()
+
         if isinstance(event, GameEvent) and event.content.get('event') == 'Location':
             self.state.StarSystemRecall = event.content.get('StarSystem', 'Unknown')
 
@@ -2314,6 +2323,30 @@ class DockingEvents(Projection[DockingEventsStateModel]):
                 projected_events.append(ProjectedEvent(content={"event": "DockingComputerDeactivated"}))
 
         return projected_events
+
+# Define types for Powerplay Projection
+class PowerplayStateModel(BaseModel):
+    """Powerplay status of the commander."""
+    Power: str = Field(default="Unknown", description="Power name")
+    Rank: int = Field(default=0, description="Powerplay rank")
+    Merits: int = Field(default=0, description="Current merits")
+    TimePledged: int = Field(default=0, description="Seconds pledged to the power")
+    Timestamp: str = Field(default="1970-01-01T00:00:00Z", description="Timestamp of last Powerplay event")
+
+
+@final
+class Powerplay(Projection[PowerplayStateModel]):
+    StateModel = PowerplayStateModel
+
+    @override
+    def process(self, event: Event) -> None:
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Powerplay':
+            self.state.Power = event.content.get('Power', 'Unknown')
+            self.state.Rank = event.content.get('Rank', 0)
+            self.state.Merits = event.content.get('Merits', 0)
+            self.state.TimePledged = event.content.get('TimePledged', 0)
+            if 'timestamp' in event.content:
+                self.state.Timestamp = event.content['timestamp']
 
 # Define types for InCombat Projection
 class InCombatStateModel(BaseModel):
@@ -2501,6 +2534,7 @@ def registerProjections(
     event_manager.register_projection(SuitLoadout())
     event_manager.register_projection(Materials())
     event_manager.register_projection(Friends())
+    event_manager.register_projection(Powerplay())
     event_manager.register_projection(ColonisationConstruction())
     event_manager.register_projection(DockingEvents())
     event_manager.register_projection(InCombat())
@@ -2519,13 +2553,11 @@ def registerProjections(
         'Reputation',
         'SquadronStartup',
         'Statistics',
-        'Powerplay',
         'ShipLocker',
         'Loadout',
         'Shipyard',
         'Market',
         'Outfitting',
-        'Shipyard',
     ]:
         p = latest_event_projection_factory(proj, proj)
         event_manager.register_projection(p())
