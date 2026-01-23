@@ -2729,6 +2729,208 @@ class Statistics(Projection[StatisticsStateModel]):
             if 'timestamp' in event.content:
                 self.state.Timestamp = event.content['timestamp']
 
+# Define types for FleetCarriers Projection
+class FleetCarrierEntry(BaseModel):
+    """Fleet carrier details and last known location."""
+    CarrierType: str = Field(default="Unknown", description="Carrier type (FleetCarrier/SquadronCarrier)")
+    CarrierID: int = Field(default=0, description="Carrier identifier")
+    Callsign: str = Field(default="Unknown", description="Carrier callsign")
+    Name: str = Field(default="Unknown", description="Carrier name")
+    DockingAccess: str = Field(default="Unknown", description="Docking access mode")
+    AllowNotorious: bool = Field(default=False, description="Whether notorious pilots are allowed")
+    FuelLevel: int = Field(default=0, description="Carrier fuel level")
+    JumpRangeCurr: float = Field(default=0.0, description="Current jump range")
+    JumpRangeMax: float = Field(default=0.0, description="Maximum jump range")
+    PendingDecommission: bool = Field(default=False, description="Whether decommission is pending")
+    SpaceUsage: dict[str, Any] = Field(default_factory=dict, description="Carrier space usage data")
+    Finance: dict[str, Any] = Field(default_factory=dict, description="Carrier finance data")
+    Crew: list[dict[str, Any]] = Field(default_factory=list, description="Carrier crew data")
+    ShipPacks: list[dict[str, Any]] = Field(default_factory=list, description="Carrier ship packs")
+    ModulePacks: list[dict[str, Any]] = Field(default_factory=list, description="Carrier module packs")
+    StarSystem: str = Field(default="Unknown", description="Last known star system")
+    SystemAddress: int = Field(default=0, description="Last known system address")
+    BodyID: int = Field(default=0, description="Last known body ID")
+    Timestamp: str = Field(default="1970-01-01T00:00:00Z", description="Timestamp of last carrier update")
+
+
+class CarrierJumpRequestItem(BaseModel):
+    """Pending carrier jump request."""
+    CarrierType: str = Field(default="Unknown", description="Carrier type (FleetCarrier/SquadronCarrier)")
+    CarrierID: int = Field(default=0, description="Carrier identifier")
+    SystemName: str = Field(default="Unknown", description="Destination system name")
+    Body: str = Field(default="Unknown", description="Destination body name")
+    SystemAddress: int = Field(default=0, description="Destination system address")
+    BodyID: int = Field(default=0, description="Destination body ID")
+    DepartureTime: str = Field(default="1970-01-01T00:00:00Z", description="Scheduled departure time (UTC)")
+    WarningSent: bool = Field(default=False, description="Whether a jump warning has been sent")
+
+
+class CarrierCooldownItem(BaseModel):
+    """Carrier jump cooldown tracking."""
+    CarrierType: str = Field(default="Unknown", description="Carrier type (FleetCarrier/SquadronCarrier)")
+    CarrierID: int = Field(default=0, description="Carrier identifier")
+    CooldownUntil: str = Field(default="1970-01-01T00:00:00Z", description="Carrier jump cooldown end time (UTC)")
+    ReadySent: bool = Field(default=False, description="Whether cooldown ready event has been sent")
+
+
+class FleetCarriersStateModel(BaseModel):
+    """Fleet carriers keyed by carrier ID."""
+    Carriers: dict[int, FleetCarrierEntry] = Field(default_factory=dict, description="Carriers keyed by CarrierID")
+    PendingJumps: dict[int, CarrierJumpRequestItem] = Field(default_factory=dict, description="Pending carrier jumps keyed by CarrierID")
+    Cooldowns: dict[int, CarrierCooldownItem] = Field(default_factory=dict, description="Carrier cooldowns keyed by CarrierID")
+
+
+@final
+class FleetCarriers(Projection[FleetCarriersStateModel]):
+    StateModel = FleetCarriersStateModel
+
+    def _process_jump_timers(self, current_time: datetime) -> list[ProjectedEvent]:
+        projected_events: list[ProjectedEvent] = []
+        completed_ids: list[int] = []
+        cooldown_completed_ids: list[int] = []
+
+        for carrier_id, pending in self.state.PendingJumps.items():
+            try:
+                departure_time = datetime.fromisoformat(pending.DepartureTime.replace('Z', '+00:00'))
+            except ValueError:
+                continue
+
+            warning_time = departure_time - timedelta(minutes=10)
+            if current_time >= warning_time and not pending.WarningSent:
+                projected_events.append(ProjectedEvent(content={
+                    "event": "CarrierJumpWarning",
+                    "CarrierType": pending.CarrierType,
+                    "CarrierID": carrier_id,
+                    "SystemName": pending.SystemName,
+                    "Body": pending.Body,
+                    "SystemAddress": pending.SystemAddress,
+                    "BodyID": pending.BodyID,
+                    "DepartureTime": pending.DepartureTime,
+                }))
+                pending.WarningSent = True
+
+            if current_time >= departure_time:
+                entry = self.state.Carriers.get(carrier_id)
+                if entry is None:
+                    entry = FleetCarrierEntry(CarrierID=carrier_id, CarrierType=pending.CarrierType)
+                    self.state.Carriers[carrier_id] = entry
+
+                entry.CarrierType = pending.CarrierType
+                entry.StarSystem = pending.SystemName
+                entry.SystemAddress = pending.SystemAddress
+                entry.BodyID = pending.BodyID
+                entry.Timestamp = pending.DepartureTime
+                cooldown_until = departure_time + timedelta(minutes=15)
+                self.state.Cooldowns[carrier_id] = CarrierCooldownItem(
+                    CarrierType=pending.CarrierType,
+                    CarrierID=carrier_id,
+                    CooldownUntil=cooldown_until.isoformat(),
+                    ReadySent=False,
+                )
+
+                projected_events.append(ProjectedEvent(content={
+                    "event": "CarrierJumpArrived",
+                    "CarrierType": pending.CarrierType,
+                    "CarrierID": carrier_id,
+                    "SystemName": pending.SystemName,
+                    "Body": pending.Body,
+                    "SystemAddress": pending.SystemAddress,
+                    "BodyID": pending.BodyID,
+                    "DepartureTime": pending.DepartureTime,
+                }))
+                completed_ids.append(carrier_id)
+
+        for carrier_id in completed_ids:
+            self.state.PendingJumps.pop(carrier_id, None)
+
+        for carrier_id, cooldown in self.state.Cooldowns.items():
+            if cooldown.ReadySent:
+                continue
+            try:
+                cooldown_until = datetime.fromisoformat(cooldown.CooldownUntil.replace('Z', '+00:00'))
+            except ValueError:
+                continue
+            if current_time >= cooldown_until:
+                projected_events.append(ProjectedEvent(content={
+                    "event": "CarrierJumpCooldownComplete",
+                    "CarrierType": cooldown.CarrierType,
+                    "CarrierID": carrier_id,
+                    "CooldownUntil": cooldown.CooldownUntil,
+                }))
+                cooldown.ReadySent = True
+                cooldown_completed_ids.append(carrier_id)
+
+        for carrier_id in cooldown_completed_ids:
+            self.state.Cooldowns.pop(carrier_id, None)
+
+        return projected_events
+
+    @override
+    def process(self, event: Event) -> list[ProjectedEvent] | None:
+        if not isinstance(event, GameEvent):
+            return None
+
+        event_name = event.content.get('event')
+        if event_name not in ['CarrierLocation', 'CarrierStats', 'CarrierJumpRequest']:
+            return None
+
+        carrier_id = event.content.get('CarrierID', 0)
+        if not carrier_id:
+            return None
+
+        carrier_type = event.content.get('CarrierType', 'Unknown')
+        entry = self.state.Carriers.get(carrier_id)
+        if entry is None:
+            entry = FleetCarrierEntry(CarrierID=carrier_id, CarrierType=carrier_type)
+            self.state.Carriers[carrier_id] = entry
+
+        entry.CarrierType = carrier_type
+        entry.CarrierID = carrier_id
+        if 'timestamp' in event.content:
+            entry.Timestamp = event.content['timestamp']
+
+        if event_name == 'CarrierLocation':
+            entry.StarSystem = event.content.get('StarSystem', entry.StarSystem)
+            entry.SystemAddress = event.content.get('SystemAddress', entry.SystemAddress)
+            entry.BodyID = event.content.get('BodyID', entry.BodyID)
+
+        if event_name == 'CarrierStats':
+            entry.Callsign = event.content.get('Callsign', entry.Callsign)
+            entry.Name = event.content.get('Name', entry.Name)
+            entry.DockingAccess = event.content.get('DockingAccess', entry.DockingAccess)
+            entry.AllowNotorious = event.content.get('AllowNotorious', entry.AllowNotorious)
+            entry.FuelLevel = event.content.get('FuelLevel', entry.FuelLevel)
+            entry.JumpRangeCurr = event.content.get('JumpRangeCurr', entry.JumpRangeCurr)
+            entry.JumpRangeMax = event.content.get('JumpRangeMax', entry.JumpRangeMax)
+            entry.PendingDecommission = event.content.get('PendingDecommission', entry.PendingDecommission)
+            entry.SpaceUsage = event.content.get('SpaceUsage', entry.SpaceUsage)
+            entry.Finance = event.content.get('Finance', entry.Finance)
+            entry.Crew = event.content.get('Crew', entry.Crew)
+            entry.ShipPacks = event.content.get('ShipPacks', entry.ShipPacks)
+            entry.ModulePacks = event.content.get('ModulePacks', entry.ModulePacks)
+
+        if event_name == 'CarrierJumpRequest':
+            pending = CarrierJumpRequestItem(
+                CarrierType=carrier_type,
+                CarrierID=carrier_id,
+                SystemName=event.content.get('SystemName', 'Unknown'),
+                Body=event.content.get('Body', 'Unknown'),
+                SystemAddress=event.content.get('SystemAddress', 0),
+                BodyID=event.content.get('BodyID', 0),
+                DepartureTime=event.content.get('DepartureTime', '1970-01-01T00:00:00Z'),
+            )
+            self.state.PendingJumps[carrier_id] = pending
+
+            now_utc = datetime.now(timezone.utc)
+            projected_events = self._process_jump_timers(now_utc)
+            return projected_events if projected_events else None
+
+        return None
+
+    def process_timer(self) -> list[ProjectedEvent]:
+        current_time = datetime.now(timezone.utc)
+        return self._process_jump_timers(current_time)
+
 # Define types for InCombat Projection
 class InCombatStateModel(BaseModel):
     """Combat status of the commander."""
@@ -2911,6 +3113,7 @@ def registerProjections(
     event_manager.register_projection(Reputation())
     event_manager.register_projection(Commander())
     event_manager.register_projection(Statistics())
+    event_manager.register_projection(FleetCarriers())
     event_manager.register_projection(ShipInfo())
     event_manager.register_projection(Target())
     event_manager.register_projection(NavInfo(system_db))

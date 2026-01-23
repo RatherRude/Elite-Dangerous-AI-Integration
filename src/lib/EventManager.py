@@ -281,7 +281,7 @@ class EventManager:
             timestamp = datetime.now(timezone.utc).timestamp()
             projected_events: list[ProjectedEvent] = []
             projected_states: dict[str, Any] | None = None
-            timer_projection_names = {"Idle", "StoredShips", "StoredModules"}
+            timer_projection_names = {"Idle", "StoredShips", "StoredModules", "FleetCarriers"}
 
             for projection in self.projections:
                 if projection.__class__.__name__ not in timer_projection_names:

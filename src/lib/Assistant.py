@@ -67,6 +67,9 @@ class Assistant:
                         "discoveryFiregroup": self.config.get("discovery_firegroup_var", 1),
                     }
                     fire_weapons(fire_args, projected_states)
+            if isinstance(event, ProjectedEvent) and event.content.get('event') == 'CarrierJumpCooldownComplete':
+                log('debug', 'here could be a carrer jump')
+
         except Exception as e:
             log('error', 'Auto actions on FSDJump failed', e, traceback.format_exc())
 

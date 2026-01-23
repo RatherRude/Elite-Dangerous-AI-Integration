@@ -2219,6 +2219,21 @@ class PromptGenerator:
             station = module_event.get('StationName') or 'a station'
             system = module_event.get('StarSystem') or 'a system'
             return f"{self.commander_name}'s module {module_name} has arrived at {station} in {system}."
+        if event_name == 'CarrierJumpWarning':
+            carrier_event = cast(Dict[str, Any], content or {})
+            carrier_type = carrier_event.get('CarrierType') or 'carrier'
+            system = carrier_event.get('SystemName') or 'a system'
+            departure_time = carrier_event.get('DepartureTime') or 'soon'
+            return f"{self.commander_name}'s {carrier_type} will jump to {system} in about 10 minutes (departure {departure_time})."
+        if event_name == 'CarrierJumpArrived':
+            carrier_event = cast(Dict[str, Any], content or {})
+            carrier_type = carrier_event.get('CarrierType') or 'carrier'
+            system = carrier_event.get('SystemName') or 'a system'
+            return f"{self.commander_name}'s {carrier_type} has arrived in {system}."
+        if event_name == 'CarrierJumpCooldownComplete':
+            carrier_event = cast(Dict[str, Any], content or {})
+            carrier_type = carrier_event.get('CarrierType') or 'carrier'
+            return f"{self.commander_name}'s {carrier_type} is ready to jump again."
         if event_name == 'ShipyardTransferCompleted':
             ship_event = cast(Dict[str, Any], content or {})
             ship_name = ship_event.get('ShipName') or ship_event.get('ShipType') or 'ship'
