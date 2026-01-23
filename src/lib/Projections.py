@@ -2433,6 +2433,82 @@ class RankProgress(Projection[RankProgressStateModel]):
             if 'timestamp' in event.content:
                 self.state.Timestamp = event.content['timestamp']
 
+# Define types for Squadron Projection
+class SquadronStateModel(BaseModel):
+    """Current squadron membership state."""
+    SquadronID: int = Field(default=0, description="Squadron identifier")
+    SquadronName: str = Field(default="Unknown", description="Squadron name")
+    CurrentRank: int = Field(default=0, description="Current squadron rank")
+    CurrentRankName: str = Field(default="Unknown", description="Current squadron rank name")
+    Status: str = Field(default="None", description="Membership status")
+    Timestamp: str = Field(default="1970-01-01T00:00:00Z", description="Timestamp of last squadron event")
+
+
+@final
+class Squadron(Projection[SquadronStateModel]):
+    StateModel = SquadronStateModel
+
+    @override
+    def process(self, event: Event) -> None:
+        if not isinstance(event, GameEvent):
+            return
+
+        event_name = event.content.get('event')
+
+        if event_name == 'SquadronStartup':
+            self.state.SquadronID = event.content.get('SquadronID', 0)
+            self.state.SquadronName = event.content.get('SquadronName', 'Unknown')
+            self.state.CurrentRank = event.content.get('CurrentRank', 0)
+            self.state.CurrentRankName = event.content.get('CurrentRankName', 'Unknown')
+            self.state.Status = "Member"
+            if 'timestamp' in event.content:
+                self.state.Timestamp = event.content['timestamp']
+
+        if event_name == 'AppliedToSquadron':
+            self.state.SquadronName = event.content.get('SquadronName', self.state.SquadronName)
+            self.state.Status = "Applied"
+            if 'timestamp' in event.content:
+                self.state.Timestamp = event.content['timestamp']
+
+        if event_name == 'InvitedToSquadron':
+            self.state.SquadronName = event.content.get('SquadronName', self.state.SquadronName)
+            self.state.Status = "Invited"
+            if 'timestamp' in event.content:
+                self.state.Timestamp = event.content['timestamp']
+
+        if event_name == 'JoinedSquadron':
+            self.state.SquadronName = event.content.get('SquadronName', self.state.SquadronName)
+            self.state.Status = "Member"
+            if 'timestamp' in event.content:
+                self.state.Timestamp = event.content['timestamp']
+
+        if event_name == 'SquadronCreated':
+            self.state.SquadronName = event.content.get('SquadronName', self.state.SquadronName)
+            self.state.Status = "Member"
+            if 'timestamp' in event.content:
+                self.state.Timestamp = event.content['timestamp']
+
+        if event_name == 'SquadronPromotion':
+            self.state.SquadronID = event.content.get('SquadronID', self.state.SquadronID)
+            self.state.SquadronName = event.content.get('SquadronName', self.state.SquadronName)
+            self.state.CurrentRank = event.content.get('NewRank', self.state.CurrentRank)
+            self.state.CurrentRankName = event.content.get('NewRankName', self.state.CurrentRankName)
+            self.state.Status = "Member"
+            if 'timestamp' in event.content:
+                self.state.Timestamp = event.content['timestamp']
+
+        if event_name == 'SquadronDemotion':
+            self.state.SquadronID = event.content.get('SquadronID', self.state.SquadronID)
+            self.state.SquadronName = event.content.get('SquadronName', self.state.SquadronName)
+            self.state.CurrentRank = event.content.get('NewRank', self.state.CurrentRank)
+            self.state.CurrentRankName = event.content.get('NewRankName', self.state.CurrentRankName)
+            self.state.Status = "Member"
+            if 'timestamp' in event.content:
+                self.state.Timestamp = event.content['timestamp']
+
+        if event_name in ['LeftSquadron', 'KickedFromSquadron', 'DisbandedSquadron']:
+            self.state = SquadronStateModel()
+
 # Define types for InCombat Projection
 class InCombatStateModel(BaseModel):
     """Combat status of the commander."""
@@ -2611,6 +2687,7 @@ def registerProjections(
     event_manager.register_projection(EngineerProgress())
     event_manager.register_projection(RankProgress())
     event_manager.register_projection(CommunityGoal())
+    event_manager.register_projection(Squadron())
     event_manager.register_projection(ShipInfo())
     event_manager.register_projection(Target())
     event_manager.register_projection(NavInfo(system_db))
@@ -2635,7 +2712,6 @@ def registerProjections(
         'Commander',
         'ModuleInfo',
         'Reputation',
-        'SquadronStartup',
         'Statistics',
         'ShipLocker',
         'Loadout',
