@@ -2384,6 +2384,7 @@ class Powerplay(Projection[PowerplayStateModel]):
 class RankProgressEntry(BaseModel):
     """Rank and progress for a single category."""
     Rank: int = Field(default=0, description="Rank value")
+    RankName: str = Field(default="Unknown", description="Human-readable rank name")
     Progress: int = Field(default=0, description="Progress to next rank (0-100)")
 
 
@@ -2395,6 +2396,8 @@ class RankProgressStateModel(BaseModel):
     Empire: RankProgressEntry = Field(default_factory=RankProgressEntry, description="Empire rank/progress")
     Federation: RankProgressEntry = Field(default_factory=RankProgressEntry, description="Federation rank/progress")
     CQC: RankProgressEntry = Field(default_factory=RankProgressEntry, description="CQC rank/progress")
+    Soldier: RankProgressEntry = Field(default_factory=RankProgressEntry, description="Soldier rank/progress")
+    Exobiologist: RankProgressEntry = Field(default_factory=RankProgressEntry, description="Exobiologist rank/progress")
     Timestamp: str = Field(default="1970-01-01T00:00:00Z", description="Timestamp of last rank/progress event")
 
 
@@ -2402,7 +2405,154 @@ class RankProgressStateModel(BaseModel):
 class RankProgress(Projection[RankProgressStateModel]):
     StateModel = RankProgressStateModel
 
-    _category_keys = ["Combat", "Trade", "Explore", "Empire", "Federation", "CQC"]
+    _category_keys = [
+        "Combat",
+        "Trade",
+        "Explore",
+        "Empire",
+        "Federation",
+        "CQC",
+        "Soldier",
+        "Exobiologist",
+    ]
+    _rank_names: dict[str, list[str]] = {
+        "Combat": [
+            "Harmless",
+            "Mostly Harmless",
+            "Novice",
+            "Competent",
+            "Expert",
+            "Master",
+            "Dangerous",
+            "Deadly",
+            "Elite",
+            "Elite I",
+            "Elite II",
+            "Elite III",
+            "Elite IV",
+            "Elite V",
+        ],
+        "Trade": [
+            "Penniless",
+            "Mostly Pennliess",
+            "Peddler",
+            "Dealer",
+            "Merchant",
+            "Broker",
+            "Entrepreneur",
+            "Tycoon",
+            "Elite",
+            "Elite I",
+            "Elite II",
+            "Elite III",
+            "Elite IV",
+            "Elite V",
+        ],
+        "Explore": [
+            "Aimless",
+            "Mostly Aimless",
+            "Scout",
+            "Surveyor",
+            "Explorer",
+            "Pathfinder",
+            "Ranger",
+            "Pioneer",
+            "Elite",
+            "Elite I",
+            "Elite II",
+            "Elite III",
+            "Elite IV",
+            "Elite V",
+        ],
+        "Federation": [
+            "None",
+            "Recruit",
+            "Cadet",
+            "Midshipman",
+            "Petty Officer",
+            "Chief Petty Officer",
+            "Warrant Officer",
+            "Ensign",
+            "Lieutenant",
+            "Lt. Commander",
+            "Post Commander",
+            "Post Captain",
+            "Rear Admiral",
+            "Vice Admiral",
+            "Admiral",
+        ],
+        "Empire": [
+            "None",
+            "Outsider",
+            "Serf",
+            "Master",
+            "Squire",
+            "Knight",
+            "Lord",
+            "Baron",
+            "Viscount",
+            "Count",
+            "Earl",
+            "Marquis",
+            "Duke",
+            "Prince",
+            "King",
+        ],
+        "CQC": [
+            "Helpless",
+            "Mostly Helpless",
+            "Amateur",
+            "Semi Professional",
+            "Professional",
+            "Champion",
+            "Hero",
+            "Legend",
+            "Elite",
+            "Elite I",
+            "Elite II",
+            "Elite III",
+            "Elite IV",
+            "Elite V",
+        ],
+        "Soldier": [
+            "Defenceless",
+            "Mostly Defenceless",
+            "Rookie",
+            "Soldier",
+            "Gunslinger",
+            "Warrior",
+            "Gladiator",
+            "Deadeye",
+            "Elite",
+            "Elite I",
+            "Elite II",
+            "Elite III",
+            "Elite IV",
+            "Elite V",
+        ],
+        "Exobiologist": [
+            "Directionless",
+            "Mostly Directionless",
+            "Compiler",
+            "Collector",
+            "Cataloguer",
+            "Taxonomist",
+            "Ecologist",
+            "Geneticist",
+            "Elite",
+            "Elite I",
+            "Elite II",
+            "Elite III",
+            "Elite IV",
+            "Elite V",
+        ],
+    }
+
+    def _rank_name_for(self, category: str, rank_value: int) -> str:
+        names = self._rank_names.get(category, [])
+        if 0 <= rank_value < len(names):
+            return names[rank_value]
+        return "Unknown"
 
     @override
     def process(self, event: Event) -> None:
@@ -2413,7 +2563,10 @@ class RankProgress(Projection[RankProgressStateModel]):
         if event_name == 'Rank':
             for key in self._category_keys:
                 if key in event.content:
-                    getattr(self.state, key).Rank = event.content.get(key, 0)
+                    rank_value = event.content.get(key, 0)
+                    category = getattr(self.state, key)
+                    category.Rank = rank_value
+                    category.RankName = self._rank_name_for(key, rank_value)
             if 'timestamp' in event.content:
                 self.state.Timestamp = event.content['timestamp']
 
@@ -2428,7 +2581,9 @@ class RankProgress(Projection[RankProgressStateModel]):
             for key in self._category_keys:
                 if key in event.content:
                     category = getattr(self.state, key)
-                    category.Rank = event.content.get(key, 0)
+                    rank_value = event.content.get(key, 0)
+                    category.Rank = rank_value
+                    category.RankName = self._rank_name_for(key, rank_value)
                     category.Progress = 0
             if 'timestamp' in event.content:
                 self.state.Timestamp = event.content['timestamp']
@@ -2508,6 +2663,71 @@ class Squadron(Projection[SquadronStateModel]):
 
         if event_name in ['LeftSquadron', 'KickedFromSquadron', 'DisbandedSquadron']:
             self.state = SquadronStateModel()
+
+# Define types for Reputation Projection
+class ReputationStateModel(BaseModel):
+    """Faction reputation values."""
+    Empire: float = Field(default=0.0, description="Reputation with the Empire")
+    Federation: float = Field(default=0.0, description="Reputation with the Federation")
+    Alliance: float = Field(default=0.0, description="Reputation with the Alliance")
+    Timestamp: str = Field(default="1970-01-01T00:00:00Z", description="Timestamp of last reputation event")
+
+
+@final
+class Reputation(Projection[ReputationStateModel]):
+    StateModel = ReputationStateModel
+
+    @override
+    def process(self, event: Event) -> None:
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Reputation':
+            # Always default missing values to 0.0
+            self.state.Empire = event.content.get('Empire', 0.0)
+            self.state.Federation = event.content.get('Federation', 0.0)
+            self.state.Alliance = event.content.get('Alliance', 0.0)
+            if 'timestamp' in event.content:
+                self.state.Timestamp = event.content['timestamp']
+
+# Define types for Commander Projection
+class CommanderStateModel(BaseModel):
+    """Commander identity details."""
+    FID: str = Field(default="Unknown", description="Frontier ID")
+    Name: str = Field(default="Unknown", description="Commander name")
+    Timestamp: str = Field(default="1970-01-01T00:00:00Z", description="Timestamp of last commander event")
+
+
+@final
+class Commander(Projection[CommanderStateModel]):
+    StateModel = CommanderStateModel
+
+    @override
+    def process(self, event: Event) -> None:
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Commander':
+            self.state.FID = event.content.get('FID', 'Unknown')
+            self.state.Name = event.content.get('Name', 'Unknown')
+            if 'timestamp' in event.content:
+                self.state.Timestamp = event.content['timestamp']
+
+# Define types for Statistics Projection
+class StatisticsStateModel(BaseModel):
+    """Commander statistics payload."""
+    Data: dict[str, Any] = Field(default_factory=dict, description="Statistics data payload")
+    Timestamp: str = Field(default="1970-01-01T00:00:00Z", description="Timestamp of last statistics event")
+
+
+@final
+class Statistics(Projection[StatisticsStateModel]):
+    StateModel = StatisticsStateModel
+
+    @override
+    def process(self, event: Event) -> None:
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Statistics':
+            self.state.Data = {
+                key: value
+                for key, value in event.content.items()
+                if key not in ('event', 'timestamp')
+            }
+            if 'timestamp' in event.content:
+                self.state.Timestamp = event.content['timestamp']
 
 # Define types for InCombat Projection
 class InCombatStateModel(BaseModel):
@@ -2688,6 +2908,9 @@ def registerProjections(
     event_manager.register_projection(RankProgress())
     event_manager.register_projection(CommunityGoal())
     event_manager.register_projection(Squadron())
+    event_manager.register_projection(Reputation())
+    event_manager.register_projection(Commander())
+    event_manager.register_projection(Statistics())
     event_manager.register_projection(ShipInfo())
     event_manager.register_projection(Target())
     event_manager.register_projection(NavInfo(system_db))
@@ -2709,10 +2932,7 @@ def registerProjections(
 
     # ToDo: SLF, SRV,
     for proj in [
-        'Commander',
         'ModuleInfo',
-        'Reputation',
-        'Statistics',
         'ShipLocker',
         'Loadout',
         'Shipyard',

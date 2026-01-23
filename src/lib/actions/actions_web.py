@@ -68,6 +68,17 @@ def web_search_agent(
         {
             "type": "function",
             "function": {
+                "name": "get_commander_data",
+                "description": "Return combined commander data about the ommander's statistics, elite ranks, super power reputation, and squadron.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {}
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
                 "name": "get_galnet_news",
                 "description": "Retrieve current interstellar news from Galnet. Use this for questions about recent events, thargoids, etc.",
                 "parameters": {
@@ -215,6 +226,7 @@ def web_search_agent(
         "material_finder": material_finder,
         "get_stored_ship_modules": get_stored_ship_modules,
         "get_stored_ships": get_stored_ships,
+        "get_commander_data": get_commander_data,
     }
 
     system_prompt = """
@@ -461,6 +473,21 @@ def get_stored_ships(obj, projected_states):
         result[header] = data['ships']
     
     return result
+
+def get_commander_data(obj, projected_states):
+    commander = get_state_dict(projected_states, 'Commander', {})
+    reputation = get_state_dict(projected_states, 'Reputation', {})
+    ranks = get_state_dict(projected_states, 'RankProgress', {})
+    squadron = get_state_dict(projected_states, 'Squadron', {})
+    statistics = get_state_dict(projected_states, 'Statistics', {})
+
+    return {
+        "Commander": commander,
+        "Reputation": reputation,
+        "Ranks": ranks,
+        "Squadron": squadron,
+        "Statistics": statistics,
+    }
 
 def blueprint_finder(obj, projected_states):
     import yaml
@@ -2279,7 +2306,7 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
 
     actionManager.registerAction(
         'web_search_agent',
-        "Request a detailed report about information from the game, including news, system, station, body, engineers, blueprint, material lookups, owned ships and modules. Use this tool whenever the user asks about anything related to external or global information.",
+        "Request a detailed report about information from the game, including news, system, station, body, engineers, blueprint, material lookups, owned ships and modules and statistics about the commander. Use this tool whenever the user asks about anything related to external or global information.",
         {
             "type": "object",
             "properties": {
