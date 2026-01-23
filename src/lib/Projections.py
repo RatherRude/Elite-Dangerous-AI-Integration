@@ -2340,13 +2340,45 @@ class Powerplay(Projection[PowerplayStateModel]):
 
     @override
     def process(self, event: Event) -> None:
-        if isinstance(event, GameEvent) and event.content.get('event') == 'Powerplay':
-            self.state.Power = event.content.get('Power', 'Unknown')
-            self.state.Rank = event.content.get('Rank', 0)
-            self.state.Merits = event.content.get('Merits', 0)
-            self.state.TimePledged = event.content.get('TimePledged', 0)
-            if 'timestamp' in event.content:
-                self.state.Timestamp = event.content['timestamp']
+        if isinstance(event, GameEvent):
+            event_name = event.content.get('event')
+
+            if event_name == 'Powerplay':
+                self.state.Power = event.content.get('Power', 'Unknown')
+                self.state.Rank = event.content.get('Rank', 0)
+                self.state.Merits = event.content.get('Merits', 0)
+                self.state.TimePledged = event.content.get('TimePledged', 0)
+                if 'timestamp' in event.content:
+                    self.state.Timestamp = event.content['timestamp']
+
+            if event_name == 'PowerplayMerits':
+                self.state.Merits = event.content.get('TotalMerits', self.state.Merits)
+                if 'timestamp' in event.content:
+                    self.state.Timestamp = event.content['timestamp']
+
+            if event_name == 'PowerplayRank':
+                self.state.Rank = event.content.get('Rank', self.state.Rank)
+                if 'timestamp' in event.content:
+                    self.state.Timestamp = event.content['timestamp']
+
+            if event_name == 'PowerplayJoin':
+                self.state.Power = event.content.get('Power', 'Unknown')
+                self.state.Rank = 0
+                self.state.Merits = 0
+                self.state.TimePledged = 0
+                if 'timestamp' in event.content:
+                    self.state.Timestamp = event.content['timestamp']
+
+            if event_name == 'PowerplayDefect':
+                self.state.Power = event.content.get('ToPower', 'Unknown')
+                self.state.Rank = 0
+                self.state.Merits = 0
+                self.state.TimePledged = 0
+                if 'timestamp' in event.content:
+                    self.state.Timestamp = event.content['timestamp']
+
+            if event_name == 'PowerplayLeave':
+                self.state = PowerplayStateModel()
 
 # Define types for InCombat Projection
 class InCombatStateModel(BaseModel):
