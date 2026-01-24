@@ -3138,8 +3138,7 @@ class FSSSignals(Projection[FSSSignalsStateModel]):
 
 
 class InDockingRangeStateModel(BaseModel):
-    HasExitedForDock: bool = False
-
+    HasExitedForDock: bool = True
 
 @final
 class InDockingRange(Projection[InDockingRangeStateModel]):
@@ -3153,52 +3152,19 @@ class InDockingRange(Projection[InDockingRangeStateModel]):
         if isinstance(event, GameEvent):
             name = event.content.get("event")
 
-            if name == "Docked":
-                # Hard stop: once docked, clear pending docking prompts.
-                self.state.HasExitedForDock = False
-                return projected_events
-
-            if name == "Undocked":
-                if getattr(event, "historic", False):
-                    return projected_events
-                self.state.HasExitedForDock = False
-                return projected_events
-
-            if name == "DockingRequested":
-                # Manual docking request; clear any pending prompt context to avoid duplicate reminders.
-                self.state.HasExitedForDock = False
-                return projected_events
-
-            if name in ["DockingGranted", "DockingDenied", "DockingCancelled", "DockingCanceled", "DockingTimeout"]:
-                # Docking flow completed/failed; clear context to avoid stale prompts.
-                self.state.HasExitedForDock = False
-                return projected_events
-
             if name == "SupercruiseExit":
-                taxi = event.content.get("Taxi", "") or False
-                self.state.HasExitedForDock = True
-
-                if taxi:
-                    # Ignore taxi rides for docking prompts; clear approach context.
-                    self.state.HasExitedForDock = False
+                # Ignore taxi rides for docking prompts
+                if not event.content.get("Taxi", False):
+                    self.state = InDockingRangeStateModel()
                     return projected_events
 
             if name == "ReceiveText":
-                channel = event.content.get("Channel", "")
-                if channel not in ["npc", "station", "local", "starsystem"]:
+                if (event.content.get("Channel", "") != "npc" or not self.state.HasExitedForDock or
+                        event.content.get("Message", "") != "$STATION_NoFireZone_entered;"):
                     return projected_events
 
-                # Only respond to NFZ if we have an active station approach context
-                if not self.state.HasExitedForDock:
-                    return projected_events
-
-                message = (event.content.get("Message") or "").lower()
-                if "nofirezone_entered" not in message:
-                    return projected_events
-
-                # We have already prompted based on NFZ warning; clear target so we don't prompt again on mass lock
                 projected_events.append(ProjectedEvent(content={"event": "InDockingRange"}))
-                self.state.HasExitedForDock = False
+                self.state = InDockingRangeStateModel(HasExitedForDock=False)
 
         return projected_events
 
