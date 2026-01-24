@@ -1,6 +1,6 @@
 import sys
 import traceback
-from typing import Any, Literal
+from typing import Any, Literal, cast
 import io
 import datetime
 import logging
@@ -12,7 +12,12 @@ from pythonjsonlogger.json import JsonFormatter
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.sdk.resources import Resource, SERVICE_NAME, SERVICE_INSTANCE_ID, SERVICE_NAMESPACE
+from opentelemetry.sdk.resources import (
+    Resource,
+    SERVICE_NAME,
+    SERVICE_INSTANCE_ID,
+    SERVICE_NAMESPACE,
+)
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry._logs import set_logger_provider
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
@@ -20,17 +25,26 @@ from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.exporter.otlp.proto.http._log_exporter import OTLPLogExporter
 from opentelemetry.instrumentation.openai import OpenAIInstrumentor
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', write_through=True)
-sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', write_through=True)
+
+def configure_stdio() -> None:
+    if sys.stdout and not sys.stdout.closed:
+        sys.stdout = io.TextIOWrapper(
+            sys.stdout.buffer, encoding="utf-8", write_through=True
+        )
+    if sys.stderr and not sys.stderr.closed:
+        sys.stderr = io.TextIOWrapper(
+            sys.stderr.buffer, encoding="utf-8", write_through=True
+        )
+
 
 logger = logging.getLogger()
 
 logHandler = logging.StreamHandler(stream=sys.stdout)
 formatter = JsonFormatter(
     static_fields={"type": "log"},
-    reserved_attrs=[], 
+    reserved_attrs=[],
     datefmt="%Y-%m-%dT%H:%M:%SZ",
-    rename_fields={'levelname': 'prefix', 'asctime': 'timestamp'}
+    rename_fields={"levelname": "prefix", "asctime": "timestamp"},
 )
 logHandler.setFormatter(formatter)
 logger.addHandler(logHandler)
@@ -40,6 +54,7 @@ httpx_logger = logging.getLogger("httpx")
 httpx_logger.setLevel(logging.WARNING)
 
 tracer = trace.get_tracer(__name__)
+
 
 def enable_remote_tracing(username: str, attributes: dict[str, str]):
     """
@@ -51,13 +66,11 @@ def enable_remote_tracing(username: str, attributes: dict[str, str]):
     """
 
     # Setup shared resource for both tracing and logging
-    resource = Resource.create({
-        "service.name": "com.covaslabs.chat",
-        "user.name": username,
-        **attributes
-    })
+    resource = Resource.create(
+        {"service.name": "com.covaslabs.chat", "user.name": username, **attributes}
+    )
 
-    log('debug', f'Enabling remote tracing and logging', attributes)
+    log("debug", f"Enabling remote tracing and logging", attributes)
 
     # Setup OpenTelemetry tracing
     otel_provider = TracerProvider(resource=resource)
@@ -74,7 +87,10 @@ def enable_remote_tracing(username: str, attributes: dict[str, str]):
         compression=None,
     )
 
-    log('debug', f'Creating BatchSpanProcessor with OTLP exporter to {trace_endpoint_url}')
+    log(
+        "debug",
+        f"Creating BatchSpanProcessor with OTLP exporter to {trace_endpoint_url}",
+    )
 
     trace_processor = BatchSpanProcessor(
         otlp_trace_exporter,
@@ -100,7 +116,10 @@ def enable_remote_tracing(username: str, attributes: dict[str, str]):
         compression=None,
     )
 
-    log('debug', f'Creating BatchLogRecordProcessor with OTLP exporter to {log_endpoint_url}')
+    log(
+        "debug",
+        f"Creating BatchLogRecordProcessor with OTLP exporter to {log_endpoint_url}",
+    )
 
     log_processor = BatchLogRecordProcessor(
         otlp_log_exporter,
@@ -112,37 +131,43 @@ def enable_remote_tracing(username: str, attributes: dict[str, str]):
     log_provider.add_log_record_processor(log_processor)
 
     # Attach OTLP logging handler to the root logger
-    otel_log_handler = LoggingHandler(level=logging.NOTSET, logger_provider=log_provider)
+    otel_log_handler = LoggingHandler(
+        level=logging.NOTSET, logger_provider=log_provider
+    )
 
     # Add a filter to prevent urllib3 and opentelemetry logs from going to remote
     # while still allowing them to be logged locally
     class NoTelemetryLibsFilter(logging.Filter):
         def filter(self, record):
             # Prevent logs from telemetry libraries from being sent remotely
-            return not ((record.threadName or '').startswith('OtelBatchLogRecordProcessor') or 'monitoring.covaslabs.com' in record.message or record.name.startswith('opentelemetry'))
+            return not (
+                (record.threadName or "").startswith("OtelBatchLogRecordProcessor")
+                or "monitoring.covaslabs.com" in record.message
+                or record.name.startswith("opentelemetry")
+            )
 
     otel_log_handler.addFilter(NoTelemetryLibsFilter())
     logging.getLogger().addHandler(otel_log_handler)
 
     # Instrument OpenAI for automatic tracing
-    log('debug', 'Instrumenting OpenAI API calls')
+    log("debug", "Instrumenting OpenAI API calls")
     OpenAIInstrumentor().instrument()
 
     # Register shutdown handler to ensure spans and logs are flushed on exit
     def shutdown_telemetry():
         try:
-            log('debug', 'Flushing remaining spans and logs...')
+            log("debug", "Flushing remaining spans and logs...")
             otel_provider.force_flush(timeout_millis=5000)
             log_provider.force_flush(timeout_millis=5000)
             otel_provider.shutdown()
             log_provider.shutdown()
-            log('debug', 'Telemetry shutdown complete')
+            log("debug", "Telemetry shutdown complete")
         except Exception as e:
-            log('warn', f'Error during telemetry shutdown: {e}')
+            log("warn", f"Error during telemetry shutdown: {e}")
 
     atexit.register(shutdown_telemetry)
 
-    log('info', f'Remote tracing and logging enabled', attributes)
+    log("info", f"Remote tracing and logging enabled", attributes)
 
 
 def handle_exception(exc_type, exc_value, exc_traceback):
@@ -150,23 +175,39 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         # Call default handler for keyboard interrupt
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
-    
+
     if not sys.stderr.closed and not sys.stdout.closed:
         contents = traceback.format_exception(exc_type, exc_value, exc_traceback)
-        print(json.dumps({
-            "type": "log",
-            "timestamp": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-            "prefix": "error",
-            "message": "Uncaught exception: "+str(contents),
-        }), file=sys.stderr)
-        print(json.dumps({
-            "type": "chat",
-            "timestamp": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-            "role": "error",
-            "message": "Uncaught exception, please check the logs for more details."
-        }), file=sys.stdout)
+        print(
+            json.dumps(
+                {
+                    "type": "log",
+                    "timestamp": datetime.datetime.now(datetime.UTC).strftime(
+                        "%Y-%m-%dT%H:%M:%S.%fZ"
+                    ),
+                    "prefix": "error",
+                    "message": "Uncaught exception: " + str(contents),
+                }
+            ),
+            file=sys.stderr,
+        )
+        print(
+            json.dumps(
+                {
+                    "type": "chat",
+                    "timestamp": datetime.datetime.now(datetime.UTC).strftime(
+                        "%Y-%m-%dT%H:%M:%S.%fZ"
+                    ),
+                    "role": "error",
+                    "message": "Uncaught exception, please check the logs for more details.",
+                }
+            ),
+            file=sys.stdout,
+        )
+
 
 sys.excepthook = handle_exception
+
 
 def show_chat_message(role: str, *args: Any):
     output = io.StringIO()
@@ -174,44 +215,49 @@ def show_chat_message(role: str, *args: Any):
     contents = output.getvalue().strip()
     output.close()
     role = role.lower()
-    
+
     message: dict[str, str] = {
-        'type': 'chat',
-        'timestamp': datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-        'role': role,
-        'message': contents,
+        "type": "chat",
+        "timestamp": datetime.datetime.now(datetime.UTC).strftime(
+            "%Y-%m-%dT%H:%M:%S.%fZ"
+        ),
+        "role": role,
+        "message": contents,
     }
-    
-    #logger.info(contents)
-    
+
+    # logger.info(contents)
+
     print(json.dumps(message) + "\n", flush=True)
 
-def log(prefix: Literal['info', 'debug', 'warn', 'error'], message: Any, *args: Any):
+
+def log(prefix: Literal["info", "debug", "warn", "error"], message: Any, *args: Any):
     output = io.StringIO()
     print(message, *args, file=output)
     contents = output.getvalue().strip()
     output.close()
-    prefix = prefix.lower()
-    
+    prefix = cast(Literal["info", "debug", "warn", "error"], prefix.lower())
+
     timestamp = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
-    if prefix == 'debug':
+    if prefix == "debug":
         logging.debug(contents, extra={"timestamp": timestamp})
-    elif prefix == 'info':
+    elif prefix == "info":
         logging.info(contents, extra={"timestamp": timestamp})
-    elif prefix == 'warn':
+    elif prefix == "warn":
         logging.warning(contents, extra={"timestamp": timestamp})
-    elif prefix == 'error':
+    elif prefix == "error":
         logging.error(contents, extra={"timestamp": timestamp})
     else:
         logging.info(contents, extra={"timestamp": timestamp})
-    if sys.stdout:
+    if sys.stdout and not sys.stdout.closed:
         sys.stdout.flush()
-    if sys.stderr:
+    if sys.stderr and not sys.stderr.closed:
         sys.stderr.flush()
+
 
 def observe():
     """Observe decorator for tracing function calls with arguments and return values using OpenTelemetry."""
+
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -230,15 +276,27 @@ def observe():
                     span.set_status(trace.Status(trace.StatusCode.ERROR, str(e)))
                     raise
                 finally:
-                    logger.debug(f"Trace for function {func.__name__} completed", extra={
-                        "func_name": func.__name__,
-                        "span_id": format(span.get_span_context().span_id, '016x'),
-                        "trace_id": format(span.get_span_context().trace_id, '032x'),
-                        "arguments": {**{f"arg{i}": repr(arg) for i, arg in enumerate(args)}, **{k: repr(v) for k, v in kwargs.items()}},
-                        "return": repr(result) if 'result' in locals() else 'exception',
-                        "duration": duration,
-                    })
+                    logger.debug(
+                        f"Trace for function {func.__name__} completed",
+                        extra={
+                            "func_name": func.__name__,
+                            "span_id": format(span.get_span_context().span_id, "016x"),
+                            "trace_id": format(
+                                span.get_span_context().trace_id, "032x"
+                            ),
+                            "arguments": {
+                                **{f"arg{i}": repr(arg) for i, arg in enumerate(args)},
+                                **{k: repr(v) for k, v in kwargs.items()},
+                            },
+                            "return": repr(result)
+                            if "result" in locals()
+                            else "exception",
+                            "duration": duration,
+                        },
+                    )
+
         return wrapper
+
     return decorator
 
 
@@ -264,6 +322,7 @@ class PromptUsageStats:
             + self.genui_chars
         )
 
+
 @dataclass
 class ModelUsageStats:
     """Token-level API usage as reported by the model provider."""
@@ -272,15 +331,19 @@ class ModelUsageStats:
     output_tokens: int = 0
     total_tokens: int = 0
     cached_tokens: int = 0
-    
-    
-def log_llm_usage(context: str, model_usage: ModelUsageStats, prompt_usage: PromptUsageStats) -> None:
+
+
+def log_llm_usage(
+    context: str, model_usage: ModelUsageStats, prompt_usage: PromptUsageStats
+) -> None:
     message = {
         "type": "llm_usage",
-        'timestamp': datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+        "timestamp": datetime.datetime.now(datetime.UTC).strftime(
+            "%Y-%m-%dT%H:%M:%S.%fZ"
+        ),
         "context": context,
         "model_usage": vars(model_usage),
         "prompt_usage": vars(prompt_usage),
     }
-    
+
     print(json.dumps(message) + "\n", flush=True)

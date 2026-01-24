@@ -494,6 +494,9 @@ def get_ed_journals_path(config: Config) -> str:
         path = os.path.abspath(config['ed_journal_path'])
         return path
 
+    if platform.system() != "Windows":
+        return os.getcwd()
+
     from . import WindowsKnownPaths as winpaths
     saved_games = winpaths.get_path(winpaths.FOLDERID.SavedGames, winpaths.UserHandle.current)
     if saved_games is None:
@@ -524,6 +527,9 @@ def get_asset_path(filename: str) -> str:
 
 
 def migrate(data: dict) -> dict:
+    legacy_game_events = data.get('game_events', game_events)
+    if not isinstance(legacy_game_events, dict) or any(isinstance(value, dict) for value in legacy_game_events.values()):
+        legacy_game_events = game_events
     # Migrate vision_var to vision_provider
     if 'vision_var' in data and not data.get('vision_var'):
         data['vision_provider'] = 'none'
@@ -576,7 +582,7 @@ def migrate(data: dict) -> dict:
                 "tts_voice": 'en-US-AvaMultilingualNeural' if data.get('tts_voice', 'en-US-AvaMultilingualNeural') == 'en-GB-SoniaNeural' else data.get('tts_voice', 'en-US-AvaMultilingualNeural'),
                 "tts_speed": data.get('tts_speed', "1.2"),
                 "tts_prompt": data.get('tts_prompt', ""),
-                "event_reactions": default_event_reactions,
+                "event_reactions": to_event_reactions(legacy_game_events, ["Idle"]),
                 "event_reaction_enabled_var": data.get('event_reaction_enabled_var', True),
                 "react_to_text_local_var": data.get('react_to_text_local_var', True),
                 "react_to_text_starsystem_var": data.get('react_to_text_starsystem_var', True),
@@ -598,7 +604,7 @@ def migrate(data: dict) -> dict:
         if 'game_events' in data:
             for character in data['characters']:
                 legacy_disabled = character.get('disabled_game_events', [])
-                character['event_reactions'] = to_event_reactions(data['game_events'], legacy_disabled)
+                character['event_reactions'] = to_event_reactions(legacy_game_events, legacy_disabled)
                 character.pop('game_events', None)
                 character.pop('disabled_game_events', None)
             data.pop('game_events', None)

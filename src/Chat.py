@@ -37,7 +37,7 @@ from lib.actions.Actions import register_actions
 from lib.ControllerManager import ControllerManager
 from lib.EDKeys import EDKeys
 from lib.Event import ConversationEvent, Event, ExternalEvent, GameEvent, MemoryEvent, ProjectedEvent, StatusEvent, ToolEvent
-from lib.Logger import show_chat_message
+from lib.Logger import show_chat_message, configure_stdio
 from lib.Projections import registerProjections
 from lib.PromptGenerator import PromptGenerator
 from lib.STT import STT
@@ -50,8 +50,6 @@ from lib.SystemDatabase import SystemDatabase
 from lib.Database import QuestDatabase
 from lib.Assistant import Assistant
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', write_through=True)
-sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', write_through=True)
 
 
 @final
@@ -665,6 +663,8 @@ def check_zombie_status():
 
 if __name__ == "__main__":
     try:
+        configure_stdio()
+        sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', write_through=True)
         print(json.dumps({"type": "ready"})+'\n')
         # Wait for start signal on stdin
         config = load_config()
