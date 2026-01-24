@@ -2747,6 +2747,7 @@ class FleetCarrierEntry(BaseModel):
     Crew: list[dict[str, Any]] = Field(default_factory=list, description="Carrier crew data")
     ShipPacks: list[dict[str, Any]] = Field(default_factory=list, description="Carrier ship packs")
     ModulePacks: list[dict[str, Any]] = Field(default_factory=list, description="Carrier module packs")
+    TradeOrders: dict[str, dict[str, Any]] = Field(default_factory=dict, description="Carrier trade orders keyed by commodity")
     StarSystem: str = Field(default="Unknown", description="Last known star system")
     SystemAddress: int = Field(default=0, description="Last known system address")
     BodyID: int = Field(default=0, description="Last known body ID")
@@ -2871,7 +2872,20 @@ class FleetCarriers(Projection[FleetCarriersStateModel]):
             return None
 
         event_name = event.content.get('event')
-        if event_name not in ['CarrierLocation', 'CarrierStats', 'CarrierJumpRequest']:
+        if event_name not in [
+            'CarrierLocation',
+            'CarrierStats',
+            'CarrierJumpRequest',
+            'CarrierJumpCancelled',
+            'CarrierNameChanged',
+            'CarrierDecommission',
+            'CarrierCancelDecommission',
+            'CarrierBankTransfer',
+            'CarrierDepositFuel',
+            'CarrierCrewServices',
+            'CarrierFinance',
+            'CarrierTradeOrder',
+        ]:
             return None
 
         carrier_id = event.content.get('CarrierID', 0)
@@ -2909,6 +2923,75 @@ class FleetCarriers(Projection[FleetCarriersStateModel]):
             entry.ShipPacks = event.content.get('ShipPacks', entry.ShipPacks)
             entry.ModulePacks = event.content.get('ModulePacks', entry.ModulePacks)
 
+        if event_name == 'CarrierNameChanged':
+            entry.Callsign = event.content.get('Callsign', entry.Callsign)
+            entry.Name = event.content.get('Name', entry.Name)
+
+        if event_name == 'CarrierDecommission':
+            entry.PendingDecommission = True
+
+        if event_name == 'CarrierCancelDecommission':
+            entry.PendingDecommission = False
+
+        if event_name == 'CarrierBankTransfer':
+            entry.Finance = {
+                **entry.Finance,
+                "CarrierBalance": event.content.get('CarrierBalance', entry.Finance.get("CarrierBalance", 0)),
+                "PlayerBalance": event.content.get('PlayerBalance', entry.Finance.get("PlayerBalance", 0)),
+                "Deposit": event.content.get('Deposit', entry.Finance.get("Deposit", 0)),
+                "Withdraw": event.content.get('Withdraw', entry.Finance.get("Withdraw", 0)),
+            }
+
+        if event_name == 'CarrierDepositFuel':
+            entry.FuelLevel = event.content.get('Total', entry.FuelLevel)
+
+        if event_name == 'CarrierCrewServices':
+            crew_role = event.content.get('CrewRole')
+            if crew_role:
+                crew = next((c for c in entry.Crew if c.get('CrewRole') == crew_role), None)
+                if crew is None:
+                    crew = {"CrewRole": crew_role}
+                    entry.Crew.append(crew)
+                crew["Operation"] = event.content.get('Operation', '')
+                if 'CrewName' in event.content:
+                    crew["CrewName"] = event.content.get('CrewName', '')
+
+        if event_name == 'CarrierFinance':
+            entry.Finance = {
+                **entry.Finance,
+                "CarrierBalance": event.content.get('CarrierBalance', entry.Finance.get("CarrierBalance", 0)),
+                "ReserveBalance": event.content.get('ReserveBalance', entry.Finance.get("ReserveBalance", 0)),
+                "AvailableBalance": event.content.get('AvailableBalance', entry.Finance.get("AvailableBalance", 0)),
+                "ReservePercent": event.content.get('ReservePercent', entry.Finance.get("ReservePercent", 0)),
+                "TaxRate_repair": event.content.get('TaxRate_repair', entry.Finance.get("TaxRate_repair", 0)),
+                "TaxRate_refuel": event.content.get('TaxRate_refuel', entry.Finance.get("TaxRate_refuel", 0)),
+                "TaxRate_rearm": event.content.get('TaxRate_rearm', entry.Finance.get("TaxRate_rearm", 0)),
+            }
+
+        if event_name == 'CarrierTradeOrder':
+            commodity = event.content.get('Commodity', 'Unknown')
+            black_market = event.content.get('BlackMarket', False)
+            order_key = f"{commodity}:{'black' if black_market else 'legal'}"
+            if event.content.get('CancelTrade'):
+                entry.TradeOrders.pop(order_key, None)
+            else:
+                order_type = None
+                order_amount = None
+                if 'PurchaseOrder' in event.content:
+                    order_type = 'Purchase'
+                    order_amount = event.content.get('PurchaseOrder')
+                elif 'SaleOrder' in event.content:
+                    order_type = 'Sale'
+                    order_amount = event.content.get('SaleOrder')
+                entry.TradeOrders[order_key] = {
+                    "Commodity": commodity,
+                    "BlackMarket": black_market,
+                    "OrderType": order_type,
+                    "OrderAmount": order_amount,
+                    "Price": event.content.get('Price'),
+                    "Timestamp": event.content.get('timestamp', entry.Timestamp),
+                }
+
         if event_name == 'CarrierJumpRequest':
             pending = CarrierJumpRequestItem(
                 CarrierType=carrier_type,
@@ -2924,6 +3007,9 @@ class FleetCarriers(Projection[FleetCarriersStateModel]):
             now_utc = datetime.now(timezone.utc)
             projected_events = self._process_jump_timers(now_utc)
             return projected_events if projected_events else None
+
+        if event_name == 'CarrierJumpCancelled':
+            self.state.PendingJumps.pop(carrier_id, None)
 
         return None
 
