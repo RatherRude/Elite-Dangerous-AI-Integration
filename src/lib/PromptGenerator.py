@@ -3253,6 +3253,24 @@ class PromptGenerator:
         if current_station and current_station == storedShips.get('StationName') and not search_agent_context:
             status_entries.append(("Local, stored ships", storedShips.get('ShipsHere', [])))
 
+        fleet_carriers = get_state_dict(projected_states, 'FleetCarriers')
+        carriers = fleet_carriers.get('Carriers', {})
+        if carriers:
+            carrier_entries = []
+            for carrier_id in sorted(carriers.keys()):
+                entry = carriers.get(carrier_id, {})
+                name = entry.get('Name', 'Unknown')
+                carrier_type = entry.get('CarrierType', 'Unknown')
+                if carrier_type == 'FleetCarrier':
+                    type_label = 'Personal Fleet Carrier'
+                elif carrier_type == 'SquadronCarrier':
+                    type_label = 'Squadron Fleet Carrier'
+                else:
+                    type_label = carrier_type if carrier_type != 'Unknown' else 'Fleet Carrier'
+                star_system = entry.get('StarSystem', 'Unknown')
+                carrier_entries.append(f"{name} ({type_label}): {star_system} system")
+            status_entries.append(("Fleet Carriers", carrier_entries))
+
         # Show modules in transit to current system
         if len(storedModules.get('ItemsInTransit', [])) > 0:
             current_system = location_info.get('StarSystem')

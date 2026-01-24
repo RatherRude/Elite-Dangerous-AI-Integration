@@ -1,0 +1,80 @@
+.carrier-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.section-header {
+  padding: 16px 16px 0 16px;
+  border-bottom: 1px solid #333;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background-color 0.2s ease;
+}
+
+.section-header:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.section-header h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  color: #e0e0e0;
+  font-weight: 600;
+}
+
+.collapse-icon {
+  color: #999;
+  transition: transform 0.2s ease;
+}
+
+.section-content {
+  padding: 16px;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  overflow: hidden;
+}
+
+.section-content.collapsed {
+  max-height: 0;
+  padding: 0 16px;
+  opacity: 0;
+}
+
+.detail-block {
+  margin-bottom: 16px;
+}
+
+.detail-block h5 {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  color: #bdbdbd;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px 16px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+  color: #e0e0e0;
+}
+
+.detail-row .label {
+  color: #9e9e9e;
+}
+
+.empty-state {
+  color: #888;
+  font-style: italic;
+  font-size: 13px;
+}
