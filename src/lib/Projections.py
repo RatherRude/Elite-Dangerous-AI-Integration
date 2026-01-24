@@ -3356,6 +3356,7 @@ def registerProjections(
     event_manager.register_projection(InCombat())
     event_manager.register_projection(Wing())
     event_manager.register_projection(FSSSignals())
+    event_manager.register_projection(InDockingRange())
     event_manager.register_projection(Idle(idle_timeout))
     event_manager.register_projection(StoredModules())
     event_manager.register_projection(StoredShips())

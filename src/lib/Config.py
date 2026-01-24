@@ -88,6 +88,7 @@ game_events = {
     'SupercruiseEntry': True,
     'SupercruiseExit': True,
     'ApproachSettlement': True,
+    'InDockingRange': True,
     'Docked': True,
     'Undocked': True,
     'DockingCanceled': False,
