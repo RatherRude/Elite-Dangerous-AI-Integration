@@ -1,4 +1,5 @@
 import math
+import json
 import re
 import traceback
 from typing import Any, Literal, final, List, cast, Optional
@@ -12,7 +13,7 @@ from .Event import Event, StatusEvent, GameEvent, ProjectedEvent, ExternalEvent,
 from .EventModels import FSSSignalDiscoveredEvent, LocationEvent
 from .EventManager import EventManager, Projection
 from .Logger import log
-from .EDFuelCalc import RATING_BY_CLASSNUM , FSD_OVERCHARGE_STATS , FSD_MKii ,FSD_OVERCHARGE_V2PRE_STATS, FSD_STATS ,FSD_GUARDIAN_BOOSTER
+from .Config import get_asset_path
 from .StatusParser import parse_status_flags, parse_status_json, Status
 from .SystemDatabase import SystemDatabase
 
@@ -711,59 +712,17 @@ class CommunityGoal(Projection[CommunityGoalStateModel]):
             # Update state with only non-expired goals
             self.state.CurrentGoals = active_goals if active_goals else None
 
-ship_sizes: dict[str, Literal['S', 'M', 'L', 'Unknown']] = {
-    'adder':                         'S',
-    'anaconda':                      'L',
-    'asp':                           'M',
-    'asp_scout':                     'M',
-    'belugaliner':                   'L',
-    'cobramkiii':                    'S',
-    'cobramkiv':                     'S',
-    'clipper':                       'Unknown',
-    'cutter':                        'L',
-    'corsair':                       'M',
-    'diamondback':                   'S',
-    'diamondbackxl':                 'S',
-    'dolphin':                       'S',
-    'eagle':                         'S',
-    'empire_courier':                'S',
-    'empire_eagle':                  'S',
-    'empire_fighter':                'Unknown',
-    'empire_trader':                 'L',
-    'explorer_nx':                   'L',
-    'federation_corvette':           'L',
-    'federation_dropship':           'M',
-    'federation_dropship_mkii':      'M',
-    'federation_gunship':            'M',
-    'federation_fighter':            'Unknown',
-    'ferdelance':                    'M',
-    'hauler':                        'S',
-    'independant_trader':            'M',
-    'independent_fighter':           'Unknown',
-    'krait_mkii':                    'M',
-    'krait_light':                   'M',
-    'mamba':                         'M',
-    'mandalay':                      'M',
-    'orca':                          'L',
-    'python':                        'M',
-    'python_nx':                     'M',
-    'panthermkii':                   'L',
-    'scout':                         'Unknown',
-    'sidewinder':                    'S',
-    'testbuggy':                     'Unknown',
-    'type6':                         'M',
-    'type7':                         'L',
-    'type8':                         'L',
-    'type9':                         'L',
-    'type9_military':                'L',
-    'typex':                         'M',
-    'typex_2':                       'M',
-    'typex_3':                       'M',
-    'type11':                        'M',
-    'viper':                         'S',
-    'viper_mkiv':                    'S',
-    'vulture':                       'S',
-}
+with open(get_asset_path("ship_sizes.json"), encoding="utf-8") as handle:
+    ship_sizes: dict[str, Literal['S', 'M', 'L', 'Unknown']] = json.load(handle)
+
+with open(get_asset_path("fsd_stats.json"), encoding="utf-8") as handle:
+    fsd_stats_payload = json.load(handle)
+
+FSD_STATS = fsd_stats_payload.get("fsd_stats", {})
+FSD_OVERCHARGE_STATS = fsd_stats_payload.get("fsd_overcharge_stats", {})
+FSD_MKii = fsd_stats_payload.get("fsd_mkii", {})
+FSD_GUARDIAN_BOOSTER = fsd_stats_payload.get("fsd_guardian_booster", {})
+RATING_BY_CLASSNUM = {int(key): value for key, value in fsd_stats_payload.get("rating_by_classnum", {}).items()}
 
 
 FIGHTER_STATUS_LITERAL = Literal['Ready', 'Launched', 'BeingRebuilt', 'Abandoned']
@@ -918,7 +877,7 @@ class ShipInfo(Projection[ShipInfoStateModel]):
                     else:
                         all_module_stats = FSD_OVERCHARGE_STATS if over else FSD_STATS
 
-                    module_stat: dict = all_module_stats.get((module_size, module_rating))
+                    module_stat: dict = all_module_stats.get(f"{module_size}{module_rating}")
                     self.state.DriveOptimalMass = engineering_optimal_mass_override if engineering_optimal_mass_override is not None else module_stat.get('opt_mass', 0.00)
                     self.state.DriveMaxFuel = engineering_max_fuel_override if engineering_max_fuel_override is not None else module_stat.get('max_fuel', 0.00)
                     self.state.DriveLinearConst = module_stat.get('linear_const', 0.0)
@@ -933,7 +892,7 @@ class ShipInfo(Projection[ShipInfoStateModel]):
                     if "int_guardianfsdbooster" in module_item.lower():    
                         module_size_match = re.search(r"size(\d+)", module_item)
                         module_size = int(module_size_match.group(1))
-                        guardian_booster_stats = FSD_GUARDIAN_BOOSTER.get((module_size,"H"))
+                        guardian_booster_stats = FSD_GUARDIAN_BOOSTER.get(f"{module_size}H")
                         
                         self.state.GuardianfsdBooster = guardian_booster_stats.get('jump_boost', 0.0)
                           
@@ -1700,30 +1659,8 @@ class ExobiologyScanStateModel(BaseModel):
 @final
 class ExobiologyScan(Projection[ExobiologyScanStateModel]):
     StateModel = ExobiologyScanStateModel
-
-    colony_size = {
-        "Aleoids_Genus_Name": 150,      # Aleoida
-        "Vents_Genus_Name": 100,        # Amphora Plant
-        "Sphere_Genus_Name": 100,       # Anemone
-        "Bacterial_Genus_Name": 500,    # Bacterium
-        "Cone_Genus_Name": 100,         # Bark Mound
-        "Brancae_Name": 100,            # Brain Tree
-        "Cactoid_Genus_Name": 300,      # Cactoida
-        "Clypeus_Genus_Name": 150,      # Clypeus
-        "Conchas_Genus_Name": 150,      # Concha
-        "Shards_Genus_Name": 100,       # Crystalline Shard
-        "Electricae_Genus_Name": 1000,  # Electricae
-        "Fonticulus_Genus_Name": 500,   # Fonticulua
-        "Shrubs_Genus_Name": 150,       # Frutexa
-        "Fumerolas_Genus_Name": 100,    # Fumerola
-        "Fungoids_Genus_Name": 300,     # Fungoida
-        "Osseus_Genus_Name": 800,       # Osseus
-        "Recepta_Genus_Name": 150,      # Recepta
-        "Tube_Genus_Name": 100,         # Sinuous Tuber
-        "Stratum_Genus_Name": 500,      # Stratum
-        "Tubus_Genus_Name": 800,        # Tubus
-        "Tussocks_Genus_Name": 200      # Tussock
-    }
+    with open(get_asset_path("exobiology_colony_sizes.json"), encoding="utf-8") as handle:
+        colony_size = json.load(handle)
 
     def haversine_distance(self, new_value: ExobiologyScanStateScan, old_value: ExobiologyScanStateScan, radius: int):
         lat1, lon1 = math.radians(new_value.lat), math.radians(new_value.long)
@@ -1919,152 +1856,13 @@ class MaterialEntry(BaseModel):
     Name_Localised: Optional[str] = Field(default=None, description="Human-readable material name")
 
 
-MATERIAL_TEMPLATE: dict[MaterialsCategory, list[dict]] = {
-    "Raw": [
-        {"Name": "carbon", "Count": 0},
-        {"Name": "phosphorus", "Count": 0},
-        {"Name": "sulphur", "Count": 0},
-        {"Name": "iron", "Count": 0},
-        {"Name": "polonium", "Count": 0},
-        {"Name": "manganese", "Count": 0},
-        {"Name": "molybdenum", "Count": 0},
-        {"Name": "arsenic", "Count": 0},
-        {"Name": "nickel", "Count": 0},
-        {"Name": "vanadium", "Count": 0},
-        {"Name": "mercury", "Count": 0},
-        {"Name": "ruthenium", "Count": 0},
-        {"Name": "tellurium", "Count": 0},
-        {"Name": "tungsten", "Count": 0},
-        {"Name": "zinc", "Count": 0},
-        {"Name": "technetium", "Count": 0},
-        {"Name": "yttrium", "Count": 0},
-        {"Name": "antimony", "Count": 0},
-        {"Name": "selenium", "Count": 0},
-        {"Name": "boron", "Count": 0},
-        {"Name": "zirconium", "Count": 0},
-        {"Name": "lead", "Count": 0},
-        {"Name": "rhenium", "Count": 0},
-        {"Name": "germanium", "Count": 0},
-        {"Name": "tin", "Count": 0},
-        {"Name": "chromium", "Count": 0},
-        {"Name": "niobium", "Count": 0},
-        {"Name": "cadmium", "Count": 0},
-    ],
-    "Manufactured": [
-        {"Name": "conductiveceramics", "Name_Localised": "Conductive Ceramics", "Count": 0},
-        {"Name": "heatdispersionplate", "Name_Localised": "Heat Dispersion Plate", "Count": 0},
-        {"Name": "mechanicalcomponents", "Name_Localised": "Mechanical Components", "Count": 0},
-        {"Name": "chemicalprocessors", "Name_Localised": "Chemical Processors", "Count": 0},
-        {"Name": "conductivecomponents", "Name_Localised": "Conductive Components", "Count": 0},
-        {"Name": "heatexchangers", "Name_Localised": "Heat Exchangers", "Count": 0},
-        {"Name": "shieldemitters", "Name_Localised": "Shield Emitters", "Count": 0},
-        {"Name": "phasealloys", "Name_Localised": "Phase Alloys", "Count": 0},
-        {"Name": "precipitatedalloys", "Name_Localised": "Precipitated Alloys", "Count": 0},
-        {"Name": "focuscrystals", "Name_Localised": "Focus Crystals", "Count": 0},
-        {"Name": "mechanicalequipment", "Name_Localised": "Mechanical Equipment", "Count": 0},
-        {"Name": "heatconductionwiring", "Name_Localised": "Heat Conduction Wiring", "Count": 0},
-        {"Name": "basicconductors", "Name_Localised": "Basic Conductors", "Count": 0},
-        {"Name": "shieldingsensors", "Name_Localised": "Shielding Sensors", "Count": 0},
-        {"Name": "heatvanes", "Name_Localised": "Heat Vanes", "Count": 0},
-        {"Name": "filamentcomposites", "Name_Localised": "Filament Composites", "Count": 0},
-        {"Name": "chemicaldistillery", "Name_Localised": "Chemical Distillery", "Count": 0},
-        {"Name": "salvagedalloys", "Name_Localised": "Salvaged Alloys", "Count": 0},
-        {"Name": "configurablecomponents", "Name_Localised": "Configurable Components", "Count": 0},
-        {"Name": "highdensitycomposites", "Name_Localised": "High Density Composites", "Count": 0},
-        {"Name": "refinedfocuscrystals", "Name_Localised": "Refined Focus Crystals", "Count": 0},
-        {"Name": "crystalshards", "Name_Localised": "Crystal Shards", "Count": 0},
-        {"Name": "compoundshielding", "Name_Localised": "Compound Shielding", "Count": 0},
-        {"Name": "conductivepolymers", "Name_Localised": "Conductive Polymers", "Count": 0},
-        {"Name": "wornshieldemitters", "Name_Localised": "Worn Shield Emitters", "Count": 0},
-        {"Name": "uncutfocuscrystals", "Name_Localised": "Flawed Focus Crystals", "Count": 0},
-        {"Name": "mechanicalscrap", "Name_Localised": "Mechanical Scrap", "Count": 0},
-        {"Name": "galvanisingalloys", "Name_Localised": "Galvanising Alloys", "Count": 0},
-        {"Name": "hybridcapacitors", "Name_Localised": "Hybrid Capacitors", "Count": 0},
-        {"Name": "polymercapacitors", "Name_Localised": "Polymer Capacitors", "Count": 0},
-        {"Name": "electrochemicalarrays", "Name_Localised": "Electrochemical Arrays", "Count": 0},
-        {"Name": "chemicalmanipulators", "Name_Localised": "Chemical Manipulators", "Count": 0},
-        {"Name": "heatresistantceramics", "Name_Localised": "Heat Resistant Ceramics", "Count": 0},
-        {"Name": "chemicalstorageunits", "Name_Localised": "Chemical Storage Units", "Count": 0},
-        {"Name": "compactcomposites", "Name_Localised": "Compact Composites", "Count": 0},
-        {"Name": "exquisitefocuscrystals", "Name_Localised": "Exquisite Focus Crystals", "Count": 0},
-        {"Name": "biotechconductors", "Name_Localised": "Biotech Conductors", "Count": 0},
-        {"Name": "gridresistors", "Name_Localised": "Grid Resistors", "Count": 0},
-        {"Name": "guardian_sentinel_wreckagecomponents", "Name_Localised": "Guardian Wreckage Components", "Count": 0},
-        {"Name": "guardian_powerconduit", "Name_Localised": "Guardian Power Conduit", "Count": 0},
-        {"Name": "guardian_sentinel_weaponparts", "Name_Localised": "Guardian Sentinel Weapon Parts", "Count": 0},
-        {"Name": "guardian_techcomponent", "Name_Localised": "Guardian Technology Component", "Count": 0},
-        {"Name": "guardian_powercell", "Name_Localised": "Guardian Power Cell", "Count": 0},
-        {"Name": "imperialshielding", "Name_Localised": "Imperial Shielding", "Count": 0},
-        {"Name": "fedcorecomposites", "Name_Localised": "Core Dynamics Composites", "Count": 0},
-        {"Name": "fedproprietarycomposites", "Name_Localised": "Proprietary Composites", "Count": 0},
-        {"Name": "protoradiolicalloys", "Name_Localised": "Proto Radiolic Alloys", "Count": 0},
-        {"Name": "protolightalloys", "Name_Localised": "Proto Light Alloys", "Count": 0},
-        {"Name": "temperedalloys", "Name_Localised": "Tempered Alloys", "Count": 0},
-        {"Name": "unknownenergysource", "Name_Localised": "Sensor Fragment", "Count": 0},
-        {"Name": "pharmaceuticalisolators", "Name_Localised": "Pharmaceutical Isolators", "Count": 0},
-        {"Name": "tg_wreckagecomponents", "Name_Localised": "Wreckage Components", "Count": 0},
-        {"Name": "tg_biomechanicalconduits", "Name_Localised": "Bio-Mechanical Conduits", "Count": 0},
-        {"Name": "tg_weaponparts", "Name_Localised": "Weapon Parts", "Count": 0},
-        {"Name": "tg_propulsionelement", "Name_Localised": "Propulsion Elements", "Count": 0},
-        {"Name": "militarygradealloys", "Name_Localised": "Military Grade Alloys", "Count": 0},
-        {"Name": "thermicalloys", "Name_Localised": "Thermic Alloys", "Count": 0},
-        {"Name": "improvisedcomponents", "Name_Localised": "Improvised Components", "Count": 0},
-        {"Name": "protoheatradiators", "Name_Localised": "Proto Heat Radiators", "Count": 0},
-        {"Name": "militarysupercapacitors", "Name_Localised": "Military Supercapacitors", "Count": 0},
-        {"Name": "tg_causticgeneratorparts", "Name_Localised": "Corrosive Mechanisms", "Count": 0},
-        {"Name": "tg_causticcrystal", "Name_Localised": "Caustic Crystal", "Count": 0},
-        {"Name": "tg_causticshard", "Name_Localised": "Caustic Shard", "Count": 0},
-        {"Name": "unknowncarapace", "Name_Localised": "Thargoid Carapace", "Count": 0},
-        {"Name": "tg_abrasion02", "Name_Localised": "Phasing Membrane Residue", "Count": 0},
-        {"Name": "tg_abrasion03", "Name_Localised": "Hardened Surface Fragments", "Count": 0},
-        {"Name": "unknownenergycell", "Name_Localised": "Thargoid Energy Cell", "Count": 0},
-        {"Name": "unknowncorechip", "Name_Localised": "Tactical Core Chip", "Count": 0},
-        {"Name": "unknowntechnologycomponents", "Name_Localised": "Thargoid Technological Components", "Count": 0},
-    ],
-    "Encoded": [
-        {"Name": "archivedemissiondata", "Name_Localised": "Irregular Emission Data", "Count": 0},
-        {"Name": "shieldpatternanalysis", "Name_Localised": "Aberrant Shield Pattern Analysis", "Count": 0},
-        {"Name": "scanarchives", "Name_Localised": "Unidentified Scan Archives", "Count": 0},
-        {"Name": "bulkscandata", "Name_Localised": "Anomalous Bulk Scan Data", "Count": 0},
-        {"Name": "shielddensityreports", "Name_Localised": "Untypical Shield Scans", "Count": 0},
-        {"Name": "adaptiveencryptors", "Name_Localised": "Adaptive Encryptors Capture", "Count": 0},
-        {"Name": "encryptionarchives", "Name_Localised": "Atypical Encryption Archives", "Count": 0},
-        {"Name": "consumerfirmware", "Name_Localised": "Modified Consumer Firmware", "Count": 0},
-        {"Name": "industrialfirmware", "Name_Localised": "Cracked Industrial Firmware", "Count": 0},
-        {"Name": "disruptedwakeechoes", "Name_Localised": "Atypical Disrupted Wake Echoes", "Count": 0},
-        {"Name": "wakesolutions", "Name_Localised": "Strange Wake Solutions", "Count": 0},
-        {"Name": "hyperspacetrajectories", "Name_Localised": "Eccentric Hyperspace Trajectories", "Count": 0},
-        {"Name": "dataminedwake", "Name_Localised": "Datamined Wake Exceptions", "Count": 0},
-        {"Name": "legacyfirmware", "Name_Localised": "Specialised Legacy Firmware", "Count": 0},
-        {"Name": "emissiondata", "Name_Localised": "Unexpected Emission Data", "Count": 0},
-        {"Name": "scandatabanks", "Name_Localised": "Classified Scan Databanks", "Count": 0},
-        {"Name": "encryptedfiles", "Name_Localised": "Unusual Encrypted Files", "Count": 0},
-        {"Name": "securityfirmware", "Name_Localised": "Security Firmware Patch", "Count": 0},
-        {"Name": "fsdtelemetry", "Name_Localised": "Anomalous FSD Telemetry", "Count": 0},
-        {"Name": "embeddedfirmware", "Name_Localised": "Modified Embedded Firmware", "Count": 0},
-        {"Name": "shieldsoakanalysis", "Name_Localised": "Inconsistent Shield Soak Analysis", "Count": 0},
-        {"Name": "encryptioncodes", "Name_Localised": "Tagged Encryption Codes", "Count": 0},
-        {"Name": "tg_interdictiondata", "Name_Localised": "Thargoid Interdiction Telemetry", "Count": 0},
-        {"Name": "shieldcyclerecordings", "Name_Localised": "Distorted Shield Cycle Recordings", "Count": 0},
-        {"Name": "ancientculturaldata", "Name_Localised": "Pattern Beta Obelisk Data", "Count": 0},
-        {"Name": "ancientlanguagedata", "Name_Localised": "Pattern Delta Obelisk Data", "Count": 0},
-        {"Name": "ancienthistoricaldata", "Name_Localised": "Pattern Gamma Obelisk Data", "Count": 0},
-        {"Name": "ancientbiologicaldata", "Name_Localised": "Pattern Alpha Obelisk Data", "Count": 0},
-        {"Name": "ancienttechnologicaldata", "Name_Localised": "Pattern Epsilon Obelisk Data", "Count": 0},
-        {"Name": "symmetrickeys", "Name_Localised": "Open Symmetric Keys", "Count": 0},
-        {"Name": "encodedscandata", "Name_Localised": "Divergent Scan Data", "Count": 0},
-        {"Name": "decodedemissiondata", "Name_Localised": "Decoded Emission Data", "Count": 0},
-        {"Name": "scrambledemissiondata", "Name_Localised": "Exceptional Scrambled Emission Data", "Count": 0},
-        {"Name": "guardian_vesselblueprint", "Name_Localised": "Guardian Vessel Blueprint Fragment", "Count": 0},
-        {"Name": "shieldfrequencydata", "Name_Localised": "Peculiar Shield Frequency Data", "Count": 0},
-        {"Name": "tg_shutdowndata", "Name_Localised": "Massive Energy Surge Analytics", "Count": 0},
-        {"Name": "classifiedscandata", "Name_Localised": "Classified Scan Fragment", "Count": 0},
-        {"Name": "tg_shipflightdata", "Name_Localised": "Ship Flight Data", "Count": 0},
-        {"Name": "unknownshipsignature", "Name_Localised": "Thargoid Ship Signature", "Count": 0},
-        {"Name": "compactemissionsdata", "Name_Localised": "Abnormal Compact Emissions Data", "Count": 0},
-        {"Name": "tg_shipsystemsdata", "Name_Localised": "Ship Systems Data", "Count": 0},
-    ]
-}
+MATERIAL_TEMPLATE_LEGACY: dict[MaterialsCategory, list[dict]] = {}
+
+with open(get_asset_path("materials.json"), encoding="utf-8") as handle:
+    MATERIAL_TEMPLATE = json.load(handle)
+
+with open(get_asset_path("materials.json"), encoding="utf-8") as handle:
+    MATERIAL_TEMPLATE = json.load(handle)
 
 MATERIAL_NAME_LOOKUP: dict[str, MaterialsCategory] = {
     entry['Name'].lower(): category
@@ -2075,9 +1873,9 @@ MATERIAL_NAME_LOOKUP: dict[str, MaterialsCategory] = {
 
 class MaterialsStateModel(BaseModel):
     """Commander's materials inventory for engineering and synthesis."""
-    Raw: list[MaterialEntry] = Field(default_factory=lambda: [MaterialEntry(**entry) for entry in MATERIAL_TEMPLATE["Raw"]], description="Raw materials from mining and surface prospecting")
-    Manufactured: list[MaterialEntry] = Field(default_factory=lambda: [MaterialEntry(**entry) for entry in MATERIAL_TEMPLATE["Manufactured"]], description="Manufactured materials from salvage and combat")
-    Encoded: list[MaterialEntry] = Field(default_factory=lambda: [MaterialEntry(**entry) for entry in MATERIAL_TEMPLATE["Encoded"]], description="Encoded data from scanning")
+    Raw: list[MaterialEntry] = Field(default_factory=list, description="Raw materials from mining and surface prospecting")
+    Manufactured: list[MaterialEntry] = Field(default_factory=list, description="Manufactured materials from salvage and combat")
+    Encoded: list[MaterialEntry] = Field(default_factory=list, description="Encoded data from scanning")
     LastUpdated: str = Field(default="", description="Timestamp of last materials update")
 
 
@@ -2087,6 +1885,15 @@ class Materials(Projection[MaterialsStateModel]):
     MATERIAL_CATEGORIES: tuple[MaterialsCategory, ...] = ('Raw', 'Manufactured', 'Encoded')
     TEMPLATE = MATERIAL_TEMPLATE
     LOOKUP = MATERIAL_NAME_LOOKUP
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        if not self.state.Raw:
+            self.state.Raw = [MaterialEntry(**entry) for entry in MATERIAL_TEMPLATE["Raw"]]
+        if not self.state.Manufactured:
+            self.state.Manufactured = [MaterialEntry(**entry) for entry in MATERIAL_TEMPLATE["Manufactured"]]
+        if not self.state.Encoded:
+            self.state.Encoded = [MaterialEntry(**entry) for entry in MATERIAL_TEMPLATE["Encoded"]]
 
     def _get_bucket(self, category: MaterialsCategory) -> list[MaterialEntry]:
         return getattr(self.state, category)
