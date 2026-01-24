@@ -2969,7 +2969,7 @@ class FleetCarriers(Projection[FleetCarriersStateModel]):
             }
 
         if event_name == 'CarrierTradeOrder':
-            commodity = event.content.get('Commodity', 'Unknown')
+            commodity = event.content.get('Commodity_Localised', event.content.get('Commodity', 'Unknown'))
             black_market = event.content.get('BlackMarket', False)
             order_key = f"{commodity}:{'black' if black_market else 'legal'}"
             if event.content.get('CancelTrade'):

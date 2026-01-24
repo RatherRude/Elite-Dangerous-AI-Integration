@@ -57,6 +57,17 @@ def web_search_agent(
         {
             "type": "function",
             "function": {
+                "name": "get_fleet_carriers",
+                "description": "Return fleet carrier details",
+                "parameters": {
+                    "type": "object",
+                    "properties": {}
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
                 "name": "get_stored_ship_modules",
                 "description": "Return current stored ship modules",
                 "parameters": {
@@ -69,7 +80,7 @@ def web_search_agent(
             "type": "function",
             "function": {
                 "name": "get_commander_data",
-                "description": "Return combined commander data about the ommander's statistics, elite ranks, super power reputation, and squadron.",
+                "description": "Return combined commander data about the commander's statistics, elite ranks, super power reputation, and squadron.",
                 "parameters": {
                     "type": "object",
                     "properties": {}
@@ -226,6 +237,7 @@ def web_search_agent(
         "material_finder": material_finder,
         "get_stored_ship_modules": get_stored_ship_modules,
         "get_stored_ships": get_stored_ships,
+        "get_fleet_carriers": get_fleet_carriers,
         "get_commander_data": get_commander_data,
     }
 
@@ -488,6 +500,115 @@ def get_commander_data(obj, projected_states):
         "Squadron": squadron,
         "Statistics": statistics,
     }
+
+
+def get_fleet_carriers(obj, projected_states):
+    fleet_carriers = get_state_dict(projected_states, 'FleetCarriers', {})
+    carriers = fleet_carriers.get('Carriers', {})
+    if not carriers:
+        return {}
+
+    percent_keys = {
+        "ReservePercent",
+        "TaxRate_rearm",
+        "TaxRate_refuel",
+        "TaxRate_repair",
+        "TaxRate_shipyard",
+    }
+
+    def type_label(carrier_type):
+        if carrier_type == "FleetCarrier":
+            return "Fleet Carrier"
+        if carrier_type == "SquadronCarrier":
+            return "Squadron Carrier"
+        return carrier_type if carrier_type not in (None, "", "Unknown") else "Fleet Carrier"
+
+    def format_fuel_level(value):
+        if value is None or value == "":
+            return "- / 1000"
+        return f"{value} / 1000"
+
+    def format_jump_range(current, maximum):
+        current_text = current if current is not None else "-"
+        max_text = maximum if maximum is not None else "-"
+        return f"{current_text} / {max_text}"
+
+    def format_percent(value):
+        if value is None or value == "":
+            return "-"
+        return f"{value}%"
+
+    def build_finance(finance):
+        if not isinstance(finance, dict):
+            return {}
+        result = {}
+        for key, value in finance.items():
+            result[key] = format_percent(value) if key in percent_keys else value
+        return result
+
+    def build_crew(crew):
+        if not isinstance(crew, list):
+            return []
+        crew_out = []
+        for member in crew:
+            if not member or not member.get('Activated', False):
+                continue
+            name = member.get('CrewName', 'Unknown')
+            if member.get('Enabled', True) is False:
+                name = f"{name} (Disabled)"
+            crew_out.append({
+                "CrewRole": member.get('CrewRole', 'Unknown'),
+                "CrewName": name,
+            })
+        return crew_out
+
+    def build_trade_orders(trade_orders):
+        if not isinstance(trade_orders, dict):
+            return []
+        orders_out = []
+        for key, value in trade_orders.items():
+            if not isinstance(value, dict):
+                continue
+            commodity = value.get('Commodity_Localised') or value.get('Commodity') or key
+            orders_out.append({
+                "Commodity": commodity,
+                "OrderType": value.get('OrderType', 'Order'),
+                "OrderAmount": value.get('OrderAmount'),
+                "Price": value.get('Price'),
+                "BlackMarket": value.get('BlackMarket'),
+                "Timestamp": value.get('Timestamp'),
+            })
+        return orders_out
+
+    output = []
+    for carrier_id, carrier in carriers.items():
+        if not isinstance(carrier, dict):
+            continue
+        output.append({
+            "Name": carrier.get('Name', 'Unknown'),
+            "CarrierType": type_label(carrier.get('CarrierType')),
+            "Location": carrier.get('StarSystem', 'Unknown'),
+            "Callsign": carrier.get('Callsign', 'Unknown'),
+            "DockingAccess": carrier.get('DockingAccess', 'Unknown'),
+            "AllowNotorious": carrier.get('AllowNotorious', False),
+            "FuelLevel": format_fuel_level(carrier.get('FuelLevel')),
+            "JumpRange": format_jump_range(carrier.get('JumpRangeCurr'), carrier.get('JumpRangeMax')),
+            "PendingDecommission": carrier.get('PendingDecommission', False),
+            "LastUpdate": carrier.get('Timestamp', 'Unknown'),
+            "SpaceUsage": carrier.get('SpaceUsage', {}),
+            "Finance": build_finance(carrier.get('Finance', {})),
+            "Crew": build_crew(carrier.get('Crew', [])),
+            "ModulePacks": carrier.get('ModulePacks', []),
+            "ShipPacks": carrier.get('ShipPacks', []),
+            "TradeOrders": build_trade_orders(carrier.get('TradeOrders', {})),
+            "CarrierID": carrier_id,
+        })
+
+    output.sort(key=lambda item: item.get("CarrierID", 0))
+    for item in output:
+        item.pop("CarrierID", None)
+
+    return {"Carriers": output}
 
 def blueprint_finder(obj, projected_states):
     import yaml
@@ -2306,7 +2427,7 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
 
     actionManager.registerAction(
         'web_search_agent',
-        "Request a detailed report about information from the game, including news, system, station, body, engineers, blueprint, material lookups, owned ships and modules and statistics about the commander. Use this tool whenever the user asks about anything related to external or global information.",
+        "Request a detailed report about information from the game, including news, system, station, body, engineers, blueprint, material lookups and commander data(owned ships and modules, statistics, super power reputation, elite ranks, squadron, owned fleet carriers). Use this tool whenever the user asks about anything related to external or global information.",
         {
             "type": "object",
             "properties": {

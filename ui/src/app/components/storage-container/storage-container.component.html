@@ -83,6 +83,25 @@
       </div>
     </div>
 
+    <!-- Fleet Carriers Section -->
+    <div class="storage-section" *ngIf="hasFleetCarriers()">
+      <div class="section-header" (click)="toggleSection('fleetCarriers')">
+        <h3>Fleet Carriers</h3>
+        <mat-icon class="collapse-icon">{{ sectionsCollapsed.fleetCarriers ? 'expand_more' : 'expand_less' }}</mat-icon>
+      </div>
+      <div class="section-content" [class.collapsed]="sectionsCollapsed.fleetCarriers">
+        <div class="carrier-list">
+          @for (carrier of getFleetCarriers(); track carrier.CarrierID) {
+            <app-fleet-carrier-card
+              [carrier]="carrier"
+              [collapsed]="carrierSectionsCollapsed[carrier.CarrierID]"
+              (toggle)="toggleCarrierSection($event)"
+            ></app-fleet-carrier-card>
+          }
+        </div>
+      </div>
+    </div>
+
     <!-- Materials Section -->
     <div class="storage-section">
       <div class="section-header" (click)="toggleSection('materials')">

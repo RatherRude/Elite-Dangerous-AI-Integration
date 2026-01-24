@@ -1,0 +1,109 @@
+<div class="carrier-card">
+  <div class="section-header" (click)="onToggle()">
+    <h4>{{ getCarrierTitle() }}</h4>
+    <mat-icon class="collapse-icon">{{ collapsed ? 'expand_more' : 'expand_less' }}</mat-icon>
+  </div>
+  <div class="section-content" [class.collapsed]="collapsed">
+    <div class="detail-block">
+      <h5>Overview</h5>
+      <div class="detail-grid">
+        <div class="detail-row"><span class="label">Location</span><span>{{ carrier?.StarSystem || 'Unknown' }}</span></div>
+        <div class="detail-row"><span class="label">Type</span><span>{{ getCarrierTypeLabel(carrier?.CarrierType) }}</span></div>
+        <div class="detail-row"><span class="label">Callsign</span><span>{{ carrier?.Callsign }}</span></div>
+        <div class="detail-row"><span class="label">Docking Access</span><span>{{ carrier?.DockingAccess }}</span></div>
+        <div class="detail-row"><span class="label">Allow Notorious</span><span>{{ formatYesNo(carrier?.AllowNotorious) }}</span></div>
+        <div class="detail-row"><span class="label">Fuel Level</span><span>{{ getFuelLevelDisplay() }}</span></div>
+        <div class="detail-row"><span class="label">Jump Range</span><span>{{ formatValue(carrier?.JumpRangeCurr) }} / {{ formatValue(carrier?.JumpRangeMax) }}</span></div>
+        <div class="detail-row"><span class="label">Pending Decommission</span><span>{{ formatYesNo(carrier?.PendingDecommission) }}</span></div>
+        <div class="detail-row"><span class="label">Last Update</span><span>{{ carrier?.Timestamp }}</span></div>
+      </div>
+    </div>
+
+    <div class="detail-block">
+      <h5>Space Usage</h5>
+      <div class="detail-grid">
+        @for (entry of carrier?.SpaceUsage | keyvalue; track entry.key) {
+          <div class="detail-row"><span class="label">{{ entry.key }}</span><span>{{ formatValue(entry.value) }}</span></div>
+        }
+      </div>
+    </div>
+
+    <div class="detail-block">
+      <h5>Finance</h5>
+      <div class="detail-grid">
+        @for (entry of carrier?.Finance | keyvalue; track entry.key) {
+          <div class="detail-row"><span class="label">{{ entry.key }}</span><span>{{ formatFinanceValue(entry.key, entry.value) }}</span></div>
+        }
+      </div>
+    </div>
+
+    <div class="detail-block">
+      <h5>Crew</h5>
+      @if (getActiveCrew(carrier?.Crew).length) {
+        <div class="detail-grid">
+          @for (crew of getActiveCrew(carrier?.Crew); track crew.CrewRole) {
+            <div class="detail-row">
+              <span class="label">{{ crew.CrewRole }}</span>
+              <span>{{ getCrewDisplay(crew) }}</span>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="empty-state">No crew data.</div>
+      }
+    </div>
+
+    <div class="detail-block">
+      <h5>Module Packs</h5>
+      @if (carrier?.ModulePacks?.length) {
+        <div class="detail-grid">
+          @for (pack of carrier?.ModulePacks; track $index) {
+            <div class="detail-row">
+              <span class="label">{{ pack.PackTheme }}</span>
+              <span>Tier {{ pack.PackTier }}</span>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="empty-state">None.</div>
+      }
+    </div>
+
+    <div class="detail-block">
+      <h5>Ship Packs</h5>
+      @if (carrier?.ShipPacks?.length) {
+        <div class="detail-grid">
+          @for (pack of carrier?.ShipPacks; track $index) {
+            <div class="detail-row">
+              <span class="label">{{ pack.PackTheme }}</span>
+              <span>Tier {{ pack.PackTier }}</span>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="empty-state">None.</div>
+      }
+    </div>
+
+    <div class="detail-block">
+      <h5>Trade Orders</h5>
+      @if (carrier?.TradeOrders && (carrier?.TradeOrders | keyvalue).length) {
+        <div class="detail-grid">
+          @for (order of carrier?.TradeOrders | keyvalue; track order.key) {
+            <div class="detail-row">
+              <span class="label">{{ getTradeOrderLabel(order.value, order.key) }}</span>
+              <span>
+                {{ $any(order.value).OrderType || 'Order' }}
+                {{ formatValue($any(order.value).OrderAmount) }}
+                &#64; {{ formatValue($any(order.value).Price) }} Cr
+                @if ($any(order.value).BlackMarket) { <span> (Black Market)</span> }
+              </span>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="empty-state">No active trade orders.</div>
+      }
+    </div>
+  </div>
+</div>

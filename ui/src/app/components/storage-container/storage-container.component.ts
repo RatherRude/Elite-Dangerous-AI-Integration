@@ -11,13 +11,14 @@ import { MaterialsPanelComponent } from "../materials-panel/materials-panel.comp
 import { StoredModulesComponent } from "../stored-modules/stored-modules.component";
 import { EngineersPanelComponent } from "../engineers-panel/engineers-panel.component";
 import { EngineeringBlueprintsComponent } from "../engineering-blueprints/engineering-blueprints.component";
+import { FleetCarrierCardComponent } from "../fleet-carrier-card/fleet-carrier-card.component";
 import { ProjectionsService } from "../../services/projections.service";
 import { Subscription } from "rxjs";
 
 @Component({
   selector: "app-storage-container",
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatTabsModule, MatButtonToggleModule, MatTooltipModule, MatProgressBarModule, MaterialsPanelComponent, StoredModulesComponent, EngineersPanelComponent, EngineeringBlueprintsComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, MatTabsModule, MatButtonToggleModule, MatTooltipModule, MatProgressBarModule, MaterialsPanelComponent, StoredModulesComponent, EngineersPanelComponent, EngineeringBlueprintsComponent, FleetCarrierCardComponent],
   templateUrl: "./storage-container.component.html",
   styleUrl: "./storage-container.component.css",
 })
@@ -28,6 +29,7 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
   cargo: any = null;
   shipInfo: any = null;
   storedShips: any = null;
+  fleetCarriers: any = null;
   
 
   // Collapsible sections state
@@ -38,10 +40,13 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
     onFootEngineers: true,
     colonisation: false,
     cargo: true,
+    fleetCarriers: true,
     storedModules: true,
     storedShips: true,
     engineeringBlueprints: true,
   };
+
+  carrierSectionsCollapsed: Record<number, boolean> = {};
   
   private subscriptions: Subscription[] = [];
 
@@ -72,6 +77,11 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
       
       this.projectionsService.storedShips$.subscribe(storedShips => {
         this.storedShips = storedShips;
+      }),
+
+      this.projectionsService.getProjection("FleetCarriers").subscribe(fleetCarriers => {
+        this.fleetCarriers = fleetCarriers;
+        this.syncCarrierCollapseState();
       })
     );
   }
@@ -185,5 +195,30 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
     return `${minutes}m`;
   }
 
+  // Fleet carrier methods
+  hasFleetCarriers(): boolean {
+    return this.getFleetCarriers().length > 0;
+  }
+
+  getFleetCarriers(): any[] {
+    const carriers = this.fleetCarriers?.Carriers || {};
+    return Object.values(carriers).sort((a: any, b: any) => (a?.CarrierID || 0) - (b?.CarrierID || 0));
+  }
+
+  toggleCarrierSection(carrierId: number): void {
+    this.carrierSectionsCollapsed[carrierId] = !this.carrierSectionsCollapsed[carrierId];
+  }
+
+  private syncCarrierCollapseState(): void {
+    const carriers = this.fleetCarriers?.Carriers || {};
+    const nextState: Record<number, boolean> = {};
+    Object.keys(carriers).forEach(key => {
+      const id = Number(key);
+      if (!Number.isNaN(id)) {
+        nextState[id] = this.carrierSectionsCollapsed[id] ?? true;
+      }
+    });
+    this.carrierSectionsCollapsed = nextState;
+  }
   
 } 
