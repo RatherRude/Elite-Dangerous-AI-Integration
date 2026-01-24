@@ -2306,7 +2306,7 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
 
     actionManager.registerAction(
         'web_search_agent',
-        "Request a detailed report about information from the game, including news, system, station, body, engineers, blueprint, material lookups, owned ships and modules and statistics about the commander. Use this tool whenever the user asks about anything related to external or global information.",
+        "Request a detailed report about information from the game, including news, system, station, body, engineers, blueprint, material lookups and commander data(owned ships and modules, statistics, super power reputation, elite ranks, squadron, owned fleet carriers). Use this tool whenever the user asks about anything related to external or global information.",
         {
             "type": "object",
             "properties": {
