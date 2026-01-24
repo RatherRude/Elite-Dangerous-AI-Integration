@@ -3136,6 +3136,157 @@ class FSSSignals(Projection[FSSSignalsStateModel]):
 
         return projected_events
 
+
+class StationTargetModel(BaseModel):
+    """Metadata about the current station/settlement we are approaching."""
+    name: Optional[str] = None
+    timestamp: Optional[str] = None
+    market_id: Optional[int] = None
+    body_type: Optional[str] = None
+    drop_type: Optional[str] = None
+    taxi: Optional[bool] = None
+
+
+class InDockingRangeStateModel(BaseModel):
+    LastStationTarget: Optional[StationTargetModel] = None
+    LastSupercruiseExit: Optional[str] = None
+    HasExitedForDock: bool = False
+    IsDocked: bool = False
+
+
+@final
+class InDockingRange(Projection[InDockingRangeStateModel]):
+    StateModel = InDockingRangeStateModel
+
+    def _is_station_like(self, name: str = "", body_type: str = "", drop_type: str = "") -> bool:
+        text = f"{name} {body_type} {drop_type}".lower()
+        station_keywords = ["station", "starport", "outpost", "port", "mega ship", "megaship", "settlement", "carrier", "construction site"]
+        return any(keyword in text for keyword in station_keywords)
+
+
+    @override
+    def process(self, event: Event) -> list[ProjectedEvent]:
+        projected_events: list[ProjectedEvent] = []
+
+        if isinstance(event, GameEvent):
+            name = event.content.get("event")
+
+            if name == "Docked":
+                # Hard stop: once docked, clear pending docking prompts.
+                self.state.LastStationTarget = None
+                self.state.LastSupercruiseExit = None
+                self.state.HasExitedForDock = False
+                self.state.IsDocked = True
+                return projected_events
+
+            if name == "Undocked":
+                if getattr(event, "historic", False):
+                    return projected_events
+                self.state.LastStationTarget = None
+                self.state.HasExitedForDock = False
+                self.state.IsDocked = False
+                return projected_events
+
+            if name == "DockingRequested":
+                # Manual docking request; clear any pending prompt context to avoid duplicate reminders.
+                self.state.LastStationTarget = None
+                self.state.LastSupercruiseExit = None
+                self.state.HasExitedForDock = False
+                return projected_events
+
+            if name in ["DockingGranted", "DockingDenied", "DockingCancelled", "DockingCanceled", "DockingTimeout"]:
+                # Docking flow completed/failed; clear context to avoid stale prompts.
+                self.state.LastStationTarget = None
+                self.state.LastSupercruiseExit = None
+                self.state.HasExitedForDock = False
+                return projected_events
+
+            if name == "SupercruiseExit":
+                body_type = event.content.get("BodyType", "") or ""
+                body_name = event.content.get("Body", "") or ""
+                taxi = event.content.get("Taxi", "") or False
+                ts = event.content.get("timestamp") or event.timestamp
+                self.state.LastSupercruiseExit = ts
+                self.state.HasExitedForDock = True
+
+                if taxi:
+                    # Ignore taxi rides for docking prompts; clear approach context.
+                    self.state.LastStationTarget = None
+                    self.state.LastSupercruiseExit = None
+                    self.state.HasExitedForDock = False
+                    return projected_events
+
+                # Merge with any existing station context (e.g., from ApproachSettlement) to keep richer metadata.
+                existing_target = self.state.LastStationTarget
+                if existing_target:
+                    merged_target = StationTargetModel(
+                        **{
+                            **existing_target.model_dump(),
+                            "name": existing_target.name or body_name,
+                            "timestamp": ts,
+                            "body_type": existing_target.body_type or body_type,
+                            "taxi": False,
+                        }
+                    )
+                    self.state.LastStationTarget = merged_target
+                elif self._is_station_like(body_name, body_type, ""):
+                    self.state.LastStationTarget = StationTargetModel(
+                        name=body_name,
+                        timestamp=ts,
+                        body_type=body_type,
+                        taxi=False,
+                    )
+                else:
+                    self.state.LastStationTarget = None
+                self.state.LastSupercruiseExit = ts
+
+            if name == "ApproachSettlement":
+
+                body_type = event.content.get("BodyType", "") or event.content.get("StationType", "") or ""
+                body_name = event.content.get("BodyName", "") or event.content.get("Body", "") or ""
+                target_name = event.content.get("Name") or body_name
+                market_id = event.content.get("MarketID")
+                services = [s.lower() for s in event.content.get("StationServices", [])]
+                dockable = any(s in ["dock", "autodock"] for s in services)
+                ts = event.content.get("timestamp") or event.timestamp
+                self.state.LastSupercruiseExit = ts
+
+                if dockable:
+                    self.state.LastStationTarget = StationTargetModel(
+                        name=target_name,
+                        timestamp=ts,
+                        market_id=market_id,
+                        body_type=body_type,
+                        drop_type="",
+                    )
+                else:
+                    self.state.LastStationTarget = None
+
+            if name == "ReceiveText":
+                channel = event.content.get("Channel", "")
+                if channel not in ["npc", "station", "local", "starsystem"]:
+                    return projected_events
+
+                # Only respond to NFZ if we have an active station approach context
+                if not self.state.HasExitedForDock:
+                    return projected_events
+
+                message = (event.content.get("Message") or "").lower()
+                if "nofirezone_entered" not in message:
+                    return projected_events
+
+                # We have already prompted based on NFZ warning; clear target so we don't prompt again on mass lock
+                self.state.LastStationTarget = None
+                self.state.LastSupercruiseExit = None
+                projected_events.append(ProjectedEvent(content={"event": "InDockingRange"}))
+                self.state.HasExitedForDock = False
+
+        return projected_events
+
+
+
+
+
 class IdleStateModel(BaseModel):
     """Commander's activity/idle status."""
     LastInteraction: str = Field(default="1970-01-01T00:00:00Z", description="Timestamp of last user interaction")
@@ -3218,6 +3369,7 @@ def registerProjections(
     event_manager.register_projection(Idle(idle_timeout))
     event_manager.register_projection(StoredModules())
     event_manager.register_projection(StoredShips())
+    event_manager.register_projection(InDockingRange())
 
     # ToDo: SLF, SRV,
     for proj in [
