@@ -256,7 +256,7 @@ class Chat:
                 if system_name != 'Unknown' and not self.system_database.has_system(system_name):
                     self.system_database.fetch_system_data_nonblocking(system_name)
 
-        if isinstance(event, GameEvent) and event.content.get('event') == 'Location':
+        if isinstance(event, GameEvent) and event.content.get('event') in ['Location', 'CarrierLocation']:
             system_name = event.content.get('StarSystem', 'Unknown')
             if system_name != 'Unknown' and not self.system_database.has_system(system_name):
                 self.system_database.fetch_system_data_nonblocking(system_name)

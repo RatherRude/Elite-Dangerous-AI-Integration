@@ -2262,6 +2262,15 @@ class ColonisationConstruction(Projection[ColonisationConstructionStateModel]):
                 ]
             self.state.StarSystem = self.state.StarSystemRecall
 
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Docked':
+            # If we have an active construction and dock at a non-construction station
+            # with the same MarketID, the construction has concluded. Reset to defaults.
+            if self.state.MarketID and not self.state.ConstructionComplete and not self.state.ConstructionFailed:
+                docked_market_id = event.content.get('MarketID', 0)
+                station_type = event.content.get('StationType', '')
+                if docked_market_id == self.state.MarketID and 'construction' not in station_type.lower():
+                    self.state = ColonisationConstructionStateModel()
+
         if isinstance(event, GameEvent) and event.content.get('event') == 'Location':
             self.state.StarSystemRecall = event.content.get('StarSystem', 'Unknown')
 
@@ -2314,6 +2323,699 @@ class DockingEvents(Projection[DockingEventsStateModel]):
                 projected_events.append(ProjectedEvent(content={"event": "DockingComputerDeactivated"}))
 
         return projected_events
+
+# Define types for Powerplay Projection
+class PowerplayStateModel(BaseModel):
+    """Powerplay status of the commander."""
+    Power: str = Field(default="Unknown", description="Power name")
+    Rank: int = Field(default=0, description="Powerplay rank")
+    Merits: int = Field(default=0, description="Current merits")
+    TimePledged: int = Field(default=0, description="Seconds pledged to the power")
+    Timestamp: str = Field(default="1970-01-01T00:00:00Z", description="Timestamp of last Powerplay event")
+
+
+@final
+class Powerplay(Projection[PowerplayStateModel]):
+    StateModel = PowerplayStateModel
+
+    @override
+    def process(self, event: Event) -> None:
+        if isinstance(event, GameEvent):
+            event_name = event.content.get('event')
+
+            if event_name == 'Powerplay':
+                self.state.Power = event.content.get('Power', 'Unknown')
+                self.state.Rank = event.content.get('Rank', 0)
+                self.state.Merits = event.content.get('Merits', 0)
+                self.state.TimePledged = event.content.get('TimePledged', 0)
+                if 'timestamp' in event.content:
+                    self.state.Timestamp = event.content['timestamp']
+
+            if event_name == 'PowerplayMerits':
+                self.state.Merits = event.content.get('TotalMerits', self.state.Merits)
+                if 'timestamp' in event.content:
+                    self.state.Timestamp = event.content['timestamp']
+
+            if event_name == 'PowerplayRank':
+                self.state.Rank = event.content.get('Rank', self.state.Rank)
+                if 'timestamp' in event.content:
+                    self.state.Timestamp = event.content['timestamp']
+
+            if event_name == 'PowerplayJoin':
+                self.state.Power = event.content.get('Power', 'Unknown')
+                self.state.Rank = 0
+                self.state.Merits = 0
+                self.state.TimePledged = 0
+                if 'timestamp' in event.content:
+                    self.state.Timestamp = event.content['timestamp']
+
+            if event_name == 'PowerplayDefect':
+                self.state.Power = event.content.get('ToPower', 'Unknown')
+                self.state.Rank = 0
+                self.state.Merits = 0
+                self.state.TimePledged = 0
+                if 'timestamp' in event.content:
+                    self.state.Timestamp = event.content['timestamp']
+
+            if event_name == 'PowerplayLeave':
+                self.state = PowerplayStateModel()
+
+# Define types for Rank/Progress Projection
+class RankProgressEntry(BaseModel):
+    """Rank and progress for a single category."""
+    Rank: int = Field(default=0, description="Rank value")
+    RankName: str = Field(default="Unknown", description="Human-readable rank name")
+    Progress: int = Field(default=0, description="Progress to next rank (0-100)")
+
+
+class RankProgressStateModel(BaseModel):
+    """Commander rank and progress per category."""
+    Combat: RankProgressEntry = Field(default_factory=RankProgressEntry, description="Combat rank/progress")
+    Trade: RankProgressEntry = Field(default_factory=RankProgressEntry, description="Trade rank/progress")
+    Explore: RankProgressEntry = Field(default_factory=RankProgressEntry, description="Exploration rank/progress")
+    Empire: RankProgressEntry = Field(default_factory=RankProgressEntry, description="Empire rank/progress")
+    Federation: RankProgressEntry = Field(default_factory=RankProgressEntry, description="Federation rank/progress")
+    CQC: RankProgressEntry = Field(default_factory=RankProgressEntry, description="CQC rank/progress")
+    Soldier: RankProgressEntry = Field(default_factory=RankProgressEntry, description="Soldier rank/progress")
+    Exobiologist: RankProgressEntry = Field(default_factory=RankProgressEntry, description="Exobiologist rank/progress")
+    Timestamp: str = Field(default="1970-01-01T00:00:00Z", description="Timestamp of last rank/progress event")
+
+
+@final
+class RankProgress(Projection[RankProgressStateModel]):
+    StateModel = RankProgressStateModel
+
+    _category_keys = [
+        "Combat",
+        "Trade",
+        "Explore",
+        "Empire",
+        "Federation",
+        "CQC",
+        "Soldier",
+        "Exobiologist",
+    ]
+    _rank_names: dict[str, list[str]] = {
+        "Combat": [
+            "Harmless",
+            "Mostly Harmless",
+            "Novice",
+            "Competent",
+            "Expert",
+            "Master",
+            "Dangerous",
+            "Deadly",
+            "Elite",
+            "Elite I",
+            "Elite II",
+            "Elite III",
+            "Elite IV",
+            "Elite V",
+        ],
+        "Trade": [
+            "Penniless",
+            "Mostly Pennliess",
+            "Peddler",
+            "Dealer",
+            "Merchant",
+            "Broker",
+            "Entrepreneur",
+            "Tycoon",
+            "Elite",
+            "Elite I",
+            "Elite II",
+            "Elite III",
+            "Elite IV",
+            "Elite V",
+        ],
+        "Explore": [
+            "Aimless",
+            "Mostly Aimless",
+            "Scout",
+            "Surveyor",
+            "Explorer",
+            "Pathfinder",
+            "Ranger",
+            "Pioneer",
+            "Elite",
+            "Elite I",
+            "Elite II",
+            "Elite III",
+            "Elite IV",
+            "Elite V",
+        ],
+        "Federation": [
+            "None",
+            "Recruit",
+            "Cadet",
+            "Midshipman",
+            "Petty Officer",
+            "Chief Petty Officer",
+            "Warrant Officer",
+            "Ensign",
+            "Lieutenant",
+            "Lt. Commander",
+            "Post Commander",
+            "Post Captain",
+            "Rear Admiral",
+            "Vice Admiral",
+            "Admiral",
+        ],
+        "Empire": [
+            "None",
+            "Outsider",
+            "Serf",
+            "Master",
+            "Squire",
+            "Knight",
+            "Lord",
+            "Baron",
+            "Viscount",
+            "Count",
+            "Earl",
+            "Marquis",
+            "Duke",
+            "Prince",
+            "King",
+        ],
+        "CQC": [
+            "Helpless",
+            "Mostly Helpless",
+            "Amateur",
+            "Semi Professional",
+            "Professional",
+            "Champion",
+            "Hero",
+            "Legend",
+            "Elite",
+            "Elite I",
+            "Elite II",
+            "Elite III",
+            "Elite IV",
+            "Elite V",
+        ],
+        "Soldier": [
+            "Defenceless",
+            "Mostly Defenceless",
+            "Rookie",
+            "Soldier",
+            "Gunslinger",
+            "Warrior",
+            "Gladiator",
+            "Deadeye",
+            "Elite",
+            "Elite I",
+            "Elite II",
+            "Elite III",
+            "Elite IV",
+            "Elite V",
+        ],
+        "Exobiologist": [
+            "Directionless",
+            "Mostly Directionless",
+            "Compiler",
+            "Collector",
+            "Cataloguer",
+            "Taxonomist",
+            "Ecologist",
+            "Geneticist",
+            "Elite",
+            "Elite I",
+            "Elite II",
+            "Elite III",
+            "Elite IV",
+            "Elite V",
+        ],
+    }
+
+    def _rank_name_for(self, category: str, rank_value: int) -> str:
+        names = self._rank_names.get(category, [])
+        if 0 <= rank_value < len(names):
+            return names[rank_value]
+        return "Unknown"
+
+    @override
+    def process(self, event: Event) -> None:
+        if not isinstance(event, GameEvent):
+            return
+
+        event_name = event.content.get('event')
+        if event_name == 'Rank':
+            for key in self._category_keys:
+                if key in event.content:
+                    rank_value = event.content.get(key, 0)
+                    category = getattr(self.state, key)
+                    category.Rank = rank_value
+                    category.RankName = self._rank_name_for(key, rank_value)
+            if 'timestamp' in event.content:
+                self.state.Timestamp = event.content['timestamp']
+
+        if event_name == 'Progress':
+            for key in self._category_keys:
+                if key in event.content:
+                    getattr(self.state, key).Progress = event.content.get(key, 0)
+            if 'timestamp' in event.content:
+                self.state.Timestamp = event.content['timestamp']
+
+        if event_name == 'Promotion':
+            for key in self._category_keys:
+                if key in event.content:
+                    category = getattr(self.state, key)
+                    rank_value = event.content.get(key, 0)
+                    category.Rank = rank_value
+                    category.RankName = self._rank_name_for(key, rank_value)
+                    category.Progress = 0
+            if 'timestamp' in event.content:
+                self.state.Timestamp = event.content['timestamp']
+
+# Define types for Squadron Projection
+class SquadronStateModel(BaseModel):
+    """Current squadron membership state."""
+    SquadronID: int = Field(default=0, description="Squadron identifier")
+    SquadronName: str = Field(default="Unknown", description="Squadron name")
+    CurrentRank: int = Field(default=0, description="Current squadron rank")
+    CurrentRankName: str = Field(default="Unknown", description="Current squadron rank name")
+    Status: str = Field(default="None", description="Membership status")
+    Timestamp: str = Field(default="1970-01-01T00:00:00Z", description="Timestamp of last squadron event")
+
+
+@final
+class Squadron(Projection[SquadronStateModel]):
+    StateModel = SquadronStateModel
+
+    @override
+    def process(self, event: Event) -> None:
+        if not isinstance(event, GameEvent):
+            return
+
+        event_name = event.content.get('event')
+
+        if event_name == 'SquadronStartup':
+            self.state.SquadronID = event.content.get('SquadronID', 0)
+            self.state.SquadronName = event.content.get('SquadronName', 'Unknown')
+            self.state.CurrentRank = event.content.get('CurrentRank', 0)
+            self.state.CurrentRankName = event.content.get('CurrentRankName', 'Unknown')
+            self.state.Status = "Member"
+            if 'timestamp' in event.content:
+                self.state.Timestamp = event.content['timestamp']
+
+        if event_name == 'AppliedToSquadron':
+            self.state.SquadronName = event.content.get('SquadronName', self.state.SquadronName)
+            self.state.Status = "Applied"
+            if 'timestamp' in event.content:
+                self.state.Timestamp = event.content['timestamp']
+
+        if event_name == 'InvitedToSquadron':
+            self.state.SquadronName = event.content.get('SquadronName', self.state.SquadronName)
+            self.state.Status = "Invited"
+            if 'timestamp' in event.content:
+                self.state.Timestamp = event.content['timestamp']
+
+        if event_name == 'JoinedSquadron':
+            self.state.SquadronName = event.content.get('SquadronName', self.state.SquadronName)
+            self.state.Status = "Member"
+            if 'timestamp' in event.content:
+                self.state.Timestamp = event.content['timestamp']
+
+        if event_name == 'SquadronCreated':
+            self.state.SquadronName = event.content.get('SquadronName', self.state.SquadronName)
+            self.state.Status = "Member"
+            if 'timestamp' in event.content:
+                self.state.Timestamp = event.content['timestamp']
+
+        if event_name == 'SquadronPromotion':
+            self.state.SquadronID = event.content.get('SquadronID', self.state.SquadronID)
+            self.state.SquadronName = event.content.get('SquadronName', self.state.SquadronName)
+            self.state.CurrentRank = event.content.get('NewRank', self.state.CurrentRank)
+            self.state.CurrentRankName = event.content.get('NewRankName', self.state.CurrentRankName)
+            self.state.Status = "Member"
+            if 'timestamp' in event.content:
+                self.state.Timestamp = event.content['timestamp']
+
+        if event_name == 'SquadronDemotion':
+            self.state.SquadronID = event.content.get('SquadronID', self.state.SquadronID)
+            self.state.SquadronName = event.content.get('SquadronName', self.state.SquadronName)
+            self.state.CurrentRank = event.content.get('NewRank', self.state.CurrentRank)
+            self.state.CurrentRankName = event.content.get('NewRankName', self.state.CurrentRankName)
+            self.state.Status = "Member"
+            if 'timestamp' in event.content:
+                self.state.Timestamp = event.content['timestamp']
+
+        if event_name in ['LeftSquadron', 'KickedFromSquadron', 'DisbandedSquadron']:
+            self.state = SquadronStateModel()
+
+# Define types for Reputation Projection
+class ReputationStateModel(BaseModel):
+    """Faction reputation values."""
+    Empire: float = Field(default=0.0, description="Reputation with the Empire")
+    Federation: float = Field(default=0.0, description="Reputation with the Federation")
+    Alliance: float = Field(default=0.0, description="Reputation with the Alliance")
+    Timestamp: str = Field(default="1970-01-01T00:00:00Z", description="Timestamp of last reputation event")
+
+
+@final
+class Reputation(Projection[ReputationStateModel]):
+    StateModel = ReputationStateModel
+
+    @override
+    def process(self, event: Event) -> None:
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Reputation':
+            # Always default missing values to 0.0
+            self.state.Empire = event.content.get('Empire', 0.0)
+            self.state.Federation = event.content.get('Federation', 0.0)
+            self.state.Alliance = event.content.get('Alliance', 0.0)
+            if 'timestamp' in event.content:
+                self.state.Timestamp = event.content['timestamp']
+
+# Define types for Commander Projection
+class CommanderStateModel(BaseModel):
+    """Commander identity details."""
+    FID: str = Field(default="Unknown", description="Frontier ID")
+    Name: str = Field(default="Unknown", description="Commander name")
+    Timestamp: str = Field(default="1970-01-01T00:00:00Z", description="Timestamp of last commander event")
+
+
+@final
+class Commander(Projection[CommanderStateModel]):
+    StateModel = CommanderStateModel
+
+    @override
+    def process(self, event: Event) -> None:
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Commander':
+            self.state.FID = event.content.get('FID', 'Unknown')
+            self.state.Name = event.content.get('Name', 'Unknown')
+            if 'timestamp' in event.content:
+                self.state.Timestamp = event.content['timestamp']
+
+# Define types for Statistics Projection
+class StatisticsStateModel(BaseModel):
+    """Commander statistics payload."""
+    Data: dict[str, Any] = Field(default_factory=dict, description="Statistics data payload")
+    Timestamp: str = Field(default="1970-01-01T00:00:00Z", description="Timestamp of last statistics event")
+
+
+@final
+class Statistics(Projection[StatisticsStateModel]):
+    StateModel = StatisticsStateModel
+
+    @override
+    def process(self, event: Event) -> None:
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Statistics':
+            self.state.Data = {
+                key: value
+                for key, value in event.content.items()
+                if key not in ('event', 'timestamp')
+            }
+            if 'timestamp' in event.content:
+                self.state.Timestamp = event.content['timestamp']
+
+# Define types for FleetCarriers Projection
+class FleetCarrierEntry(BaseModel):
+    """Fleet carrier details and last known location."""
+    CarrierType: str = Field(default="Unknown", description="Carrier type (FleetCarrier/SquadronCarrier)")
+    CarrierID: int = Field(default=0, description="Carrier identifier")
+    Callsign: str = Field(default="Unknown", description="Carrier callsign")
+    Name: str = Field(default="Unknown", description="Carrier name")
+    DockingAccess: str = Field(default="Unknown", description="Docking access mode")
+    AllowNotorious: bool = Field(default=False, description="Whether notorious pilots are allowed")
+    FuelLevel: int = Field(default=0, description="Carrier fuel level")
+    JumpRangeCurr: float = Field(default=0.0, description="Current jump range")
+    JumpRangeMax: float = Field(default=0.0, description="Maximum jump range")
+    PendingDecommission: bool = Field(default=False, description="Whether decommission is pending")
+    SpaceUsage: dict[str, Any] = Field(default_factory=dict, description="Carrier space usage data")
+    Finance: dict[str, Any] = Field(default_factory=dict, description="Carrier finance data")
+    Crew: list[dict[str, Any]] = Field(default_factory=list, description="Carrier crew data")
+    ShipPacks: list[dict[str, Any]] = Field(default_factory=list, description="Carrier ship packs")
+    ModulePacks: list[dict[str, Any]] = Field(default_factory=list, description="Carrier module packs")
+    TradeOrders: dict[str, dict[str, Any]] = Field(default_factory=dict, description="Carrier trade orders keyed by commodity")
+    StarSystem: str = Field(default="Unknown", description="Last known star system")
+    SystemAddress: int = Field(default=0, description="Last known system address")
+    BodyID: int = Field(default=0, description="Last known body ID")
+    Timestamp: str = Field(default="1970-01-01T00:00:00Z", description="Timestamp of last carrier update")
+
+
+class CarrierJumpRequestItem(BaseModel):
+    """Pending carrier jump request."""
+    CarrierType: str = Field(default="Unknown", description="Carrier type (FleetCarrier/SquadronCarrier)")
+    CarrierID: int = Field(default=0, description="Carrier identifier")
+    SystemName: str = Field(default="Unknown", description="Destination system name")
+    Body: str = Field(default="Unknown", description="Destination body name")
+    SystemAddress: int = Field(default=0, description="Destination system address")
+    BodyID: int = Field(default=0, description="Destination body ID")
+    DepartureTime: str = Field(default="1970-01-01T00:00:00Z", description="Scheduled departure time (UTC)")
+    WarningSent: bool = Field(default=False, description="Whether a jump warning has been sent")
+
+
+class CarrierCooldownItem(BaseModel):
+    """Carrier jump cooldown tracking."""
+    CarrierType: str = Field(default="Unknown", description="Carrier type (FleetCarrier/SquadronCarrier)")
+    CarrierID: int = Field(default=0, description="Carrier identifier")
+    CooldownUntil: str = Field(default="1970-01-01T00:00:00Z", description="Carrier jump cooldown end time (UTC)")
+    ReadySent: bool = Field(default=False, description="Whether cooldown ready event has been sent")
+
+
+class FleetCarriersStateModel(BaseModel):
+    """Fleet carriers keyed by carrier ID."""
+    Carriers: dict[int, FleetCarrierEntry] = Field(default_factory=dict, description="Carriers keyed by CarrierID")
+    PendingJumps: dict[int, CarrierJumpRequestItem] = Field(default_factory=dict, description="Pending carrier jumps keyed by CarrierID")
+    Cooldowns: dict[int, CarrierCooldownItem] = Field(default_factory=dict, description="Carrier cooldowns keyed by CarrierID")
+
+
+@final
+class FleetCarriers(Projection[FleetCarriersStateModel]):
+    StateModel = FleetCarriersStateModel
+
+    def _process_jump_timers(self, current_time: datetime) -> list[ProjectedEvent]:
+        projected_events: list[ProjectedEvent] = []
+        completed_ids: list[int] = []
+        cooldown_completed_ids: list[int] = []
+
+        for carrier_id, pending in self.state.PendingJumps.items():
+            try:
+                departure_time = datetime.fromisoformat(pending.DepartureTime.replace('Z', '+00:00'))
+            except ValueError:
+                continue
+
+            warning_time = departure_time - timedelta(minutes=10)
+            if current_time >= warning_time and not pending.WarningSent:
+                projected_events.append(ProjectedEvent(content={
+                    "event": "CarrierJumpWarning",
+                    "CarrierType": pending.CarrierType,
+                    "CarrierID": carrier_id,
+                    "SystemName": pending.SystemName,
+                    "Body": pending.Body,
+                    "SystemAddress": pending.SystemAddress,
+                    "BodyID": pending.BodyID,
+                    "DepartureTime": pending.DepartureTime,
+                }))
+                pending.WarningSent = True
+
+            if current_time >= departure_time:
+                entry = self.state.Carriers.get(carrier_id)
+                if entry is None:
+                    entry = FleetCarrierEntry(CarrierID=carrier_id, CarrierType=pending.CarrierType)
+                    self.state.Carriers[carrier_id] = entry
+
+                entry.CarrierType = pending.CarrierType
+                entry.StarSystem = pending.SystemName
+                entry.SystemAddress = pending.SystemAddress
+                entry.BodyID = pending.BodyID
+                entry.Timestamp = pending.DepartureTime
+                cooldown_until = departure_time + timedelta(minutes=15)
+                self.state.Cooldowns[carrier_id] = CarrierCooldownItem(
+                    CarrierType=pending.CarrierType,
+                    CarrierID=carrier_id,
+                    CooldownUntil=cooldown_until.isoformat(),
+                    ReadySent=False,
+                )
+
+                projected_events.append(ProjectedEvent(content={
+                    "event": "CarrierJumpArrived",
+                    "CarrierType": pending.CarrierType,
+                    "CarrierID": carrier_id,
+                    "SystemName": pending.SystemName,
+                    "Body": pending.Body,
+                    "SystemAddress": pending.SystemAddress,
+                    "BodyID": pending.BodyID,
+                    "DepartureTime": pending.DepartureTime,
+                }))
+                completed_ids.append(carrier_id)
+
+        for carrier_id in completed_ids:
+            self.state.PendingJumps.pop(carrier_id, None)
+
+        for carrier_id, cooldown in self.state.Cooldowns.items():
+            if cooldown.ReadySent:
+                continue
+            try:
+                cooldown_until = datetime.fromisoformat(cooldown.CooldownUntil.replace('Z', '+00:00'))
+            except ValueError:
+                continue
+            if current_time >= cooldown_until:
+                projected_events.append(ProjectedEvent(content={
+                    "event": "CarrierJumpCooldownComplete",
+                    "CarrierType": cooldown.CarrierType,
+                    "CarrierID": carrier_id,
+                    "CooldownUntil": cooldown.CooldownUntil,
+                }))
+                cooldown.ReadySent = True
+                cooldown_completed_ids.append(carrier_id)
+
+        for carrier_id in cooldown_completed_ids:
+            self.state.Cooldowns.pop(carrier_id, None)
+
+        return projected_events
+
+    @override
+    def process(self, event: Event) -> list[ProjectedEvent] | None:
+        if not isinstance(event, GameEvent):
+            return None
+
+        event_name = event.content.get('event')
+        if event_name not in [
+            'CarrierLocation',
+            'CarrierStats',
+            'CarrierJumpRequest',
+            'CarrierJumpCancelled',
+            'CarrierNameChanged',
+            'CarrierDecommission',
+            'CarrierCancelDecommission',
+            'CarrierBankTransfer',
+            'CarrierDepositFuel',
+            'CarrierCrewServices',
+            'CarrierFinance',
+            'CarrierTradeOrder',
+        ]:
+            return None
+
+        carrier_id = event.content.get('CarrierID', 0)
+        if not carrier_id:
+            return None
+
+        carrier_type = event.content.get('CarrierType', 'Unknown')
+        entry = self.state.Carriers.get(carrier_id)
+        if entry is None:
+            entry = FleetCarrierEntry(CarrierID=carrier_id, CarrierType=carrier_type)
+            self.state.Carriers[carrier_id] = entry
+
+        entry.CarrierType = carrier_type
+        entry.CarrierID = carrier_id
+        if 'timestamp' in event.content:
+            entry.Timestamp = event.content['timestamp']
+
+        if event_name == 'CarrierLocation':
+            entry.StarSystem = event.content.get('StarSystem', entry.StarSystem)
+            entry.SystemAddress = event.content.get('SystemAddress', entry.SystemAddress)
+            entry.BodyID = event.content.get('BodyID', entry.BodyID)
+
+        if event_name == 'CarrierStats':
+            entry.Callsign = event.content.get('Callsign', entry.Callsign)
+            entry.Name = event.content.get('Name', entry.Name)
+            entry.DockingAccess = event.content.get('DockingAccess', entry.DockingAccess)
+            entry.AllowNotorious = event.content.get('AllowNotorious', entry.AllowNotorious)
+            entry.FuelLevel = event.content.get('FuelLevel', entry.FuelLevel)
+            entry.JumpRangeCurr = event.content.get('JumpRangeCurr', entry.JumpRangeCurr)
+            entry.JumpRangeMax = event.content.get('JumpRangeMax', entry.JumpRangeMax)
+            entry.PendingDecommission = event.content.get('PendingDecommission', entry.PendingDecommission)
+            entry.SpaceUsage = event.content.get('SpaceUsage', entry.SpaceUsage)
+            entry.Finance = event.content.get('Finance', entry.Finance)
+            entry.Crew = event.content.get('Crew', entry.Crew)
+            entry.ShipPacks = event.content.get('ShipPacks', entry.ShipPacks)
+            entry.ModulePacks = event.content.get('ModulePacks', entry.ModulePacks)
+
+        if event_name == 'CarrierNameChanged':
+            entry.Callsign = event.content.get('Callsign', entry.Callsign)
+            entry.Name = event.content.get('Name', entry.Name)
+
+        if event_name == 'CarrierDecommission':
+            entry.PendingDecommission = True
+
+        if event_name == 'CarrierCancelDecommission':
+            entry.PendingDecommission = False
+
+        if event_name == 'CarrierBankTransfer':
+            entry.Finance = {
+                **entry.Finance,
+                "CarrierBalance": event.content.get('CarrierBalance', entry.Finance.get("CarrierBalance", 0)),
+                "PlayerBalance": event.content.get('PlayerBalance', entry.Finance.get("PlayerBalance", 0)),
+                "Deposit": event.content.get('Deposit', entry.Finance.get("Deposit", 0)),
+                "Withdraw": event.content.get('Withdraw', entry.Finance.get("Withdraw", 0)),
+            }
+
+        if event_name == 'CarrierDepositFuel':
+            entry.FuelLevel = event.content.get('Total', entry.FuelLevel)
+
+        if event_name == 'CarrierCrewServices':
+            crew_role = event.content.get('CrewRole')
+            if crew_role:
+                crew = next((c for c in entry.Crew if c.get('CrewRole') == crew_role), None)
+                if crew is None:
+                    crew = {"CrewRole": crew_role}
+                    entry.Crew.append(crew)
+                crew["Operation"] = event.content.get('Operation', '')
+                if 'CrewName' in event.content:
+                    crew["CrewName"] = event.content.get('CrewName', '')
+
+        if event_name == 'CarrierFinance':
+            entry.Finance = {
+                **entry.Finance,
+                "CarrierBalance": event.content.get('CarrierBalance', entry.Finance.get("CarrierBalance", 0)),
+                "ReserveBalance": event.content.get('ReserveBalance', entry.Finance.get("ReserveBalance", 0)),
+                "AvailableBalance": event.content.get('AvailableBalance', entry.Finance.get("AvailableBalance", 0)),
+                "ReservePercent": event.content.get('ReservePercent', entry.Finance.get("ReservePercent", 0)),
+                "TaxRate_repair": event.content.get('TaxRate_repair', entry.Finance.get("TaxRate_repair", 0)),
+                "TaxRate_refuel": event.content.get('TaxRate_refuel', entry.Finance.get("TaxRate_refuel", 0)),
+                "TaxRate_rearm": event.content.get('TaxRate_rearm', entry.Finance.get("TaxRate_rearm", 0)),
+            }
+
+        if event_name == 'CarrierTradeOrder':
+            commodity = event.content.get('Commodity', 'Unknown')
+            black_market = event.content.get('BlackMarket', False)
+            order_key = f"{commodity}:{'black' if black_market else 'legal'}"
+            if event.content.get('CancelTrade'):
+                entry.TradeOrders.pop(order_key, None)
+            else:
+                order_type = None
+                order_amount = None
+                if 'PurchaseOrder' in event.content:
+                    order_type = 'Purchase'
+                    order_amount = event.content.get('PurchaseOrder')
+                elif 'SaleOrder' in event.content:
+                    order_type = 'Sale'
+                    order_amount = event.content.get('SaleOrder')
+                entry.TradeOrders[order_key] = {
+                    "Commodity": commodity,
+                    "BlackMarket": black_market,
+                    "OrderType": order_type,
+                    "OrderAmount": order_amount,
+                    "Price": event.content.get('Price'),
+                    "Timestamp": event.content.get('timestamp', entry.Timestamp),
+                }
+
+        if event_name == 'CarrierJumpRequest':
+            pending = CarrierJumpRequestItem(
+                CarrierType=carrier_type,
+                CarrierID=carrier_id,
+                SystemName=event.content.get('SystemName', 'Unknown'),
+                Body=event.content.get('Body', 'Unknown'),
+                SystemAddress=event.content.get('SystemAddress', 0),
+                BodyID=event.content.get('BodyID', 0),
+                DepartureTime=event.content.get('DepartureTime', '1970-01-01T00:00:00Z'),
+            )
+            self.state.PendingJumps[carrier_id] = pending
+
+            now_utc = datetime.now(timezone.utc)
+            projected_events = self._process_jump_timers(now_utc)
+            return projected_events if projected_events else None
+
+        if event_name == 'CarrierJumpCancelled':
+            self.state.PendingJumps.pop(carrier_id, None)
+
+        return None
+
+    def process_timer(self) -> list[ProjectedEvent]:
+        current_time = datetime.now(timezone.utc)
+        return self._process_jump_timers(current_time)
 
 # Define types for InCombat Projection
 class InCombatStateModel(BaseModel):
@@ -2491,7 +3193,13 @@ def registerProjections(
     event_manager.register_projection(Location())
     event_manager.register_projection(Missions())
     event_manager.register_projection(EngineerProgress())
+    event_manager.register_projection(RankProgress())
     event_manager.register_projection(CommunityGoal())
+    event_manager.register_projection(Squadron())
+    event_manager.register_projection(Reputation())
+    event_manager.register_projection(Commander())
+    event_manager.register_projection(Statistics())
+    event_manager.register_projection(FleetCarriers())
     event_manager.register_projection(ShipInfo())
     event_manager.register_projection(Target())
     event_manager.register_projection(NavInfo(system_db))
@@ -2501,6 +3209,7 @@ def registerProjections(
     event_manager.register_projection(SuitLoadout())
     event_manager.register_projection(Materials())
     event_manager.register_projection(Friends())
+    event_manager.register_projection(Powerplay())
     event_manager.register_projection(ColonisationConstruction())
     event_manager.register_projection(DockingEvents())
     event_manager.register_projection(InCombat())
@@ -2512,20 +3221,12 @@ def registerProjections(
 
     # ToDo: SLF, SRV,
     for proj in [
-        'Commander',
         'ModuleInfo',
-        'Rank',
-        'Progress',
-        'Reputation',
-        'SquadronStartup',
-        'Statistics',
-        'Powerplay',
         'ShipLocker',
         'Loadout',
         'Shipyard',
         'Market',
         'Outfitting',
-        'Shipyard',
     ]:
         p = latest_event_projection_factory(proj, proj)
         event_manager.register_projection(p())

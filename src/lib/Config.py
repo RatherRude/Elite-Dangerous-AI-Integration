@@ -235,10 +235,10 @@ game_events = {
     'RedeemVoucher': True,
     'ScientificResearch': False,
     'Shipyard': False,
-    'CarrierJump': True,
+    'CarrierJump': False,
     'CarrierBuy': True,
     'CarrierStats': False,
-    'CarrierJumpRequest': True,
+    'CarrierJumpRequest': False,
     'CarrierDecommission': True,
     'CarrierCancelDecommission': True,
     'CarrierBankTransfer': False,
@@ -250,7 +250,10 @@ game_events = {
     'CarrierTradeOrder': False,
     'CarrierDockingPermission': False,
     'CarrierNameChanged': True,
+    'CarrierJumpArrived': False,
     'CarrierJumpCancelled': True,
+    'CarrierJumpWarning': True,
+    'CarrierJumpCooldownComplete': True,
     "ColonisationConstructionDepot": False,
 
     # Social
