@@ -25,6 +25,8 @@ from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.exporter.otlp.proto.http._log_exporter import OTLPLogExporter
 from opentelemetry.instrumentation.openai import OpenAIInstrumentor
 
+from .UI import emit_message
+
 
 def configure_stdio() -> None:
     if sys.stdout and not sys.stdout.closed:
@@ -178,31 +180,16 @@ def handle_exception(exc_type, exc_value, exc_traceback):
 
     if not sys.stderr.closed and not sys.stdout.closed:
         contents = traceback.format_exception(exc_type, exc_value, exc_traceback)
-        print(
-            json.dumps(
-                {
-                    "type": "log",
-                    "timestamp": datetime.datetime.now(datetime.UTC).strftime(
-                        "%Y-%m-%dT%H:%M:%S.%fZ"
-                    ),
-                    "prefix": "error",
-                    "message": "Uncaught exception: " + str(contents),
-                }
-            ),
-            file=sys.stderr,
+        emit_message(
+            "log",
+            stream=sys.stderr,
+            prefix="error",
+            message="Uncaught exception: " + str(contents),
         )
-        print(
-            json.dumps(
-                {
-                    "type": "chat",
-                    "timestamp": datetime.datetime.now(datetime.UTC).strftime(
-                        "%Y-%m-%dT%H:%M:%S.%fZ"
-                    ),
-                    "role": "error",
-                    "message": "Uncaught exception, please check the logs for more details.",
-                }
-            ),
-            file=sys.stdout,
+        emit_message(
+            "chat",
+            role="error",
+            message="Uncaught exception, please check the logs for more details.",
         )
 
 
@@ -216,18 +203,9 @@ def show_chat_message(role: str, *args: Any):
     output.close()
     role = role.lower()
 
-    message: dict[str, str] = {
-        "type": "chat",
-        "timestamp": datetime.datetime.now(datetime.UTC).strftime(
-            "%Y-%m-%dT%H:%M:%S.%fZ"
-        ),
-        "role": role,
-        "message": contents,
-    }
-
     # logger.info(contents)
 
-    print(json.dumps(message) + "\n", flush=True)
+    emit_message("chat", role=role, message=contents)
 
 
 def log(prefix: Literal["info", "debug", "warn", "error"], message: Any, *args: Any):

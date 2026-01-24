@@ -10,6 +10,7 @@ import sys
 from openai import OpenAI, APIError
 
 from .Logger import log
+from .UI import emit_message
 
 # List of game events categorized (legacy boolean defaults)
 game_events = {
@@ -999,7 +1000,7 @@ def assign_ptt(config: Config, controller_manager):
     semaphore.acquire()
     controller_manager.listen_hotkey(on_hotkey_detected)
     semaphore.acquire()
-    print(json.dumps({"type": "config", "config": config}) + '\n')
+    emit_message("config", config=config)
     save_config(config)
     return config
 
@@ -1222,11 +1223,11 @@ def validate_config(config: Config) -> Config | None:
     # Send validation result message
     if not validation_result['skipped']:
         if validation_result['message']:
-            print(json.dumps({
-                "type": "model_validation",
-                "success": validation_result['success'],
-                "message": validation_result['message']
-            }) + '\n', flush=True)
+            emit_message(
+                "model_validation",
+                success=validation_result['success'],
+                message=validation_result['message'],
+            )
         
         if validation_result['success']:
             return validation_result['config']
@@ -1528,7 +1529,7 @@ def update_config(config: Config, data: dict) -> Config:
 
     # Now merge and save as before
     new_config = cast(Config, {**config, **data})
-    print(json.dumps({"type": "config", "config": new_config}) + '\n')
+    emit_message("config", config=new_config)
     save_config(new_config)
     return new_config
 
@@ -1552,7 +1553,7 @@ def update_event_config(config: Config, section: str, event: str, value: str) ->
         # Update the event with clean name
         config["event_reactions"][event] = value
     
-    print(json.dumps({"type": "config", "config": config}) + '\n', flush=True)
+    emit_message("config", config=config)
     save_config(config)
     return config
 
@@ -1568,7 +1569,7 @@ def reset_game_events(config: Config, character_index: int|None=None) -> Config:
     else:
         log('warn', 'Trying to reset character events that does exist')
     
-    print(json.dumps({"type": "config", "config": config}) + '\n', flush=True)
+    emit_message("config", config=config)
     save_config(config)
     return config
 
