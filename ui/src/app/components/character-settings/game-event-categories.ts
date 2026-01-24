@@ -69,6 +69,7 @@ export const GameEventCategories: Record<string, string[]> = {
         "SupercruiseEntry",
         "SupercruiseExit",
         "ApproachSettlement",
+        "InDockingRange",
         "GlideModeExited",
         "GlideModeEntered",
         "Docked",
