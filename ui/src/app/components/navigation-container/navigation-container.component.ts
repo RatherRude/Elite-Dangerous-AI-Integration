@@ -6,6 +6,9 @@ import { MatChipsModule } from "@angular/material/chips";
 import { MatIconModule } from "@angular/material/icon";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatExpansionModule } from "@angular/material/expansion";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatSelectModule } from "@angular/material/select";
+import { FormsModule } from "@angular/forms";
 import { Subscription } from "rxjs";
 import { EventMessage, EventService, GameEvent } from "../../services/event.service";
 import { ProjectionsService } from "../../services/projections.service";
@@ -16,12 +19,15 @@ import { GetSystemEventsMessage, SystemEventsMessage, TauriService } from "../..
     standalone: true,
     imports: [
         CommonModule,
+        FormsModule,
         MatButtonModule,
         MatCardModule,
         MatChipsModule,
         MatIconModule,
         MatProgressSpinnerModule,
         MatExpansionModule,
+        MatFormFieldModule,
+        MatSelectModule,
     ],
     templateUrl: "./navigation-container.component.html",
     styleUrls: ["./navigation-container.component.scss"],
@@ -29,6 +35,10 @@ import { GetSystemEventsMessage, SystemEventsMessage, TauriService } from "../..
 export class NavigationContainerComponent implements OnInit, OnDestroy {
     currentSystemName: string = "Unknown";
     currentSystemAddress: number | null = null;
+    commanderSystemName: string = "Unknown";
+    commanderSystemAddress: number | null = null;
+    selectedNavigationTarget: "commander" | number = "commander";
+    fleetCarriers: any = null;
 
     isLoading = false;
     errorMessage: string | null = null;
@@ -66,12 +76,15 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
     ngOnInit(): void {
         this.subs.push(
             this.projectionsService.location$.subscribe((location) => {
-                this.currentSystemName = location?.StarSystem ?? "Unknown";
-                const newAddress = location?.SystemAddress ?? null;
-                if (newAddress !== this.currentSystemAddress) {
-                    this.currentSystemAddress = newAddress;
-                    this.fetchSystemData();
+                this.commanderSystemName = location?.StarSystem ?? "Unknown";
+                this.commanderSystemAddress = location?.SystemAddress ?? null;
+                if (this.selectedNavigationTarget === "commander") {
+                    this.updateSystemContext(this.commanderSystemName, this.commanderSystemAddress);
                 }
+            }),
+            this.projectionsService.getProjection("FleetCarriers").subscribe((fleetCarriers) => {
+                this.fleetCarriers = fleetCarriers;
+                this.ensureValidNavigationTarget();
             }),
             this.tauriService.output$.subscribe((message) => this.handleBackendMessage(message)),
             this.eventService.events$.subscribe((events) => this.handleGameEvents(events)),
@@ -84,6 +97,63 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
 
     manualRefresh(): void {
         this.fetchSystemData(true);
+    }
+
+    onNavigationTargetChange(): void {
+        if (this.selectedNavigationTarget === "commander") {
+            this.updateSystemContext(this.commanderSystemName, this.commanderSystemAddress);
+            return;
+        }
+        const carrier = this.getCarrierOptions().find(option => option.id === this.selectedNavigationTarget);
+        if (!carrier) {
+            this.selectedNavigationTarget = "commander";
+            this.updateSystemContext(this.commanderSystemName, this.commanderSystemAddress);
+            return;
+        }
+        const address = carrier.systemAddress && carrier.systemAddress !== 0 ? carrier.systemAddress : null;
+        this.updateSystemContext(carrier.systemName || "Unknown", address);
+    }
+
+    getCarrierOptions(): Array<{ id: number; name: string; typeLabel: string; systemName: string; systemAddress: number | null }> {
+        const carriers = this.fleetCarriers?.Carriers || {};
+        return Object.values(carriers)
+            .map((carrier: any) => ({
+                id: carrier?.CarrierID,
+                name: carrier?.Name || "Unknown",
+                typeLabel: this.getCarrierTypeLabel(carrier?.CarrierType),
+                systemName: carrier?.StarSystem || "Unknown",
+                systemAddress: carrier?.SystemAddress ?? null,
+            }))
+            .filter((carrier) => typeof carrier.id === "number")
+            .sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
+    }
+
+    formatCarrierOption(option: { name: string; typeLabel: string }): string {
+        return `${option.name} (${option.typeLabel})`;
+    }
+
+    private getCarrierTypeLabel(carrierType: string | null | undefined): string {
+        if (carrierType === "FleetCarrier") return "Fleet Carrier";
+        if (carrierType === "SquadronCarrier") return "Squadron Carrier";
+        return carrierType && carrierType !== "Unknown" ? carrierType : "Fleet Carrier";
+    }
+
+    private ensureValidNavigationTarget(): void {
+        const options = this.getCarrierOptions();
+        const carrierIds = new Set(options.map(option => option.id));
+        if (this.selectedNavigationTarget !== "commander" && !carrierIds.has(this.selectedNavigationTarget)) {
+            this.selectedNavigationTarget = "commander";
+            this.updateSystemContext(this.commanderSystemName, this.commanderSystemAddress);
+        }
+    }
+
+    private updateSystemContext(systemName: string, systemAddress: number | null): void {
+        this.currentSystemName = systemName || "Unknown";
+        const nextAddress = systemAddress ?? null;
+        if (nextAddress !== this.currentSystemAddress) {
+            this.currentSystemAddress = nextAddress;
+            this.fetchSystemData();
+        }
     }
 
     private handleBackendMessage(message: any): void {

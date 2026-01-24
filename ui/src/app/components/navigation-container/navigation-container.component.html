@@ -1,7 +1,19 @@
 <div class="navigation-container">
     <div class="header">
         <div class="system-info">
-            <h2>{{ currentSystemName || 'Unknown System' }}</h2>
+            <div class="system-title">
+                <h2>{{ currentSystemName || 'Unknown System' }}</h2>
+                @if (getCarrierOptions().length) {
+                    <mat-form-field class="system-selector" appearance="fill">
+                        <mat-select [(ngModel)]="selectedNavigationTarget" (selectionChange)="onNavigationTargetChange()">
+                            <mat-option value="commander">Current Location</mat-option>
+                            @for (option of getCarrierOptions(); track option.id) {
+                                <mat-option [value]="option.id">{{ formatCarrierOption(option) }}</mat-option>
+                            }
+                        </mat-select>
+                    </mat-form-field>
+                }
+            </div>
             <div class="meta">
 <!--                <span>Address: {{ currentSystemAddress ?? 'Unknown' }}</span>-->
                 @if (systemRecord?.star_class) {
