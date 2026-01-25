@@ -38,6 +38,7 @@ export interface KeybindsMessages extends BaseMessage {
     type: "keybinds";
     missing: string[];
     collisions: [string,string][];
+    unsupported: string[];
 }
 
 export interface WeaponType {

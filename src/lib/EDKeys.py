@@ -152,6 +152,7 @@ class EDKeys:
         self.latest_bindings_file = None
         self.latest_bindings_mtime = None
         self.missing_keys = []
+        self.unsupported_keys = []
         self.watch_thread = threading.Thread(target=self._watch_bindings_thread, daemon=True)
         self.watch_thread.start()
         
@@ -173,13 +174,15 @@ class EDKeys:
                     if collision_candidate and collision_candidate != key and binding == candidate_bind:
                         collisions.append([key, collision_candidate])
 
-        print(json.dumps({"type": "keybinds", "missing": self.missing_keys, "collisions": collisions})+'\n', flush=True)
+        print(json.dumps({"type": "keybinds", "missing": self.missing_keys, "collisions": collisions, "unsupported": self.unsupported_keys})+'\n', flush=True)
 
     def get_bindings(self) -> dict[str, Any]:
         """Returns a dict struct with the direct input equivalent of the necessary elite keybindings"""
         direct_input_keys = {}
+        unsupported_keys = set()
         latest_bindings, _ = self.get_latest_keybinds()
         if not latest_bindings:
+            self.unsupported_keys = []
             return {}
         bindings_tree = parse(latest_bindings)
         bindings_root = bindings_tree.getroot()
@@ -226,10 +229,12 @@ class EDKeys:
                     if hold is not None:
                         binding['hold'] = True
             except KeyError:
+                unsupported_keys.add(item.tag)
                 print("Unrecognised key '" + (json.dumps(binding) if binding else '?')  + "' for bind '" + item.tag + "'")
             if binding is not None:
                 direct_input_keys[item.tag] = binding
 
+        self.unsupported_keys = sorted(unsupported_keys)
         if len(list(direct_input_keys.keys())) < 1:
             return {}
         else:
