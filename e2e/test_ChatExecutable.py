@@ -1,9 +1,7 @@
 import json
 import platform
-import shutil
 import tempfile
 import os
-import pytest
 
 default_config = {
     "commander_name": "lucaelin",
@@ -355,8 +353,6 @@ default_config = {
 }
 
 def test_chat_executable():
-    if os.environ.get("RUN_CHAT_E2E") != "1":
-        pytest.skip("Set RUN_CHAT_E2E=1 to run Chat executable e2e test")
     import subprocess
     
     # create temp dir
