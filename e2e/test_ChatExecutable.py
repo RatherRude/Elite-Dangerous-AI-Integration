@@ -386,7 +386,7 @@ def test_chat_executable():
                 print(err)
             raise Exception("Chat.exe exited unexpectedly")
         print(line)
-        if '{"type": "ready"}' in line:
+        if '"type": "ready"' in line:
             break
 
     # assert that Chat.exe is running
