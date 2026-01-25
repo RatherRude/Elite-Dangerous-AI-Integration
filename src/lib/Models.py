@@ -56,21 +56,22 @@ class OpenAILLMModel(LLMModel):
         if self.model_name in ['gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-5.1']:
             kwargs["verbosity"] = "low"
                     
-        if self.model_name in ['gemini-3-pro-preview']:
+        if self.model_name.startswith('gemini-3-'):
             for m in messages:
                 if 'tool_calls' in m and m.get('tool_calls', None):
-                    calls = m.get('tool_calls', [{}])
+                    calls = m.get('tool_calls', [])
                     if calls:
-                        if not isinstance(calls[0], dict):
-                            if hasattr(calls[0], 'model_dump'):
-                                calls[0] = calls[0].model_dump()
-                            elif hasattr(calls[0], 'dict'):
-                                calls[0] = calls[0].dict()
-                        
-                        if isinstance(calls[0], dict):
-                            calls[0]['extra_content'] = {"google": {
-                                "thought_signature": "skip_thought_signature_validator"
-                            }}
+                        for i in range(len(calls)):
+                            if not isinstance(calls[i], dict):
+                                if hasattr(calls[i], 'model_dump'):
+                                    calls[i] = calls[i].model_dump()
+                                elif hasattr(calls[i], 'dict'):
+                                    calls[i] = calls[i].dict()
+                            
+                            if isinstance(calls[i], dict):
+                                calls[i]['extra_content'] = {"google": {
+                                    "thought_signature": "skip_thought_signature_validator"
+                                }}
         
         params: dict[str, Any] = {
             "model": self.model_name,
