@@ -527,6 +527,8 @@ class PromptGenerator:
                 return f"{self.commander_name} has won a trophy for their squadron."
 
         # Promotion events
+        if event_name == 'Rank':
+            return None
         if event_name == 'Promotion':
             promotion_event = cast(PromotionEvent, content)
             ranks = []
