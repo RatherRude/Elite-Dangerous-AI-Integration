@@ -8,6 +8,8 @@ import json
 import io
 import traceback
 from datetime import datetime
+from pathlib import Path
+import yaml
 
 from EDMesg.CovasNext import ExternalChatNotification, ExternalBackgroundChatNotification
 from lib.Models import create_llm_model, LLMModel, create_embedding_model, EmbeddingModel, create_stt_model, STTModel, create_tts_model, TTSModel
@@ -45,6 +47,7 @@ from lib.EDJournal import *
 from lib.EventManager import EventManager
 from lib.UI import send_message
 from lib.SystemDatabase import SystemDatabase
+from lib.Database import QuestDatabase
 from lib.Assistant import Assistant
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', write_through=True)
@@ -173,6 +176,8 @@ class Chat:
 
         log("debug", "Initializing SystemDatabase...")
         self.system_database = SystemDatabase()
+        log("debug", "Initializing QuestDatabase...")
+        self.quest_database = QuestDatabase()
         log("debug", "Initializing EDKeys...")
         self.ed_keys = EDKeys(
             get_ed_appdata_path(config),
@@ -378,6 +383,55 @@ class Chat:
             import traceback
             log('error', traceback.format_exc())
             return {"error": str(e)}
+
+    def _load_quest_catalog(self) -> dict[str, dict[str, Any]]:
+        quests_path = Path(__file__).resolve().parent / "data" / "quests.yaml"
+        try:
+            with quests_path.open("r", encoding="utf-8") as handle:
+                data = yaml.safe_load(handle) or {}
+        except Exception:
+            return {}
+        raw_quests = data.get("quests", [])
+        if not isinstance(raw_quests, list):
+            return {}
+        quests: dict[str, dict[str, Any]] = {}
+        for quest in raw_quests:
+            if not isinstance(quest, dict):
+                continue
+            quest_id = quest.get("id")
+            if isinstance(quest_id, str):
+                quests[quest_id] = quest
+        return quests
+
+    def _find_stage_def(self, quest_def: dict[str, Any], stage_id: str) -> dict[str, Any] | None:
+        for stage in quest_def.get("stages", []):
+            if isinstance(stage, dict) and stage.get("id") == stage_id:
+                return stage
+        return None
+
+    def get_quest_overview(self) -> dict[str, Any]:
+        try:
+            quest_states = [state for state in self.quest_database.get_all() if state["active"]]
+            if not quest_states:
+                return {"quests": []}
+            catalog = self._load_quest_catalog()
+            quests: list[dict[str, Any]] = []
+            for state in quest_states:
+                quest_def = catalog.get(state["quest_id"], {})
+                stage_def = self._find_stage_def(quest_def, state["stage_id"]) if quest_def else None
+                quests.append({
+                    "id": state["quest_id"],
+                    "title": quest_def.get("title", state["quest_id"]) if quest_def else state["quest_id"],
+                    "description": quest_def.get("description") if quest_def else None,
+                    "stage_id": state["stage_id"],
+                    "stage_title": stage_def.get("description") if stage_def else state["stage_id"],
+                    "instructions": stage_def.get("instructions") if stage_def else None,
+                })
+            return {"quests": quests}
+        except Exception as e:
+            log('error', f'Error fetching quest overview: {e}')
+            log('error', traceback.format_exc())
+            return {"error": str(e)}
         
     def run(self):
         show_chat_message('info', f"Initializing CMDR {self.config['commander_name']}'s personal AI...\n")
@@ -580,6 +634,13 @@ def read_stdin(chat: Chat):
                     "type": "system_events",
                     "timestamp": datetime.now().isoformat(),
                     "system_address": system_address,
+                    "data": results
+                }) + '\n', flush=True)
+            if data.get("type") == "get_quests":
+                results = chat.get_quest_overview()
+                print(json.dumps({
+                    "type": "quests",
+                    "timestamp": datetime.now().isoformat(),
                     "data": results
                 }) + '\n', flush=True)
             if data.get("type") == "init_overlay":

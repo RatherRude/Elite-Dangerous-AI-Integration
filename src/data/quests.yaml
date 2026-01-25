@@ -1,0 +1,76 @@
+version: "1.1"
+quests:
+  - id: "dock_training"
+    title: "Docking Decision"
+    description: "Decide whether to dock at a station or flee back to supercruise."
+    active: true
+    stages:
+      - id: "arrive_station"
+        description: "Arrive at a station from supercruise."
+        instructions: "Exit supercruise near a station (not in a taxi)."
+        conditions:
+          - source: "event"
+            path: "event"
+            operator: "equals"
+            value: "SupercruiseExit"
+          - source: "event"
+            path: "BodyType"
+            operator: "equals"
+            value: "Station"
+          - source: "event"
+            path: "Taxi"
+            operator: "equals"
+            value: false
+        plan:
+          - action: "log"
+            message: "Arrived at station. You can dock or flee."
+          - action: "advance_stage"
+            target_stage_id: "dock_or_flee"
+      - id: "dock_or_flee"
+        description: "Choose to dock or flee."
+        instructions: "Dock at the station or start a jump to flee."
+        plan:
+          - action: "advance_stage"
+            target_stage_id: "dock_success"
+            conditions:
+              - source: "event"
+                path: "event"
+                operator: "equals"
+                value: "Docked"
+          - action: "advance_stage"
+            target_stage_id: "arrive_station"
+            conditions:
+              - source: "event"
+                path: "event"
+                operator: "equals"
+                value: "StartJump"
+      - id: "dock_success"
+        description: "Docked successfully."
+        instructions: "Docking complete."
+        conditions: []
+        plan: []
+  - id: "market_intro"
+    title: "Market Introduction"
+    description: "Visit a specific market to learn trading basics."
+    active: false
+    stages:
+      - id: "visit_market_3"
+        description: "Visit Market 3."
+        instructions: "Dock and open the market with MarketId 3."
+        conditions:
+          - source: "event"
+            path: "MarketId"
+            operator: "equals"
+            value: 3
+        plan:
+          - action: "log"
+            message: "Market 3 visited."
+          - action: "advance_stage"
+            target_stage_id: "complete"
+      - id: "complete"
+        description: "Quest complete."
+        instructions: "You have finished the quest."
+        conditions: []
+        plan:
+          - action: "log"
+            message: "Quest complete."

@@ -316,7 +316,7 @@ class Cargo(Projection[CargoState]):
         # Update from Status event
         if isinstance(event, StatusEvent) and event.status.get('event') == 'Status':
             if 'Cargo' in event.status:
-                self.state.TotalItems = int(event.status.get('Cargo', 0))
+                self.state.TotalItems = int(event.status.get('Cargo', 0) or 0)
 
 
 class LocationState(BaseModel):

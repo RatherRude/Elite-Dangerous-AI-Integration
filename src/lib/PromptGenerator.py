@@ -1,6 +1,7 @@
 from datetime import timedelta, datetime, timezone
 from functools import lru_cache
 from typing import Any, Callable, cast, Dict, Union, List, Optional
+from pathlib import Path
 import random
 
 from openai.types.chat import ChatCompletionMessageParam
@@ -11,6 +12,7 @@ import humanize
 import json
 
 from .Projections import get_state_dict, ProjectedStates
+from .Database import QuestDatabase
 
 from .EventModels import (
     ApproachBodyEvent, ApproachSettlementEvent, BookTaxiEvent, BountyEvent, BuyExplorationDataEvent, CodexEntryEvent, CommanderEvent, CommitCrimeEvent,
@@ -62,6 +64,7 @@ class PromptGenerator:
         self.disabled_game_events = disabled_game_events if disabled_game_events is not None else []
         self.system_db = system_db
         self.weapon_types: list[dict] = weapon_types if weapon_types is not None else []
+        self.quest_db = QuestDatabase()
 
         # Pad map for station docking positions
         self.pad_map = {
@@ -2751,6 +2754,54 @@ class PromptGenerator:
 
         return active_mode, status_info
 
+    def _get_active_quest_entries(self) -> list[dict[str, Any]]:
+        quest_states = [state for state in self.quest_db.get_all() if state["active"]]
+        if not quest_states:
+            return []
+        catalog = self._load_quest_catalog()
+        entries: list[dict[str, Any]] = []
+        for state in quest_states:
+            quest_def = catalog.get(state["quest_id"])
+            if not quest_def:
+                continue
+            stage_def = self._find_stage_def(quest_def, state["stage_id"])
+            quest_title = quest_def.get("title", state["quest_id"])
+            stage_title = stage_def.get("description") if stage_def else state["stage_id"]
+            instructions = stage_def.get("instructions") if stage_def else None
+            entry: dict[str, Any] = {
+                "Quest": quest_title,
+                "Stage": stage_title or state["stage_id"],
+            }
+            if instructions:
+                entry["Instructions"] = instructions
+            entries.append(entry)
+        return entries
+
+    def _find_stage_def(self, quest_def: dict[str, Any], stage_id: str) -> dict[str, Any] | None:
+        for stage in quest_def.get("stages", []):
+            if isinstance(stage, dict) and stage.get("id") == stage_id:
+                return stage
+        return None
+
+    def _load_quest_catalog(self) -> dict[str, dict[str, Any]]:
+        quests_path = Path(__file__).resolve().parent.parent / "data" / "quests.yaml"
+        try:
+            with quests_path.open("r", encoding="utf-8") as handle:
+                data = yaml.safe_load(handle) or {}
+        except Exception:
+            return {}
+        raw_quests = data.get("quests", [])
+        if not isinstance(raw_quests, list):
+            return {}
+        quests: dict[str, dict[str, Any]] = {}
+        for quest in raw_quests:
+            if not isinstance(quest, dict):
+                continue
+            quest_id = quest.get("id")
+            if isinstance(quest_id, str):
+                quests[quest_id] = quest
+        return quests
+
     def generate_status_message(self, projected_states: ProjectedStates, search_agent_context: bool = False):
         status_entries: list[tuple[str, Any]] = []
 
@@ -3378,6 +3429,13 @@ class PromptGenerator:
         missions_info = {key: value for key, value in missions_info.items() if value is not None}
         if missions_info and 'Active' in missions_info:
             status_entries.append(("Active missions", missions_info))
+
+        active_quest_entries = self._get_active_quest_entries()
+        if active_quest_entries:
+            if len(active_quest_entries) == 1:
+                status_entries.append(("Active quest", active_quest_entries[0]))
+            else:
+                status_entries.append(("Active quests", active_quest_entries))
 
         # Add colonisation construction status if available
         colonisation_info = get_state_dict(projected_states, 'ColonisationConstruction')

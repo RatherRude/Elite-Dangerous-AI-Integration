@@ -59,9 +59,18 @@ export interface GetSystemEventsMessage extends BaseCommand {
     system_address: number | string;
 }
 
+export interface GetQuestsMessage extends BaseCommand {
+    type: "get_quests";
+}
+
 export interface SystemEventsMessage extends BaseMessage {
     type: "system_events";
     system_address: number | string | null;
+    data: any;
+}
+
+export interface QuestsMessage extends BaseMessage {
+    type: "quests";
     data: any;
 }
 
