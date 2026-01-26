@@ -142,7 +142,7 @@ quests:
   - id: "ancient_orb_pilgrimage_intro"
     title: "The Break of Dawn"
     description: "A mysterious call from the void draws you in."
-    active: false
+    active: true
     stages:
       - id: "find_guardian_system"
         description: "Find Guardian-controlled space."
@@ -300,6 +300,12 @@ quests:
         plan:
           - action: "log"
             message: "A new hand touches the beacon."
+          - action: "set_active"
+            quest_id: "ancient_orb_pilgrimage"
+            active: true
+          - action: "set_active"
+            quest_id: "ancient_orb_pilgrimage_intro"
+            active: false
   - id: "ancient_orb_pilgrimage"
     title: "Orb of Meridia"
     description: "The Guardian AI joins you to experience the universe and collect data."

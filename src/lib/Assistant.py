@@ -322,6 +322,27 @@ class Assistant:
                 target_stage_id = step.get('target_stage_id') or step.get('stage_id')
                 self._advance_quest_stage(quest_def, target_stage_id, state["quest_id"])
                 continue
+            if action == 'set_active':
+                target_quest_id = step.get('quest_id')
+                if not isinstance(target_quest_id, str) or not target_quest_id:
+                    continue
+                active_value = step.get('active')
+                if active_value is None:
+                    active_value = True
+                if not isinstance(active_value, bool):
+                    continue
+                existing = self.quest_db.get(target_quest_id)
+                if existing is None:
+                    target_def = self.quest_catalog.get(target_quest_id)
+                    stages = target_def.get('stages', []) if isinstance(target_def, dict) else []
+                    first_stage_id = stages[0].get('id') if stages else None
+                    if isinstance(first_stage_id, str):
+                        self.quest_db.set(target_quest_id, first_stage_id, active_value, self.quest_version)
+                        log('info', f"Quest '{target_quest_id}' set active={active_value} (initialized)")
+                else:
+                    self.quest_db.set_active(target_quest_id, active_value)
+                    log('info', f"Quest '{target_quest_id}' set active={active_value}")
+                continue
 
     def _advance_quest_stage(self, quest_def: dict[str, Any], target_stage_id: str | None, quest_id: str | None) -> None:
         if not quest_id or not target_stage_id:
