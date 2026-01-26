@@ -14,7 +14,7 @@ from openai.types.audio.speech_create_params import SpeechCreateParams
 from openai import OpenAI, APIStatusError
 from openai.types.chat import ChatCompletion, ChatCompletionMessageToolCall
 from openai.types import CreateEmbeddingResponse
-from .Logger import log
+from .Logger import log, ModelUsageStats
 
 class LLMError(Exception):
     def __init__(self, message: str, original_error: Exception | None = None):
@@ -28,7 +28,7 @@ class LLMModel(ABC):
         self.model_name = model_name
 
     @abstractmethod
-    def generate(self, messages: List[dict], tools: Optional[List[dict]] = None, tool_choice: Optional[Any] = None) -> tuple[str | None, List[Any] | None]:
+    def generate(self, messages: List[dict], tools: Optional[List[dict]] = None, tool_choice: Optional[Any] = None) -> tuple[str | None, List[Any] | None, ModelUsageStats]:
         pass
 
 class EmbeddingModel(ABC):
@@ -50,7 +50,7 @@ class OpenAILLMModel(LLMModel):
         self.extra_body = extra_body or {}
         self.extra_headers = extra_headers or {}
 
-    def generate(self, messages: List[dict], tools: Optional[List[dict]] = None, tool_choice: Optional[Any] = None) -> tuple[str | None, List[Any] | None]:
+    def generate(self, messages: List[dict], tools: Optional[List[dict]] = None, tool_choice: Optional[Any] = None) -> tuple[str | None, List[Any] | None, ModelUsageStats]:
         kwargs = {}
         # Special handling for specific models or providers if needed
         if self.model_name in ['gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-5.1']:
@@ -116,14 +116,20 @@ class OpenAILLMModel(LLMModel):
         
         if not completion.choices:
             log("debug", "LLM completion has no choices:", completion)
-            return (None, None) # Treated as "..."
+            return (None, None, ModelUsageStats()) # Treated as "..."
 
         if not hasattr(completion.choices[0], 'message') or not completion.choices[0].message:
             log("debug", "LLM completion choice has no message:", completion)
-            return (None, None) # Treated as "..."
+            return (None, None, ModelUsageStats()) # Treated as "..."
         
+        usage_metadata = ModelUsageStats()
         if hasattr(completion, 'usage') and completion.usage:
             log("debug", f'LLM completion usage', completion.usage)
+            usage_metadata.input_tokens = completion.usage.prompt_tokens
+            usage_metadata.output_tokens = completion.usage.completion_tokens
+            usage_metadata.total_tokens = completion.usage.total_tokens
+            if hasattr(completion.usage, 'prompt_tokens_details') and completion.usage.prompt_tokens_details:
+                usage_metadata.cached_tokens = getattr(completion.usage.prompt_tokens_details, 'cached_tokens', 0)
         
         response_text = None
         if hasattr(completion.choices[0].message, 'content'):
@@ -140,9 +146,9 @@ class OpenAILLMModel(LLMModel):
             response_actions = completion.choices[0].message.tool_calls
 
         if response_text is None and response_actions is None:
-             return (None, None)
+             return (None, None, usage_metadata)
 
-        return (response_text, response_actions)
+        return (response_text, response_actions, usage_metadata)
 
     def list_models(self) -> List[str]:
         try:
@@ -201,12 +207,15 @@ class OpenAISTTModel(STTModel):
         audio_ogg.name = "audio.ogg"  # OpenAI needs a filename
         
         try:
-            transcription = self.client.audio.transcriptions.create(
-                model=self.model_name,
-                file=audio_ogg,
-                language=self.language if self.language else None, # pyright: ignore[reportArgumentType]
-                prompt=self.prompt
-            )
+            kwargs: dict[str, Any] = {
+                "model": self.model_name,
+                "file": audio_ogg,
+                "language": self.language if self.language else None,  # pyright: ignore[reportArgumentType]
+            }
+            if self.prompt:
+                kwargs["prompt"] = self.prompt
+
+            transcription = self.client.audio.transcriptions.create(**kwargs)
         except APIStatusError as e:
             log("debug", "STT error request:", e.request.method, e.request.url, e.request.headers)
             log("debug", "STT error response:", e.response.status_code, e.response.headers, e.response.read().decode('utf-8', errors='replace'))

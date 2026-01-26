@@ -7,6 +7,7 @@ import logging
 import json
 import atexit
 from functools import wraps
+from dataclasses import dataclass
 from pythonjsonlogger.json import JsonFormatter
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
@@ -237,3 +238,47 @@ def observe():
                     })
         return wrapper
     return decorator
+
+
+@dataclass
+class PromptUsageStats:
+    """Approximate prompt size accounting by use-case (chars)."""
+
+    system_chars: int = 0
+    memory_chars: int = 0
+    status_chars: int = 0
+    conversation_chars: int = 0
+    web_search_chars: int = 0
+    genui_chars: int = 0
+    reuse_chars: int = 0
+
+    def compute_total(self) -> int:
+        return (
+            self.system_chars
+            + self.memory_chars
+            + self.status_chars
+            + self.conversation_chars
+            + self.web_search_chars
+            + self.genui_chars
+        )
+
+@dataclass
+class ModelUsageStats:
+    """Token-level API usage as reported by the model provider."""
+
+    input_tokens: int = 0
+    output_tokens: int = 0
+    total_tokens: int = 0
+    cached_tokens: int = 0
+    
+    
+def log_llm_usage(context: str, model_usage: ModelUsageStats, prompt_usage: PromptUsageStats) -> None:
+    message = {
+        "type": "llm_usage",
+        'timestamp': datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+        "context": context,
+        "model_usage": vars(model_usage),
+        "prompt_usage": vars(prompt_usage),
+    }
+    
+    print(json.dumps(message) + "\n", flush=True)

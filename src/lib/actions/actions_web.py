@@ -7,13 +7,11 @@ import yaml
 import traceback
 import sys
 
-from pydantic import BaseModel
-
 from ..PromptGenerator import PromptGenerator
 from .data import *
 from ..ActionManager import ActionManager
 from ..EventManager import EventManager
-from ..Logger import log
+from ..Logger import log, PromptUsageStats, log_llm_usage
 from ..Models import LLMModel, EmbeddingModel
 from ..Projections import get_state_dict, ProjectedStates
 
@@ -298,11 +296,18 @@ def web_search_agent(
                     "content": "Maximum number of iterations reached. Please provide the best possible answer based on the information gathered so far."
                 })
                 
-            response_text, tool_calls = llm_model.generate(
+            response_text, tool_calls, model_usage = llm_model.generate(
                 messages=messages,
                 tools=tools if iter < max_loops - 1 else [],
                 tool_choice="auto",
             )
+
+            # Prompt usage: count assistant + tool loop prompt content as web_search context.
+            try:
+                prompt_usage = PromptUsageStats(web_search_chars=sum(len(str(m.get('content', ''))) for m in messages if isinstance(m.get('content'), str)))
+                log_llm_usage("web_search", model_usage=model_usage, prompt_usage=prompt_usage)
+            except Exception:
+                pass
 
             if tool_calls:
                 messages.append({
@@ -374,12 +379,18 @@ def get_galnet_news(obj, projected_states):
                 }
                 articles.append(article)
 
-            response_text, _ = llm_model.generate(
+            response_text, _, model_usage = llm_model.generate(
                 messages=[{
                     "role": "user",
                     "content": f"Analyze the following list of news articles, either answer the given inquiry or create a short summary that includes all named entities: {articles}\nInquiry: {obj.get('query')}"
                 }],
             )
+
+            try:
+                prompt_usage = PromptUsageStats(web_search_chars=len(str(articles)) + len(str(obj.get('query', ''))))
+                log_llm_usage("galnet", model_usage=model_usage, prompt_usage=prompt_usage)
+            except Exception:
+                pass
 
             return response_text
 
@@ -2473,4 +2484,3 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
             method=remember_memories,
             action_type='web'
         )
-

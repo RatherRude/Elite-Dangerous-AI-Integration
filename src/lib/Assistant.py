@@ -6,7 +6,7 @@ from time import time
 
 from pydantic import BaseModel
 from .Models import LLMModel, EmbeddingModel, LLMError
-from .Logger import log, observe, show_chat_message
+from .Logger import log, observe, show_chat_message, PromptUsageStats, log_llm_usage
 from .Config import Config
 from .Event import ConversationEvent, Event, GameEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent, MemoryEvent
 from .EventManager import EventManager
@@ -143,11 +143,24 @@ class Assistant:
                 log('warn', 'Embeddings model not configured, cannot summarize memories.')
                 return
 
-            response_text, _ = self.llmModel.generate(
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant in Elite Dangerous that summarizes events and conversation into short concise notes for long-term memory storage. Only include important information that is not already stored in long-term memory. Do not include unimportant information, irrelevant details or repeated information. Do not include any timestamps in the summary.\nKeep it short to about 5 sentences."},
-                    {"role": "user", "content": "Summarize the following events into short concise notes for long-term memory storage:\n<conversation>\n"+(chat_text)+'\n</conversation>'}],
+            system_prompt = (
+                "You are a helpful assistant in Elite Dangerous that summarizes events and conversation into short concise notes for long-term memory storage. "
+                "Only include important information that is not already stored in long-term memory. "
+                "Do not include unimportant information, irrelevant details or repeated information. "
+                "Do not include any timestamps in the summary.\n"
+                "Keep it short to about 5 sentences."
             )
+            user_prompt = "Summarize the following events into short concise notes for long-term memory storage:\n<conversation>\n" + (chat_text) + "\n</conversation>"
+
+            response_text, _, model_usage = self.llmModel.generate(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+            )
+
+            prompt_usage = PromptUsageStats(system_chars=len(system_prompt), memory_chars=len(user_prompt))
+            log_llm_usage("memory_create", model_usage=model_usage, prompt_usage=prompt_usage)
 
             (model_name, embedding) = self.embeddingModel.create_embedding(response_text or "")
 
@@ -196,10 +209,13 @@ class Assistant:
         # confirm the action by sending the user input to the model without any context
 
         try:
-            _, response_actions = self.llmModel.generate(
+            _, response_actions, model_usage = self.llmModel.generate(
                 messages=[prompt[0]] + [{"role": "user", "content": user_input}],
                 tools=tools
             )
+
+            prompt_usage = PromptUsageStats(system_chars=len(prompt[0].get('content', '') or ""), conversation_chars=len(user_input))
+            log_llm_usage("action_verification", model_usage=model_usage, prompt_usage=prompt_usage)
             
             if response_actions:
                 self.action_manager.confirm_action_in_cache(user_input, response_actions[0], tools)
@@ -230,7 +246,7 @@ class Assistant:
 
             log('debug', 'Starting reply...')
             max_conversation_processed = max([event.processed_at for event in events]+[0.0])
-            prompt = self.prompt_generator.generate_prompt(events=events, projected_states=projected_states, pending_events=new_events, memories=memories)
+            prompt, prompt_usage = self.prompt_generator.generate_prompt(events=events, projected_states=projected_states, pending_events=new_events, memories=memories)
 
             user_input: list[str] = [event.content for event in new_events if isinstance(event, ConversationEvent) and event.kind == 'user']
             tool_uses: int = len([event for event in new_events if event.kind == 'tool'])
@@ -278,10 +294,13 @@ class Assistant:
                 start_time = time()
                     
                 try:
-                    response_text, response_actions = self.llmModel.generate(
+                    response_text, response_actions, model_usage = self.llmModel.generate(
                         messages=prompt,
                         tools=tool_list,  # pyright: ignore[reportArgumentType]
                     )
+
+                    log_llm_usage("assistant", model_usage=model_usage, prompt_usage=prompt_usage)
+
                     if not response_text and not response_actions:
                         response_text = "..."
                     end_time = time()

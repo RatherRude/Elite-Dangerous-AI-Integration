@@ -1374,7 +1374,7 @@ def get_visuals(obj, projected_states):
     if not image: return "Unable to take screenshot."
     if not vision_model: return "Vision not enabled."
 
-    response_text, _ = vision_model.generate(
+    response_text, _, _ = vision_model.generate(
         messages=format_image(image, obj.get("query")),
     )
 
@@ -2546,4 +2546,3 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
             },
             "required": ["query"]
         }, get_visuals, 'global', permission='getVisuals')
-
