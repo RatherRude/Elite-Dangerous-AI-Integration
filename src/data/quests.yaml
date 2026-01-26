@@ -139,9 +139,9 @@ quests:
         plan:
           - action: "log"
             message: "Crisis averted. It was just a snack run."
-  - id: "guardian_beacon"
-    title: "Guardian Beacon"
-    description: "An ancient Guardian AI calls to you from the stars."
+  - id: "ancient_orb_pilgrimage_intro"
+    title: "The Break of Dawn"
+    description: "A mysterious call from the void draws you in."
     active: false
     stages:
       - id: "find_guardian_system"
@@ -302,7 +302,7 @@ quests:
             message: "A new hand touches the beacon."
   - id: "ancient_orb_pilgrimage"
     title: "Orb of Meridia"
-    description: "A Guardian orb binds you to Meridia's will and demands a pilgrimage."
+    description: "The Guardian AI joins you to experience the universe and collect data."
     active: false
     stages:
       - id: "orb_call"
@@ -423,7 +423,7 @@ quests:
                 value: "Undock"
       - id: "bounty_hunt"
         description: "Show the orb battle."
-        instructions: "Meridia's AI craves combat. Earn at least 300,000 in bounty."
+        instructions: "The AI craves combat. Earn a single bounty with a value of at least 300,000."
         plan:
           - action: "advance_stage"
             target_stage_id: "return_metcalf"
@@ -454,8 +454,8 @@ quests:
                 operator: "equals"
                 value: "Metcalf Ring"
       - id: "outro"
-        description: "The beacon answers."
-        instructions: "A new hand touches the beacon."
+        description: "It's only the beginning."
+        instructions: "Find a thargoid probe."
         conditions: []
         plan:
           - action: "log"
@@ -467,3 +467,4 @@ quests:
         plan:
           - action: "log"
             message: "The orb's voice is gone."
+
