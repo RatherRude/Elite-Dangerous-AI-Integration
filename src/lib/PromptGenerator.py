@@ -2766,12 +2766,15 @@ class PromptGenerator:
                 continue
             stage_def = self._find_stage_def(quest_def, state["stage_id"])
             quest_title = quest_def.get("title", state["quest_id"])
+            quest_description = quest_def.get("description")
             stage_title = stage_def.get("description") if stage_def else state["stage_id"]
             instructions = stage_def.get("instructions") if stage_def else None
             entry: dict[str, Any] = {
                 "Quest": quest_title,
                 "Stage": stage_title or state["stage_id"],
             }
+            if quest_description:
+                entry["Description"] = quest_description
             if instructions:
                 entry["Instructions"] = instructions
             entries.append(entry)
