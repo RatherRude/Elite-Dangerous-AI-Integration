@@ -36,6 +36,7 @@ class Assistant:
         self.registered_should_reply_handlers: list[Callable[[Event, dict[str, Any]], bool | None]] = []
         self.is_summarizing = False
         self.short_term_memories = []
+        self.last_loadgame_ts: datetime | None = None
 
     def on_event(self, event: Event, projected_states: ProjectedStates):
         # Skip disabled game events from entering the pending state
@@ -43,6 +44,13 @@ class Assistant:
             event_type = event.content.get('event') if isinstance(event, GameEvent) else event.status.get('event')
             if event_type in self.disabled_game_events:
                 return
+
+        if isinstance(event, GameEvent) and event.content.get("event") == "LoadGame":
+            try:
+                ts_str = event.content.get("timestamp") or event.timestamp
+                self.last_loadgame_ts = datetime.fromisoformat(str(ts_str).replace("Z", "+00:00"))
+            except Exception:
+                self.last_loadgame_ts = None
 
         self.pending.append(event)
         self.reply_pending = self.should_reply(projected_states)
@@ -347,6 +355,32 @@ class Assistant:
                 return True
 
             if isinstance(event, GameEvent) and event.content.get("event") in self.enabled_game_events:
+                if event.content.get("event") == "ApproachSettlement":
+                    # Suppress ED journal startup glitch: ignore ApproachSettlement within grace window after LoadGame
+                    grace_seconds = 10
+                    load_dt = self.last_loadgame_ts
+                    evt_ts = event.content.get("timestamp")
+                    # Only suppress if we've seen a LoadGame in this session; otherwise let it through
+                    if load_dt and evt_ts:
+                        try:
+                            evt_dt = datetime.fromisoformat(str(evt_ts).replace("Z", "+00:00"))
+                            if (evt_dt - load_dt).total_seconds() <= grace_seconds:
+                                continue
+                        except Exception:
+                            pass
+                    # Ignore ApproachSettlement while docked to avoid spurious prompts
+                    is_docked = False
+                    current_status = states.get("CurrentStatus", {})
+                    if isinstance(current_status, dict):
+                        flags = current_status.get("flags", {})
+                        if isinstance(flags, dict):
+                            is_docked = flags.get("Docked", False)
+                    location_state = states.get("Location", {})
+                    if not is_docked and isinstance(location_state, dict):
+                        is_docked = location_state.get("Docked", False)
+                    if is_docked:
+                        continue
+
                 if event.content.get("event") == "ReceiveText":
                     if event.content.get("Channel") not in ['wing', 'voicechat', 'friend', 'player'] and (
                         (not character["react_to_text_local_var"] and event.content.get("Channel") == 'local') or
