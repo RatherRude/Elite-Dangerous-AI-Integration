@@ -138,6 +138,8 @@ export class ChatContainerComponent implements AfterViewChecked, OnChanges, OnDe
         return "#2196F3";
       case "event":
         return "#4CAF50";
+      case "quest":
+        return "#4CAF50";
       case "cmdr":
         return "#E91E63";
       case "action":
@@ -173,5 +175,88 @@ export class ChatContainerComponent implements AfterViewChecked, OnChanges, OnDe
       return 'event-enabled';
     }
     return '';
+  }
+
+  public formatMessage(msg: ChatMessage): string {
+    if (msg.role?.toLowerCase() !== "quest") {
+      return msg.message;
+    }
+    const data = this.parseQuestMessage(msg.message);
+    if (!data) {
+      return msg.message;
+    }
+    const questLabel = data.quest_title || data.quest_id || "Quest";
+    if (data.action === "advance_stage") {
+      const stageName = data.stage_name || data.stage_id || "next stage";
+      const parts = [`${questLabel} advanced to ${stageName}.`];
+      if (data.stage_description) {
+        parts.push(data.stage_description);
+      }
+      if (data.stage_instructions) {
+        parts.push(`Instructions: ${data.stage_instructions}`);
+      }
+      return parts.join(" ");
+    }
+    if (data.action === "set_active") {
+      const state = data.active === true ? "activated" : data.active === false ? "deactivated" : "updated";
+      return `Quest ${state}: ${questLabel}.`;
+    }
+    if (data.action === "load_quests") {
+      const version = data.version ? `v${data.version}` : "";
+      const count = typeof data.quest_count === "number"
+        ? `${data.quest_count} quest${data.quest_count === 1 ? "" : "s"}`
+        : "quests";
+      return `Quest catalog loaded${version ? ` ${version}` : ""} (${count}).`;
+    }
+    return `Quest update: ${questLabel}.`;
+  }
+
+  private parseQuestMessage(message: string): {
+    action?: string;
+    quest_id?: string;
+    quest_title?: string;
+    stage_id?: string;
+    stage_name?: string;
+    stage_description?: string;
+    stage_instructions?: string;
+    active?: boolean;
+    version?: string;
+    quest_count?: number;
+  } | null {
+    const trimmed = message?.trim();
+    if (!trimmed || !trimmed.includes("QuestEvent")) {
+      return null;
+    }
+    const data: any = {};
+    const stringFields = [
+      "action",
+      "quest_id",
+      "quest_title",
+      "stage_id",
+      "stage_name",
+      "stage_description",
+      "stage_instructions",
+      "version",
+    ];
+    for (const field of stringFields) {
+      const match = trimmed.match(new RegExp(`['"]${field}['"]:\\s*['"]([^'"]*)['"]`));
+      if (match) {
+        data[field] = match[1];
+        continue;
+      }
+      const noneMatch = trimmed.match(new RegExp(`['"]${field}['"]:\\s*None`));
+      if (noneMatch) {
+        data[field] = undefined;
+      }
+    }
+    const activeMatch = trimmed.match(/['"]active['"]:\s*(True|False|true|false)/);
+    if (activeMatch) {
+      data.active = activeMatch[1].toLowerCase() === "true";
+    }
+    const countMatch = trimmed.match(/['"]quest_count['"]:\s*(\d+)/);
+    if (countMatch) {
+      data.quest_count = Number(countMatch[1]);
+    }
+    return data;
   }
 }

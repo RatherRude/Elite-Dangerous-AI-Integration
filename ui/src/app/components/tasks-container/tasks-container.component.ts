@@ -4,7 +4,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { ProjectionsService } from "../../services/projections.service";
 import { Subscription } from "rxjs";
-import { EventMessage, EventService, GameEvent } from "../../services/event.service";
+import { EventMessage, EventService, QuestEvent } from "../../services/event.service";
 import { GetQuestsMessage, QuestsMessage, TauriService } from "../../services/tauri.service";
 
 @Component({
@@ -95,8 +95,8 @@ export class TasksContainerComponent implements OnInit, OnDestroy {
     const newEvents = events.slice(this.lastEventIndex + 1);
     this.lastEventIndex = events.length - 1;
     for (const msg of newEvents) {
-      const evt = (msg as any).event as GameEvent | undefined;
-      if (!evt || evt.kind !== "game") continue;
+      const evt = (msg as any).event as QuestEvent | undefined;
+      if (!evt || evt.kind !== "quest") continue;
       this.scheduleQuestRefresh();
       break;
     }

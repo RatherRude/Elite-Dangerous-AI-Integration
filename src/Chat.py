@@ -254,6 +254,9 @@ class Chat:
         if event.kind=='memory':
             event = cast(MemoryEvent, event)
             show_chat_message('memory', event.content)
+        if event.kind=='quest':
+            event = cast(MemoryEvent, event)
+            show_chat_message('quest', event.content)
 
         if isinstance(event, GameEvent) and event.content.get('event') == 'FSDTarget':
             if 'Name' in event.content:

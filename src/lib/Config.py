@@ -335,7 +335,7 @@ game_events = {
     'USSDrop': False,
 
     # Quests & Missions
-    'QuestEvent': True,
+    'quest': True,
     'MissionAbandoned': True,
     'MissionAccepted': True,
     'MissionCompleted': True,

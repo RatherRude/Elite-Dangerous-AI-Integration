@@ -10,7 +10,7 @@ from .Models import LLMModel, EmbeddingModel, LLMError
 from .Logger import log, observe, show_chat_message
 from .Config import Config
 from .Database import QuestDatabase, QuestState
-from .Event import ConversationEvent, Event, GameEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent, MemoryEvent
+from .Event import ConversationEvent, Event, GameEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent, MemoryEvent, QuestEvent
 from .EventManager import EventManager
 from .ActionManager import ActionManager
 from .PromptGenerator import PromptGenerator
@@ -63,7 +63,7 @@ class Assistant:
             if (isinstance(event, GameEvent) and event.content.get('event') == 'FSDJump' and
                     (self.config.get("qol_autoscan", False) or self.config.get("qol_autobrake", False))):
                 if self.config.get("qol_autobrake"):
-                    speed_args = {"speed": "Zero"}
+                    speed_args = {"speed": "Zero", "qol": True}
                     set_speed(speed_args, projected_states)
 
                 if self.config.get("qol_autoscan"):
@@ -72,6 +72,7 @@ class Assistant:
                         "action": "fire",
                         "discoveryPrimary": self.config.get("discovery_primary_var", True),
                         "discoveryFiregroup": self.config.get("discovery_firegroup_var", 1),
+                        "qol": True
                     }
                     fire_weapons(fire_args, projected_states)
             if isinstance(event, ProjectedEvent) and event.content.get('event') == 'CarrierJumpCooldownComplete':
@@ -147,6 +148,12 @@ class Assistant:
             self._sync_quests_to_db()
             self.quests_loaded = True
             log('info', f"Loaded {len(self.quest_catalog)} quests from {quests_path}")
+            self.event_manager.add_quest_event({
+                "event": "QuestEvent",
+                "action": "load_quests",
+                "version": self.quest_version,
+                "quest_count": len(self.quest_catalog),
+            })
         except Exception as e:
             log('error', 'Failed to load quests', e, traceback.format_exc())
             self.quest_catalog = {}
@@ -175,6 +182,9 @@ class Assistant:
                 log('info', f"Quest '{quest_id}' updated to version {self.quest_version}")
 
     def _process_active_quests(self, event: Event, projected_states: ProjectedStates) -> None:
+        if not self.quests_loaded:
+            self._load_quests()
+
         if not self.quests_loaded or not self.quest_catalog:
             return
         quest_states = self.quest_db.get_all()
@@ -183,6 +193,7 @@ class Assistant:
                 continue
             quest_id = state["quest_id"]
             stage_id = state["stage_id"]
+            log('debug', f"Quest '{quest_id}' active at stage '{stage_id}'")
             quest_def = self.quest_catalog.get(quest_id)
             if not quest_def:
                 log('warn', f"Quest '{quest_id}' missing from catalog")
@@ -673,7 +684,11 @@ class Assistant:
                     return True
                 if event.content.get("event") in self.enabled_game_events:
                     return True
-            
+
+            if isinstance(event, QuestEvent):
+                if 'quest' in self.enabled_game_events:
+                    return True
+
             # run should_reply handlers for each plugin
             for handler in self.registered_should_reply_handlers:
                 should_reply_according_to_plugins = handler(event, states)
