@@ -16,6 +16,7 @@ EventKind = Literal[
     'status',
     'projected',
     'external',
+    'quest',
     'memory',
     'plugin',
 ]
@@ -78,6 +79,12 @@ class ExternalEvent(Event[Literal['external']]):
 
 
 @dataclass(kw_only=True)
+class QuestEvent(Event[Literal['quest']]):
+    content: dict[str, object]
+    kind: Literal['quest'] = 'quest'
+
+
+@dataclass(kw_only=True)
 class PluginEvent(Event[Literal['plugin']]):
     plugin_event_content: Any
     plugin_event_name: str
@@ -112,6 +119,7 @@ EventLike = (
     | StatusEvent
     | ProjectedEvent
     | ExternalEvent
+    | QuestEvent
     | PluginEvent
     | ConversationEvent
     | ToolEvent
@@ -125,6 +133,7 @@ EventClasses: list[type[Event]] = [
     StatusEvent,
     ProjectedEvent,
     ExternalEvent,
+    QuestEvent,
     MemoryEvent,
     PluginEvent,
 ]

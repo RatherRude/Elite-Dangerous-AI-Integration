@@ -98,6 +98,7 @@ game_events = {
     'DockingComputerDocking': False,
     'DockingComputerUndocking': False,
     'DockingComputerDeactivated': False,
+    'InDockingRange': True,
     'NavRoute': False,
     'NavRouteClear': False,
     'CrewLaunchFighter': True,
@@ -190,11 +191,6 @@ game_events = {
     'DropShipDeploy': False,
 
     # Stations
-    'MissionAbandoned': True,
-    'MissionAccepted': True,
-    'MissionCompleted': True,
-    'MissionFailed': True,
-    'MissionRedirected': True,
     'StationServices': False,
     'ShipyardBuy': True,
     'ShipyardNew': False,
@@ -337,6 +333,14 @@ game_events = {
     'DataScanned': True,
     'Scanned': False,
     'USSDrop': False,
+
+    # Quests & Missions
+    'quest': True,
+    'MissionAbandoned': True,
+    'MissionAccepted': True,
+    'MissionCompleted': True,
+    'MissionFailed': True,
+    'MissionRedirected': True,
 }
 
 

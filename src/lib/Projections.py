@@ -316,7 +316,7 @@ class Cargo(Projection[CargoState]):
         # Update from Status event
         if isinstance(event, StatusEvent) and event.status.get('event') == 'Status':
             if 'Cargo' in event.status:
-                self.state.TotalItems = int(event.status.get('Cargo', 0))
+                self.state.TotalItems = int(event.status.get('Cargo', 0) or 0)
 
 
 class LocationState(BaseModel):
@@ -3136,6 +3136,42 @@ class FSSSignals(Projection[FSSSignalsStateModel]):
 
         return projected_events
 
+
+class InDockingRangeStateModel(BaseModel):
+    HasExitedForDock: bool = True
+
+@final
+class InDockingRange(Projection[InDockingRangeStateModel]):
+    StateModel = InDockingRangeStateModel
+
+
+    @override
+    def process(self, event: Event) -> list[ProjectedEvent]:
+        projected_events: list[ProjectedEvent] = []
+
+        if isinstance(event, GameEvent):
+            name = event.content.get("event")
+
+            if name == "SupercruiseExit":
+                # Ignore taxi rides for docking prompts
+                if not event.content.get("Taxi", False):
+                    self.state = InDockingRangeStateModel()
+                    return projected_events
+
+            if name == "ReceiveText":
+                if (event.content.get("Channel", "") != "npc" or not self.state.HasExitedForDock or
+                        event.content.get("Message", "") != "$STATION_NoFireZone_entered;"):
+                    return projected_events
+
+                projected_events.append(ProjectedEvent(content={"event": "InDockingRange"}))
+                self.state = InDockingRangeStateModel(HasExitedForDock=False)
+
+        return projected_events
+
+
+
+
+
 class IdleStateModel(BaseModel):
     """Commander's activity/idle status."""
     LastInteraction: str = Field(default="1970-01-01T00:00:00Z", description="Timestamp of last user interaction")
@@ -3218,6 +3254,7 @@ def registerProjections(
     event_manager.register_projection(Idle(idle_timeout))
     event_manager.register_projection(StoredModules())
     event_manager.register_projection(StoredShips())
+    event_manager.register_projection(InDockingRange())
 
     # ToDo: SLF, SRV,
     for proj in [

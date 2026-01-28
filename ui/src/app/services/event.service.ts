@@ -10,6 +10,7 @@ export interface EventMessage extends BaseMessage {
         | StatusEvent
         | ConversationEvent
         | ExternalEvent
+        | QuestEvent
         | MemoryEvent;
 }
 
@@ -59,6 +60,26 @@ export interface ExternalEvent {
     content: any;
     timestamp: string;
     kind: "external";
+    processed_at: number;
+}
+
+export interface QuestEvent {
+    content: {
+        event: string;
+        action?: string;
+        quest_id?: string;
+        quest_title?: string | null;
+        stage_id?: string;
+        stage_name?: string;
+        stage_description?: string | null;
+        stage_instructions?: string | null;
+        active?: boolean;
+        version?: string;
+        quest_count?: number;
+        [key: string]: any;
+    };
+    timestamp: string;
+    kind: "quest";
     processed_at: number;
 }
 

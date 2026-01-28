@@ -1,6 +1,7 @@
 from datetime import timedelta, datetime, timezone
 from functools import lru_cache
 from typing import Any, Callable, cast, Dict, Union, List, Optional
+from pathlib import Path
 import random
 
 from openai.types.chat import ChatCompletionMessageParam
@@ -11,6 +12,7 @@ import humanize
 import json
 
 from .Projections import get_state_dict, ProjectedStates
+from .Database import QuestDatabase
 
 from .EventModels import (
     ApproachBodyEvent, ApproachSettlementEvent, BookTaxiEvent, BountyEvent, BuyExplorationDataEvent, CodexEntryEvent, CommanderEvent, CommitCrimeEvent,
@@ -43,6 +45,7 @@ from .Event import (
     ToolEvent,
     ExternalEvent,
     ProjectedEvent,
+    QuestEvent,
 )
 from .Logger import log, observe, PromptUsageStats
 
@@ -64,6 +67,7 @@ class PromptGenerator:
         self.disabled_game_events = disabled_game_events if disabled_game_events is not None else []
         self.system_db = system_db
         self.weapon_types: list[dict] = weapon_types if weapon_types is not None else []
+        self.quest_db = QuestDatabase()
 
         # Pad map for station docking positions
         self.pad_map = {
@@ -124,7 +128,7 @@ class PromptGenerator:
         depth = pad['depth']
         return f"{clock} o'clock, {depth} (Pad {pad_number}, clock orientation: mail slot entry with green on right)"
 
-    def get_event_template(self, event: Union[GameEvent, ProjectedEvent, ExternalEvent]):
+    def get_event_template(self, event: Union[GameEvent, ProjectedEvent, ExternalEvent, QuestEvent]):
         content: Any = event.content
         event_name = content.get('event')
         
@@ -529,6 +533,8 @@ class PromptGenerator:
                 return f"{self.commander_name} has won a trophy for their squadron."
 
         # Promotion events
+        if event_name == 'Rank':
+            return None
         if event_name == 'Promotion':
             promotion_event = cast(PromotionEvent, content)
             ranks = []
@@ -2213,6 +2219,25 @@ class PromptGenerator:
             return f"{self.commander_name} is now in combat."
         if event_name == 'CombatExited':
             return f"{self.commander_name} is no longer in combat."
+        if event_name == 'QuestEvent':
+            action = content.get('action')
+            quest_title = content.get('quest_title') or content.get('quest_id') or 'Unknown quest'
+            if action == 'advance_stage':
+                stage_name = content.get('stage_name') or content.get('stage_id') or 'unknown stage'
+                stage_description = content.get('stage_description')
+                stage_instructions = content.get('stage_instructions')
+                details = []
+                if stage_description:
+                    details.append(stage_description)
+                if stage_instructions:
+                    details.append(f"Instructions: {stage_instructions}")
+                detail_text = f" - {' '.join(details)}" if details else ""
+                return f"Quest updated: {quest_title} advanced to stage {stage_name}{detail_text}"
+            if action == 'set_active':
+                active = content.get('active')
+                state = 'activated' if active else 'deactivated'
+                return f"Quest {state}: {quest_title}."
+            return f"Quest update: {quest_title}."
         if event_name == 'FirstPlayerSystemDiscovered':
             return f"{self.commander_name} has a new system discovered."
         if event_name == 'FetchRemoteModuleCompleted':
@@ -2256,6 +2281,9 @@ class PromptGenerator:
             return f"{self.commander_name} has received a Discord notification."
         if event_name == 'Idle':
             return f"Your conversation with {self.commander_name} hasgone silent for a while. Get their attention by making a joke fitting to the current situation or self-reflecting on the recent past.",
+
+        if event_name == "InDockingRange":
+            return f"{self.commander_name}'s ship is now close enough to the station to make a docking request."
 
         if event_name == "DockingComputerDocking":
             return f"{self.commander_name}'s ship has initiated automated docking computer"
@@ -2371,12 +2399,13 @@ class PromptGenerator:
 
         return None
 
-    def event_message(self, event: Union[GameEvent, ProjectedEvent, ExternalEvent], timeoffset: str, is_important: bool):
+    def event_message(self, event: Union[GameEvent, ProjectedEvent, ExternalEvent, QuestEvent], timeoffset: str, is_important: bool):
         message = self.get_event_template(event)
         if message:
+            label = "Quest Event" if isinstance(event, QuestEvent) else "Game Event"
             return {
                 "role": "user",
-                "content": f"[{'IMPORTANT ' if is_important else ''}Game Event, {timeoffset}] {message}",
+                "content": f"[{'IMPORTANT ' if is_important else ''}{label}, {timeoffset}] {message}",
             }
 
         # Deliberately ignored events
@@ -2745,6 +2774,57 @@ class PromptGenerator:
             status_info.pop('pips', None)
 
         return active_mode, status_info
+
+    def _get_active_quest_entries(self) -> list[dict[str, Any]]:
+        quest_states = [state for state in self.quest_db.get_all() if state["active"]]
+        if not quest_states:
+            return []
+        catalog = self._load_quest_catalog()
+        entries: list[dict[str, Any]] = []
+        for state in quest_states:
+            quest_def = catalog.get(state["quest_id"])
+            if not quest_def:
+                continue
+            stage_def = self._find_stage_def(quest_def, state["stage_id"])
+            quest_title = quest_def.get("title", state["quest_id"])
+            quest_description = quest_def.get("description")
+            stage_title = stage_def.get("description") if stage_def else state["stage_id"]
+            instructions = stage_def.get("instructions") if stage_def else None
+            entry: dict[str, Any] = {
+                "Quest": quest_title,
+                "Stage": stage_title or state["stage_id"],
+            }
+            if quest_description:
+                entry["Description"] = quest_description
+            if instructions:
+                entry["Instructions"] = instructions
+            entries.append(entry)
+        return entries
+
+    def _find_stage_def(self, quest_def: dict[str, Any], stage_id: str) -> dict[str, Any] | None:
+        for stage in quest_def.get("stages", []):
+            if isinstance(stage, dict) and stage.get("id") == stage_id:
+                return stage
+        return None
+
+    def _load_quest_catalog(self) -> dict[str, dict[str, Any]]:
+        quests_path = Path(__file__).resolve().parent.parent / "data" / "quests.yaml"
+        try:
+            with quests_path.open("r", encoding="utf-8") as handle:
+                data = yaml.safe_load(handle) or {}
+        except Exception:
+            return {}
+        raw_quests = data.get("quests", [])
+        if not isinstance(raw_quests, list):
+            return {}
+        quests: dict[str, dict[str, Any]] = {}
+        for quest in raw_quests:
+            if not isinstance(quest, dict):
+                continue
+            quest_id = quest.get("id")
+            if isinstance(quest_id, str):
+                quests[quest_id] = quest
+        return quests
 
     def generate_status_message(self, projected_states: ProjectedStates, search_agent_context: bool = False):
         status_entries: list[tuple[str, Any]] = []
@@ -3377,6 +3457,13 @@ class PromptGenerator:
         if missions_info and 'Active' in missions_info:
             status_entries.append(("Active missions", missions_info))
 
+        active_quest_entries = self._get_active_quest_entries()
+        if active_quest_entries:
+            if len(active_quest_entries) == 1:
+                status_entries.append(("Active quest", active_quest_entries[0]))
+            else:
+                status_entries.append(("Active quests", active_quest_entries))
+
         # Add colonisation construction status if available
         colonisation_info = get_state_dict(projected_states, 'ColonisationConstruction')
         if colonisation_info and colonisation_info.get('StarSystem', 'Unknown') != 'Unknown':
@@ -3534,7 +3621,7 @@ class PromptGenerator:
             
             piece = None
 
-            if isinstance(event, GameEvent) or isinstance(event, ProjectedEvent) or isinstance(event, ExternalEvent):
+            if isinstance(event, GameEvent) or isinstance(event, ProjectedEvent) or isinstance(event, ExternalEvent) or isinstance(event, QuestEvent):
                 # Skip disabled events
                 event_type = event.content.get('event')
                 if event_type in self.disabled_game_events:
