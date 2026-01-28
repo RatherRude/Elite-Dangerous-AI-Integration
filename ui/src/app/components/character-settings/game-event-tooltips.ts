@@ -71,6 +71,7 @@ export const GameEventTooltips: Record<string, string> = {
   "SupercruiseEntry": "COVAS:NEXT will react when your ship enters supercruise mode for high-speed travel within a system.",
   "SupercruiseExit": "COVAS:NEXT will react when you drop out of supercruise. Telling you about the type of location you've arrived at.",
   "ApproachSettlement": "COVAS:NEXT will react when you approach a planetary settlement. Telling you about proximity to surface installations.",
+  "InDockingRange": "COVAS:NEXT will react when the ship is in docking range",
   "GlideModeExited": "COVAS:NEXT will react when your ship exits glide mode near a planet’s surface.",
   "GlideModeEntered": "COVAS:NEXT will react when your ship enters a planet’s atmosphere after supercruise.",
   "Docked": "COVAS:NEXT will react when your ship docks successfully at a station or planetary base.",

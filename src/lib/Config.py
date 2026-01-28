@@ -98,6 +98,7 @@ game_events = {
     'DockingComputerDocking': False,
     'DockingComputerUndocking': False,
     'DockingComputerDeactivated': False,
+    'InDockingRange': True,
     'NavRoute': False,
     'NavRouteClear': False,
     'CrewLaunchFighter': True,
