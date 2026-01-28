@@ -245,6 +245,7 @@ export const GameEventTooltips: Record<string, string> = {
   "ShipyardTransferCompleted": "COVAS:NEXT will react when your remotely fetched ships have arrived.",
 
   // Social
+  "QuestEvent": "COVAS:NEXT will react when your quest advances.",
   "Idle": "COVAS:NEXT will react when you both remained inactive for a prolonged period and will proactively make comments. Caution: Can lead to endless loops if enabled!",
   "CrewAssign": "COVAS:NEXT will react when you change a hired NPC crew member’s role — such as activating or idling them.",
   "CrewFire": "COVAS:NEXT will react when you dismiss one of your hired crew members from service.",

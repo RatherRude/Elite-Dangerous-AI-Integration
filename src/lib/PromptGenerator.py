@@ -45,6 +45,7 @@ from .Event import (
     ToolEvent,
     ExternalEvent,
     ProjectedEvent,
+    QuestEvent,
 )
 from .Logger import log, observe
 
@@ -125,7 +126,7 @@ class PromptGenerator:
         depth = pad['depth']
         return f"{clock} o'clock, {depth} (Pad {pad_number}, clock orientation: mail slot entry with green on right)"
 
-    def get_event_template(self, event: Union[GameEvent, ProjectedEvent, ExternalEvent]):
+    def get_event_template(self, event: Union[GameEvent, ProjectedEvent, ExternalEvent, QuestEvent]):
         content: Any = event.content
         event_name = content.get('event')
         
@@ -2216,6 +2217,25 @@ class PromptGenerator:
             return f"{self.commander_name} is now in combat."
         if event_name == 'CombatExited':
             return f"{self.commander_name} is no longer in combat."
+        if event_name == 'QuestEvent':
+            action = content.get('action')
+            quest_title = content.get('quest_title') or content.get('quest_id') or 'Unknown quest'
+            if action == 'advance_stage':
+                stage_name = content.get('stage_name') or content.get('stage_id') or 'unknown stage'
+                stage_description = content.get('stage_description')
+                stage_instructions = content.get('stage_instructions')
+                details = []
+                if stage_description:
+                    details.append(stage_description)
+                if stage_instructions:
+                    details.append(f"Instructions: {stage_instructions}")
+                detail_text = f" - {' '.join(details)}" if details else ""
+                return f"Quest updated: {quest_title} advanced to stage {stage_name}{detail_text}"
+            if action == 'set_active':
+                active = content.get('active')
+                state = 'activated' if active else 'deactivated'
+                return f"Quest {state}: {quest_title}."
+            return f"Quest update: {quest_title}."
         if event_name == 'FirstPlayerSystemDiscovered':
             return f"{self.commander_name} has a new system discovered."
         if event_name == 'FetchRemoteModuleCompleted':
@@ -2377,12 +2397,13 @@ class PromptGenerator:
 
         return None
 
-    def event_message(self, event: Union[GameEvent, ProjectedEvent, ExternalEvent], timeoffset: str, is_important: bool):
+    def event_message(self, event: Union[GameEvent, ProjectedEvent, ExternalEvent, QuestEvent], timeoffset: str, is_important: bool):
         message = self.get_event_template(event)
         if message:
+            label = "Quest Event" if isinstance(event, QuestEvent) else "Game Event"
             return {
                 "role": "user",
-                "content": f"[{'IMPORTANT ' if is_important else ''}Game Event, {timeoffset}] {message}",
+                "content": f"[{'IMPORTANT ' if is_important else ''}{label}, {timeoffset}] {message}",
             }
 
         # Deliberately ignored events
@@ -3577,7 +3598,7 @@ class PromptGenerator:
 
             time_offset = humanize.naturaltime(reference_time - event_time)
 
-            if isinstance(event, GameEvent) or isinstance(event, ProjectedEvent) or isinstance(event, ExternalEvent):
+            if isinstance(event, GameEvent) or isinstance(event, ProjectedEvent) or isinstance(event, ExternalEvent) or isinstance(event, QuestEvent):
                 # Skip disabled events
                 event_type = event.content.get('event')
                 if event_type in self.disabled_game_events:

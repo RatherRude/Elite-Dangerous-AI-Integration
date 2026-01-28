@@ -342,6 +342,15 @@ class Assistant:
                 else:
                     self.quest_db.set_active(target_quest_id, active_value)
                     log('info', f"Quest '{target_quest_id}' set active={active_value}")
+                target_def = self.quest_catalog.get(target_quest_id, {})
+                quest_title = target_def.get('title') if isinstance(target_def, dict) else None
+                self.event_manager.add_quest_event({
+                    "event": "QuestEvent",
+                    "action": "set_active",
+                    "quest_id": target_quest_id,
+                    "quest_title": quest_title,
+                    "active": active_value,
+                })
                 continue
 
     def _advance_quest_stage(self, quest_def: dict[str, Any], target_stage_id: str | None, quest_id: str | None) -> None:
@@ -351,10 +360,26 @@ class Assistant:
         stage_ids = [stage.get('id') for stage in stages]
         if target_stage_id not in stage_ids:
             return
+        stage_def = self._get_stage_def(quest_def, target_stage_id)
+        stage_description = stage_def.get('description') if isinstance(stage_def, dict) else None
+        stage_instructions = stage_def.get('instructions') if isinstance(stage_def, dict) else None
+        stage_name = None
+        if isinstance(stage_def, dict):
+            stage_name = stage_def.get('title') or stage_def.get('name') or stage_def.get('id')
         version_state = self.quest_db.get(quest_id)
         stored_version = (version_state.get('version') if version_state else None) or self.quest_version
         self.quest_db.set(quest_id, target_stage_id, True, stored_version)
         log('info', f"Quest '{quest_id}' advanced to stage '{target_stage_id}'")
+        self.event_manager.add_quest_event({
+            "event": "QuestEvent",
+            "action": "advance_stage",
+            "quest_id": quest_id,
+            "quest_title": quest_def.get('title'),
+            "stage_id": target_stage_id,
+            "stage_name": stage_name or target_stage_id,
+            "stage_description": stage_description,
+            "stage_instructions": stage_instructions,
+        })
 
     def _is_newer_version(self, candidate: str, current: str | None) -> bool:
         if current is None:

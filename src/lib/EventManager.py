@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 from .Database import EventStore, KeyValueStore, VectorStore
 from .EDJournal import *
-from .Event import Event, EventClasses, GameEvent, ConversationEvent, MemoryEvent, PluginEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent
+from .Event import Event, EventClasses, GameEvent, ConversationEvent, MemoryEvent, PluginEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent, QuestEvent
 from .Logger import log, show_chat_message
 
 import threading
@@ -109,6 +109,10 @@ class EventManager:
         
     def add_game_event(self, content: dict[str, Any]):
         event = GameEvent(content=content, historic=False)
+        self.incoming.put(event)
+
+    def add_quest_event(self, content: dict[str, Any]):
+        event = QuestEvent(content=content)
         self.incoming.put(event)
 
     def add_historic_game_events(self, events = list[dict[str, Any]]):
