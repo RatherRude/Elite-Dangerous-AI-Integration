@@ -142,7 +142,7 @@ quests:
   - id: "ancient_orb_pilgrimage_intro"
     title: "The Break of Dawn"
     description: "A mysterious call from the void draws you in."
-    active: true
+    active: false
     stages:
       - id: "find_guardian_system"
         description: "Find Guardian-controlled space."
