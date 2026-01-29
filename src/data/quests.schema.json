@@ -68,15 +68,9 @@
           "type": "string",
           "description": "Player-facing instructions for this stage."
         },
-        "conditions": {
-          "type": "array",
-          "description": "Stage-wide conditions required before its plan is evaluated.",
-          "items": { "$ref": "#/$defs/condition" },
-          "default": []
-        },
         "plan": {
           "type": "array",
-          "description": "Actions to run when the stage conditions are met.",
+          "description": "Condition/action pairs evaluated for this stage.",
           "items": { "$ref": "#/$defs/planStep" },
           "default": []
         }
@@ -107,7 +101,7 @@
         }
       }
     },
-    "planStep": {
+    "planAction": {
       "type": "object",
       "additionalProperties": false,
       "required": ["action"],
@@ -125,11 +119,6 @@
           "type": "string",
           "description": "Stage id to advance to for advance_stage actions.",
           "pattern": "^[A-Za-z0-9_\\-]+$"
-        },
-        "conditions": {
-          "type": "array",
-          "description": "Step-specific conditions that must be met to execute the action.",
-          "items": { "$ref": "#/$defs/condition" }
         },
         "quest_id": {
           "type": "string",
@@ -171,6 +160,25 @@
           }
         }
       ]
+    },
+    "planStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["conditions", "actions"],
+      "properties": {
+        "conditions": {
+          "type": "array",
+          "description": "Conditions that must be met to execute this action list.",
+          "items": { "$ref": "#/$defs/condition" },
+          "default": []
+        },
+        "actions": {
+          "type": "array",
+          "description": "List of actions to execute when the step conditions are met.",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/planAction" }
+        }
+      }
     }
   }
 }

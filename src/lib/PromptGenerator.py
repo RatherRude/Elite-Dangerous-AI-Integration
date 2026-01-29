@@ -2400,10 +2400,9 @@ class PromptGenerator:
     def event_message(self, event: Union[GameEvent, ProjectedEvent, ExternalEvent, QuestEvent], timeoffset: str, is_important: bool):
         message = self.get_event_template(event)
         if message:
-            label = "Quest Event" if isinstance(event, QuestEvent) else "Game Event"
             return {
                 "role": "user",
-                "content": f"[{'IMPORTANT ' if is_important else ''}{label}, {timeoffset}] {message}",
+                "content": f"[{'IMPORTANT ' if is_important else ''}Game Event, {timeoffset}] {message}",
             }
 
         # Deliberately ignored events
@@ -3200,138 +3199,7 @@ class PromptGenerator:
                 status_entries.append(("Weapons' target", target_info))
 
         # Market and station information
-        location_for_station = get_state_dict(projected_states, 'Location')
-        current_station = location_for_station.get('Station')
-        market = get_state_dict(projected_states, 'Market')
-        outfitting = get_state_dict(projected_states, 'Outfitting')
-        storedShips = get_state_dict(projected_states, 'StoredShips')
         storedModules = get_state_dict(projected_states, 'StoredModules')
-        if current_station and current_station == market.get('StationName') and not search_agent_context:
-            buy_items = {
-                item.get('Name_Localised'): {
-                    'Category': item.get('Category_Localised'),
-                    'BuyPrice': item.get('BuyPrice'),
-                    'MeanPrice': item.get('MeanPrice'),
-                    'Stock': item.get('Stock'),
-                }
-                for item in market.get('Items', [])
-                if item.get('Stock', 0) > item.get('Demand', 0)
-            }
-
-            sell_items = {
-                item.get('Name_Localised'): {
-                    'Category': item.get('Category_Localised'),
-                    'SellPrice': item.get('SellPrice'),
-                    'MeanPrice': item.get('MeanPrice'),
-                    'Demand': item.get('Demand'),
-                }
-                for item in market.get('Items', [])
-                if item.get('Demand', 0) > item.get('Stock', 0)
-            }
-
-            if buy_items or sell_items:
-                status_entries.append((
-                    "Local market information",
-                    {
-                        "List of goods I can buy from the market": buy_items,
-                        "List of Goods I can sell to the market": sell_items
-                    }
-                ))
-
-        if current_station and current_station == outfitting.get('StationName') and not search_agent_context:
-            # Create a nested structure from outfitting items with optimized leaf nodes
-            nested_outfitting = {}
-
-            # First pass: collect all items by their categories
-            item_categories = {}
-
-            for item in outfitting.get('Items', []):
-                item_name = item.get('Name', '')
-                if not item_name or '_' not in item_name:
-                    continue
-
-                parts = item_name.split('_')
-                # Group items by their parent paths
-                parent_path = '_'.join(parts[:-1])
-                leaf = parts[-1]
-
-                if parent_path not in item_categories:
-                    item_categories[parent_path] = []
-                item_categories[parent_path].append(leaf)
-
-            # Second pass: build the optimized structure
-            for path, leaves in item_categories.items():
-                parts = path.split('_')
-                current = nested_outfitting
-
-                # Build the nested path
-                for i in range(len(parts)):
-                    part = parts[i]
-                    if i < len(parts) - 1:
-                        # Not the last part, ensure we have a dictionary
-                        if part not in current:
-                            current[part] = {}
-                        if not isinstance(current[part], dict):
-                            current[part] = {}
-                        current = current[part]
-                    else:
-                        # Last part - add the optimized leaf
-                        # Process the leaf nodes according to patterns
-                        if any(leaf.startswith('class') for leaf in leaves):
-                            # Extract class numbers and create a compact string
-                            class_numbers = []
-                            for leaf in leaves:
-                                if leaf.startswith('class'):
-                                    try:
-                                        num = leaf.replace('class', '')
-                                        class_numbers.append(num)
-                                    except:
-                                        class_numbers.append(leaf)
-                            # Instead of using f-string, create a dictionary entry
-                            current[part] = {"class": f"{','.join(sorted(class_numbers))}"}
-                        elif any(leaf.startswith('size') for leaf in leaves):
-                            # Extract size numbers
-                            size_numbers = []
-                            for leaf in leaves:
-                                if leaf.startswith('size'):
-                                    try:
-                                        num = leaf.replace('size', '')
-                                        size_numbers.append(num)
-                                    except:
-                                        size_numbers.append(leaf)
-                            # Instead of using f-string, create a dictionary entry
-                            current[part] = {"size": f"{','.join(sorted(size_numbers))}"}
-                        else:
-                            # Regular processing for other types - use a string directly
-                            current[part] = f"{','.join(sorted(leaves))}"
-
-            # Final pass: flatten the special dictionary entries to avoid quotes
-            def flatten_special_entries(data):
-                if not isinstance(data, dict):
-                    return data
-
-                result = {}
-                for key, value in data.items():
-                    if isinstance(value, dict) and len(value) == 1:
-                        # Check if this is our special format with class or size
-                        special_key = next(iter(value.keys()), None)
-                        if special_key in ('class', 'size'):
-                            # Flatten it to a direct string to avoid quotes
-                            result[key] = f"{special_key} {value[special_key]}"
-                        else:
-                            # Regular nested dictionary
-                            result[key] = flatten_special_entries(value)
-                    else:
-                        # Regular processing
-                        result[key] = flatten_special_entries(value) if isinstance(value, dict) else value
-                return result
-
-            # Apply the flattening
-            nested_outfitting = flatten_special_entries(nested_outfitting)
-
-            status_entries.append(("Local outfitting information", nested_outfitting))
-        if current_station and current_station == storedShips.get('StationName') and not search_agent_context:
-            status_entries.append(("Local, stored ships", storedShips.get('ShipsHere', [])))
 
         fleet_carriers = get_state_dict(projected_states, 'FleetCarriers')
         carriers = fleet_carriers.get('Carriers', {})
@@ -3455,7 +3323,7 @@ class PromptGenerator:
             status_entries.append(("Active missions", missions_info))
 
         active_quest_entries = self._get_active_quest_entries()
-        if active_quest_entries:
+        if active_quest_entries and len(active_quest_entries) > 0:
             if len(active_quest_entries) == 1:
                 status_entries.append(("Active quest", active_quest_entries[0]))
             else:

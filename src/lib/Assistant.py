@@ -148,12 +148,12 @@ class Assistant:
             self._sync_quests_to_db()
             self.quests_loaded = True
             log('info', f"Loaded {len(self.quest_catalog)} quests from {quests_path}")
-            self.event_manager.add_quest_event({
-                "event": "QuestEvent",
-                "action": "load_quests",
-                "version": self.quest_version,
-                "quest_count": len(self.quest_catalog),
-            })
+            # self.event_manager.add_quest_event({
+            #     "event": "QuestEvent",
+            #     "action": "load_quests",
+            #     "version": self.quest_version,
+            #     "quest_count": len(self.quest_catalog),
+            # })
         except Exception as e:
             log('error', 'Failed to load quests', e, traceback.format_exc())
             self.quest_catalog = {}
@@ -207,8 +207,6 @@ class Assistant:
                 continue
             plan = stage_def.get('plan', [])
             if not plan:
-                continue
-            if not conditions and not any(isinstance(step, dict) and step.get('conditions') for step in plan):
                 continue
             self._trigger_quest_stage_plan(quest_def, stage_def, state, event, projected_states)
 
@@ -317,52 +315,63 @@ class Assistant:
         for step in plan:
             if not isinstance(step, dict):
                 continue
-            step_conditions = step.get('conditions')
-            if step_conditions is not None:
-                if not isinstance(step_conditions, list):
-                    continue
-                if not self._conditions_met(step_conditions, event, projected_states):
-                    continue
-            action = step.get('action')
-            if action == 'log':
-                message = step.get('message', '')
-                if message:
-                    log('debug', message)
+            if not self._quest_step_conditions_met(step, event, projected_states):
                 continue
-            if action == 'advance_stage':
-                target_stage_id = step.get('target_stage_id') or step.get('stage_id')
-                self._advance_quest_stage(quest_def, target_stage_id, state["quest_id"])
+            action_entries = step.get('actions')
+            if not isinstance(action_entries, list) or not action_entries:
                 continue
-            if action == 'set_active':
-                target_quest_id = step.get('quest_id')
-                if not isinstance(target_quest_id, str) or not target_quest_id:
+            for action_entry in action_entries:
+                if not isinstance(action_entry, dict):
                     continue
-                active_value = step.get('active')
-                if active_value is None:
-                    active_value = True
-                if not isinstance(active_value, bool):
-                    continue
-                existing = self.quest_db.get(target_quest_id)
-                if existing is None:
-                    target_def = self.quest_catalog.get(target_quest_id)
-                    stages = target_def.get('stages', []) if isinstance(target_def, dict) else []
-                    first_stage_id = stages[0].get('id') if stages else None
-                    if isinstance(first_stage_id, str):
-                        self.quest_db.set(target_quest_id, first_stage_id, active_value, self.quest_version)
-                        log('info', f"Quest '{target_quest_id}' set active={active_value} (initialized)")
-                else:
-                    self.quest_db.set_active(target_quest_id, active_value)
-                    log('info', f"Quest '{target_quest_id}' set active={active_value}")
-                target_def = self.quest_catalog.get(target_quest_id, {})
-                quest_title = target_def.get('title') if isinstance(target_def, dict) else None
-                self.event_manager.add_quest_event({
-                    "event": "QuestEvent",
-                    "action": "set_active",
-                    "quest_id": target_quest_id,
-                    "quest_title": quest_title,
-                    "active": active_value,
-                })
-                continue
+                self._execute_quest_action(action_entry, quest_def, state, event, projected_states)
+
+    def _quest_step_conditions_met(self, step: dict[str, Any], event: Event, projected_states: ProjectedStates) -> bool:
+        step_conditions = step.get('conditions')
+        if not isinstance(step_conditions, list):
+            return False
+        return self._conditions_met(step_conditions, event, projected_states)
+
+    def _execute_quest_action(self, step: dict[str, Any], quest_def: dict[str, Any], state: QuestState, event: Event, projected_states: ProjectedStates) -> None:
+        action = step.get('action')
+        if action == 'log':
+            message = step.get('message', '')
+            if message:
+                log('debug', message)
+            return
+        if action == 'advance_stage':
+            target_stage_id = step.get('target_stage_id') or step.get('stage_id')
+            self._advance_quest_stage(quest_def, target_stage_id, state["quest_id"])
+            return
+        if action == 'set_active':
+            target_quest_id = step.get('quest_id')
+            if not isinstance(target_quest_id, str) or not target_quest_id:
+                return
+            active_value = step.get('active')
+            if active_value is None:
+                active_value = True
+            if not isinstance(active_value, bool):
+                return
+            existing = self.quest_db.get(target_quest_id)
+            if existing is None:
+                target_def = self.quest_catalog.get(target_quest_id)
+                stages = target_def.get('stages', []) if isinstance(target_def, dict) else []
+                first_stage_id = stages[0].get('id') if stages else None
+                if isinstance(first_stage_id, str):
+                    self.quest_db.set(target_quest_id, first_stage_id, active_value, self.quest_version)
+                    log('info', f"Quest '{target_quest_id}' set active={active_value} (initialized)")
+            else:
+                self.quest_db.set_active(target_quest_id, active_value)
+                log('info', f"Quest '{target_quest_id}' set active={active_value}")
+            target_def = self.quest_catalog.get(target_quest_id, {})
+            quest_title = target_def.get('title') if isinstance(target_def, dict) else None
+            self.event_manager.add_quest_event({
+                "event": "QuestEvent",
+                "action": "set_active",
+                "quest_id": target_quest_id,
+                "quest_title": quest_title,
+                "active": active_value,
+            })
+            return
 
     def _advance_quest_stage(self, quest_def: dict[str, Any], target_stage_id: str | None, quest_id: str | None) -> None:
         if not quest_id or not target_stage_id:

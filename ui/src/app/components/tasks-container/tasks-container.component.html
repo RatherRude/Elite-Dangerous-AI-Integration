@@ -49,49 +49,51 @@
     </div>
 
     <!-- Quests Section -->
-    <div class="tasks-section">
-      <div class="section-header" (click)="toggleSection('quests')">
-        <h3>Quests</h3>
-        <mat-icon class="collapse-icon">{{ sectionsCollapsed.quests ? 'expand_more' : 'expand_less' }}</mat-icon>
-      </div>
-      <div class="section-content" [class.collapsed]="sectionsCollapsed.quests">
-        @if (questsError) {
-          <div class="no-data-message">
-            <mat-icon>warning</mat-icon>
-            {{ questsError }}
+    @if (getActiveQuests().length > 0) {
+      <div class="tasks-section">
+          <div class="section-header" (click)="toggleSection('quests')">
+            <h3>Quests</h3>
+            <mat-icon class="collapse-icon">{{ sectionsCollapsed.quests ? 'expand_more' : 'expand_less' }}</mat-icon>
           </div>
-        } @else {
-          @if (getActiveQuests().length > 0) {
-            <div class="quests-list">
-              @for (quest of getActiveQuests(); track quest.id) {
-                <div class="quest-item">
-                  <div class="quest-header">
-                    <div class="quest-title">{{ quest.title || quest.id }}</div>
-                    <div class="quest-stage">{{ quest.stage_title || quest.stage_id }}</div>
-                  </div>
-                  <div class="quest-details">
-                    @if (quest.description) {
-                      <div class="quest-description">{{ quest.description }}</div>
-                    }
-                    @if (quest.instructions) {
-                      <div class="quest-instructions">
-                        <mat-icon>flag</mat-icon>
-                        {{ quest.instructions }}
+          <div class="section-content" [class.collapsed]="sectionsCollapsed.quests">
+            @if (questsError) {
+              <div class="no-data-message">
+                <mat-icon>warning</mat-icon>
+                {{ questsError }}
+              </div>
+            } @else {
+              @if (getActiveQuests().length > 0) {
+                <div class="quests-list">
+                  @for (quest of getActiveQuests(); track quest.id) {
+                    <div class="quest-item">
+                      <div class="quest-header">
+                        <div class="quest-title">{{ quest.title || quest.id }}</div>
+                        <div class="quest-stage">{{ quest.stage_title || quest.stage_id }}</div>
                       </div>
-                    }
-                  </div>
+                      <div class="quest-details">
+                        @if (quest.description) {
+                          <div class="quest-description">{{ quest.description }}</div>
+                        }
+                        @if (quest.instructions) {
+                          <div class="quest-instructions">
+                            <mat-icon>flag</mat-icon>
+                            {{ quest.instructions }}
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="no-data-message">
+                  <mat-icon>flag</mat-icon>
+                  No active quests.
                 </div>
               }
-            </div>
-          } @else {
-            <div class="no-data-message">
-              <mat-icon>flag</mat-icon>
-              No active quests.
-            </div>
-          }
-        }
-      </div>
-    </div>
+            }
+          </div>
+        </div>
+    }
 
     <!-- Community Goals Section -->
     <div class="tasks-section">

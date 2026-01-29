@@ -3169,9 +3169,6 @@ class InDockingRange(Projection[InDockingRangeStateModel]):
         return projected_events
 
 
-
-
-
 class IdleStateModel(BaseModel):
     """Commander's activity/idle status."""
     LastInteraction: str = Field(default="1970-01-01T00:00:00Z", description="Timestamp of last user interaction")
