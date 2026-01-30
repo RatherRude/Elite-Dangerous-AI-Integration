@@ -3491,6 +3491,10 @@ class PromptGenerator:
             text = '{:.3f}'.format(value)
             if '.' in text:
                 text = text.rstrip('0').rstrip('.')
+            # Check if it's effectively an integer (no decimal part left or was never there)
+            if '.' not in text or text.endswith('.'):
+                text = text.rstrip('.')
+                return dumper.represent_scalar('tag:yaml.org,2002:int', text)
             return dumper.represent_scalar('tag:yaml.org,2002:float', text)
 
         class CustomDumper(yaml.SafeDumper):
