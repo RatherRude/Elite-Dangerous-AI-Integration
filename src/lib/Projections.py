@@ -3181,7 +3181,9 @@ class InDockingRange(Projection[InDockingRangeStateModel]):
                     projected_events.append(ProjectedEvent(content={"event": "InDockingRange"}))
                 else:
                     self.state.ReceivedFirstEvent=True
-
+            if name in ["DockingGranted", "DockingDenied", "DockingCancelled", "DockingCanceled", "DockingTimeout", "DockingRequested"]:
+                self.state = InDockingRangeStateModel(ReceivedFirstEvent=False, SkipAnnouncement=True)
+                 
         return projected_events
 
 
