@@ -2763,6 +2763,7 @@ class CarrierJumpRequestItem(BaseModel):
     SystemAddress: int = Field(default=0, description="Destination system address")
     BodyID: int = Field(default=0, description="Destination body ID")
     DepartureTime: str = Field(default="1970-01-01T00:00:00Z", description="Scheduled departure time (UTC)")
+    RequestedAt: str = Field(default="1970-01-01T00:00:00Z", description="Jump request time (UTC)")
     WarningSent: bool = Field(default=False, description="Whether a jump warning has been sent")
 
 
@@ -2821,7 +2822,11 @@ class FleetCarriers(Projection[FleetCarriersStateModel]):
                 entry.SystemAddress = pending.SystemAddress
                 entry.BodyID = pending.BodyID
                 entry.Timestamp = pending.DepartureTime
-                cooldown_until = departure_time + timedelta(minutes=15)
+                requested_at = datetime.fromisoformat(pending.RequestedAt.replace('Z', '+00:00'))
+                cooldown_duration = (departure_time - requested_at) - timedelta(minutes=10)
+                if cooldown_duration < timedelta(0):
+                    cooldown_duration = timedelta(0)
+                cooldown_until = departure_time + cooldown_duration
                 self.state.Cooldowns[carrier_id] = CarrierCooldownItem(
                     CarrierType=pending.CarrierType,
                     CarrierID=carrier_id,
@@ -2872,6 +2877,7 @@ class FleetCarriers(Projection[FleetCarriersStateModel]):
             return None
 
         event_name = event.content.get('event')
+        carrier_type = event.content.get('CarrierType', 'FleetCarrier')
         if event_name not in [
             'CarrierLocation',
             'CarrierStats',
@@ -2885,14 +2891,13 @@ class FleetCarriers(Projection[FleetCarriersStateModel]):
             'CarrierCrewServices',
             'CarrierFinance',
             'CarrierTradeOrder',
-        ]:
+        ] or carrier_type != 'FleetCarrier':
             return None
 
         carrier_id = event.content.get('CarrierID', 0)
         if not carrier_id:
             return None
 
-        carrier_type = event.content.get('CarrierType', 'Unknown')
         entry = self.state.Carriers.get(carrier_id)
         if entry is None:
             entry = FleetCarrierEntry(CarrierID=carrier_id, CarrierType=carrier_type)
@@ -2993,6 +2998,7 @@ class FleetCarriers(Projection[FleetCarriersStateModel]):
                 }
 
         if event_name == 'CarrierJumpRequest':
+            now_utc = datetime.now(timezone.utc)
             pending = CarrierJumpRequestItem(
                 CarrierType=carrier_type,
                 CarrierID=carrier_id,
@@ -3001,10 +3007,10 @@ class FleetCarriers(Projection[FleetCarriersStateModel]):
                 SystemAddress=event.content.get('SystemAddress', 0),
                 BodyID=event.content.get('BodyID', 0),
                 DepartureTime=event.content.get('DepartureTime', '1970-01-01T00:00:00Z'),
+                RequestedAt=event.content.get('timestamp', now_utc.isoformat()),
             )
             self.state.PendingJumps[carrier_id] = pending
 
-            now_utc = datetime.now(timezone.utc)
             projected_events = self._process_jump_timers(now_utc)
             return projected_events if projected_events else None
 
