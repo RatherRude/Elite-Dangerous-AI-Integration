@@ -5,6 +5,9 @@ from typing import Callable, Any, final
 import pygame
 from pynput.keyboard import Controller as KeyboardController, Listener as KeyboardListener
 from pynput.mouse import Controller as MouseController, Listener as MouseListener
+import logging 
+
+logger = logging.getLogger(__name__)
 
 @final
 class ControllerManager:
@@ -100,12 +103,15 @@ class ControllerManager:
 
         def capture_event():
             while self.joystick_listener_running:
-                events = pygame.event.get()
-                for event in events:
-                    if event.type == pygame.JOYBUTTONDOWN:
-                        on_press(str(event.instance_id)+':'+str(event.button))
-                    if event.type == pygame.JOYBUTTONUP:
-                        on_release(str(event.instance_id)+':'+str(event.button))
+                try:
+                    events = pygame.event.get()
+                    for event in events:
+                        if event.type == pygame.JOYBUTTONDOWN:
+                            on_press(str(event.instance_id)+':'+str(event.button))
+                        if event.type == pygame.JOYBUTTONUP:
+                            on_release(str(event.instance_id)+':'+str(event.button))
+                except Exception as e:
+                    logger.warning(f"Error capturing joystick event: {e}")
                 time.sleep(0.01)  # Small sleep to prevent high CPU usage
 
         # Start a thread for capturing game controller events

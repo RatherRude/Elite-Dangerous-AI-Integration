@@ -217,6 +217,7 @@ def observe():
         def wrapper(*args, **kwargs):
             with tracer.start_as_current_span(func.__name__) as span:
                 result = None
+                duration = None
                 try:
                     start = datetime.datetime.now()
                     result = func(*args, **kwargs)
@@ -235,6 +236,7 @@ def observe():
                         "trace_id": format(span.get_span_context().trace_id, '032x'),
                         "arguments": {**{f"arg{i}": repr(arg) for i, arg in enumerate(args)}, **{k: repr(v) for k, v in kwargs.items()}},
                         "return": repr(result) if 'result' in locals() else 'exception',
+                        "duration": duration,
                     })
         return wrapper
     return decorator

@@ -515,8 +515,8 @@ class Chat:
                 self.event_manager.process()
 
                 if self.assistant.reply_pending and not self.assistant.is_replying and not self.stt.recording:
-                    all_events, projected_states = self.event_manager.get_current_state()
-                    self.assistant.reply(all_events, projected_states)
+                    _events, projected_states = self.event_manager.get_current_state()
+                    self.assistant.reply(projected_states)
                     
                 # Infinite loops are bad for processors, must sleep.
                 sleep(0.1)

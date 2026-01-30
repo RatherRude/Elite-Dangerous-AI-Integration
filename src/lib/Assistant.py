@@ -224,15 +224,15 @@ class Assistant:
             return
 
 
-    def reply(self, events: list[Event], projected_states: ProjectedStates):
+    def reply(self, projected_states: ProjectedStates):
         if self.is_replying:
             log('debug', 'Cache: Reply already in progress, skipping new reply')
             return
-        thread = Thread(target=self.reply_thread, args=(events, projected_states), daemon=True)
+        thread = Thread(target=self.reply_thread, args=(projected_states,), daemon=True)
         thread.start()
         
     @observe()
-    def reply_thread(self, events: list[Event], projected_states: ProjectedStates):
+    def reply_thread(self, projected_states: ProjectedStates):
         self.reply_pending = False
         self.is_replying = True
         try:
