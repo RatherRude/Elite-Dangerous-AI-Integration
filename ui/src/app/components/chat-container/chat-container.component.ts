@@ -52,7 +52,7 @@ export class ChatContainerComponent implements AfterViewChecked, OnChanges, OnDe
   ) {
     this.element = element;
     this.chatService.chatHistory$.subscribe((chat) => {
-      console.log("chat received", chat);
+      //console.log("chat received", chat);
       this.fullChat = chat;
       const previousLength = this.chat.length;
       this.applyLimit();

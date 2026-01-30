@@ -47,7 +47,7 @@ from .Event import (
     ProjectedEvent,
     QuestEvent,
 )
-from .Logger import log, observe
+from .Logger import log, observe, PromptUsageStats
 
 # Add these new type definitions along with the other existing types
 DockingCancelledEvent = dict
@@ -56,6 +56,8 @@ LocationEvent = dict
 NavRouteEvent = dict
 
 class PromptGenerator:
+    previous_prompt_json = ''
+    
     def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str], system_db: SystemDatabase, weapon_types: list[dict] | None = None, disabled_game_events: list[str] | None = None):
         self.registered_prompt_event_handlers: list[Callable[[Event], str|None]] = []
         self.registered_status_generators: list[Callable[[ProjectedStates], list[tuple[str, Any]]]] = []
@@ -2749,8 +2751,6 @@ class PromptGenerator:
             "balance": current_status.get("Balance", None),
             "pips": current_status.get("Pips", None),
             "cargo": current_status.get("Cargo", None),
-            "player_time": (datetime.now()).isoformat(),
-            "elite_time": str(datetime.now().year + 1286) + (datetime.now()).isoformat()[4:],
         }
 
         flags = current_status["flags"]
@@ -3070,6 +3070,9 @@ class PromptGenerator:
 
                 # Add the loadout information to status entries
                 ship_display['Loadout'] = loadout_display
+                
+        ship_display["player_time"] = (datetime.now()).strftime('%Y-%m-%d %H:%M')
+        ship_display["elite_time"] = str(datetime.now().year + 1286) + (datetime.now()).strftime('-%m-%d %H:%M')
 
         status_entries.append(("Main Ship", ship_display))
 
@@ -3439,12 +3442,23 @@ class PromptGenerator:
             except Exception as e:
                 log('error', f"Error executing status generator: {e}", traceback.format_exc())
 
+        def float_representer(dumper, value):
+            text = '{:.3f}'.format(value)
+            if '.' in text:
+                text = text.rstrip('0').rstrip('.')
+            return dumper.represent_scalar('tag:yaml.org,2002:float', text)
+
+        class CustomDumper(yaml.SafeDumper):
+            pass
+
+        CustomDumper.add_representer(float, float_representer)
+
         # Format and return the final status message
-        return "\n\n".join(['# '+entry[0]+'\n' + yaml.dump(entry[1], sort_keys=False) for entry in status_entries])
+        return "\n\n".join(['# '+entry[0]+'\n' + yaml.dump(entry[1], Dumper=CustomDumper, sort_keys=False) for entry in status_entries])
 
     # TODO use events as passed from db, not in mem copy, pending (new not yet reated to), short_term (reacted to but not yet part of summary memory), memories (historc summaries of events)
     @observe()
-    def generate_prompt(self, events: list[Event], projected_states: ProjectedStates, pending_events: list[Event], memories: list[MemoryEvent]) -> list[dict[str, str]]:
+    def generate_prompt(self, events: list[Event], projected_states: ProjectedStates, pending_events: list[Event], memories: list[MemoryEvent]) -> tuple[list[dict[str, str]], PromptUsageStats]:
         # Fine the most recent event
         last_event = events[-1]
         reference_time = datetime.fromisoformat(last_event.content.get('timestamp') if isinstance(last_event, GameEvent) else last_event.timestamp)
@@ -3453,6 +3467,9 @@ class PromptGenerator:
 
         # Collect the last 50 conversational pieces
         conversational_pieces: list = list()
+        
+        # Initialize usage stats
+        usage_stats = PromptUsageStats()
 
         for event in events[::-1]:
             if len(conversational_pieces) >= 50:
@@ -3464,7 +3481,13 @@ class PromptGenerator:
             if not event_time.tzinfo:
                 event_time = event_time.astimezone()
 
-            time_offset = humanize.naturaltime(reference_time - event_time)
+            delta = reference_time - event_time
+            if delta.total_seconds() < 60:
+                time_offset = "less than a minute ago"
+            else:
+                time_offset = humanize.naturaltime(delta)
+            
+            piece = None
 
             if isinstance(event, GameEvent) or isinstance(event, ProjectedEvent) or isinstance(event, ExternalEvent) or isinstance(event, QuestEvent):
                 # Skip disabled events
@@ -3476,7 +3499,8 @@ class PromptGenerator:
                     is_important = is_pending and event_type in self.important_game_events
                     message = self.event_message(event, time_offset, is_important)
                     if message:
-                        conversational_pieces.append(message)
+                        piece = message
+                        conversational_pieces.append(piece)
 
             if isinstance(event, StatusEvent):
                 # Skip disabled events
@@ -3491,29 +3515,39 @@ class PromptGenerator:
                     is_important = is_pending and event_type in self.important_game_events
                     message = self.status_messages(event, time_offset, is_important)
                     if message:
-                        conversational_pieces.append(message)
+                        piece = message
+                        conversational_pieces.append(piece)
 
             if isinstance(event, ConversationEvent) and event.kind in ['user', 'assistant']:
-                conversational_pieces.append(self.conversation_message(event))
+                piece = self.conversation_message(event)
+                conversational_pieces.append(piece)
 
             if isinstance(event, ToolEvent):
-                conversational_pieces += self.tool_messages(event)
+                tool_messages = self.tool_messages(event)
+                conversational_pieces += tool_messages
 
             for handler in self.registered_prompt_event_handlers:
                 try:
                     res = handler(event)
                     if res:
-                        conversational_pieces += [{
+                        piece = {
                             "role": "user",
                             "content": f"[External Event, {time_offset}] {res}",
-                        }]
+                        }
+                        conversational_pieces += [piece]
                 except Exception as e:
                     log('error', f"Error executing prompt event handler for {event}: {e}", traceback.format_exc())
+            
+            # If we added a single piece, add its length to history
+            if piece:
+                usage_stats.conversation_chars += len(json.dumps(piece))
 
+        status_msg_content = self.generate_status_message(projected_states)
+        usage_stats.status_chars = len(status_msg_content)
         conversational_pieces.append(
             {
                 "role": "user",
-                "content": self.generate_status_message(projected_states),
+                "content": status_msg_content,
             }
         )
         
@@ -3532,28 +3566,33 @@ class PromptGenerator:
                 if not event_time.tzinfo:
                     event_time = event_time.astimezone()
 
-                time_offset = humanize.naturaltime(reference_time - event_time)
+                # Elite Dangerous time (minute resolution)
+                ed_year = event_time.year + 1286
+                timestamp = f"{ed_year}-{event_time.strftime('%m-%d %H:%M')}"
 
+                memory_content = f"[Ship logbook, {timestamp}] {event.content}"
+                usage_stats.memory_chars += len(memory_content)
                 conversational_pieces.append({
                     "role": "user",
-                    "content": f"[Ship logbook, {time_offset}] {event.content}",
+                    "content": memory_content,
                 })
 
         try:
+            system_prompt_content = "The universe of Elite:Dangerous is your reality. Never mention it or refer to it as a game. " \
+                    + "I will provide game events in parentheses; do not create new ones. Only react to game events marked with 'IMPORTANT:'.  " \
+                    + "Stay consistent with the lived experience and character. Do not hallucinate any information that is not given to you. " \
+                    + "Do not use markdown in your responses, and no commas in numbers. " \
+                    + "Your purpose is to provide information, status updates, and execute tools as required. Only use tools you are given from me. " \
+                    + "Be specific about amounts and percentages for inquiries as the commander can not see the game events' text description but lives in the universe. " \
+                    + "You do not ask questions or initiate conversations. You respond only when addressed and in a single sentence. " \
+                    + "Don't repeat the same words and sentences, mix it up. " \
+                    + "Your character prompt is: " + self.character_prompt.format(commander_name=self.commander_name)
+            
+            usage_stats.system_chars = len(system_prompt_content)
             conversational_pieces.append(
                 {
                     "role": "system",
-                    "content": "The universe of Elite:Dangerous is your reality. Never mention it or refer to it as a game. "
-                    + "I will provide game events in parentheses; do not create new ones. Only react to game events marked with 'IMPORTANT:'.  "
-                    + "Stay consistent with the lived experience and character. Do not hallucinate any information that is not given to you. "
-                    + "Do not use markdown in your responses, and no commas in numbers. "
-                    + "Your purpose is to provide information, status updates, and execute tools as required. Only use tools you are given from me. "
-                    + "Be specific about amounts and percentages for inquiries as the commander can not see the game events' text description but lives in the universe. "
-                    + "You do not ask questions or initiate conversations. You respond only when addressed and in a single sentence. "
-                    + "Don't repeat the same words and sentences, mix it up. "
-
-                    # The character_prompt now contains all the generated settings
-                    + "Your character prompt is: " + self.character_prompt.format(commander_name=self.commander_name),
+                    "content": system_prompt_content,
                 }
             )
         except Exception as e:
@@ -3563,9 +3602,20 @@ class PromptGenerator:
         conversational_pieces.reverse()  # Restore the original order
 
         #log('debug', 'states', json.dumps(projected_states))
-        log('debug', 'conversation', json.dumps(conversational_pieces))
+        prompt_json = json.dumps(conversational_pieces)
+        log('debug', 'conversation', prompt_json)
+        if self.previous_prompt_json:
+            # find first changed character position, debug log the previous and next 30 characters
+            for i in range(min(len(self.previous_prompt_json), len(prompt_json))):
+                if self.previous_prompt_json[i] != prompt_json[i]:
+                    start = max(0, i - 30)
+                    end = min(len(prompt_json), i + 30)
+                    log('debug', 'prompt change', f"Change at position {i}/{len(prompt_json)} ({(i/len(prompt_json) * 100):.2f}%):\nPrevious: {self.previous_prompt_json[start:end]}\nCurrent:  {prompt_json[start:end]}")
+                    usage_stats.reuse_chars = i
+                    break
+        self.previous_prompt_json = prompt_json
 
-        return conversational_pieces
+        return conversational_pieces, usage_stats
     
     def register_prompt_event_handler(self, prompt_event_handler: Callable[[Event], str|None]):
         self.registered_prompt_event_handlers.append(prompt_event_handler)

@@ -1,11 +1,10 @@
 import yaml
-import os
 import json
 import requests
 import quickjs
-from openai import OpenAI
 from typing import Optional, Dict, Tuple, Any
 from .Database import CodeStore
+from .Logger import PromptUsageStats, log_llm_usage
 
 # --- CONFIGURATION ---
 MAX_RETRIES = 3
@@ -340,11 +339,15 @@ class GenUIAgent:
         Call the LLM using the project's LLMModel abstraction.
         Returns (text_response, tool_calls)
         """
-        return self.llm_model.generate(
+        response, tools, model_usage = self.llm_model.generate(
             messages=messages, 
             tools=tools if tools else [], 
             tool_choice="auto" if tools else None
         )
+
+        prompt_usage = PromptUsageStats(genui_chars=sum(len(str(m.get('content', ''))) for m in messages if isinstance(m.get('content'), str)))
+        log_llm_usage("genui", model_usage=model_usage, prompt_usage=prompt_usage)
+        return response, tools
 
     def iterate_genui(self, current_code: str, state: Dict, instruction: str, state_schema: Optional[Dict] = None) -> tuple[str, str]:
         """
@@ -567,55 +570,3 @@ def generate_ui_code(
     print(f"Saved new UI code to store (version {new_version})")
     
     return final_code, html_output
-
-# --- EXAMPLE USAGE ---
-if __name__ == "__main__":
-    from openai import OpenAI
-    
-    # 1. Mock Game State
-    game_state = {
-        "ship": {
-            "name": "Cobra MkIII",
-            "heat": 0.45,
-            "fuel": {"current": 12, "max": 32},
-            "cargo": [{"item": "Gold", "qty": 4}]
-        }
-    }
-
-    # 2. Create a simple LLM model wrapper for testing
-    class SimpleLLMModel:
-        def __init__(self):
-            self.client = OpenAI()
-        
-        def generate(self, messages, tools=None, tool_choice=None):
-            kwargs = {
-                "messages": messages,
-                "temperature": 0.2
-            }
-            if tools:
-                kwargs["tools"] = tools
-                kwargs["tool_choice"] = tool_choice or "auto"
-            
-            response = self.client.chat.completions.create(**kwargs)
-            choice = response.choices[0]
-            return choice.message.content, choice.message.tool_calls
-    
-    llm = SimpleLLMModel()
-    agent = GenUIAgent(llm_model=llm)
-
-    # 3. Run Request
-    try:
-        final_code, html_output = agent.iterate_genui(
-            current_code="", 
-            state=game_state, 
-            instruction="Create a dashboard showing fuel bar and cargo list."
-        )
-        
-        print("\n=== FINAL VALIDATED CODE ===\n")
-        print(final_code)
-        
-        print("\n=== RENDERED HTML ===\n")
-        print(html_output)
-        
-    except Exception as e:
-        print(f"Process failed: {e}")
