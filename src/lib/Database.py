@@ -83,6 +83,13 @@ class VectorStoreDateSummary(TypedDict):
     date: str
     count: int
 
+class QuestState(TypedDict):
+    quest_id: str
+    stage_id: str
+    active: bool
+    updated_at: float | None
+    version: str | None
+
 @dataclass
 class CodeEntry:
     code: str
@@ -812,6 +819,111 @@ class KeyValueStore():
         _ = cursor.execute(f'''
             DELETE FROM {self.table_name}
         ''')
+        conn.commit()
+
+
+@final
+class QuestDatabase():
+    def __init__(self) -> None:
+        self.table_name = 'quests_v1'
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(f'''
+            CREATE TABLE IF NOT EXISTS {self.table_name} (
+                quest_id TEXT PRIMARY KEY,
+                stage_id TEXT,
+                active INTEGER,
+                version TEXT,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        cursor.execute(f'''
+            PRAGMA table_info({self.table_name})
+        ''')
+        columns = cursor.fetchall()
+        if not any(col[1] == 'version' for col in columns):
+            cursor.execute(f'''
+                ALTER TABLE {self.table_name}
+                ADD COLUMN version TEXT
+            ''')
+        conn.commit()
+
+    def exists(self, quest_id: str) -> bool:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(f'''
+            SELECT 1
+            FROM {self.table_name}
+            WHERE quest_id = ?
+            LIMIT 1
+        ''', (quest_id,))
+        return cursor.fetchone() is not None
+
+    def get(self, quest_id: str) -> QuestState | None:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(f'''
+            SELECT quest_id, stage_id, active, unixepoch(updated_at), version
+            FROM {self.table_name}
+            WHERE quest_id = ?
+        ''', (quest_id,))
+        row = cursor.fetchone()
+        if not row:
+            return None
+        return QuestState(
+            quest_id=row[0],
+            stage_id=row[1],
+            active=bool(row[2]),
+            updated_at=row[3],
+            version=row[4],
+        )
+
+    def get_all(self) -> list[QuestState]:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(f'''
+            SELECT quest_id, stage_id, active, unixepoch(updated_at), version
+            FROM {self.table_name}
+        ''')
+        rows = cursor.fetchall()
+        return [
+            QuestState(
+                quest_id=row[0],
+                stage_id=row[1],
+                active=bool(row[2]),
+                updated_at=row[3],
+                version=row[4],
+            )
+            for row in rows
+        ]
+
+    def ensure(self, quest_id: str, stage_id: str, active: bool, version: str | None) -> None:
+        if self.exists(quest_id):
+            return
+        self.set(quest_id, stage_id, active, version)
+
+    def set(self, quest_id: str, stage_id: str, active: bool, version: str | None) -> None:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(f'''
+            INSERT INTO {self.table_name} (quest_id, stage_id, active, version)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(quest_id) DO UPDATE SET
+                stage_id = excluded.stage_id,
+                active = excluded.active,
+                version = excluded.version,
+                updated_at = CURRENT_TIMESTAMP
+        ''', (quest_id, stage_id, int(active), version))
+        conn.commit()
+
+    def set_active(self, quest_id: str, active: bool) -> None:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(f'''
+            UPDATE {self.table_name}
+            SET active = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE quest_id = ?
+        ''', (int(active), quest_id))
         conn.commit()
 
 @final

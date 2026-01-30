@@ -126,7 +126,7 @@ def fire_weapons(args, projected_states):
         cycle_fire_group({'fire_group': fg_index}, projected_states)
         # Use primary or secondary based on flag
         keys.send('PrimaryFire' if bool(primary_flag) else 'SecondaryFire', hold=6)
-        return 'Discovery scan has been performed.'
+        return f"Discovery scan has been performed{' by the ship computer' if 'qol' in args else ''}."
     
     # Handle standard primary/secondary
     else:
@@ -180,7 +180,7 @@ def set_speed(args, projected_states):
         else:
             raise Exception(f"Invalid speed {args['speed']}")
 
-    return f"Speed set to {args['speed']}%."
+    return f"Speed set to {args['speed']}%{' by the ship computer' if 'qol' in args else ''}."
 
 
 def deploy_heat_sink(args, projected_states):
@@ -1617,7 +1617,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "pips to systems": {"power_category": ["Systems"], "pips": [2]},
     })
 
-    actionManager.registerAction('galaxyMapOpen', "Open galaxy map. If asked, also focus on a system or start a navigation route. Navigation closes map, no futher close required.", {
+    actionManager.registerAction('galaxyMapOpen', "Open galaxy map. If asked, also focus on a system or start a navigation route. Navigation closes map, no further close required.", {
         "type": "object",
         "properties": {
             "system_name": {

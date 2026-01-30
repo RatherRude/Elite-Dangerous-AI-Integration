@@ -69,6 +69,7 @@ export const GameEventCategories: Record<string, string[]> = {
         "SupercruiseEntry",
         "SupercruiseExit",
         "ApproachSettlement",
+        "InDockingRange",
         "GlideModeExited",
         "GlideModeEntered",
         "Docked",
@@ -170,11 +171,6 @@ export const GameEventCategories: Record<string, string[]> = {
         "DropShipDeploy",
     ],
     "Stations": [
-        "MissionAbandoned",
-        "MissionAccepted",
-        "MissionCompleted",
-        "MissionFailed",
-        "MissionRedirected",
         "StationServices",
         "ShipyardBuy",
         "ShipyardNew",
@@ -324,4 +320,12 @@ export const GameEventCategories: Record<string, string[]> = {
         "USSDrop",
         "NoScoopableStars",
     ],
+    'Missions & Quests': [
+        "QuestEvent",
+        "MissionAbandoned",
+        "MissionAccepted",
+        "MissionCompleted",
+        "MissionFailed",
+        "MissionRedirected",
+    ]
 };

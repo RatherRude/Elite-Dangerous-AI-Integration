@@ -1,0 +1,184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/quests.schema.json",
+  "title": "Quest Catalog",
+  "description": "Schema for quest definitions stored in YAML.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "quests"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Catalog version used to refresh stored quest state when newer."
+    },
+    "quests": {
+      "type": "array",
+      "description": "List of quest definitions.",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/quest" }
+    }
+  },
+  "$defs": {
+    "quest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "description", "stages"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique quest identifier.",
+          "pattern": "^[A-Za-z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "description": "Short quest title shown to the player."
+        },
+        "description": {
+          "type": "string",
+          "description": "General quest description."
+        },
+        "active": {
+          "type": "boolean",
+          "description": "Whether the quest starts active by default.",
+          "default": false
+        },
+        "stages": {
+          "type": "array",
+          "description": "Ordered or referenced quest stages.",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/stage" }
+        }
+      }
+    },
+    "stage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "description", "instructions"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique stage identifier within the quest.",
+          "pattern": "^[A-Za-z0-9_\\-]+$"
+        },
+        "description": {
+          "type": "string",
+          "description": "Short summary of the stage."
+        },
+        "instructions": {
+          "type": "string",
+          "description": "Player-facing instructions for this stage."
+        },
+        "plan": {
+          "type": "array",
+          "description": "Condition/action pairs evaluated for this stage.",
+          "items": { "$ref": "#/$defs/planStep" },
+          "default": []
+        }
+      }
+    },
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "path", "operator", "value"],
+      "properties": {
+        "source": {
+          "type": "string",
+          "description": "Where to read the value from.",
+          "enum": ["projection", "event"]
+        },
+        "path": {
+          "type": "string",
+          "description": "Dot-delimited path to the value, e.g. Cargo.TotalItems or event.MarketId."
+        },
+        "operator": {
+          "type": "string",
+          "description": "Comparison operator (currently only equality is supported).",
+          "enum": ["equals", "=="]
+        },
+        "value": {
+          "description": "Expected value for the comparison.",
+          "type": ["string", "number", "boolean", "null"]
+        }
+      }
+    },
+    "planAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action"],
+      "properties": {
+        "action": {
+          "type": "string",
+          "description": "Action to execute when step conditions are met.",
+          "enum": ["log", "advance_stage", "set_active"]
+        },
+        "message": {
+          "type": "string",
+          "description": "Debug log message for log actions."
+        },
+        "target_stage_id": {
+          "type": "string",
+          "description": "Stage id to advance to for advance_stage actions.",
+          "pattern": "^[A-Za-z0-9_\\-]+$"
+        },
+        "quest_id": {
+          "type": "string",
+          "description": "Quest id to activate/deactivate for set_active actions.",
+          "pattern": "^[A-Za-z0-9_\\-]+$"
+        },
+        "active": {
+          "type": "boolean",
+          "description": "Whether the quest should be active for set_active actions.",
+          "default": true
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "action": { "const": "log" } },
+            "required": ["action"]
+          },
+          "then": {
+            "required": ["message"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "action": { "const": "advance_stage" } },
+            "required": ["action"]
+          },
+          "then": {
+            "required": ["target_stage_id"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "action": { "const": "set_active" } },
+            "required": ["action"]
+          },
+          "then": {
+            "required": ["quest_id"]
+          }
+        }
+      ]
+    },
+    "planStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["conditions", "actions"],
+      "properties": {
+        "conditions": {
+          "type": "array",
+          "description": "Conditions that must be met to execute this action list.",
+          "items": { "$ref": "#/$defs/condition" },
+          "default": []
+        },
+        "actions": {
+          "type": "array",
+          "description": "List of actions to execute when the step conditions are met.",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/planAction" }
+        }
+      }
+    }
+  }
+}

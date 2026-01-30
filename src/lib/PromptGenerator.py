@@ -1,6 +1,7 @@
 from datetime import timedelta, datetime, timezone
 from functools import lru_cache
 from typing import Any, Callable, cast, Dict, Union, List, Optional
+from pathlib import Path
 import random
 
 from openai.types.chat import ChatCompletionMessageParam
@@ -11,6 +12,7 @@ import humanize
 import json
 
 from .Projections import get_state_dict, ProjectedStates
+from .Database import QuestDatabase
 
 from .EventModels import (
     ApproachBodyEvent, ApproachSettlementEvent, BookTaxiEvent, BountyEvent, BuyExplorationDataEvent, CodexEntryEvent, CommanderEvent, CommitCrimeEvent,
@@ -43,6 +45,7 @@ from .Event import (
     ToolEvent,
     ExternalEvent,
     ProjectedEvent,
+    QuestEvent,
 )
 from .Logger import log, observe, PromptUsageStats
 
@@ -64,6 +67,7 @@ class PromptGenerator:
         self.disabled_game_events = disabled_game_events if disabled_game_events is not None else []
         self.system_db = system_db
         self.weapon_types: list[dict] = weapon_types if weapon_types is not None else []
+        self.quest_db = QuestDatabase()
 
         # Pad map for station docking positions
         self.pad_map = {
@@ -124,7 +128,7 @@ class PromptGenerator:
         depth = pad['depth']
         return f"{clock} o'clock, {depth} (Pad {pad_number}, clock orientation: mail slot entry with green on right)"
 
-    def get_event_template(self, event: Union[GameEvent, ProjectedEvent, ExternalEvent]):
+    def get_event_template(self, event: Union[GameEvent, ProjectedEvent, ExternalEvent, QuestEvent]):
         content: Any = event.content
         event_name = content.get('event')
         
@@ -529,6 +533,8 @@ class PromptGenerator:
                 return f"{self.commander_name} has won a trophy for their squadron."
 
         # Promotion events
+        if event_name == 'Rank':
+            return None
         if event_name == 'Promotion':
             promotion_event = cast(PromotionEvent, content)
             ranks = []
@@ -2213,6 +2219,25 @@ class PromptGenerator:
             return f"{self.commander_name} is now in combat."
         if event_name == 'CombatExited':
             return f"{self.commander_name} is no longer in combat."
+        if event_name == 'QuestEvent':
+            action = content.get('action')
+            quest_title = content.get('quest_title') or content.get('quest_id') or 'Unknown quest'
+            if action == 'advance_stage':
+                stage_name = content.get('stage_name') or content.get('stage_id') or 'unknown stage'
+                stage_description = content.get('stage_description')
+                stage_instructions = content.get('stage_instructions')
+                details = []
+                if stage_description:
+                    details.append(stage_description)
+                if stage_instructions:
+                    details.append(f"Instructions: {stage_instructions}")
+                detail_text = f" - {' '.join(details)}" if details else ""
+                return f"Quest updated: {quest_title} advanced to stage {stage_name}{detail_text}"
+            if action == 'set_active':
+                active = content.get('active')
+                state = 'activated' if active else 'deactivated'
+                return f"Quest {state}: {quest_title}."
+            return f"Quest update: {quest_title}."
         if event_name == 'FirstPlayerSystemDiscovered':
             return f"{self.commander_name} has a new system discovered."
         if event_name == 'FetchRemoteModuleCompleted':
@@ -2256,6 +2281,9 @@ class PromptGenerator:
             return f"{self.commander_name} has received a Discord notification."
         if event_name == 'Idle':
             return f"Your conversation with {self.commander_name} hasgone silent for a while. Get their attention by making a joke fitting to the current situation or self-reflecting on the recent past.",
+
+        if event_name == "InDockingRange":
+            return f"{self.commander_name}'s ship is now close enough to the station to make a docking request."
 
         if event_name == "DockingComputerDocking":
             return f"{self.commander_name}'s ship has initiated automated docking computer"
@@ -2371,7 +2399,7 @@ class PromptGenerator:
 
         return None
 
-    def event_message(self, event: Union[GameEvent, ProjectedEvent, ExternalEvent], timeoffset: str, is_important: bool):
+    def event_message(self, event: Union[GameEvent, ProjectedEvent, ExternalEvent, QuestEvent], timeoffset: str, is_important: bool):
         message = self.get_event_template(event)
         if message:
             return {
@@ -2745,6 +2773,57 @@ class PromptGenerator:
             status_info.pop('pips', None)
 
         return active_mode, status_info
+
+    def _get_active_quest_entries(self) -> list[dict[str, Any]]:
+        quest_states = [state for state in self.quest_db.get_all() if state["active"]]
+        if not quest_states:
+            return []
+        catalog = self._load_quest_catalog()
+        entries: list[dict[str, Any]] = []
+        for state in quest_states:
+            quest_def = catalog.get(state["quest_id"])
+            if not quest_def:
+                continue
+            stage_def = self._find_stage_def(quest_def, state["stage_id"])
+            quest_title = quest_def.get("title", state["quest_id"])
+            quest_description = quest_def.get("description")
+            stage_title = stage_def.get("description") if stage_def else state["stage_id"]
+            instructions = stage_def.get("instructions") if stage_def else None
+            entry: dict[str, Any] = {
+                "Quest": quest_title,
+                "Stage": stage_title or state["stage_id"],
+            }
+            if quest_description:
+                entry["Description"] = quest_description
+            if instructions:
+                entry["Instructions"] = instructions
+            entries.append(entry)
+        return entries
+
+    def _find_stage_def(self, quest_def: dict[str, Any], stage_id: str) -> dict[str, Any] | None:
+        for stage in quest_def.get("stages", []):
+            if isinstance(stage, dict) and stage.get("id") == stage_id:
+                return stage
+        return None
+
+    def _load_quest_catalog(self) -> dict[str, dict[str, Any]]:
+        quests_path = Path(__file__).resolve().parent.parent / "data" / "quests.yaml"
+        try:
+            with quests_path.open("r", encoding="utf-8") as handle:
+                data = yaml.safe_load(handle) or {}
+        except Exception:
+            return {}
+        raw_quests = data.get("quests", [])
+        if not isinstance(raw_quests, list):
+            return {}
+        quests: dict[str, dict[str, Any]] = {}
+        for quest in raw_quests:
+            if not isinstance(quest, dict):
+                continue
+            quest_id = quest.get("id")
+            if isinstance(quest_id, str):
+                quests[quest_id] = quest
+        return quests
 
     def generate_status_message(self, projected_states: ProjectedStates, search_agent_context: bool = False):
         status_entries: list[tuple[str, Any]] = []
@@ -3123,138 +3202,7 @@ class PromptGenerator:
                 status_entries.append(("Weapons' target", target_info))
 
         # Market and station information
-        location_for_station = get_state_dict(projected_states, 'Location')
-        current_station = location_for_station.get('Station')
-        market = get_state_dict(projected_states, 'Market')
-        outfitting = get_state_dict(projected_states, 'Outfitting')
-        storedShips = get_state_dict(projected_states, 'StoredShips')
         storedModules = get_state_dict(projected_states, 'StoredModules')
-        if current_station and current_station == market.get('StationName') and not search_agent_context:
-            buy_items = {
-                item.get('Name_Localised'): {
-                    'Category': item.get('Category_Localised'),
-                    'BuyPrice': item.get('BuyPrice'),
-                    'MeanPrice': item.get('MeanPrice'),
-                    'Stock': item.get('Stock'),
-                }
-                for item in market.get('Items', [])
-                if item.get('Stock', 0) > item.get('Demand', 0)
-            }
-
-            sell_items = {
-                item.get('Name_Localised'): {
-                    'Category': item.get('Category_Localised'),
-                    'SellPrice': item.get('SellPrice'),
-                    'MeanPrice': item.get('MeanPrice'),
-                    'Demand': item.get('Demand'),
-                }
-                for item in market.get('Items', [])
-                if item.get('Demand', 0) > item.get('Stock', 0)
-            }
-
-            if buy_items or sell_items:
-                status_entries.append((
-                    "Local market information",
-                    {
-                        "List of goods I can buy from the market": buy_items,
-                        "List of Goods I can sell to the market": sell_items
-                    }
-                ))
-
-        if current_station and current_station == outfitting.get('StationName') and not search_agent_context:
-            # Create a nested structure from outfitting items with optimized leaf nodes
-            nested_outfitting = {}
-
-            # First pass: collect all items by their categories
-            item_categories = {}
-
-            for item in outfitting.get('Items', []):
-                item_name = item.get('Name', '')
-                if not item_name or '_' not in item_name:
-                    continue
-
-                parts = item_name.split('_')
-                # Group items by their parent paths
-                parent_path = '_'.join(parts[:-1])
-                leaf = parts[-1]
-
-                if parent_path not in item_categories:
-                    item_categories[parent_path] = []
-                item_categories[parent_path].append(leaf)
-
-            # Second pass: build the optimized structure
-            for path, leaves in item_categories.items():
-                parts = path.split('_')
-                current = nested_outfitting
-
-                # Build the nested path
-                for i in range(len(parts)):
-                    part = parts[i]
-                    if i < len(parts) - 1:
-                        # Not the last part, ensure we have a dictionary
-                        if part not in current:
-                            current[part] = {}
-                        if not isinstance(current[part], dict):
-                            current[part] = {}
-                        current = current[part]
-                    else:
-                        # Last part - add the optimized leaf
-                        # Process the leaf nodes according to patterns
-                        if any(leaf.startswith('class') for leaf in leaves):
-                            # Extract class numbers and create a compact string
-                            class_numbers = []
-                            for leaf in leaves:
-                                if leaf.startswith('class'):
-                                    try:
-                                        num = leaf.replace('class', '')
-                                        class_numbers.append(num)
-                                    except:
-                                        class_numbers.append(leaf)
-                            # Instead of using f-string, create a dictionary entry
-                            current[part] = {"class": f"{','.join(sorted(class_numbers))}"}
-                        elif any(leaf.startswith('size') for leaf in leaves):
-                            # Extract size numbers
-                            size_numbers = []
-                            for leaf in leaves:
-                                if leaf.startswith('size'):
-                                    try:
-                                        num = leaf.replace('size', '')
-                                        size_numbers.append(num)
-                                    except:
-                                        size_numbers.append(leaf)
-                            # Instead of using f-string, create a dictionary entry
-                            current[part] = {"size": f"{','.join(sorted(size_numbers))}"}
-                        else:
-                            # Regular processing for other types - use a string directly
-                            current[part] = f"{','.join(sorted(leaves))}"
-
-            # Final pass: flatten the special dictionary entries to avoid quotes
-            def flatten_special_entries(data):
-                if not isinstance(data, dict):
-                    return data
-
-                result = {}
-                for key, value in data.items():
-                    if isinstance(value, dict) and len(value) == 1:
-                        # Check if this is our special format with class or size
-                        special_key = next(iter(value.keys()), None)
-                        if special_key in ('class', 'size'):
-                            # Flatten it to a direct string to avoid quotes
-                            result[key] = f"{special_key} {value[special_key]}"
-                        else:
-                            # Regular nested dictionary
-                            result[key] = flatten_special_entries(value)
-                    else:
-                        # Regular processing
-                        result[key] = flatten_special_entries(value) if isinstance(value, dict) else value
-                return result
-
-            # Apply the flattening
-            nested_outfitting = flatten_special_entries(nested_outfitting)
-
-            status_entries.append(("Local outfitting information", nested_outfitting))
-        if current_station and current_station == storedShips.get('StationName') and not search_agent_context:
-            status_entries.append(("Local, stored ships", storedShips.get('ShipsHere', [])))
 
         fleet_carriers = get_state_dict(projected_states, 'FleetCarriers')
         carriers = fleet_carriers.get('Carriers', {})
@@ -3376,6 +3324,13 @@ class PromptGenerator:
         missions_info = {key: value for key, value in missions_info.items() if value is not None}
         if missions_info and 'Active' in missions_info:
             status_entries.append(("Active missions", missions_info))
+
+        active_quest_entries = self._get_active_quest_entries()
+        if active_quest_entries and len(active_quest_entries) > 0:
+            if len(active_quest_entries) == 1:
+                status_entries.append(("Active quest", active_quest_entries[0]))
+            else:
+                status_entries.append(("Active quests", active_quest_entries))
 
         # Add colonisation construction status if available
         colonisation_info = get_state_dict(projected_states, 'ColonisationConstruction')
@@ -3538,7 +3493,7 @@ class PromptGenerator:
             
             piece = None
 
-            if isinstance(event, GameEvent) or isinstance(event, ProjectedEvent) or isinstance(event, ExternalEvent):
+            if isinstance(event, GameEvent) or isinstance(event, ProjectedEvent) or isinstance(event, ExternalEvent) or isinstance(event, QuestEvent):
                 # Skip disabled events
                 event_type = event.content.get('event')
                 if event_type in self.disabled_game_events:

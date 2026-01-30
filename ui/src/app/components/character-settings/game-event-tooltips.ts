@@ -71,6 +71,7 @@ export const GameEventTooltips: Record<string, string> = {
   "SupercruiseEntry": "COVAS:NEXT will react when your ship enters supercruise mode for high-speed travel within a system.",
   "SupercruiseExit": "COVAS:NEXT will react when you drop out of supercruise. Telling you about the type of location you've arrived at.",
   "ApproachSettlement": "COVAS:NEXT will react when you approach a planetary settlement. Telling you about proximity to surface installations.",
+  "InDockingRange": "COVAS:NEXT will react when the ship is in docking range",
   "GlideModeExited": "COVAS:NEXT will react when your ship exits glide mode near a planet’s surface.",
   "GlideModeEntered": "COVAS:NEXT will react when your ship enters a planet’s atmosphere after supercruise.",
   "Docked": "COVAS:NEXT will react when your ship docks successfully at a station or planetary base.",
@@ -244,6 +245,7 @@ export const GameEventTooltips: Record<string, string> = {
   "ShipyardTransferCompleted": "COVAS:NEXT will react when your remotely fetched ships have arrived.",
 
   // Social
+  "QuestEvent": "COVAS:NEXT will react when your quest advances.",
   "Idle": "COVAS:NEXT will react when you both remained inactive for a prolonged period and will proactively make comments. Caution: Can lead to endless loops if enabled!",
   "CrewAssign": "COVAS:NEXT will react when you change a hired NPC crew member’s role — such as activating or idling them.",
   "CrewFire": "COVAS:NEXT will react when you dismiss one of your hired crew members from service.",

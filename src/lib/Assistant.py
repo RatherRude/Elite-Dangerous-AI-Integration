@@ -1,5 +1,6 @@
 import json
 import traceback
+from pathlib import Path
 from datetime import datetime
 from openai.types.chat import ChatCompletion, ChatCompletionMessageToolCall
 from time import time
@@ -8,12 +9,14 @@ from pydantic import BaseModel
 from .Models import LLMModel, EmbeddingModel, LLMError
 from .Logger import log, observe, show_chat_message, PromptUsageStats, log_llm_usage
 from .Config import Config
-from .Event import ConversationEvent, Event, GameEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent, MemoryEvent
+from .Database import QuestDatabase, QuestState
+from .Event import ConversationEvent, Event, GameEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent, MemoryEvent, QuestEvent
 from .EventManager import EventManager
 from .ActionManager import ActionManager
 from .PromptGenerator import PromptGenerator
 from .TTS import TTS
 from typing import Any,  Callable, final
+import yaml
 from threading import Thread
 from .actions.Actions import set_speed, fire_weapons, get_visuals
 from .Projections import get_state_dict, ProjectedStates
@@ -36,6 +39,10 @@ class Assistant:
         self.registered_should_reply_handlers: list[Callable[[Event, dict[str, Any]], bool | None]] = []
         self.is_summarizing = False
         self.short_term_memories = []
+        self.quest_db = QuestDatabase()
+        self.quest_catalog: dict[str, dict[str, Any]] = {}
+        self.quests_loaded = False
+        self.quest_version = "0"
 
     def on_event(self, event: Event, projected_states: ProjectedStates):
         # Skip disabled game events from entering the pending state
@@ -56,7 +63,7 @@ class Assistant:
             if (isinstance(event, GameEvent) and event.content.get('event') == 'FSDJump' and
                     (self.config.get("qol_autoscan", False) or self.config.get("qol_autobrake", False))):
                 if self.config.get("qol_autobrake"):
-                    speed_args = {"speed": "Zero"}
+                    speed_args = {"speed": "Zero", "qol": True}
                     set_speed(speed_args, projected_states)
 
                 if self.config.get("qol_autoscan"):
@@ -65,10 +72,11 @@ class Assistant:
                         "action": "fire",
                         "discoveryPrimary": self.config.get("discovery_primary_var", True),
                         "discoveryFiregroup": self.config.get("discovery_firegroup_var", 1),
+                        "qol": True
                     }
                     fire_weapons(fire_args, projected_states)
-            if isinstance(event, ProjectedEvent) and event.content.get('event') == 'CarrierJumpCooldownComplete':
-                log('debug', 'here could be a carrer jump')
+            # if isinstance(event, ProjectedEvent) and event.content.get('event') == 'CarrierJumpCooldownComplete':
+            #     log('debug', 'here could be a carrer jump')
 
         except Exception as e:
             log('error', 'Auto actions on FSDJump failed', e, traceback.format_exc())
@@ -101,6 +109,313 @@ class Assistant:
                 self.is_summarizing = True
                 Thread(target=self.summarize_memory, args=(short_term[30:],), daemon=True).start()
 
+        if (isinstance(event, GameEvent) and event.content.get('event') == 'LoadGame'):
+            self._load_quests()
+
+        try:
+            self._process_active_quests(event, projected_states)
+        except Exception as e:
+            log('error', 'Quest processing failed', e, traceback.format_exc())
+
+    def _get_quests_path(self) -> Path:
+        return Path(__file__).resolve().parent.parent / "data" / "quests.yaml"
+
+    def _load_quests(self) -> None:
+        try:
+            quests_path = self._get_quests_path()
+            if not quests_path.exists():
+                log('warn', f"Quest file not found: {quests_path}")
+                self.quest_catalog = {}
+                self.quests_loaded = False
+                return
+            with quests_path.open('r', encoding='utf-8') as handle:
+                data = yaml.safe_load(handle) or {}
+            self.quest_version = str(data.get('version', '0'))
+            raw_quests = data.get('quests', [])
+            if not isinstance(raw_quests, list):
+                log('warn', 'Quest file format invalid: quests is not a list')
+                self.quest_catalog = {}
+                self.quests_loaded = False
+                return
+            quests: list[dict[str, Any]] = []
+            for quest in raw_quests:
+                if not isinstance(quest, dict):
+                    continue
+                quest_id = quest.get('id')
+                if isinstance(quest_id, str):
+                    quests.append(quest)
+            self.quest_catalog = {quest["id"]: quest for quest in quests}
+            self._sync_quests_to_db()
+            self.quests_loaded = True
+            log('info', f"Loaded {len(self.quest_catalog)} quests from {quests_path}")
+            # self.event_manager.add_quest_event({
+            #     "event": "QuestEvent",
+            #     "action": "load_quests",
+            #     "version": self.quest_version,
+            #     "quest_count": len(self.quest_catalog),
+            # })
+        except Exception as e:
+            log('error', 'Failed to load quests', e, traceback.format_exc())
+            self.quest_catalog = {}
+            self.quests_loaded = False
+
+    def _sync_quests_to_db(self) -> None:
+        for quest_id, quest in self.quest_catalog.items():
+            existing = self.quest_db.get(quest_id)
+            stages = quest.get('stages', [])
+            if not stages:
+                log('warn', f"Quest '{quest_id}' has no stages, skipping")
+                continue
+            first_stage = stages[0]
+            stage_id = first_stage.get('id')
+            if not stage_id:
+                log('warn', f"Quest '{quest_id}' first stage missing id, skipping")
+                continue
+            active = bool(quest.get('active', False))
+            if existing is None:
+                self.quest_db.set(quest_id, stage_id, active, self.quest_version)
+                log('info', f"Quest '{quest_id}' initialized at stage '{stage_id}', active={active}")
+                continue
+            existing_version = existing.get('version')
+            if self._is_newer_version(self.quest_version, existing_version):
+                self.quest_db.set(quest_id, stage_id, active, self.quest_version)
+                log('info', f"Quest '{quest_id}' updated to version {self.quest_version}")
+
+    def _process_active_quests(self, event: Event, projected_states: ProjectedStates) -> None:
+        if not self.quests_loaded:
+            self._load_quests()
+
+        if not self.quests_loaded or not self.quest_catalog:
+            return
+        quest_states = self.quest_db.get_all()
+        for state in quest_states:
+            if not state["active"]:
+                continue
+            quest_id = state["quest_id"]
+            stage_id = state["stage_id"]
+            log('debug', f"Quest '{quest_id}' active at stage '{stage_id}'")
+            quest_def = self.quest_catalog.get(quest_id)
+            if not quest_def:
+                log('warn', f"Quest '{quest_id}' missing from catalog")
+                continue
+            stage_def = self._get_stage_def(quest_def, stage_id)
+            if not stage_def:
+                log('warn', f"Quest '{quest_id}' stage '{stage_id}' missing from catalog")
+                continue
+            conditions = stage_def.get('conditions', [])
+            if conditions and not self._conditions_met(conditions, event, projected_states):
+                continue
+            plan = stage_def.get('plan', [])
+            if not plan:
+                continue
+            self._trigger_quest_stage_plan(quest_def, stage_def, state, event, projected_states)
+
+    def _get_stage_def(self, quest_def: dict[str, Any], stage_id: str | None) -> dict[str, Any] | None:
+        if not stage_id:
+            return None
+        for stage in quest_def.get('stages', []):
+            if stage.get('id') == stage_id:
+                return stage
+        return None
+
+    def _conditions_met(self, conditions: list[dict[str, Any]], event: Event, projected_states: ProjectedStates) -> bool:
+        for condition in conditions:
+            if not isinstance(condition, dict):
+                return False
+            source = condition.get('source')
+            if not isinstance(source, str):
+                return False
+            path = condition.get('path', '')
+            if not isinstance(path, str):
+                return False
+            operator = condition.get('operator', 'equals')
+            if not isinstance(operator, str):
+                operator = 'equals'
+            expected = condition.get('value')
+            actual = self._resolve_condition_value(source, path, event, projected_states)
+            if not self._compare_condition(actual, expected, operator):
+                log('debug', f"Quest condition failed: source={source} path={path} operator={operator} expected={expected} actual={actual}")
+                return False
+        return True
+
+    def _resolve_condition_value(self, source: str, path: str, event: Event, projected_states: ProjectedStates) -> Any:
+        if source == 'projection':
+            return self._resolve_projection_value(path, projected_states)
+        if source == 'event':
+            return self._resolve_event_value(path, event)
+        return None
+
+    def _resolve_projection_value(self, path: str, projected_states: ProjectedStates) -> Any:
+        if not path:
+            return None
+        parts = path.split('.')
+        root = parts[0]
+        remainder = '.'.join(parts[1:])
+        projection_data = get_state_dict(projected_states, root, default={})
+        return self._get_nested_value(projection_data, remainder)
+
+    def _resolve_event_value(self, path: str, event: Event) -> Any:
+        if not path:
+            return None
+        event_data: dict[str, Any] | None = None
+        if isinstance(event, GameEvent):
+            event_data = dict(event.content)
+        elif isinstance(event, StatusEvent):
+            event_data = event.status
+        if event_data is None:
+            return None
+        normalized = path
+        if normalized.startswith('event.'):
+            normalized = normalized[len('event.'):]
+        return self._get_nested_value(event_data, normalized)
+
+    def _get_nested_value(self, data: Any, path: str) -> Any:
+        if path == '':
+            return data
+        current = data
+        for part in path.split('.'):
+            if isinstance(current, dict):
+                if part not in current:
+                    return None
+                current = current.get(part)
+            elif hasattr(current, part):
+                current = getattr(current, part)
+            else:
+                return None
+        return current
+
+    def _compare_condition(self, actual: Any, expected: Any, operator: str) -> bool:
+        if operator in ('equals', '=='):
+            return self._values_equal(actual, expected)
+        log('debug', f"Quest condition operator not supported: {operator}")
+        return False
+
+    def _values_equal(self, actual: Any, expected: Any) -> bool:
+        if actual is None:
+            return False
+        if isinstance(actual, (int, float)) and isinstance(expected, (int, float)):
+            return float(actual) == float(expected)
+        if isinstance(actual, str) and isinstance(expected, (int, float)):
+            try:
+                return float(actual) == float(expected)
+            except ValueError:
+                return False
+        if isinstance(actual, (int, float)) and isinstance(expected, str):
+            try:
+                return float(actual) == float(expected)
+            except ValueError:
+                return False
+        return actual == expected
+
+    def _trigger_quest_stage_plan(self, quest_def: dict[str, Any], stage_def: dict[str, Any], state: QuestState, event: Event, projected_states: ProjectedStates) -> None:
+        quest_id = quest_def.get('id', 'unknown')
+        stage_id = stage_def.get('id', 'unknown')
+        plan = stage_def.get('plan', [])
+        log('debug', f"Quest '{quest_id}' stage '{stage_id}' conditions met. Plan: {plan}")
+        for step in plan:
+            if not isinstance(step, dict):
+                continue
+            if not self._quest_step_conditions_met(step, event, projected_states):
+                continue
+            action_entries = step.get('actions')
+            if not isinstance(action_entries, list) or not action_entries:
+                continue
+            for action_entry in action_entries:
+                if not isinstance(action_entry, dict):
+                    continue
+                self._execute_quest_action(action_entry, quest_def, state, event, projected_states)
+
+    def _quest_step_conditions_met(self, step: dict[str, Any], event: Event, projected_states: ProjectedStates) -> bool:
+        step_conditions = step.get('conditions')
+        if not isinstance(step_conditions, list):
+            return False
+        return self._conditions_met(step_conditions, event, projected_states)
+
+    def _execute_quest_action(self, step: dict[str, Any], quest_def: dict[str, Any], state: QuestState, event: Event, projected_states: ProjectedStates) -> None:
+        action = step.get('action')
+        if action == 'log':
+            message = step.get('message', '')
+            if message:
+                log('debug', message)
+            return
+        if action == 'advance_stage':
+            target_stage_id = step.get('target_stage_id') or step.get('stage_id')
+            self._advance_quest_stage(quest_def, target_stage_id, state["quest_id"])
+            return
+        if action == 'set_active':
+            target_quest_id = step.get('quest_id')
+            if not isinstance(target_quest_id, str) or not target_quest_id:
+                return
+            active_value = step.get('active')
+            if active_value is None:
+                active_value = True
+            if not isinstance(active_value, bool):
+                return
+            existing = self.quest_db.get(target_quest_id)
+            if existing is None:
+                target_def = self.quest_catalog.get(target_quest_id)
+                stages = target_def.get('stages', []) if isinstance(target_def, dict) else []
+                first_stage_id = stages[0].get('id') if stages else None
+                if isinstance(first_stage_id, str):
+                    self.quest_db.set(target_quest_id, first_stage_id, active_value, self.quest_version)
+                    log('info', f"Quest '{target_quest_id}' set active={active_value} (initialized)")
+            else:
+                self.quest_db.set_active(target_quest_id, active_value)
+                log('info', f"Quest '{target_quest_id}' set active={active_value}")
+            target_def = self.quest_catalog.get(target_quest_id, {})
+            quest_title = target_def.get('title') if isinstance(target_def, dict) else None
+            self.event_manager.add_quest_event({
+                "event": "QuestEvent",
+                "action": "set_active",
+                "quest_id": target_quest_id,
+                "quest_title": quest_title,
+                "active": active_value,
+            })
+            return
+
+    def _advance_quest_stage(self, quest_def: dict[str, Any], target_stage_id: str | None, quest_id: str | None) -> None:
+        if not quest_id or not target_stage_id:
+            return
+        stages = quest_def.get('stages', [])
+        stage_ids = [stage.get('id') for stage in stages]
+        if target_stage_id not in stage_ids:
+            return
+        stage_def = self._get_stage_def(quest_def, target_stage_id)
+        stage_description = stage_def.get('description') if isinstance(stage_def, dict) else None
+        stage_instructions = stage_def.get('instructions') if isinstance(stage_def, dict) else None
+        stage_name = None
+        if isinstance(stage_def, dict):
+            stage_name = stage_def.get('title') or stage_def.get('name') or stage_def.get('id')
+        version_state = self.quest_db.get(quest_id)
+        stored_version = (version_state.get('version') if version_state else None) or self.quest_version
+        self.quest_db.set(quest_id, target_stage_id, True, stored_version)
+        log('info', f"Quest '{quest_id}' advanced to stage '{target_stage_id}'")
+        self.event_manager.add_quest_event({
+            "event": "QuestEvent",
+            "action": "advance_stage",
+            "quest_id": quest_id,
+            "quest_title": quest_def.get('title'),
+            "stage_id": target_stage_id,
+            "stage_name": stage_name or target_stage_id,
+            "stage_description": stage_description,
+            "stage_instructions": stage_instructions,
+        })
+
+    def _is_newer_version(self, candidate: str, current: str | None) -> bool:
+        if current is None:
+            return True
+        candidate_parts = self._parse_version(candidate)
+        current_parts = self._parse_version(current)
+        return candidate_parts > current_parts
+
+    def _parse_version(self, value: str) -> tuple[int, ...]:
+        parts: list[int] = []
+        for item in value.split('.'):
+            try:
+                parts.append(int(item))
+            except ValueError:
+                parts.append(0)
+        return tuple(parts)
     @observe()
     def summarize_memory(self, memory: list[Event]):
         try:
@@ -397,7 +712,11 @@ class Assistant:
                     return True
                 if event.content.get("event") in self.enabled_game_events:
                     return True
-            
+
+            if isinstance(event, QuestEvent):
+                if 'quest' in self.enabled_game_events:
+                    return True
+
             # run should_reply handlers for each plugin
             for handler in self.registered_should_reply_handlers:
                 should_reply_according_to_plugins = handler(event, states)

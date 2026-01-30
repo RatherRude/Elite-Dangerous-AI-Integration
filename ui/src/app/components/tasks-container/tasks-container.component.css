@@ -116,6 +116,60 @@
 
 .mission-meta .reward { color: #4caf50; font-weight: 500; }
 
+/* Quests */
+.quests-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.quest-item {
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid #444;
+  border-radius: 6px;
+}
+
+.quest-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.quest-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.quest-stage {
+  font-size: 14px;
+  color: #bbb;
+}
+
+.quest-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.quest-description {
+  font-size: 13px;
+  color: #cfcfcf;
+}
+
+.quest-instructions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #f5f5f5;
+}
+
+.quest-instructions mat-icon {
+  font-size: 16px;
+}
+
 /* Community Goals */
 .cg-list { display: flex; flex-direction: column; gap: 12px; }
 .cg-item { padding: 16px; background: rgba(255,255,255,0.05); border: 1px solid #444; border-radius: 6px; }
