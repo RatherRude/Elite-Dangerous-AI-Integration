@@ -3138,7 +3138,8 @@ class FSSSignals(Projection[FSSSignalsStateModel]):
 
 
 class InDockingRangeStateModel(BaseModel):
-    HasExitedForDock: bool = True
+    ReceivedFirstEvent: bool = True
+    SkipAnnouncement: bool = False
 
 @final
 class InDockingRange(Projection[InDockingRangeStateModel]):
@@ -3149,22 +3150,31 @@ class InDockingRange(Projection[InDockingRangeStateModel]):
     def process(self, event: Event) -> list[ProjectedEvent]:
         projected_events: list[ProjectedEvent] = []
 
+        if isinstance(event, StatusEvent):
+            name = event.status.get("event")
+
+            if name == "FsdMassLocked":
+                if self.state.ReceivedFirstEvent and not self.state.SkipAnnouncement:
+                    projected_events.append(ProjectedEvent(content={"event": "InDockingRange"}))
+                else:
+                    self.state.ReceivedFirstEvent=True
         if isinstance(event, GameEvent):
             name = event.content.get("event")
 
             if name == "SupercruiseExit":
                 # Ignore taxi rides for docking prompts
-                if not event.content.get("Taxi", False):
-                    self.state = InDockingRangeStateModel()
-                    return projected_events
-
+                if event.content.get("Taxi", False):
+                    self.state = InDockingRangeStateModel(ReceivedFirstEvent=False, SkipAnnouncement=True)
+                else:
+                    self.state = InDockingRangeStateModel(ReceivedFirstEvent=False)
             if name == "ReceiveText":
-                if (event.content.get("Channel", "") != "npc" or not self.state.HasExitedForDock or
-                        event.content.get("Message", "") != "$STATION_NoFireZone_entered;"):
+                if (event.content.get("Channel", "") != "npc" or event.content.get("Message", "") != "$STATION_NoFireZone_entered;"):
                     return projected_events
 
-                projected_events.append(ProjectedEvent(content={"event": "InDockingRange"}))
-                self.state = InDockingRangeStateModel(HasExitedForDock=False)
+                if self.state.ReceivedFirstEvent and not self.state.SkipAnnouncement:
+                    projected_events.append(ProjectedEvent(content={"event": "InDockingRange"}))
+                else:
+                    self.state.ReceivedFirstEvent=True
 
         return projected_events
 
