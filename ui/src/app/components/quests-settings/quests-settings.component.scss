@@ -1,0 +1,205 @@
+.quests-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.quests-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.toolbar-title {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.version-field {
+    width: 160px;
+}
+
+.toolbar-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.quests-layout {
+    display: grid;
+    grid-template-columns: minmax(220px, 280px) 1fr;
+    gap: 16px;
+    align-items: start;
+}
+
+.quest-list mat-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.quest-entry {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 4px 0;
+}
+
+.quest-entry button[mat-button] {
+    flex: 1;
+    justify-content: flex-start;
+    text-align: left;
+}
+
+.quest-entry.selected {
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 6px;
+}
+
+.quest-title {
+    font-weight: 600;
+    margin-right: 8px;
+}
+
+.quest-id {
+    opacity: 0.6;
+    font-size: 12px;
+}
+
+.empty-state {
+    opacity: 0.7;
+    margin: 8px 0;
+}
+
+.quest-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.quest-error {
+    border-color: rgba(255, 120, 120, 0.6);
+}
+
+.quest-error .path,
+.quest-path {
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+.quest-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.stage-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.stage-graph {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding-bottom: 12px;
+}
+
+.stage-column {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 300px;
+}
+
+.stage-card mat-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stage-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.plan-steps {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.plan-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.plan-step {
+    padding: 12px;
+}
+
+.plan-step-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.plan-section {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.plan-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.condition-row,
+.action-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 8px;
+    align-items: end;
+}
+
+.link-preview {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.link-ok {
+    color: #7ee081;
+}
+
+.link-missing {
+    color: #ffb4a2;
+}
+
+.loopback {
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    font-size: 11px;
+}
+
+.yaml-panel {
+    margin-top: 8px;
+}
+
+.yaml-field {
+    width: 100%;
+}

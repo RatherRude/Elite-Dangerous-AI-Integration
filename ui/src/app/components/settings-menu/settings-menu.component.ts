@@ -33,6 +33,7 @@ import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { FormsModule } from "@angular/forms";
 import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
+import { QuestsSettingsComponent } from "../quests-settings/quests-settings.component";
 
 @Component({
     selector: "app-settings-menu",
@@ -59,6 +60,7 @@ import { MatButtonModule } from "@angular/material/button";
         CharacterSettingsComponent,
         EventReactionsSettingsComponent,
         GeneralSettingsComponent,
+        QuestsSettingsComponent,
         MatButtonModule,
     ],
     templateUrl: "./settings-menu.component.html",

@@ -1,0 +1,303 @@
+<div class="quests-settings">
+    <div class="quests-toolbar">
+        <div class="toolbar-title">
+            <h2>Quest Catalog</h2>
+            @if (catalog) {
+                <mat-form-field appearance="outline" class="version-field">
+                    <mat-label>Version</mat-label>
+                    <input matInput [(ngModel)]="catalog.version">
+                </mat-form-field>
+            }
+        </div>
+        <div class="toolbar-actions">
+            <button mat-stroked-button color="primary" (click)="reloadCatalog()">
+                Reload
+            </button>
+            <button mat-raised-button color="primary" (click)="saveCatalog()">
+                Save
+            </button>
+        </div>
+    </div>
+
+    <div class="quests-layout">
+        <mat-card class="quest-list">
+            <mat-card-header>
+                <mat-card-title>Quests</mat-card-title>
+                <button mat-mini-fab color="primary" (click)="addQuest()">
+                    <mat-icon>add</mat-icon>
+                </button>
+            </mat-card-header>
+            <mat-card-content>
+                @if (catalog?.quests?.length) {
+                    @for (quest of catalog?.quests; track quest.id; let questIndex = $index) {
+                        <div class="quest-entry"
+                             [class.selected]="quest.id === selectedQuestId">
+                            <button mat-button (click)="selectQuest(quest.id)">
+                                <span class="quest-title">{{ quest.title || quest.id }}</span>
+                                <span class="quest-id">{{ quest.id }}</span>
+                            </button>
+                            <button mat-icon-button color="warn"
+                                    (click)="removeQuest(questIndex)"
+                                    aria-label="Remove quest">
+                                <mat-icon>delete</mat-icon>
+                            </button>
+                        </div>
+                    }
+                } @else {
+                    <p class="empty-state">No quests yet. Add one to begin.</p>
+                }
+            </mat-card-content>
+        </mat-card>
+
+        <div class="quest-editor">
+            @if (loadError) {
+                <mat-card class="quest-error" appearance="outlined">
+                    <mat-card-content>
+                        <p>{{ loadError }}</p>
+                        @if (catalogPath) {
+                            <p class="path">Path: {{ catalogPath }}</p>
+                        }
+                    </mat-card-content>
+                </mat-card>
+            } @else if (catalogPath) {
+                <div class="quest-path">Loaded from {{ catalogPath }}</div>
+            }
+
+            @if (selectedQuest) {
+                <mat-card class="quest-meta">
+                    <mat-card-title>Quest Details</mat-card-title>
+                    <mat-card-content>
+                        <div class="quest-fields">
+                            <mat-form-field>
+                                <mat-label>Quest Id</mat-label>
+                                <input matInput [(ngModel)]="selectedQuest.id">
+                            </mat-form-field>
+                            <mat-form-field>
+                                <mat-label>Title</mat-label>
+                                <input matInput [(ngModel)]="selectedQuest.title">
+                            </mat-form-field>
+                            <mat-form-field>
+                                <mat-label>Description</mat-label>
+                                <textarea matInput rows="3"
+                                          [(ngModel)]="selectedQuest.description"></textarea>
+                            </mat-form-field>
+                            <mat-slide-toggle
+                                [(ngModel)]="selectedQuest.active">
+                                Active on start
+                            </mat-slide-toggle>
+                        </div>
+                    </mat-card-content>
+                </mat-card>
+
+                <div class="stage-toolbar">
+                    <h3>Stages</h3>
+                    <button mat-stroked-button color="primary"
+                            (click)="addStage(selectedQuest)">
+                        Add Stage
+                    </button>
+                </div>
+
+                <div class="stage-graph">
+                    @for (column of getStageColumns(selectedQuest); track $index) {
+                        <div class="stage-column">
+                            @for (stage of column; track stage.id) {
+                                <mat-card class="stage-card">
+                                    <mat-card-header>
+                                        <mat-card-title>{{ stage.id }}</mat-card-title>
+                                        <button mat-icon-button color="warn"
+                                                (click)="removeStage(selectedQuest, selectedQuest.stages.indexOf(stage))">
+                                            <mat-icon>delete</mat-icon>
+                                        </button>
+                                    </mat-card-header>
+                                    <mat-card-content>
+                                        <div class="stage-meta">
+                                            <mat-form-field>
+                                                <mat-label>Stage Id</mat-label>
+                                                <input matInput [(ngModel)]="stage.id">
+                                            </mat-form-field>
+                                            <mat-form-field>
+                                                <mat-label>Description</mat-label>
+                                                <input matInput [(ngModel)]="stage.description">
+                                            </mat-form-field>
+                                            <mat-form-field>
+                                                <mat-label>Instructions</mat-label>
+                                                <textarea matInput rows="2"
+                                                          [(ngModel)]="stage.instructions"></textarea>
+                                            </mat-form-field>
+                                        </div>
+
+                                        <div class="plan-steps">
+                                            <div class="plan-header">
+                                                <h4>Plan Steps</h4>
+                                                <button mat-button color="primary"
+                                                        (click)="addPlanStep(stage)">
+                                                    Add Step
+                                                </button>
+                                            </div>
+                                            @for (step of stage.plan ?? []; track stepIndex; let stepIndex = $index) {
+                                                <mat-card class="plan-step">
+                                                    <div class="plan-step-header">
+                                                        <span>Step {{ stepIndex + 1 }}</span>
+                                                        <button mat-icon-button color="warn"
+                                                                (click)="removePlanStep(stage, stepIndex)">
+                                                            <mat-icon>delete</mat-icon>
+                                                        </button>
+                                                    </div>
+
+                                                    <div class="plan-section">
+                                                        <div class="plan-section-header">
+                                                            <h5>Conditions</h5>
+                                                            <button mat-button color="primary"
+                                                                    (click)="addCondition(step)">
+                                                                Add Condition
+                                                            </button>
+                                                        </div>
+                                                        @for (condition of step.conditions; track conditionIndex; let conditionIndex = $index) {
+                                                            <div class="condition-row">
+                                                                <mat-form-field>
+                                                                    <mat-label>Source</mat-label>
+                                                                    <mat-select [(ngModel)]="condition.source">
+                                                                        <mat-option value="event">event</mat-option>
+                                                                        <mat-option value="projection">projection</mat-option>
+                                                                    </mat-select>
+                                                                </mat-form-field>
+                                                                <mat-form-field>
+                                                                    <mat-label>Path</mat-label>
+                                                                    <input matInput [(ngModel)]="condition.path">
+                                                                </mat-form-field>
+                                                                <mat-form-field>
+                                                                    <mat-label>Operator</mat-label>
+                                                                    <mat-select [(ngModel)]="condition.operator">
+                                                                        <mat-option value="equals">equals</mat-option>
+                                                                        <mat-option value="==">==</mat-option>
+                                                                    </mat-select>
+                                                                </mat-form-field>
+                                                                <mat-form-field>
+                                                                    <mat-label>Value Type</mat-label>
+                                                                    <mat-select
+                                                                        [value]="getConditionValueKind(condition)"
+                                                                        (selectionChange)="setConditionValueKind(condition, $event.value)">
+                                                                        <mat-option value="string">string</mat-option>
+                                                                        <mat-option value="number">number</mat-option>
+                                                                        <mat-option value="boolean">boolean</mat-option>
+                                                                        <mat-option value="null">null</mat-option>
+                                                                    </mat-select>
+                                                                </mat-form-field>
+                                                                @if (getConditionValueKind(condition) === 'boolean') {
+                                                                    <mat-form-field>
+                                                                        <mat-label>Value</mat-label>
+                                                                        <mat-select [(ngModel)]="condition.value">
+                                                                            <mat-option [value]="true">true</mat-option>
+                                                                            <mat-option [value]="false">false</mat-option>
+                                                                        </mat-select>
+                                                                    </mat-form-field>
+                                                                } @else {
+                                                                    <mat-form-field>
+                                                                        <mat-label>Value</mat-label>
+                                                                        <input matInput
+                                                                               [disabled]="getConditionValueKind(condition) === 'null'"
+                                                                               [type]="getConditionValueKind(condition) === 'number' ? 'number' : 'text'"
+                                                                               [value]="condition.value ?? ''"
+                                                                               (input)="updateConditionValue(condition, $any($event.target).value)">
+                                                                    </mat-form-field>
+                                                                }
+                                                                <button mat-icon-button color="warn"
+                                                                        (click)="removeCondition(step, conditionIndex)">
+                                                                    <mat-icon>delete</mat-icon>
+                                                                </button>
+                                                            </div>
+                                                        }
+                                                    </div>
+
+                                                    <div class="plan-section">
+                                                        <div class="plan-section-header">
+                                                            <h5>Actions</h5>
+                                                            <button mat-button color="primary"
+                                                                    (click)="addAction(step)">
+                                                                Add Action
+                                                            </button>
+                                                        </div>
+                                                        @for (action of step.actions; track actionIndex; let actionIndex = $index) {
+                                                            <div class="action-row">
+                                                                <mat-form-field>
+                                                                    <mat-label>Action</mat-label>
+                                                                    <mat-select [(ngModel)]="action.action">
+                                                                        <mat-option value="log">log</mat-option>
+                                                                        <mat-option value="advance_stage">advance_stage</mat-option>
+                                                                        <mat-option value="set_active">set_active</mat-option>
+                                                                    </mat-select>
+                                                                </mat-form-field>
+
+                                                                @if (action.action === 'log') {
+                                                                    <mat-form-field>
+                                                                        <mat-label>Message</mat-label>
+                                                                        <input matInput [(ngModel)]="action.message">
+                                                                    </mat-form-field>
+                                                                }
+                                                                @if (action.action === 'advance_stage') {
+                                                                    <mat-form-field>
+                                                                        <mat-label>Target Stage Id</mat-label>
+                                                                        <input matInput [(ngModel)]="action.target_stage_id">
+                                                                    </mat-form-field>
+                                                                    <div class="link-preview">
+                                                                        @if (getStageById(selectedQuest, action.target_stage_id)) {
+                                                                            <span class="link-ok">
+                                                                                Links to: {{ getStageById(selectedQuest, action.target_stage_id)?.description }}
+                                                                            </span>
+                                                                            @if (isLoopback(selectedQuest, stage.id, action.target_stage_id)) {
+                                                                                <span class="loopback">loopback</span>
+                                                                            }
+                                                                        } @else if (action.target_stage_id) {
+                                                                            <span class="link-missing">Missing stage</span>
+                                                                        }
+                                                                    </div>
+                                                                }
+                                                                @if (action.action === 'set_active') {
+                                                                    <mat-form-field>
+                                                                        <mat-label>Quest Id</mat-label>
+                                                                        <input matInput [(ngModel)]="action.quest_id">
+                                                                    </mat-form-field>
+                                                                    <mat-slide-toggle
+                                                                        [(ngModel)]="action.active">
+                                                                        Active
+                                                                    </mat-slide-toggle>
+                                                                }
+
+                                                                <button mat-icon-button color="warn"
+                                                                        (click)="removeAction(step, actionIndex)">
+                                                                    <mat-icon>delete</mat-icon>
+                                                                </button>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                </mat-card>
+                                            }
+                                        </div>
+                                    </mat-card-content>
+                                </mat-card>
+                            }
+                        </div>
+                    }
+                </div>
+            } @else {
+                <mat-card class="empty-editor">
+                    <mat-card-content>
+                        <p>Select a quest to edit its stages.</p>
+                        @if (catalog && !catalog.quests.length) {
+                            <p class="empty-state">No quests found in the catalog.</p>
+                        }
+                    </mat-card-content>
+                </mat-card>
+            }
+
+            <mat-expansion-panel class="yaml-panel">
+                <mat-expansion-panel-header>
+                    <mat-panel-title>Raw quests.yaml</mat-panel-title>
+                </mat-expansion-panel-header>
+                <mat-form-field class="yaml-field">
+                    <textarea matInput rows="12" [value]="rawYaml" readonly></textarea>
+                </mat-form-field>
+            </mat-expansion-panel>
+        </div>
+    </div>
+</div>
