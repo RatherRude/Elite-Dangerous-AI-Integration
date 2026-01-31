@@ -67,6 +67,8 @@ export class QuestsSettingsComponent
     private subscriptions: Subscription[] = [];
     private layoutPending = false;
     private stageGraphSubscriptions: Subscription[] = [];
+    private collapsedStageKeys = new Set<string>();
+    private collapseInitialized = false;
 
     @ViewChild("stageGraph") stageGraphRef?: ElementRef<HTMLElement>;
     @ViewChildren("stageCard") stageCardRefs?: QueryList<
@@ -81,6 +83,10 @@ export class QuestsSettingsComponent
                 this.catalog = catalog;
                 if (catalog && !this.selectedQuestId && catalog.quests.length) {
                     this.selectedQuestId = catalog.quests[0].id;
+                }
+                if (catalog && !this.collapseInitialized) {
+                    this.collapseAllStages(catalog);
+                    this.collapseInitialized = true;
                 }
                 this.scheduleLayout();
             }),
@@ -167,6 +173,7 @@ export class QuestsSettingsComponent
         const newQuest = this.createQuest();
         this.catalog.quests = [...this.catalog.quests, newQuest];
         this.selectedQuestId = newQuest.id;
+        this.collapseStagesForQuest(newQuest);
         this.scheduleLayout();
     }
 
@@ -184,12 +191,22 @@ export class QuestsSettingsComponent
     }
 
     addStage(quest: QuestDefinition): void {
-        quest.stages = [...quest.stages, this.createStage(quest)];
+        const newStage = this.createStage(quest);
+        quest.stages = [...quest.stages, newStage];
+        const collapseKey = this.getStageCollapseKey(quest.id, newStage.id);
+        if (collapseKey) {
+            this.collapsedStageKeys.add(collapseKey);
+        }
         this.scheduleLayout();
     }
 
     removeStage(quest: QuestDefinition, index: number): void {
+        const removedStageId = quest.stages[index]?.id;
         quest.stages.splice(index, 1);
+        const collapseKey = this.getStageCollapseKey(quest.id, removedStageId);
+        if (collapseKey) {
+            this.collapsedStageKeys.delete(collapseKey);
+        }
         this.scheduleLayout();
     }
 
@@ -366,6 +383,24 @@ export class QuestsSettingsComponent
         return targetDistance <= fromDistance;
     }
 
+    isStageCollapsed(questId: string | null | undefined, stageId: string): boolean {
+        const key = this.getStageCollapseKey(questId, stageId);
+        return key ? this.collapsedStageKeys.has(key) : false;
+    }
+
+    toggleStageCollapsed(questId: string | null | undefined, stageId: string): void {
+        const key = this.getStageCollapseKey(questId, stageId);
+        if (!key) {
+            return;
+        }
+        if (this.collapsedStageKeys.has(key)) {
+            this.collapsedStageKeys.delete(key);
+        } else {
+            this.collapsedStageKeys.add(key);
+        }
+        this.scheduleLayout();
+    }
+
     private buildStageGraph(quest: QuestDefinition): {
         columns: QuestStage[][];
         distances: Map<string, number>;
@@ -423,6 +458,29 @@ export class QuestsSettingsComponent
         return { columns, distances };
     }
 
+    private getStageCollapseKey(
+        questId?: string | null,
+        stageId?: string | null,
+    ): string | null {
+        if (!questId || !stageId) {
+            return null;
+        }
+        return `${questId}:${stageId}`;
+    }
+
+    private collapseStagesForQuest(quest: QuestDefinition): void {
+        quest.stages.forEach((stage) => {
+            const key = this.getStageCollapseKey(quest.id, stage.id);
+            if (key) {
+                this.collapsedStageKeys.add(key);
+            }
+        });
+    }
+
+    private collapseAllStages(catalog: QuestCatalog): void {
+        catalog.quests.forEach((quest) => this.collapseStagesForQuest(quest));
+    }
+
     private bindStageGraphListeners(): void {
         const stageGraph = this.stageGraphRef?.nativeElement;
         if (!stageGraph) {
@@ -476,15 +534,15 @@ export class QuestsSettingsComponent
             if (!fromRect) {
                 continue;
             }
-            const fromX = fromRect.right - containerRect.left;
-            const fromY = fromRect.top - containerRect.top + fromRect.height / 2;
+            const fromX = fromRect.left - containerRect.left + fromRect.width / 2;
+            const fromY = fromRect.bottom - containerRect.top;
             for (const targetId of this.getAdvanceStageTargets(stage)) {
                 const toRect = stageRects.get(targetId);
                 if (!toRect) {
                     continue;
                 }
-                const toX = toRect.left - containerRect.left;
-                const toY = toRect.top - containerRect.top + toRect.height / 2;
+                const toX = toRect.left - containerRect.left + toRect.width / 2;
+                const toY = toRect.top - containerRect.top;
                 lines.push({ x1: fromX, y1: fromY, x2: toX, y2: toY });
             }
         }

@@ -112,22 +112,31 @@
 .stage-graph {
     display: flex;
     gap: 8px;
-    overflow-x: auto;
-    padding-bottom: 6px;
+    flex-direction: column;
+    overflow-y: auto;
+    padding-right: 6px;
     position: relative;
 }
 
 .stage-column {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 8px;
-    min-width: 300px;
 }
 
 .stage-card mat-card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+}
+
+.stage-title-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0;
+    min-width: 0;
+    text-align: left;
 }
 
 .stage-links {

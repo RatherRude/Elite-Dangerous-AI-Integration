@@ -133,14 +133,22 @@
                                           [attr.data-stage-id]="stage.id">
                                     <mat-card-header>
                                         <mat-card-title>
-                                            {{ stage.description || stage.id }}
+                                            <button mat-button class="stage-title-button"
+                                                    (click)="toggleStageCollapsed(selectedQuest.id, stage.id)"
+                                                    [attr.aria-expanded]="!isStageCollapsed(selectedQuest.id, stage.id)">
+                                                <span>{{ stage.description || stage.id }}</span>
+                                                <mat-icon>
+                                                    {{ isStageCollapsed(selectedQuest.id, stage.id) ? 'expand_more' : 'expand_less' }}
+                                                </mat-icon>
+                                            </button>
                                             <button mat-icon-button color="warn"
                                                     (click)="removeStage(selectedQuest, selectedQuest.stages.indexOf(stage))">
                                                 <mat-icon>remove</mat-icon>
                                             </button>
                                         </mat-card-title>
                                     </mat-card-header>
-                                    <mat-card-content>
+                                    @if (!isStageCollapsed(selectedQuest.id, stage.id)) {
+                                        <mat-card-content>
                                         <div class="stage-meta">
                                             <mat-form-field>
                                                 <mat-label>Stage Id</mat-label>
@@ -303,7 +311,8 @@
                                                 </mat-card>
                                             }
                                         </div>
-                                    </mat-card-content>
+                                        </mat-card-content>
+                                    }
                                 </mat-card>
                             }
                         </div>
