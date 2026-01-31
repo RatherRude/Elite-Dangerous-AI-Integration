@@ -48,6 +48,8 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy {
     selectedQuestId: string | null = null;
     loadError: string | null = null;
     catalogPath: string | null = null;
+    loadPending = false;
+    lastLoadedAt: string | null = null;
     private subscriptions: Subscription[] = [];
 
     constructor(private questsService: QuestsService) {}
@@ -68,6 +70,12 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy {
             }),
             this.questsService.catalogPath$.subscribe((path) => {
                 this.catalogPath = path;
+            }),
+            this.questsService.loadPending$.subscribe((pending) => {
+                this.loadPending = pending;
+            }),
+            this.questsService.lastLoadedAt$.subscribe((timestamp) => {
+                this.lastLoadedAt = timestamp;
             }),
             this.questsService.saveResult$.subscribe((result) => {
                 this.loadError = result.success

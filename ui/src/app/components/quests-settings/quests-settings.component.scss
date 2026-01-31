@@ -1,7 +1,7 @@
 .quests-settings {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 8px;
 }
 
 .quests-toolbar {
@@ -9,13 +9,13 @@
     flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
-    gap: 16px;
+    gap: 8px;
 }
 
 .toolbar-title {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 8px;
 }
 
 .version-field {
@@ -24,13 +24,13 @@
 
 .toolbar-actions {
     display: flex;
-    gap: 12px;
+    gap: 8px;
 }
 
 .quests-layout {
     display: grid;
     grid-template-columns: minmax(220px, 280px) 1fr;
-    gap: 16px;
+    gap: 8px;
     align-items: start;
 }
 
@@ -40,12 +40,23 @@
     align-items: center;
 }
 
+.quest-list mat-card-title,
+.stage-card mat-card-title,
+.plan-header h4,
+.plan-section-header h5,
+.plan-step-header span,
+.stage-toolbar h3 {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .quest-entry {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    padding: 4px 0;
+    padding: 2px 0;
 }
 
 .quest-entry button[mat-button] {
@@ -64,10 +75,6 @@
     margin-right: 8px;
 }
 
-.quest-id {
-    opacity: 0.6;
-    font-size: 12px;
-}
 
 .empty-state {
     opacity: 0.7;
@@ -77,7 +84,7 @@
 .quest-editor {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 8px;
 }
 
 .quest-error {
@@ -93,7 +100,7 @@
 .quest-fields {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 12px;
+    gap: 8px;
 }
 
 .stage-toolbar {
@@ -104,15 +111,15 @@
 
 .stage-graph {
     display: flex;
-    gap: 16px;
+    gap: 8px;
     overflow-x: auto;
-    padding-bottom: 12px;
+    padding-bottom: 6px;
 }
 
 .stage-column {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 8px;
     min-width: 300px;
 }
 
@@ -125,14 +132,14 @@
 .stage-meta {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 12px;
+    gap: 8px;
 }
 
 .plan-steps {
-    margin-top: 12px;
+    margin-top: 6px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
 }
 
 .plan-header {
@@ -142,21 +149,21 @@
 }
 
 .plan-step {
-    padding: 12px;
+    padding: 6px;
 }
 
 .plan-step-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
 }
 
 .plan-section {
-    margin-top: 12px;
+    margin-top: 6px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
 }
 
 .plan-section-header {
@@ -169,35 +176,47 @@
 .action-row {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 8px;
-    align-items: end;
+    gap: 6px;
+    align-items: center;
+}
+
+.condition-row.condensed {
+    grid-template-columns: 140px minmax(200px, 1fr) minmax(180px, 1fr) auto;
 }
 
 .link-preview {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     font-size: 12px;
     opacity: 0.8;
-}
-
-.link-ok {
-    color: #7ee081;
+    grid-column: 1 / -1;
 }
 
 .link-missing {
     color: #ffb4a2;
 }
 
-.loopback {
-    padding: 2px 6px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.12);
-    font-size: 11px;
+.yaml-panel {
+    margin-top: 4px;
 }
 
-.yaml-panel {
-    margin-top: 8px;
+.quests-settings .mat-icon-button,
+.quests-settings .mat-mdc-icon-button {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.quests-settings mat-icon,
+.quests-settings .mat-icon {
+    font-size: 12px;
+    width: 12px;
+    height: 12px;
+    line-height: 12px;
 }
 
 .yaml-field {

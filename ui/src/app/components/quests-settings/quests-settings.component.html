@@ -22,10 +22,12 @@
     <div class="quests-layout">
         <mat-card class="quest-list">
             <mat-card-header>
-                <mat-card-title>Quests</mat-card-title>
-                <button mat-mini-fab color="primary" (click)="addQuest()">
-                    <mat-icon>add</mat-icon>
-                </button>
+                <mat-card-title>
+                    Quests
+                    <button mat-icon-button color="primary" (click)="addQuest()">
+                        <mat-icon>add</mat-icon>
+                    </button>
+                </mat-card-title>
             </mat-card-header>
             <mat-card-content>
                 @if (catalog?.quests?.length) {
@@ -34,12 +36,11 @@
                              [class.selected]="quest.id === selectedQuestId">
                             <button mat-button (click)="selectQuest(quest.id)">
                                 <span class="quest-title">{{ quest.title || quest.id }}</span>
-                                <span class="quest-id">{{ quest.id }}</span>
                             </button>
                             <button mat-icon-button color="warn"
                                     (click)="removeQuest(questIndex)"
                                     aria-label="Remove quest">
-                                <mat-icon>delete</mat-icon>
+                                <mat-icon>remove</mat-icon>
                             </button>
                         </div>
                     }
@@ -59,8 +60,21 @@
                         }
                     </mat-card-content>
                 </mat-card>
-            } @else if (catalogPath) {
-                <div class="quest-path">Loaded from {{ catalogPath }}</div>
+            } @else if (catalogPath || loadPending || lastLoadedAt) {
+                <div class="quest-path">
+                    @if (loadPending) {
+                        Loading quest catalog...
+                    } @else {
+                        Loaded from {{ catalogPath || "unknown path" }}
+                        @if (lastLoadedAt) {
+                            ({{ lastLoadedAt }})
+                        }
+                    }
+                </div>
+            } @else {
+                <div class="quest-path">
+                    Awaiting quest catalog response. Click Reload to request it.
+                </div>
             }
 
             @if (selectedQuest) {
@@ -90,11 +104,13 @@
                 </mat-card>
 
                 <div class="stage-toolbar">
-                    <h3>Stages</h3>
-                    <button mat-stroked-button color="primary"
-                            (click)="addStage(selectedQuest)">
-                        Add Stage
-                    </button>
+                    <h3>
+                        Stages
+                        <button mat-icon-button color="primary"
+                                (click)="addStage(selectedQuest)">
+                            <mat-icon>add</mat-icon>
+                        </button>
+                    </h3>
                 </div>
 
                 <div class="stage-graph">
@@ -103,11 +119,13 @@
                             @for (stage of column; track stage.id) {
                                 <mat-card class="stage-card">
                                     <mat-card-header>
-                                        <mat-card-title>{{ stage.id }}</mat-card-title>
-                                        <button mat-icon-button color="warn"
-                                                (click)="removeStage(selectedQuest, selectedQuest.stages.indexOf(stage))">
-                                            <mat-icon>delete</mat-icon>
-                                        </button>
+                                        <mat-card-title>
+                                            {{ stage.id }}
+                                            <button mat-icon-button color="warn"
+                                                    (click)="removeStage(selectedQuest, selectedQuest.stages.indexOf(stage))">
+                                                <mat-icon>remove</mat-icon>
+                                            </button>
+                                        </mat-card-title>
                                     </mat-card-header>
                                     <mat-card-content>
                                         <div class="stage-meta">
@@ -128,32 +146,38 @@
 
                                         <div class="plan-steps">
                                             <div class="plan-header">
-                                                <h4>Plan Steps</h4>
-                                                <button mat-button color="primary"
-                                                        (click)="addPlanStep(stage)">
-                                                    Add Step
-                                                </button>
+                                                <h4>
+                                                    Choices
+                                                    <button mat-icon-button color="primary"
+                                                            (click)="addPlanStep(stage)">
+                                                        <mat-icon>add</mat-icon>
+                                                    </button>
+                                                </h4>
                                             </div>
                                             @for (step of stage.plan ?? []; track stepIndex; let stepIndex = $index) {
                                                 <mat-card class="plan-step">
                                                     <div class="plan-step-header">
-                                                        <span>Step {{ stepIndex + 1 }}</span>
-                                                        <button mat-icon-button color="warn"
-                                                                (click)="removePlanStep(stage, stepIndex)">
-                                                            <mat-icon>delete</mat-icon>
-                                                        </button>
+                                                        <span>
+                                                            Choice {{ stepIndex + 1 }}
+                                                            <button mat-icon-button color="warn"
+                                                                    (click)="removePlanStep(stage, stepIndex)">
+                                                                <mat-icon>remove</mat-icon>
+                                                            </button>
+                                                        </span>
                                                     </div>
 
                                                     <div class="plan-section">
                                                         <div class="plan-section-header">
-                                                            <h5>Conditions</h5>
-                                                            <button mat-button color="primary"
-                                                                    (click)="addCondition(step)">
-                                                                Add Condition
-                                                            </button>
+                                                            <h5>
+                                                                Conditions
+                                                                <button mat-icon-button color="primary"
+                                                                        (click)="addCondition(step)">
+                                                                    <mat-icon>add</mat-icon>
+                                                                </button>
+                                                            </h5>
                                                         </div>
                                                         @for (condition of step.conditions; track conditionIndex; let conditionIndex = $index) {
-                                                            <div class="condition-row">
+                                                            <div class="condition-row condensed">
                                                                 <mat-form-field>
                                                                     <mat-label>Source</mat-label>
                                                                     <mat-select [(ngModel)]="condition.source">
@@ -162,26 +186,8 @@
                                                                     </mat-select>
                                                                 </mat-form-field>
                                                                 <mat-form-field>
-                                                                    <mat-label>Path</mat-label>
+                                                                    <mat-label>Property</mat-label>
                                                                     <input matInput [(ngModel)]="condition.path">
-                                                                </mat-form-field>
-                                                                <mat-form-field>
-                                                                    <mat-label>Operator</mat-label>
-                                                                    <mat-select [(ngModel)]="condition.operator">
-                                                                        <mat-option value="equals">equals</mat-option>
-                                                                        <mat-option value="==">==</mat-option>
-                                                                    </mat-select>
-                                                                </mat-form-field>
-                                                                <mat-form-field>
-                                                                    <mat-label>Value Type</mat-label>
-                                                                    <mat-select
-                                                                        [value]="getConditionValueKind(condition)"
-                                                                        (selectionChange)="setConditionValueKind(condition, $event.value)">
-                                                                        <mat-option value="string">string</mat-option>
-                                                                        <mat-option value="number">number</mat-option>
-                                                                        <mat-option value="boolean">boolean</mat-option>
-                                                                        <mat-option value="null">null</mat-option>
-                                                                    </mat-select>
                                                                 </mat-form-field>
                                                                 @if (getConditionValueKind(condition) === 'boolean') {
                                                                     <mat-form-field>
@@ -203,7 +209,7 @@
                                                                 }
                                                                 <button mat-icon-button color="warn"
                                                                         (click)="removeCondition(step, conditionIndex)">
-                                                                    <mat-icon>delete</mat-icon>
+                                                                    <mat-icon>remove</mat-icon>
                                                                 </button>
                                                             </div>
                                                         }
@@ -211,11 +217,13 @@
 
                                                     <div class="plan-section">
                                                         <div class="plan-section-header">
-                                                            <h5>Actions</h5>
-                                                            <button mat-button color="primary"
-                                                                    (click)="addAction(step)">
-                                                                Add Action
-                                                            </button>
+                                                            <h5>
+                                                                Actions
+                                                                <button mat-icon-button color="primary"
+                                                                        (click)="addAction(step)">
+                                                                    <mat-icon>add</mat-icon>
+                                                                </button>
+                                                            </h5>
                                                         </div>
                                                         @for (action of step.actions; track actionIndex; let actionIndex = $index) {
                                                             <div class="action-row">
@@ -236,26 +244,26 @@
                                                                 }
                                                                 @if (action.action === 'advance_stage') {
                                                                     <mat-form-field>
-                                                                        <mat-label>Target Stage Id</mat-label>
-                                                                        <input matInput [(ngModel)]="action.target_stage_id">
-                                                                    </mat-form-field>
-                                                                    <div class="link-preview">
-                                                                        @if (getStageById(selectedQuest, action.target_stage_id)) {
-                                                                            <span class="link-ok">
-                                                                                Links to: {{ getStageById(selectedQuest, action.target_stage_id)?.description }}
-                                                                            </span>
-                                                                            @if (isLoopback(selectedQuest, stage.id, action.target_stage_id)) {
-                                                                                <span class="loopback">loopback</span>
+                                                                        <mat-label>Target Stage</mat-label>
+                                                                    <mat-select [(ngModel)]="action.target_stage_id">
+                                                                            @for (stageOption of selectedQuest.stages; track stageOption.id) {
+                                                                                <mat-option [value]="stageOption.id">
+                                                                                {{ stageOption.description || stageOption.id }}
+                                                                                </mat-option>
                                                                             }
-                                                                        } @else if (action.target_stage_id) {
-                                                                            <span class="link-missing">Missing stage</span>
-                                                                        }
-                                                                    </div>
+                                                                        </mat-select>
+                                                                    </mat-form-field>
                                                                 }
                                                                 @if (action.action === 'set_active') {
                                                                     <mat-form-field>
                                                                         <mat-label>Quest Id</mat-label>
-                                                                        <input matInput [(ngModel)]="action.quest_id">
+                                                                        <mat-select [(ngModel)]="action.quest_id">
+                                                                            @for (questOption of catalog?.quests ?? []; track questOption.id) {
+                                                                                <mat-option [value]="questOption.id">
+                                                                                    {{ questOption.title || questOption.id }}
+                                                                                </mat-option>
+                                                                            }
+                                                                        </mat-select>
                                                                     </mat-form-field>
                                                                     <mat-slide-toggle
                                                                         [(ngModel)]="action.active">
@@ -265,8 +273,17 @@
 
                                                                 <button mat-icon-button color="warn"
                                                                         (click)="removeAction(step, actionIndex)">
-                                                                    <mat-icon>delete</mat-icon>
+                                                                    <mat-icon>remove</mat-icon>
                                                                 </button>
+
+                                                                @if (action.action === 'advance_stage') {
+                                                                    <div class="link-preview">
+                                                                        @if (getStageById(selectedQuest, action.target_stage_id)) {
+                                                                        } @else if (action.target_stage_id) {
+                                                                            <span class="link-missing">Missing stage</span>
+                                                                        }
+                                                                    </div>
+                                                                }
                                                             </div>
                                                         }
                                                     </div>
@@ -297,6 +314,9 @@
                 <mat-form-field class="yaml-field">
                     <textarea matInput rows="12" [value]="rawYaml" readonly></textarea>
                 </mat-form-field>
+                @if (!rawYaml) {
+                    <div class="empty-state">No raw data received yet.</div>
+                }
             </mat-expansion-panel>
         </div>
     </div>

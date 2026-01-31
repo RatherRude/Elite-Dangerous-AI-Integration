@@ -79,6 +79,10 @@ export class QuestsService {
     public catalogPath$ = this.catalogPathSubject.asObservable();
     private loadErrorSubject = new BehaviorSubject<string | null>(null);
     public loadError$ = this.loadErrorSubject.asObservable();
+    private loadPendingSubject = new BehaviorSubject<boolean>(false);
+    public loadPending$ = this.loadPendingSubject.asObservable();
+    private lastLoadedAtSubject = new BehaviorSubject<string | null>(null);
+    public lastLoadedAt$ = this.lastLoadedAtSubject.asObservable();
     private saveResultSubject = new Subject<QuestCatalogSavedMessage>();
     public saveResult$ = this.saveResultSubject.asObservable();
 
@@ -97,6 +101,8 @@ export class QuestsService {
             )
             .subscribe((message) => {
                 if (message.type === "quest_catalog") {
+                    this.loadPendingSubject.next(false);
+                    this.lastLoadedAtSubject.next(new Date().toISOString());
                     this.loadErrorSubject.next(message.error || null);
                     this.catalogPathSubject.next(message.path || null);
                     if (message.data) {
@@ -118,6 +124,7 @@ export class QuestsService {
     }
 
     public loadCatalog(): void {
+        this.loadPendingSubject.next(true);
         const command: GetQuestCatalogMessage = {
             type: "get_quest_catalog",
             timestamp: new Date().toISOString(),
