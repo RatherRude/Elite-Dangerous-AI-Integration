@@ -113,14 +113,27 @@
                     </h3>
                 </div>
 
-                <div class="stage-graph">
+                <div class="stage-graph" #stageGraph>
+                    <svg class="stage-links"
+                         [attr.width]="stageGraphSize.width"
+                         [attr.height]="stageGraphSize.height">
+                        @for (line of connectionLines; track lineIndex; let lineIndex = $index) {
+                            <line
+                                [attr.x1]="line.x1"
+                                [attr.y1]="line.y1"
+                                [attr.x2]="line.x2"
+                                [attr.y2]="line.y2"></line>
+                        }
+                    </svg>
                     @for (column of getStageColumns(selectedQuest); track $index) {
                         <div class="stage-column">
                             @for (stage of column; track stage.id) {
-                                <mat-card class="stage-card">
+                                <mat-card class="stage-card"
+                                          #stageCard
+                                          [attr.data-stage-id]="stage.id">
                                     <mat-card-header>
                                         <mat-card-title>
-                                            {{ stage.id }}
+                                            {{ stage.description || stage.id }}
                                             <button mat-icon-button color="warn"
                                                     (click)="removeStage(selectedQuest, selectedQuest.stages.indexOf(stage))">
                                                 <mat-icon>remove</mat-icon>

@@ -114,6 +114,7 @@
     gap: 8px;
     overflow-x: auto;
     padding-bottom: 6px;
+    position: relative;
 }
 
 .stage-column {
@@ -129,6 +130,18 @@
     align-items: center;
 }
 
+.stage-links {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    stroke: rgba(126, 224, 129, 0.6);
+    stroke-width: 1;
+}
+
+.stage-links line {
+    vector-effect: non-scaling-stroke;
+}
+
 .stage-meta {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -136,10 +149,10 @@
 }
 
 .plan-steps {
-    margin-top: 6px;
+    margin-top: 0;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
 }
 
 .plan-header {
@@ -149,21 +162,21 @@
 }
 
 .plan-step {
-    padding: 6px;
+    padding: 0;
 }
 
 .plan-step-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 4px;
+    margin-bottom: 0;
 }
 
 .plan-section {
-    margin-top: 6px;
+    margin-top: 0;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
 }
 
 .plan-section-header {
@@ -201,6 +214,26 @@
     margin-top: 4px;
 }
 
+:host ::ng-deep .quests-settings .mat-mdc-card,
+:host ::ng-deep .quests-settings .mat-mdc-card-header,
+:host ::ng-deep .quests-settings .mat-mdc-card-content {
+    padding: 0;
+}
+
+:host ::ng-deep .quests-settings .mat-mdc-card-title,
+:host ::ng-deep .quests-settings .mat-mdc-card-subtitle {
+    margin: 0;
+}
+
+:host ::ng-deep .quests-settings .mat-mdc-form-field {
+    margin: 0;
+    padding: 0;
+}
+
+:host ::ng-deep .quests-settings .mat-mdc-form-field-subscript-wrapper {
+    display: none;
+}
+
 .quests-settings .mat-icon-button,
 .quests-settings .mat-mdc-icon-button {
     width: 24px;
@@ -221,4 +254,7 @@
 
 .yaml-field {
     width: 100%;
+}
+h4, h5 {
+    margin: 0;
 }

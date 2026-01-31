@@ -1,4 +1,14 @@
-import { Component, OnDestroy, OnInit } from "@angular/core";
+import {
+    AfterViewInit,
+    AfterViewChecked,
+    Component,
+    ElementRef,
+    OnDestroy,
+    OnInit,
+    QueryList,
+    ViewChild,
+    ViewChildren,
+} from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
@@ -10,7 +20,7 @@ import { MatSelectModule } from "@angular/material/select";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatSnackBarModule } from "@angular/material/snack-bar";
-import { Subscription } from "rxjs";
+import { fromEvent, Subscription } from "rxjs";
 import {
     QuestAction,
     QuestCatalog,
@@ -42,7 +52,9 @@ type ConditionValueKind = "string" | "number" | "boolean" | "null";
     templateUrl: "./quests-settings.component.html",
     styleUrl: "./quests-settings.component.scss",
 })
-export class QuestsSettingsComponent implements OnInit, OnDestroy {
+export class QuestsSettingsComponent
+    implements OnInit, OnDestroy, AfterViewInit, AfterViewChecked
+{
     catalog: QuestCatalog | null = null;
     rawYaml = "";
     selectedQuestId: string | null = null;
@@ -50,7 +62,16 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy {
     catalogPath: string | null = null;
     loadPending = false;
     lastLoadedAt: string | null = null;
+    connectionLines: { x1: number; y1: number; x2: number; y2: number }[] = [];
+    stageGraphSize = { width: 0, height: 0 };
     private subscriptions: Subscription[] = [];
+    private layoutPending = false;
+    private stageGraphSubscriptions: Subscription[] = [];
+
+    @ViewChild("stageGraph") stageGraphRef?: ElementRef<HTMLElement>;
+    @ViewChildren("stageCard") stageCardRefs?: QueryList<
+        ElementRef<HTMLElement>
+    >;
 
     constructor(private questsService: QuestsService) {}
 
@@ -61,6 +82,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy {
                 if (catalog && !this.selectedQuestId && catalog.quests.length) {
                     this.selectedQuestId = catalog.quests[0].id;
                 }
+                this.scheduleLayout();
             }),
             this.questsService.rawYaml$.subscribe((rawYaml) => {
                 this.rawYaml = rawYaml;
@@ -87,8 +109,29 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy {
         this.questsService.loadCatalog();
     }
 
+    ngAfterViewInit(): void {
+        if (this.stageCardRefs) {
+            this.stageGraphSubscriptions.push(
+                this.stageCardRefs.changes.subscribe(() =>
+                    this.scheduleLayout(),
+                ),
+            );
+        }
+        this.bindStageGraphListeners();
+        this.scheduleLayout();
+    }
+
+    ngAfterViewChecked(): void {
+        if (this.layoutPending) {
+            this.updateStageLinks();
+        }
+    }
+
     ngOnDestroy(): void {
         this.subscriptions.forEach((subscription) => subscription.unsubscribe());
+        this.stageGraphSubscriptions.forEach((subscription) =>
+            subscription.unsubscribe(),
+        );
     }
 
     get selectedQuest(): QuestDefinition | null {
@@ -104,6 +147,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy {
 
     selectQuest(questId: string): void {
         this.selectedQuestId = questId;
+        this.scheduleLayout();
     }
 
     reloadCatalog(): void {
@@ -123,6 +167,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy {
         const newQuest = this.createQuest();
         this.catalog.quests = [...this.catalog.quests, newQuest];
         this.selectedQuestId = newQuest.id;
+        this.scheduleLayout();
     }
 
     removeQuest(index: number): void {
@@ -135,14 +180,17 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy {
             this.selectedQuestId =
                 this.catalog.quests[0]?.id ?? null;
         }
+        this.scheduleLayout();
     }
 
     addStage(quest: QuestDefinition): void {
         quest.stages = [...quest.stages, this.createStage(quest)];
+        this.scheduleLayout();
     }
 
     removeStage(quest: QuestDefinition, index: number): void {
         quest.stages.splice(index, 1);
+        this.scheduleLayout();
     }
 
     addPlanStep(stage: QuestStage): void {
@@ -150,10 +198,12 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy {
             stage.plan = [];
         }
         stage.plan.push(this.createPlanStep());
+        this.scheduleLayout();
     }
 
     removePlanStep(stage: QuestStage, index: number): void {
         stage.plan?.splice(index, 1);
+        this.scheduleLayout();
     }
 
     addCondition(step: QuestPlanStep): void {
@@ -166,10 +216,12 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy {
 
     addAction(step: QuestPlanStep): void {
         step.actions.push(this.createAction());
+        this.scheduleLayout();
     }
 
     removeAction(step: QuestPlanStep, index: number): void {
         step.actions.splice(index, 1);
+        this.scheduleLayout();
     }
 
     createQuest(): QuestDefinition {
@@ -369,5 +421,73 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy {
         }
 
         return { columns, distances };
+    }
+
+    private bindStageGraphListeners(): void {
+        const stageGraph = this.stageGraphRef?.nativeElement;
+        if (!stageGraph) {
+            return;
+        }
+        this.stageGraphSubscriptions.push(
+            fromEvent(stageGraph, "scroll").subscribe(() =>
+                this.scheduleLayout(),
+            ),
+            fromEvent(window, "resize").subscribe(() => this.scheduleLayout()),
+        );
+    }
+
+    private scheduleLayout(): void {
+        if (this.layoutPending) {
+            return;
+        }
+        this.layoutPending = true;
+        requestAnimationFrame(() => {
+            this.layoutPending = false;
+            this.updateStageLinks();
+        });
+    }
+
+    private updateStageLinks(): void {
+        const stageGraph = this.stageGraphRef?.nativeElement;
+        const stageCards = this.stageCardRefs?.toArray() ?? [];
+        const quest = this.selectedQuest;
+        if (!stageGraph || !quest || !stageCards.length) {
+            this.connectionLines = [];
+            return;
+        }
+
+        const containerRect = stageGraph.getBoundingClientRect();
+        const stageRects = new Map<string, DOMRect>();
+        stageCards.forEach((cardRef) => {
+            const stageId = cardRef.nativeElement.dataset["stageId"];
+            if (stageId) {
+                stageRects.set(stageId, cardRef.nativeElement.getBoundingClientRect());
+            }
+        });
+
+        this.stageGraphSize = {
+            width: stageGraph.scrollWidth,
+            height: stageGraph.scrollHeight,
+        };
+
+        const lines: { x1: number; y1: number; x2: number; y2: number }[] = [];
+        for (const stage of quest.stages) {
+            const fromRect = stageRects.get(stage.id);
+            if (!fromRect) {
+                continue;
+            }
+            const fromX = fromRect.right - containerRect.left;
+            const fromY = fromRect.top - containerRect.top + fromRect.height / 2;
+            for (const targetId of this.getAdvanceStageTargets(stage)) {
+                const toRect = stageRects.get(targetId);
+                if (!toRect) {
+                    continue;
+                }
+                const toX = toRect.left - containerRect.left;
+                const toY = toRect.top - containerRect.top + toRect.height / 2;
+                lines.push({ x1: fromX, y1: fromY, x2: toX, y2: toY });
+            }
+        }
+        this.connectionLines = lines;
     }
 }
