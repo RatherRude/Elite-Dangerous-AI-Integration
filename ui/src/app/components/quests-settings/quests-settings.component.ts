@@ -62,7 +62,18 @@ export class QuestsSettingsComponent
     catalogPath: string | null = null;
     loadPending = false;
     lastLoadedAt: string | null = null;
-    connectionLines: { x1: number; y1: number; x2: number; y2: number }[] = [];
+    connectionLines: {
+        x1: number;
+        y1: number;
+        x2: number;
+        y2: number;
+        length: number;
+        angle: number;
+        loopback: boolean;
+        label: string;
+        labelX: number;
+        labelY: number;
+    }[] = [];
     stageGraphSize = { width: 0, height: 0 };
     private subscriptions: Subscription[] = [];
     private layoutPending = false;
@@ -71,9 +82,8 @@ export class QuestsSettingsComponent
     private collapseInitialized = false;
 
     @ViewChild("stageGraph") stageGraphRef?: ElementRef<HTMLElement>;
-    @ViewChildren("stageCard") stageCardRefs?: QueryList<
-        ElementRef<HTMLElement>
-    >;
+    @ViewChildren("stageCard", { read: ElementRef })
+    stageCardRefs?: QueryList<ElementRef<HTMLElement>>;
 
     constructor(private questsService: QuestsService) {}
 
@@ -367,6 +377,22 @@ export class QuestsSettingsComponent
         return [...new Set(targets)];
     }
 
+    getAdvanceStageLinks(stage: QuestStage): { targetId: string; label: string }[] {
+        const links: { targetId: string; label: string }[] = [];
+        for (const step of stage.plan ?? []) {
+            const label = this.getAdvanceStageLabel(step);
+            for (const action of step.actions ?? []) {
+                if (action.action === "advance_stage" && action.target_stage_id) {
+                    links.push({
+                        targetId: action.target_stage_id,
+                        label,
+                    });
+                }
+            }
+        }
+        return links;
+    }
+
     isLoopback(
         quest: QuestDefinition,
         fromStageId?: string,
@@ -511,6 +537,7 @@ export class QuestsSettingsComponent
         const quest = this.selectedQuest;
         if (!stageGraph || !quest || !stageCards.length) {
             this.connectionLines = [];
+            this.stageGraphSize = { width: 0, height: 0 };
             return;
         }
 
@@ -528,24 +555,131 @@ export class QuestsSettingsComponent
             height: stageGraph.scrollHeight,
         };
 
-        const lines: { x1: number; y1: number; x2: number; y2: number }[] = [];
+        const lines: {
+            x1: number;
+            y1: number;
+            x2: number;
+            y2: number;
+            length: number;
+            angle: number;
+            loopback: boolean;
+            label: string;
+            labelX: number;
+            labelY: number;
+        }[] = [];
         for (const stage of quest.stages) {
             const fromRect = stageRects.get(stage.id);
             if (!fromRect) {
                 continue;
             }
-            const fromX = fromRect.left - containerRect.left + fromRect.width / 2;
-            const fromY = fromRect.bottom - containerRect.top;
-            for (const targetId of this.getAdvanceStageTargets(stage)) {
+            const outgoingLinks = this.getAdvanceStageLinks(stage).map((link) => ({
+                ...link,
+                loopback: this.isLoopback(quest, stage.id, link.targetId),
+            }));
+            const bottomLinks = outgoingLinks.filter((link) => !link.loopback);
+            const loopbackLinks = outgoingLinks.filter((link) => link.loopback);
+
+            let bottomIndex = 0;
+            let loopbackIndex = 0;
+            for (const link of outgoingLinks) {
+                const targetId = link.targetId;
                 const toRect = stageRects.get(targetId);
                 if (!toRect) {
                     continue;
                 }
-                const toX = toRect.left - containerRect.left + toRect.width / 2;
-                const toY = toRect.top - containerRect.top;
-                lines.push({ x1: fromX, y1: fromY, x2: toX, y2: toY });
+                const scrollLeft = stageGraph.scrollLeft;
+                const scrollTop = stageGraph.scrollTop;
+                let fromX: number;
+                let fromY: number;
+                let toX: number;
+                let toY: number;
+
+                if (link.loopback) {
+                    const loopPos =
+                        (loopbackIndex + 1) / (loopbackLinks.length + 1);
+                    fromX =
+                        fromRect.right -
+                        containerRect.left +
+                        scrollLeft;
+                    fromY =
+                        fromRect.top -
+                        containerRect.top +
+                        fromRect.height * loopPos +
+                        scrollTop;
+                    toX =
+                        toRect.right -
+                        containerRect.left +
+                        scrollLeft;
+                    toY =
+                        toRect.top -
+                        containerRect.top +
+                        toRect.height / 2 +
+                        scrollTop;
+                    loopbackIndex += 1;
+                } else {
+                    const bottomPos =
+                        (bottomIndex + 1) / (bottomLinks.length + 1);
+                    fromX =
+                        fromRect.left -
+                        containerRect.left +
+                        fromRect.width * bottomPos +
+                        scrollLeft;
+                    fromY =
+                        fromRect.bottom -
+                        containerRect.top +
+                        scrollTop;
+                    toX =
+                        toRect.left -
+                        containerRect.left +
+                        toRect.width / 2 +
+                        scrollLeft;
+                    toY =
+                        toRect.top -
+                        containerRect.top +
+                        scrollTop;
+                    bottomIndex += 1;
+                }
+                const deltaX = toX - fromX;
+                const deltaY = toY - fromY;
+                const length = Math.hypot(deltaX, deltaY);
+                const angle = (Math.atan2(deltaY, deltaX) * 180) / Math.PI;
+                lines.push({
+                    x1: fromX,
+                    y1: fromY,
+                    x2: toX,
+                    y2: toY,
+                    length,
+                    angle,
+                    loopback: link.loopback,
+                    label: link.label,
+                    labelX: (fromX + toX) / 2,
+                    labelY: (fromY + toY) / 2,
+                });
             }
         }
         this.connectionLines = lines;
+    }
+
+    private getAdvanceStageLabel(step: QuestPlanStep): string {
+        const conditions = step.conditions ?? [];
+        if (!conditions.length) {
+            return "";
+        }
+        return conditions
+            .map((condition) => this.formatConditionValue(condition.value))
+            .join(" & ");
+    }
+
+    private formatConditionValue(value: unknown): string {
+        if (value === null) {
+            return "null";
+        }
+        if (value === undefined) {
+            return "";
+        }
+        if (typeof value === "string") {
+            return value;
+        }
+        return JSON.stringify(value);
     }
 }

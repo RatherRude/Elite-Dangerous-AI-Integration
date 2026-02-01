@@ -114,17 +114,27 @@
                 </div>
 
                 <div class="stage-graph" #stageGraph>
-                    <svg class="stage-links"
-                         [attr.width]="stageGraphSize.width"
-                         [attr.height]="stageGraphSize.height">
+                    <div class="stage-links"
+                         [style.width.px]="stageGraphSize.width"
+                         [style.height.px]="stageGraphSize.height">
                         @for (line of connectionLines; track lineIndex; let lineIndex = $index) {
-                            <line
-                                [attr.x1]="line.x1"
-                                [attr.y1]="line.y1"
-                                [attr.x2]="line.x2"
-                                [attr.y2]="line.y2"></line>
+                            <div class="stage-link"
+                                 [class.loopback]="line.loopback"
+                                 [style.left.px]="line.x1"
+                                 [style.top.px]="line.y1"
+                                 [style.width.px]="line.length"
+                                 [style.transform]="'rotate(' + line.angle + 'deg)'">
+                            </div>
+                            @if (line.label) {
+                                <div class="stage-link-label"
+                                     [class.loopback]="line.loopback"
+                                     [style.left.px]="line.labelX"
+                                     [style.top.px]="line.labelY">
+                                    {{ line.label }}
+                                </div>
+                            }
                         }
-                    </svg>
+                    </div>
                     @for (column of getStageColumns(selectedQuest); track $index) {
                         <div class="stage-column">
                             @for (stage of column; track stage.id) {
@@ -199,13 +209,6 @@
                                                         </div>
                                                         @for (condition of step.conditions; track conditionIndex; let conditionIndex = $index) {
                                                             <div class="condition-row condensed">
-                                                                <mat-form-field>
-                                                                    <mat-label>Source</mat-label>
-                                                                    <mat-select [(ngModel)]="condition.source">
-                                                                        <mat-option value="event">event</mat-option>
-                                                                        <mat-option value="projection">projection</mat-option>
-                                                                    </mat-select>
-                                                                </mat-form-field>
                                                                 <mat-form-field>
                                                                     <mat-label>Property</mat-label>
                                                                     <input matInput [(ngModel)]="condition.path">

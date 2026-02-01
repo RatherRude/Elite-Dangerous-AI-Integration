@@ -141,14 +141,39 @@
 
 .stage-links {
     position: absolute;
-    inset: 0;
+    top: 0;
+    left: 0;
     pointer-events: none;
-    stroke: rgba(126, 224, 129, 0.6);
-    stroke-width: 1;
+    z-index: 1;
 }
 
-.stage-links line {
-    vector-effect: non-scaling-stroke;
+.stage-link {
+    position: absolute;
+    height: 2px;
+    background: rgba(126, 224, 129, 0.7);
+    transform-origin: 0 50%;
+}
+
+.stage-link.loopback {
+    background: rgba(120, 170, 255, 0.85);
+}
+
+.stage-link-label {
+    position: absolute;
+    color: rgba(230, 255, 233, 0.9);
+    font-size: 11px;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    white-space: nowrap;
+    text-shadow: 0 0 2px rgba(20, 35, 24, 0.8);
+    background: rgba(0, 0, 0, 0.4);
+    padding: 1px 4px;
+    border-radius: 4px;
+}
+
+.stage-link-label.loopback {
+    color: rgba(185, 210, 255, 0.95);
+    text-shadow: 0 0 2px rgba(20, 35, 24, 0.7);
 }
 
 .stage-meta {
