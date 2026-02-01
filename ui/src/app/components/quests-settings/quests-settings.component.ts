@@ -91,9 +91,6 @@ export class QuestsSettingsComponent
         this.subscriptions.push(
             this.questsService.catalog$.subscribe((catalog) => {
                 this.catalog = catalog;
-                if (catalog && !this.selectedQuestId && catalog.quests.length) {
-                    this.selectedQuestId = catalog.quests[0].id;
-                }
                 if (catalog && !this.collapseInitialized) {
                     this.collapseAllStages(catalog);
                     this.collapseInitialized = true;

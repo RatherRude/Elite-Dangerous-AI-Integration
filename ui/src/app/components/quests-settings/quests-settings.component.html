@@ -51,32 +51,6 @@
         </mat-card>
 
         <div class="quest-editor">
-            @if (loadError) {
-                <mat-card class="quest-error" appearance="outlined">
-                    <mat-card-content>
-                        <p>{{ loadError }}</p>
-                        @if (catalogPath) {
-                            <p class="path">Path: {{ catalogPath }}</p>
-                        }
-                    </mat-card-content>
-                </mat-card>
-            } @else if (catalogPath || loadPending || lastLoadedAt) {
-                <div class="quest-path">
-                    @if (loadPending) {
-                        Loading quest catalog...
-                    } @else {
-                        Loaded from {{ catalogPath || "unknown path" }}
-                        @if (lastLoadedAt) {
-                            ({{ lastLoadedAt }})
-                        }
-                    }
-                </div>
-            } @else {
-                <div class="quest-path">
-                    Awaiting quest catalog response. Click Reload to request it.
-                </div>
-            }
-
             @if (selectedQuest) {
                 <mat-card class="quest-meta">
                     <mat-card-title>Quest Details</mat-card-title>
