@@ -297,6 +297,24 @@ class StatusParser:
         """Creates events specific field that has changed."""
         events = []
 
+        flags_old = old_status.get("flags") or {}
+        flags_new = new_status.get("flags") or {}
+        flags2_old = old_status.get("flags2") or {}
+        flags2_new = new_status.get("flags2") or {}
+
+        # Only emit status events when the mode is unchanged and keys exist.
+        mode_checks = (
+            (flags_old, flags_new, "InMainShip"),
+            (flags_old, flags_new, "InFighter"),
+            (flags_old, flags_new, "InSRV"),
+            (flags2_old, flags2_new, "OnFoot"),
+        )
+        for old_dict, new_dict, key in mode_checks:
+            if key not in old_dict or key not in new_dict:
+                return events
+            if old_dict[key] != new_dict[key]:
+                return events
+
         # Only in mainship
         if new_status["flags"]["InMainShip"]:
             if old_status["flags"]["LandingGearDown"] and new_status["flags"]["LandingGearDown"] == False:
@@ -425,8 +443,6 @@ class StatusParser:
             if old_status["Gravity"] is None and new_status["Gravity"] is not None and new_status["Gravity"] > 2:
                 events.append({"event": "HighGravityWarning"})
         
-
-
         return events
 
 
