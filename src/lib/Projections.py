@@ -3144,7 +3144,8 @@ class FSSSignals(Projection[FSSSignalsStateModel]):
 
 
 class InDockingRangeStateModel(BaseModel):
-    ReceivedFirstEvent: bool = True
+    ReceivedFsdMassLocked: bool = False
+    ReceivedNoFireZoneEntered: bool = False
     SkipAnnouncement: bool = False
 
 @final
@@ -3160,29 +3161,31 @@ class InDockingRange(Projection[InDockingRangeStateModel]):
             name = event.status.get("event")
 
             if name == "FsdMassLocked":
-                if self.state.ReceivedFirstEvent and not self.state.SkipAnnouncement:
+                self.state.ReceivedFsdMassLocked = True
+                if (self.state.ReceivedFsdMassLocked and self.state.ReceivedNoFireZoneEntered
+                        and not self.state.SkipAnnouncement):
                     projected_events.append(ProjectedEvent(content={"event": "InDockingRange"}))
-                else:
-                    self.state.ReceivedFirstEvent=True
+                    self.state.SkipAnnouncement = True
         if isinstance(event, GameEvent):
             name = event.content.get("event")
 
             if name == "SupercruiseExit":
                 # Ignore taxi rides for docking prompts
                 if event.content.get("Taxi", False):
-                    self.state = InDockingRangeStateModel(ReceivedFirstEvent=False, SkipAnnouncement=True)
+                    self.state = InDockingRangeStateModel(ReceivedFsdMassLocked = False, ReceivedNoFireZoneEntered = False, SkipAnnouncement = True)
                 else:
-                    self.state = InDockingRangeStateModel(ReceivedFirstEvent=False)
+                    self.state = InDockingRangeStateModel(ReceivedFsdMassLocked = False, ReceivedNoFireZoneEntered = False, SkipAnnouncement = False)
             if name == "ReceiveText":
                 if (event.content.get("Channel", "") != "npc" or event.content.get("Message", "") != "$STATION_NoFireZone_entered;"):
                     return projected_events
 
-                if self.state.ReceivedFirstEvent and not self.state.SkipAnnouncement:
+                self.state.ReceivedNoFireZoneEntered = True
+                if (self.state.ReceivedFsdMassLocked and self.state.ReceivedNoFireZoneEntered
+                        and not self.state.SkipAnnouncement):
                     projected_events.append(ProjectedEvent(content={"event": "InDockingRange"}))
-                else:
-                    self.state.ReceivedFirstEvent=True
+                    self.state.SkipAnnouncement = True
             if name in ["DockingGranted", "DockingDenied", "DockingCancelled", "DockingCanceled", "DockingTimeout", "DockingRequested"]:
-                self.state = InDockingRangeStateModel(ReceivedFirstEvent=False, SkipAnnouncement=True)
+                self.state.SkipAnnouncement = True
                  
         return projected_events
 
