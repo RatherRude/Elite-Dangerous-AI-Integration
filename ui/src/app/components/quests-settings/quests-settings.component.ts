@@ -1,13 +1,11 @@
 import {
     AfterViewInit,
-    AfterViewChecked,
     Component,
     ElementRef,
+    NgZone,
     OnDestroy,
     OnInit,
-    QueryList,
     ViewChild,
-    ViewChildren,
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
@@ -21,6 +19,9 @@ import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatSnackBarModule } from "@angular/material/snack-bar";
 import { fromEvent, Subscription } from "rxjs";
+import { DataSet } from "vis-data";
+import { Network } from "vis-network";
+import type { Edge, Node } from "vis-network";
 import {
     QuestAction,
     QuestCatalog,
@@ -52,9 +53,7 @@ type ConditionValueKind = "string" | "number" | "boolean" | "null";
     templateUrl: "./quests-settings.component.html",
     styleUrl: "./quests-settings.component.scss",
 })
-export class QuestsSettingsComponent
-    implements OnInit, OnDestroy, AfterViewInit, AfterViewChecked
-{
+export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit {
     catalog: QuestCatalog | null = null;
     rawYaml = "";
     selectedQuestId: string | null = null;
@@ -62,35 +61,34 @@ export class QuestsSettingsComponent
     catalogPath: string | null = null;
     loadPending = false;
     lastLoadedAt: string | null = null;
-    connectionLines: {
-        x1: number;
-        y1: number;
-        x2: number;
-        y2: number;
-        length: number;
-        angle: number;
-        loopback: boolean;
-        label: string;
-        labelX: number;
-        labelY: number;
-    }[] = [];
-    stageGraphSize = { width: 0, height: 0 };
+    selectedStageId: string | null = null;
+    private network: Network | null = null;
+    private nodes = new DataSet<Node>();
+    private edges = new DataSet<Edge>();
     private subscriptions: Subscription[] = [];
     private layoutPending = false;
     private stageGraphSubscriptions: Subscription[] = [];
     private collapsedStageKeys = new Set<string>();
     private collapseInitialized = false;
 
-    @ViewChild("stageGraph") stageGraphRef?: ElementRef<HTMLElement>;
-    @ViewChildren("stageCard", { read: ElementRef })
-    stageCardRefs?: QueryList<ElementRef<HTMLElement>>;
+    @ViewChild("stageNetwork") stageNetworkRef?: ElementRef<HTMLDivElement>;
 
-    constructor(private questsService: QuestsService) {}
+    constructor(
+        private questsService: QuestsService,
+        private ngZone: NgZone,
+    ) {}
 
     ngOnInit(): void {
         this.subscriptions.push(
             this.questsService.catalog$.subscribe((catalog) => {
                 this.catalog = catalog;
+                if (
+                    this.selectedQuestId &&
+                    !catalog?.quests.some((quest) => quest.id === this.selectedQuestId)
+                ) {
+                    this.selectedQuestId = null;
+                    this.selectedStageId = null;
+                }
                 if (catalog && !this.collapseInitialized) {
                     this.collapseAllStages(catalog);
                     this.collapseInitialized = true;
@@ -123,21 +121,9 @@ export class QuestsSettingsComponent
     }
 
     ngAfterViewInit(): void {
-        if (this.stageCardRefs) {
-            this.stageGraphSubscriptions.push(
-                this.stageCardRefs.changes.subscribe(() =>
-                    this.scheduleLayout(),
-                ),
-            );
-        }
+        this.initializeNetwork();
         this.bindStageGraphListeners();
         this.scheduleLayout();
-    }
-
-    ngAfterViewChecked(): void {
-        if (this.layoutPending) {
-            this.updateStageLinks();
-        }
     }
 
     ngOnDestroy(): void {
@@ -145,6 +131,10 @@ export class QuestsSettingsComponent
         this.stageGraphSubscriptions.forEach((subscription) =>
             subscription.unsubscribe(),
         );
+        if (this.network) {
+            this.network.destroy();
+            this.network = null;
+        }
     }
 
     get selectedQuest(): QuestDefinition | null {
@@ -158,8 +148,26 @@ export class QuestsSettingsComponent
         );
     }
 
+    get selectedStage(): QuestStage | null {
+        const quest = this.selectedQuest;
+        if (!quest || !this.selectedStageId) {
+            return null;
+        }
+        return quest.stages.find((stage) => stage.id === this.selectedStageId) || null;
+    }
+
     selectQuest(questId: string): void {
         this.selectedQuestId = questId;
+        this.selectedStageId = null;
+        this.scheduleLayout();
+    }
+
+    onStageIdChange(stage: QuestStage): void {
+        this.selectedStageId = stage.id;
+        this.scheduleLayout();
+    }
+
+    requestNetworkRefresh(): void {
         this.scheduleLayout();
     }
 
@@ -180,6 +188,7 @@ export class QuestsSettingsComponent
         const newQuest = this.createQuest();
         this.catalog.quests = [...this.catalog.quests, newQuest];
         this.selectedQuestId = newQuest.id;
+        this.selectedStageId = null;
         this.collapseStagesForQuest(newQuest);
         this.scheduleLayout();
     }
@@ -193,6 +202,7 @@ export class QuestsSettingsComponent
         if (removed?.id === this.selectedQuestId) {
             this.selectedQuestId =
                 this.catalog.quests[0]?.id ?? null;
+            this.selectedStageId = null;
         }
         this.scheduleLayout();
     }
@@ -213,6 +223,9 @@ export class QuestsSettingsComponent
         const collapseKey = this.getStageCollapseKey(quest.id, removedStageId);
         if (collapseKey) {
             this.collapsedStageKeys.delete(collapseKey);
+        }
+        if (removedStageId && removedStageId === this.selectedStageId) {
+            this.selectedStageId = null;
         }
         this.scheduleLayout();
     }
@@ -505,14 +518,7 @@ export class QuestsSettingsComponent
     }
 
     private bindStageGraphListeners(): void {
-        const stageGraph = this.stageGraphRef?.nativeElement;
-        if (!stageGraph) {
-            return;
-        }
         this.stageGraphSubscriptions.push(
-            fromEvent(stageGraph, "scroll").subscribe(() =>
-                this.scheduleLayout(),
-            ),
             fromEvent(window, "resize").subscribe(() => this.scheduleLayout()),
         );
     }
@@ -524,137 +530,133 @@ export class QuestsSettingsComponent
         this.layoutPending = true;
         requestAnimationFrame(() => {
             this.layoutPending = false;
-            this.updateStageLinks();
+            this.initializeNetwork();
+            this.refreshNetwork();
         });
     }
 
-    private updateStageLinks(): void {
-        const stageGraph = this.stageGraphRef?.nativeElement;
-        const stageCards = this.stageCardRefs?.toArray() ?? [];
+    private initializeNetwork(): void {
+        if (this.network) {
+            return;
+        }
+        const container = this.stageNetworkRef?.nativeElement;
+        if (!container) {
+            return;
+        }
+        this.network = new Network(
+            container,
+            { nodes: this.nodes, edges: this.edges },
+            {
+                layout: {
+                    hierarchical: {
+                        direction: "UD",
+                        sortMethod: "directed",
+                        levelSeparation: 160,
+                        nodeSpacing: 220,
+                        treeSpacing: 260,
+                        blockShifting: true,
+                        edgeMinimization: true,
+                        parentCentralization: true,
+                    },
+                },
+                physics: { enabled: false },
+                nodes: {
+                    shape: "box",
+                    margin: { top: 8, right: 8, bottom: 8, left: 8 },
+                    color: {
+                        background: "rgba(32, 32, 32, 0.9)",
+                        border: "rgba(70, 70, 70, 0.9)",
+                    },
+                    font: { color: "#f0f0f0", size: 12 },
+                    widthConstraint: { maximum: 220 },
+                },
+                edges: {
+                    arrows: { to: { enabled: true, scaleFactor: 0.7 } },
+                    color: { color: "rgba(126, 224, 129, 0.7)" },
+                    smooth: {
+                        enabled: true,
+                        type: "cubicBezier",
+                        forceDirection: "vertical",
+                        roundness: 0.3,
+                    },
+                    font: {
+                        color: "rgba(126, 224, 129, 0.9)",
+                        size: 11,
+                        strokeWidth: 3,
+                        strokeColor: "rgba(20, 35, 24, 0.8)",
+                    },
+                },
+                interaction: {
+                    hover: true,
+                    multiselect: false,
+                },
+            },
+        );
+        this.network.on(
+            "click",
+            (params: { nodes: Array<string | number> }) => {
+            const [nodeId] = params.nodes;
+            this.ngZone.run(() => {
+                this.selectedStageId = nodeId ? String(nodeId) : null;
+            });
+            },
+        );
+    }
+
+    private refreshNetwork(): void {
         const quest = this.selectedQuest;
-        if (!stageGraph || !quest || !stageCards.length) {
-            this.connectionLines = [];
-            this.stageGraphSize = { width: 0, height: 0 };
+        if (!this.network || !quest) {
+            this.nodes.clear();
+            this.edges.clear();
             return;
         }
 
-        const containerRect = stageGraph.getBoundingClientRect();
-        const stageRects = new Map<string, DOMRect>();
-        stageCards.forEach((cardRef) => {
-            const stageId = cardRef.nativeElement.dataset["stageId"];
-            if (stageId) {
-                stageRects.set(stageId, cardRef.nativeElement.getBoundingClientRect());
-            }
-        });
+        const nodes: Node[] = quest.stages.map((stage) => ({
+            id: stage.id,
+            label: stage.description || stage.id,
+        }));
+        const edges: Edge[] = [];
 
-        this.stageGraphSize = {
-            width: stageGraph.scrollWidth,
-            height: stageGraph.scrollHeight,
-        };
-
-        const lines: {
-            x1: number;
-            y1: number;
-            x2: number;
-            y2: number;
-            length: number;
-            angle: number;
-            loopback: boolean;
-            label: string;
-            labelX: number;
-            labelY: number;
-        }[] = [];
+        let edgeIndex = 0;
         for (const stage of quest.stages) {
-            const fromRect = stageRects.get(stage.id);
-            if (!fromRect) {
-                continue;
-            }
-            const outgoingLinks = this.getAdvanceStageLinks(stage).map((link) => ({
-                ...link,
-                loopback: this.isLoopback(quest, stage.id, link.targetId),
-            }));
-            const bottomLinks = outgoingLinks.filter((link) => !link.loopback);
-            const loopbackLinks = outgoingLinks.filter((link) => link.loopback);
-
-            let bottomIndex = 0;
-            let loopbackIndex = 0;
-            for (const link of outgoingLinks) {
-                const targetId = link.targetId;
-                const toRect = stageRects.get(targetId);
-                if (!toRect) {
+            for (const link of this.getAdvanceStageLinks(stage)) {
+                if (!this.getStageById(quest, link.targetId)) {
                     continue;
                 }
-                const scrollLeft = stageGraph.scrollLeft;
-                const scrollTop = stageGraph.scrollTop;
-                let fromX: number;
-                let fromY: number;
-                let toX: number;
-                let toY: number;
-
-                if (link.loopback) {
-                    const loopPos =
-                        (loopbackIndex + 1) / (loopbackLinks.length + 1);
-                    fromX =
-                        fromRect.right -
-                        containerRect.left +
-                        scrollLeft;
-                    fromY =
-                        fromRect.top -
-                        containerRect.top +
-                        fromRect.height * loopPos +
-                        scrollTop;
-                    toX =
-                        toRect.right -
-                        containerRect.left +
-                        scrollLeft;
-                    toY =
-                        toRect.top -
-                        containerRect.top +
-                        toRect.height / 2 +
-                        scrollTop;
-                    loopbackIndex += 1;
-                } else {
-                    const bottomPos =
-                        (bottomIndex + 1) / (bottomLinks.length + 1);
-                    fromX =
-                        fromRect.left -
-                        containerRect.left +
-                        fromRect.width * bottomPos +
-                        scrollLeft;
-                    fromY =
-                        fromRect.bottom -
-                        containerRect.top +
-                        scrollTop;
-                    toX =
-                        toRect.left -
-                        containerRect.left +
-                        toRect.width / 2 +
-                        scrollLeft;
-                    toY =
-                        toRect.top -
-                        containerRect.top +
-                        scrollTop;
-                    bottomIndex += 1;
-                }
-                const deltaX = toX - fromX;
-                const deltaY = toY - fromY;
-                const length = Math.hypot(deltaX, deltaY);
-                const angle = (Math.atan2(deltaY, deltaX) * 180) / Math.PI;
-                lines.push({
-                    x1: fromX,
-                    y1: fromY,
-                    x2: toX,
-                    y2: toY,
-                    length,
-                    angle,
-                    loopback: link.loopback,
-                    label: link.label,
-                    labelX: (fromX + toX) / 2,
-                    labelY: (fromY + toY) / 2,
+                const loopback = this.isLoopback(quest, stage.id, link.targetId);
+                const edgeColor = loopback
+                    ? "rgba(120, 170, 255, 0.85)"
+                    : "rgba(126, 224, 129, 0.7)";
+                edges.push({
+                    id: `edge-${edgeIndex += 1}`,
+                    from: stage.id,
+                    to: link.targetId,
+                    label: link.label || undefined,
+                    arrows: { to: { enabled: true, scaleFactor: 0.7 } },
+                    color: {
+                        color: edgeColor,
+                    },
+                    font: {
+                        color: loopback
+                            ? "rgba(170, 200, 255, 0.95)"
+                            : "rgba(126, 224, 129, 0.9)",
+                        size: 11,
+                        strokeWidth: 3,
+                        strokeColor: "rgba(20, 35, 24, 0.8)",
+                    },
+                    smooth: loopback
+                        ? { enabled: true, type: "curvedCW", roundness: 0.35 }
+                        : { enabled: true, type: "cubicBezier", roundness: 0.2 },
                 });
             }
         }
-        this.connectionLines = lines;
+
+        this.nodes.clear();
+        this.edges.clear();
+        this.nodes.add(nodes);
+        this.edges.add(edges);
+        this.network.setData({ nodes: this.nodes, edges: this.edges });
+        this.network.fit({ animation: false });
     }
 
     private getAdvanceStageLabel(step: QuestPlanStep): string {
