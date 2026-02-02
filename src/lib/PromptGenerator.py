@@ -3109,7 +3109,7 @@ class PromptGenerator:
 
             altitude = current_status.get('Altitude', None)
             if altitude:
-                location_info["Altitude"] = f"{altitude} km"
+                location_info["Altitude"] = f"{altitude}m"
 
             location_info = {
                 key: value for key, value in location_info.items() if value is not None and key not in ['SystemAddress', 'StarAddress', 'StarPos']
