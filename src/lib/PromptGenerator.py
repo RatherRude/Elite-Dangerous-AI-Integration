@@ -2829,6 +2829,7 @@ class PromptGenerator:
         status_entries: list[tuple[str, Any]] = []
 
         current_status = get_state_dict(projected_states, 'CurrentStatus')
+        status_fuel = current_status.get('Fuel')
         gravity = current_status.get('Gravity', None)
         if gravity:
             status_entries.append(("Gravity", gravity))
@@ -2864,6 +2865,9 @@ class PromptGenerator:
         ship_display.pop('ReportedMaximumJumpRange', None)
         ship_display.pop('FuelReservoirCapacity', None)
         ship_display.pop('FuelReservoir', None)
+        if not status_fuel:
+            ship_display.pop('FuelMain', None)
+            ship_display.pop('FuelMainCapacity', None)
         ship_display.pop('UnladenMass', None)
         ship_display.pop('ShipCargo', None)
         ship_display.pop('IsMiningShip', None)
