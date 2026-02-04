@@ -11,6 +11,7 @@
     <div class="overlay-character" [ngClass]="action">
         <div class="overlay-pngtuber" 
              [ngClass]="action"
+             [style.width.px]="250 * avatarScale"
              *ngIf="avatarShow"
              #pngtuberElement></div>
         <div class="overlay-chat" *ngIf="chatShow">
