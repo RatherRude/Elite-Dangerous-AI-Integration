@@ -29,6 +29,7 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
   // Overlay display settings
   avatarPosition: 'left' | 'right' = 'right';
   avatarScale: number = 1;
+  readonly avatarBaseWidth = 250;
   avatarShow: boolean = true;
   chatShow: boolean = true;
   private isInitialized: boolean = false;
@@ -155,7 +156,7 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
   }
 
   private setAvatarDisplayFromPosition(position: Config['overlay_position'] | string): void {
-    const [side, size] = position.split("-");
+    const [side, size = 'large'] = position.split("-");
     this.avatarPosition = side === 'left' ? 'left' : 'right';
     switch (size) {
       case 'small':
