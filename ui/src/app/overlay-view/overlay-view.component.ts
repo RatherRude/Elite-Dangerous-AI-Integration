@@ -160,10 +160,10 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     this.avatarPosition = side === 'left' ? 'left' : 'right';
     switch (size) {
       case 'small':
-        this.avatarScale = 0.33;
+        this.avatarScale = 0.5;
         break;
       case 'medium':
-        this.avatarScale = 0.66;
+        this.avatarScale = 0.75;
         break;
       default:
         this.avatarScale = 1;
