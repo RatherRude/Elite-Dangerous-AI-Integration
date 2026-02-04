@@ -155,7 +155,7 @@ export interface Config {
     overlay_show_avatar: boolean;
     overlay_show_hud: boolean;
     overlay_show_chat: boolean;
-    overlay_position: "left" | "right";
+    overlay_position: "left" | "right" | "left-medium" | "left-small" | "right-medium" | "right-small";
     overlay_screen_id: number;
 
     enable_remote_tracing?: boolean;

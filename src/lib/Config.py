@@ -475,7 +475,7 @@ class Config(TypedDict):
     overlay_show_avatar: bool
     overlay_show_hud: bool
     overlay_show_chat: bool
-    overlay_position: Literal['left', 'right']
+    overlay_position: Literal['left', 'right', 'left-medium', 'left-small', 'right-medium', 'right-small']
     overlay_screen_id: int
     
     enable_remote_tracing: bool
