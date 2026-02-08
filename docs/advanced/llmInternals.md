@@ -165,6 +165,13 @@ However, providers like OpenRouter and local runners like LM Studio often interv
 
 This forced modification often degrades quality, as models trained to understand distinct message turns may interpret the flattened text differently than intended, potentially leading to confusion or loss of context between separate instructions.
 
+### Thinking Tokens
+
+Some modern models (especially "reasoning" models) generate "thinking tokens" or a "chain of thought" before producing the final answer. Correctly handling these require the inference provider to parse the output and separate the reasoning part from the actual response.
+
+- **Standard Behavior:** The provider splits the response, often hiding the reasoning or providing it in a separate field, delivering only the clean answer as the message content.
+- **Inconsistent Handling (e.g., LM Studio):** Some runners like LM Studio may treat the entire raw output stream as the message content. This leads to the internal "thinking" process leaking into the final response string, which can break downstream applications expecting clean text, or in case of COVAS:NEXT, leads to long thinking traces being read out loud by the TTS system in addition to the final answer, which causes duplication and a really long response time.
+
 ## Game Events and State
 
 In order to make the AI understand the context of a game, we need to provide it with the current state of the game and the events that are happening in the game. This is done by adding a special instruction to the prompt that tells the AI about the game state and the events that are happening in the game. The AI can then use this information to generate responses that are relevant to the game.
