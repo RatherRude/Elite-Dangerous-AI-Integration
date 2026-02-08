@@ -141,6 +141,8 @@ There are three requirements for reliable tool-use:
 2. ✅ The model has to be trained for tool-use and should produce correct tool-calls.
 3. ✅ The model provider should verify the tool-calls to ensure that they are correct.
 
+Let's see how different providers stack up against these requirements:
+
 - ✅✅✅ **OpenAI** \
   openai.com checks all three boxes, they support tool-use in their API, they have models that are very well trained for tool-use and they have a verification system in place that checks if the model output is a valid tool-call and even guarantee 100% success rate for tool-use in strict-mode. [Docs.](https://platform.openai.com/docs/guides/function-calling)
 - ✅✅❌ **Anthropic** and **Mistral** \
