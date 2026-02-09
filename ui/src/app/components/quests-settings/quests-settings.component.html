@@ -205,6 +205,7 @@
                                                             <mat-option value="log">log</mat-option>
                                                             <mat-option value="advance_stage">advance_stage</mat-option>
                                                             <mat-option value="set_active">set_active</mat-option>
+                                                            <mat-option value="play_sound">play_sound</mat-option>
                                                         </mat-select>
                                                     </mat-form-field>
 
@@ -242,6 +243,19 @@
                                                             [(ngModel)]="action.active">
                                                             Active
                                                         </mat-slide-toggle>
+                                                    }
+                                                    @if (action.action === 'play_sound') {
+                                                        <mat-form-field>
+                                                            <mat-label>URL</mat-label>
+                                                            <input matInput [(ngModel)]="action.url"
+                                                                   placeholder="https://example.com/sound.mp3">
+                                                        </mat-form-field>
+                                                        <mat-form-field>
+                                                            <mat-label>Transcription</mat-label>
+                                                            <textarea matInput rows="2"
+                                                                      [(ngModel)]="action.transcription"
+                                                                      placeholder="Text description of the sound"></textarea>
+                                                        </mat-form-field>
                                                     }
 
                                                     <button mat-icon-button color="warn"

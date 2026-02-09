@@ -127,9 +127,10 @@ class QuestCatalogManager:
                                 "log",
                                 "advance_stage",
                                 "set_active",
+                                "play_sound",
                             ):
                                 errors.append(
-                                    f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' action #{action_index + 1} action must be log, advance_stage, or set_active.",
+                                    f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' action #{action_index + 1} action must be log, advance_stage, set_active, or play_sound.",
                                 )
                                 continue
                             if action_type == "log" and "message" not in action:
@@ -149,6 +150,20 @@ class QuestCatalogManager:
                             ):
                                 errors.append(
                                     f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' action #{action_index + 1} missing quest_id.",
+                                )
+                            if (
+                                action_type == "play_sound"
+                                and "url" not in action
+                            ):
+                                errors.append(
+                                    f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' action #{action_index + 1} missing url.",
+                                )
+                            if (
+                                action_type == "play_sound"
+                                and "transcription" not in action
+                            ):
+                                errors.append(
+                                    f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' action #{action_index + 1} missing transcription.",
                                 )
         return errors
 

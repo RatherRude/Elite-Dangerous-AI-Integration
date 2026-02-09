@@ -35,11 +35,13 @@ export interface QuestCondition {
 }
 
 export interface QuestAction {
-    action: "log" | "advance_stage" | "set_active";
+    action: "log" | "advance_stage" | "set_active" | "play_sound";
     message?: string;
     target_stage_id?: string;
     quest_id?: string;
     active?: boolean;
+    url?: string;
+    transcription?: string;
 }
 
 export interface GetQuestCatalogMessage extends BaseCommand {

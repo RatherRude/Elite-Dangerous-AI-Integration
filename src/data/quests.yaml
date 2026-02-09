@@ -1,9 +1,9 @@
-version: '0.1'
+version: '1.3'
 quests:
 - id: ebreach_snack_run
   title: E-Breach Emergency
   description: Your ship AI insists you must buy an E-Breach immediately.
-  active: false
+  active: true
   stages:
   - id: find_anarchy
     description: Find an anarchy system.
@@ -19,8 +19,10 @@ quests:
         operator: equals
         value: $GAlAXY_MAP_INFO_state_anarchy;
       actions:
-      - action: log
+      - action: play_sound
         message: Anarchy system confirmed. Find a station.
+        url: https://www.musitek.com/Public/Music/PeterDonaldson.mp3
+        transcription: 'The speakers suddenly say: What does the fox say?'
       - action: advance_stage
         target_stage_id: find_station
   - id: find_station
