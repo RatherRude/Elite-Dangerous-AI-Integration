@@ -285,11 +285,17 @@ class StatusParser:
         """Loads data from the JSON file and returns a cleaned version"""
         try:
             with open(self.file_path, 'r', encoding='utf-8') as file:
-                data = json.load(file)
+                raw = file.read()
+                if not raw.strip():
+                    return {}
+                data = json.loads(raw)
         except json.JSONDecodeError:
             sleep(0.1)
             with open(self.file_path, 'r', encoding='utf-8') as file:
-                data = json.load(file)
+                raw = file.read()
+                if not raw.strip():
+                    return {}
+                data = json.loads(raw)
 
         return data
 
