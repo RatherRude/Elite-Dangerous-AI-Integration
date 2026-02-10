@@ -1,6 +1,7 @@
 from pydantic import ValidationError
 import hashlib
 import inspect
+import json
 import traceback
 from abc import ABC, abstractmethod
 from datetime import timezone, datetime
@@ -170,6 +171,11 @@ class EventManager:
     def add_assistant_acting(self, processed_at: float):
         event = ConversationEvent(kind='assistant_acting', content='')
         self.short_term_memory.replied_before(processed_at)
+        self.incoming.put(event)
+
+    def add_play_sound(self, url: str, transcription: str):
+        content = json.dumps({"url": url, "transcription": transcription})
+        event = ConversationEvent(kind='play_sound', content=content)
         self.incoming.put(event)
         # log('debug', event)
 

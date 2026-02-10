@@ -12,6 +12,7 @@ EventKind = Literal[
     'assistant',
     'assistant_acting',
     'assistant_completed',
+    'play_sound',
     'tool',
     'status',
     'projected',
@@ -27,6 +28,7 @@ ConversationEventKind = Literal[
     'assistant',
     'assistant_acting',
     'assistant_completed',
+    'play_sound',
 ]
 
 

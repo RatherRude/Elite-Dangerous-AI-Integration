@@ -2211,6 +2211,19 @@ class PromptGenerator:
             return f"{self.commander_name} took the third and final biological sample."
         if event_name == 'NoScoopableStars':
             return f"{self.commander_name}'s fuel is insufficient to reach the destination and there are not enough scoopable stars on the route. Alternative route required."
+        if event_name == 'HGECandidateFound':
+            hge_event = cast(Dict[str, Any], content or {})
+            star_system = hge_event.get('StarSystem', 'this system')
+            materials = hge_event.get('HGECandidateMaterials', [])
+
+            if not isinstance(materials, list):
+                materials = []
+
+            if materials:
+                material_text = ', '.join(str(m) for m in materials)
+                return f"{self.commander_name} has entered HGE candidate system {star_system}. Potential high-grade materials available: {material_text}."
+
+            return f"{self.commander_name} has entered HGE candidate system {star_system}."
         if event_name == 'RememberLimpets':
             return f"{self.commander_name} has cargo capacity available to buy limpets. Remember to buy more."
         if event_name == 'BountyScanned':

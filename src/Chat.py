@@ -82,6 +82,7 @@ from lib.StatusParser import StatusParser
 from lib.EDJournal import *
 from lib.EventManager import EventManager
 from lib.UI import send_message, emit_message
+from lib.QuestCatalogManager import QuestCatalogManager
 from lib.SystemDatabase import SystemDatabase
 from lib.Database import QuestDatabase
 from lib.Assistant import Assistant
@@ -309,6 +310,9 @@ class Chat:
             prompt_generator=self.prompt_generator,
             embeddingModel=self.embeddingModel,
             disabled_game_events=disabled_events,
+        )
+        self.quest_catalog_manager = QuestCatalogManager(
+            reload_callback=self.assistant._load_quests,
         )
         self.is_replying = False
         self.listening = False
@@ -587,6 +591,7 @@ class Chat:
                 return stage
         return None
 
+
     def get_quest_overview(self) -> dict[str, Any]:
         try:
             quest_states = [
@@ -841,6 +846,10 @@ def read_stdin(chat: Chat):
                     "quests",
                     data=results,
                 )
+            if data.get("type") == "get_quest_catalog":
+                results = chat.quest_catalog_manager.get_catalog()
+            if data.get("type") == "save_quest_catalog":
+                chat.quest_catalog_manager.save_catalog(data.get("data"))
             if data.get("type") == "init_overlay":
                 emit_message("running_config", config=config)
             if data.get("type") == "web_search":
@@ -883,6 +892,7 @@ if __name__ == "__main__":
         plugin_manager.load_plugins()
         log("debug", "Registering plugin settings for the UI...")
         plugin_manager.register_settings()
+        quest_catalog_manager = QuestCatalogManager()
         while True:
             # print(f"Waiting for command...")
             line = sys.stdin.readline().strip()
@@ -918,9 +928,11 @@ if __name__ == "__main__":
                     EventManager.clear_history()
                     # ActionManager.clear_action_cache()
                 if data.get("type") == "init_overlay":
-                    update_config(
-                        config, {}
-                    )  # Ensure that the overlay gets a new config on start
+                    update_config(config, {}) # Ensure that the overlay gets a new config on start
+                if data.get("type") == "get_quest_catalog":
+                    quest_catalog_manager.get_catalog()
+                if data.get("type") == "save_quest_catalog":
+                    quest_catalog_manager.save_catalog(data.get("data"))
                 if data.get("type") == "enable_remote_tracing":
                     from lib.Logger import enable_remote_tracing
 

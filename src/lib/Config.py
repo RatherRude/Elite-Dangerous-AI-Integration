@@ -296,6 +296,7 @@ game_events = {
     'PowerplayVoucher': False,
 
     # Exploration
+    'HGECandidateFound': False,
     'CodexEntry': False,
     'DiscoveryScan': False,
     'Scan': False,
