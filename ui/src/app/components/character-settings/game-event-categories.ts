@@ -319,6 +319,7 @@ export const GameEventCategories: Record<string, string[]> = {
         "Scanned",
         "USSDrop",
         "NoScoopableStars",
+        "HGECandidateFound",
     ],
     'Missions & Quests': [
         "QuestEvent",
