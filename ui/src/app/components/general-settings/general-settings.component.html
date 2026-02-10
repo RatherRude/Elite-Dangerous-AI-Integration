@@ -109,8 +109,12 @@
                     <mat-label>Position</mat-label>
                     <mat-select [(ngModel)]="config.overlay_position"
                                 (ngModelChange)="onConfigChange({overlay_position: $event})">
-                        <mat-option value="left">Left</mat-option>
-                        <mat-option value="right">Right</mat-option>
+                        <mat-option value="left">Left (Large)</mat-option>
+                        <mat-option value="left-medium">Left (Medium)</mat-option>
+                        <mat-option value="left-small">Left (Small)</mat-option>
+                        <mat-option value="right">Right (Large)</mat-option>
+                        <mat-option value="right-medium">Right (Medium)</mat-option>
+                        <mat-option value="right-small">Right (Small)</mat-option>
                     </mat-select>
                 </mat-form-field>
                 
