@@ -10,6 +10,7 @@ import sys
 from openai import OpenAI, APIError
 
 from .Logger import log
+from .UI import emit_message
 
 # List of game events categorized (legacy boolean defaults)
 game_events = {
@@ -494,6 +495,9 @@ def get_ed_journals_path(config: Config) -> str:
         path = os.path.abspath(config['ed_journal_path'])
         return path
 
+    if platform.system() != "Windows":
+        return os.getcwd()
+
     from . import WindowsKnownPaths as winpaths
     saved_games = winpaths.get_path(winpaths.FOLDERID.SavedGames, winpaths.UserHandle.current)
     if saved_games is None:
@@ -524,6 +528,9 @@ def get_asset_path(filename: str) -> str:
 
 
 def migrate(data: dict) -> dict:
+    legacy_game_events = data.get('game_events', game_events)
+    if not isinstance(legacy_game_events, dict) or any(isinstance(value, dict) for value in legacy_game_events.values()):
+        legacy_game_events = game_events
     # Migrate vision_var to vision_provider
     if 'vision_var' in data and not data.get('vision_var'):
         data['vision_provider'] = 'none'
@@ -576,7 +583,7 @@ def migrate(data: dict) -> dict:
                 "tts_voice": 'en-US-AvaMultilingualNeural' if data.get('tts_voice', 'en-US-AvaMultilingualNeural') == 'en-GB-SoniaNeural' else data.get('tts_voice', 'en-US-AvaMultilingualNeural'),
                 "tts_speed": data.get('tts_speed', "1.2"),
                 "tts_prompt": data.get('tts_prompt', ""),
-                "event_reactions": default_event_reactions,
+                "event_reactions": to_event_reactions(legacy_game_events, ["Idle"]),
                 "event_reaction_enabled_var": data.get('event_reaction_enabled_var', True),
                 "react_to_text_local_var": data.get('react_to_text_local_var', True),
                 "react_to_text_starsystem_var": data.get('react_to_text_starsystem_var', True),
@@ -598,7 +605,7 @@ def migrate(data: dict) -> dict:
         if 'game_events' in data:
             for character in data['characters']:
                 legacy_disabled = character.get('disabled_game_events', [])
-                character['event_reactions'] = to_event_reactions(data['game_events'], legacy_disabled)
+                character['event_reactions'] = to_event_reactions(legacy_game_events, legacy_disabled)
                 character.pop('game_events', None)
                 character.pop('disabled_game_events', None)
             data.pop('game_events', None)
@@ -993,7 +1000,7 @@ def assign_ptt(config: Config, controller_manager):
     semaphore.acquire()
     controller_manager.listen_hotkey(on_hotkey_detected)
     semaphore.acquire()
-    print(json.dumps({"type": "config", "config": config}) + '\n')
+    emit_message("config", config=config)
     save_config(config)
     return config
 
@@ -1216,11 +1223,11 @@ def validate_config(config: Config) -> Config | None:
     # Send validation result message
     if not validation_result['skipped']:
         if validation_result['message']:
-            print(json.dumps({
-                "type": "model_validation",
-                "success": validation_result['success'],
-                "message": validation_result['message']
-            }) + '\n', flush=True)
+            emit_message(
+                "model_validation",
+                success=validation_result['success'],
+                message=validation_result['message'],
+            )
         
         if validation_result['success']:
             return validation_result['config']
@@ -1522,7 +1529,7 @@ def update_config(config: Config, data: dict) -> Config:
 
     # Now merge and save as before
     new_config = cast(Config, {**config, **data})
-    print(json.dumps({"type": "config", "config": new_config}) + '\n')
+    emit_message("config", config=new_config)
     save_config(new_config)
     return new_config
 
@@ -1546,7 +1553,7 @@ def update_event_config(config: Config, section: str, event: str, value: str) ->
         # Update the event with clean name
         config["event_reactions"][event] = value
     
-    print(json.dumps({"type": "config", "config": config}) + '\n', flush=True)
+    emit_message("config", config=config)
     save_config(config)
     return config
 
@@ -1562,7 +1569,7 @@ def reset_game_events(config: Config, character_index: int|None=None) -> Config:
     else:
         log('warn', 'Trying to reset character events that does exist')
     
-    print(json.dumps({"type": "config", "config": config}) + '\n', flush=True)
+    emit_message("config", config=config)
     save_config(config)
     return config
 
