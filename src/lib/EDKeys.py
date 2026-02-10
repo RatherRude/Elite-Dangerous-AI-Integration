@@ -153,6 +153,12 @@ class EDKeys:
         self.latest_bindings_mtime = None
         self.missing_keys = []
         self.unsupported_keys = []
+        self.latest_start_file = None
+        self.latest_start_mtime = None
+        self.latest_start_values: list[str] = []
+        self.start_values_mismatch = False
+        self.selected_start_profile = None
+        self.start_profile_bindings_missing = False
         self.watch_thread = threading.Thread(target=self._watch_bindings_thread, daemon=True)
         self.watch_thread.start()
         
@@ -174,7 +180,22 @@ class EDKeys:
                     if collision_candidate and collision_candidate != key and binding == candidate_bind:
                         collisions.append([key, collision_candidate])
 
-        print(json.dumps({"type": "keybinds", "missing": self.missing_keys, "collisions": collisions, "unsupported": self.unsupported_keys})+'\n', flush=True)
+        start_mismatch = None
+        if self.start_values_mismatch:
+            start_mismatch = {
+                "file": self.latest_start_file,
+                "values": self.latest_start_values
+            }
+
+        print(json.dumps({
+            "type": "keybinds",
+            "missing": self.missing_keys,
+            "collisions": collisions,
+            "unsupported": self.unsupported_keys,
+            "start_mismatch": start_mismatch,
+            "start_profile": self.selected_start_profile,
+            "start_profile_bindings_missing": self.start_profile_bindings_missing
+        })+'\n', flush=True)
 
     def get_bindings(self) -> dict[str, Any]:
         """Returns a dict struct with the direct input equivalent of the necessary elite keybindings"""
@@ -245,14 +266,83 @@ class EDKeys:
         try:
             list_of_bindings = [join(path_bindings, f) for f in listdir(path_bindings) if
                                 isfile(join(path_bindings, f)) and f.endswith('.binds')]
-        except FileNotFoundError as e:
+        except FileNotFoundError:
             return None, None
 
         if not list_of_bindings:
             return None, None
-        latest_bindings = max(list_of_bindings, key=getmtime)
+
+        start_info = self.get_latest_start_profile(path_bindings)
+        start_profile = start_info["profile_name"] if start_info else None
+
+        self.selected_start_profile = start_profile
+        self.start_profile_bindings_missing = False
+
+        if start_profile:
+            matching_bindings = []
+            normalized_prefix = start_profile.lower()
+            for binding_path in list_of_bindings:
+                filename = os.path.basename(binding_path).lower()
+                if filename.startswith(f"{normalized_prefix}.") and filename.endswith(".binds"):
+                    matching_bindings.append(binding_path)
+
+            if matching_bindings:
+                latest_bindings = max(matching_bindings, key=getmtime)
+            else:
+                self.start_profile_bindings_missing = True
+                latest_bindings = max(list_of_bindings, key=getmtime)
+        else:
+            latest_bindings = max(list_of_bindings, key=getmtime)
 
         return latest_bindings, getmtime(latest_bindings)
+
+    def get_latest_start_profile(self, path_bindings: str):
+        try:
+            list_of_start_files = [join(path_bindings, f) for f in listdir(path_bindings) if
+                                   isfile(join(path_bindings, f)) and f.endswith('.start')]
+        except FileNotFoundError:
+            self.latest_start_file = None
+            self.latest_start_mtime = None
+            self.latest_start_values = []
+            self.start_values_mismatch = False
+            return None
+
+        if not list_of_start_files:
+            self.latest_start_file = None
+            self.latest_start_mtime = None
+            self.latest_start_values = []
+            self.start_values_mismatch = False
+            return None
+
+        latest_start = max(list_of_start_files, key=getmtime)
+        latest_start_mtime = getmtime(latest_start)
+
+        lines = []
+        try:
+            with open(latest_start, 'r', encoding='utf-8', errors='ignore') as file:
+                lines = [line.strip() for line in file.readlines()]
+        except OSError:
+            self.latest_start_file = latest_start
+            self.latest_start_mtime = latest_start_mtime
+            self.latest_start_values = []
+            self.start_values_mismatch = True
+            return None
+
+        first_four = lines[:4]
+        all_same = len(first_four) == 4 and len(set(first_four)) == 1 and first_four[0] != ""
+
+        self.latest_start_file = latest_start
+        self.latest_start_mtime = latest_start_mtime
+        self.latest_start_values = first_four
+        self.start_values_mismatch = not all_same
+
+        if all_same:
+            return {
+                "profile_name": first_four[0],
+                "start_file": latest_start
+            }
+
+        return None
 
     def send_key(self, type: Literal['Up', 'Down'], key_name:str):
         key = self.keymap.get(key_name)
@@ -325,8 +415,15 @@ class EDKeys:
     def _watch_bindings(self):
         """Monitors the keybindings file for changes and reloads when necessary"""
         while True:
+            previous_start_file = self.latest_start_file
+            previous_start_mtime = self.latest_start_mtime
             latest_bindings, mtime = self.get_latest_keybinds()
-            if latest_bindings != self.latest_bindings_file or mtime != self.latest_bindings_mtime:
+            start_changed = (
+                previous_start_file != self.latest_start_file
+                or previous_start_mtime != self.latest_start_mtime
+            )
+
+            if latest_bindings != self.latest_bindings_file or mtime != self.latest_bindings_mtime or start_changed:
                 self.latest_bindings_file = latest_bindings
                 self.latest_bindings_mtime = mtime
                 self.keys = self.get_bindings()
