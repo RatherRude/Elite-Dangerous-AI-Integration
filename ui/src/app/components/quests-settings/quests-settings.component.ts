@@ -35,6 +35,10 @@ import {
 } from "../../services/quests.service";
 
 type ConditionValueKind = "string" | "number" | "boolean" | "null";
+type StageTransitionItem = {
+    conditionLabel: string;
+    targets: string[];
+};
 
 @Component({
     selector: "app-quests-settings",
@@ -395,22 +399,6 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
         return [...new Set(targets)];
     }
 
-    getAdvanceStageLinks(stage: QuestStage): { targetId: string; label: string }[] {
-        const links: { targetId: string; label: string }[] = [];
-        for (const step of stage.plan ?? []) {
-            const label = this.getAdvanceStageLabel(step);
-            for (const action of step.actions ?? []) {
-                if (action.action === "advance_stage" && action.target_stage_id) {
-                    links.push({
-                        targetId: action.target_stage_id,
-                        label,
-                    });
-                }
-            }
-        }
-        return links;
-    }
-
     isLoopback(
         quest: QuestDefinition,
         fromStageId?: string,
@@ -557,11 +545,11 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
             {
                 layout: {
                     hierarchical: {
-                        direction: "UD",
+                        direction: "LR",
                         sortMethod: "directed",
-                        levelSeparation: 160,
-                        nodeSpacing: 220,
-                        treeSpacing: 260,
+                        levelSeparation: 190,
+                        nodeSpacing: 150,
+                        treeSpacing: 220,
                         blockShifting: true,
                         edgeMinimization: true,
                         parentCentralization: true,
@@ -576,7 +564,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
                         border: "rgba(70, 70, 70, 0.9)",
                     },
                     font: { color: "#f0f0f0", size: 12 },
-                    widthConstraint: { maximum: 220 },
+                    widthConstraint: { maximum: 260 },
                 },
                 edges: {
                     arrows: { to: { enabled: true, scaleFactor: 0.7 } },
@@ -584,14 +572,8 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
                     smooth: {
                         enabled: true,
                         type: "cubicBezier",
-                        forceDirection: "vertical",
-                        roundness: 0.3,
-                    },
-                    font: {
-                        color: "rgba(126, 224, 129, 0.9)",
-                        size: 11,
-                        strokeWidth: 3,
-                        strokeColor: "rgba(20, 35, 24, 0.8)",
+                        forceDirection: "horizontal",
+                        roundness: 0.25,
                     },
                 },
                 interaction: {
@@ -605,7 +587,9 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
             (params: { nodes: Array<string | number> }) => {
             const [nodeId] = params.nodes;
             this.ngZone.run(() => {
-                this.selectedStageId = nodeId ? String(nodeId) : null;
+                this.selectedStageId = nodeId
+                    ? this.resolveSelectedStageFromNodeId(String(nodeId))
+                    : null;
             });
             },
         );
@@ -619,42 +603,98 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
             return;
         }
 
-        const nodes: Node[] = quest.stages.map((stage) => ({
-            id: stage.id,
-            label: stage.description || stage.id,
-        }));
+        const graph = this.buildStageGraph(quest);
+        const nodes: Node[] = [];
         const edges: Edge[] = [];
 
         let edgeIndex = 0;
         for (const stage of quest.stages) {
-            for (const link of this.getAdvanceStageLinks(stage)) {
-                if (!this.getStageById(quest, link.targetId)) {
-                    continue;
-                }
-                const loopback = this.isLoopback(quest, stage.id, link.targetId);
-                const edgeColor = loopback
-                    ? "rgba(120, 170, 255, 0.85)"
-                    : "rgba(126, 224, 129, 0.7)";
+            const stageLevel = (graph.distances.get(stage.id) ?? 0) * 2;
+            const isSelected = stage.id === this.selectedStageId;
+            nodes.push({
+                id: stage.id,
+                label: this.getStageCardLabel(stage),
+                level: stageLevel,
+                color: {
+                    background: isSelected
+                        ? "rgba(58, 85, 58, 0.9)"
+                        : "rgba(32, 32, 32, 0.9)",
+                    border: isSelected
+                        ? "rgba(154, 240, 157, 0.9)"
+                        : "rgba(70, 70, 70, 0.9)",
+                },
+                font: { color: "#f0f0f0", size: 12 },
+                margin: { top: 10, right: 10, bottom: 10, left: 10 },
+            });
+
+            const transitions = this.getStageTransitionItems(stage);
+            transitions.forEach((transition, transitionIndex) => {
+                const conditionNodeId = this.getConditionNodeId(
+                    stage.id,
+                    transitionIndex,
+                );
+                nodes.push({
+                    id: conditionNodeId,
+                    label: `${transitionIndex + 1}`,
+                    level: stageLevel + 1,
+                    shape: "box",
+                    color: {
+                        background: "rgba(26, 34, 26, 0.92)",
+                        border: "rgba(112, 168, 114, 0.88)",
+                    },
+                    font: { color: "rgba(202, 242, 203, 0.95)", size: 11 },
+                    margin: { top: 6, right: 8, bottom: 6, left: 8 },
+                    widthConstraint: { maximum: 48 },
+                });
+                // This subtle connector keeps the stage and its condition list visually unified.
                 edges.push({
                     id: `edge-${edgeIndex += 1}`,
                     from: stage.id,
-                    to: link.targetId,
-                    label: link.label || undefined,
-                    arrows: { to: { enabled: true, scaleFactor: 0.7 } },
-                    color: {
-                        color: edgeColor,
+                    to: conditionNodeId,
+                    arrows: { to: { enabled: false } },
+                    color: { color: "rgba(105, 140, 108, 0.5)" },
+                    dashes: [4, 4],
+                    smooth: {
+                        enabled: true,
+                        type: "cubicBezier",
+                        forceDirection: "horizontal",
+                        roundness: 0.12,
                     },
-                    font: {
-                        color: loopback
-                            ? "rgba(170, 200, 255, 0.95)"
-                            : "rgba(126, 224, 129, 0.9)",
-                        size: 11,
-                        strokeWidth: 3,
-                        strokeColor: "rgba(20, 35, 24, 0.8)",
-                    },
-                    smooth: loopback
-                        ? { enabled: true, type: "curvedCW", roundness: 0.35 }
-                        : { enabled: true, type: "cubicBezier", roundness: 0.2 },
+                });
+
+                transition.targets.forEach((targetId) => {
+                    if (!this.getStageById(quest, targetId)) {
+                        return;
+                    }
+                    const loopback = this.isLoopback(quest, stage.id, targetId);
+                    const edgeColor = loopback
+                        ? "rgba(120, 170, 255, 0.85)"
+                        : "rgba(126, 224, 129, 0.7)";
+                    edges.push({
+                        id: `edge-${edgeIndex += 1}`,
+                        from: conditionNodeId,
+                        to: targetId,
+                        arrows: { to: { enabled: true, scaleFactor: 0.7 } },
+                        color: { color: edgeColor },
+                        smooth: loopback
+                            ? { enabled: true, type: "curvedCW", roundness: 0.35 }
+                            : {
+                                enabled: true,
+                                type: "cubicBezier",
+                                forceDirection: "horizontal",
+                                roundness: 0.22,
+                            },
+                    });
+                });
+            });
+        }
+
+        for (const stage of quest.stages) {
+            if (!nodes.some((node) => node.id === stage.id)) {
+                nodes.push({
+                    id: stage.id,
+                    label: this.getStageCardLabel(stage),
+                    level: (graph.distances.get(stage.id) ?? 0) * 2,
                 });
             }
         }
@@ -667,14 +707,74 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
         this.network.fit({ animation: false });
     }
 
-    private getAdvanceStageLabel(step: QuestPlanStep): string {
+    private getStageTransitionItems(stage: QuestStage): StageTransitionItem[] {
+        const transitions: StageTransitionItem[] = [];
+        for (const step of stage.plan ?? []) {
+            const targets = Array.from(
+                new Set(
+                    (step.actions ?? [])
+                        .filter(
+                            (action) =>
+                                action.action === "advance_stage" &&
+                                !!action.target_stage_id,
+                        )
+                        .map((action) => action.target_stage_id as string),
+                ),
+            );
+            if (!targets.length) {
+                continue;
+            }
+            transitions.push({
+                conditionLabel: this.getCombinedConditionLabel(step),
+                targets,
+            });
+        }
+        return transitions;
+    }
+
+    private getStageCardLabel(stage: QuestStage): string {
+        const lines = [stage.description || stage.id];
+        const transitions = this.getStageTransitionItems(stage);
+        if (!transitions.length) {
+            return lines.join("\n");
+        }
+        lines.push("", "Conditions:");
+        transitions.forEach((transition, index) => {
+            lines.push(`${index + 1}. ${transition.conditionLabel}`);
+        });
+        return lines.join("\n");
+    }
+
+    private getConditionNodeId(stageId: string, transitionIndex: number): string {
+        return `condition::${stageId}::${transitionIndex}`;
+    }
+
+    private resolveSelectedStageFromNodeId(nodeId: string): string | null {
+        if (nodeId.startsWith("condition::")) {
+            const parts = nodeId.split("::");
+            return parts[1] || null;
+        }
+        return nodeId || null;
+    }
+
+    private getCombinedConditionLabel(step: QuestPlanStep): string {
         const conditions = step.conditions ?? [];
         if (!conditions.length) {
-            return "";
+            return "Always";
         }
         return conditions
-            .map((condition) => this.formatConditionValue(condition.value))
-            .join(" & ");
+            .map((condition) => this.formatCondition(condition))
+            .join(" AND ");
+    }
+
+    private formatCondition(condition: QuestCondition): string {
+        const path = condition.path || "(value)";
+        const operator = condition.operator || "equals";
+        const value = this.formatConditionValue(condition.value);
+        if (value) {
+            return `${path} ${operator} ${value}`;
+        }
+        return `${path} ${operator}`;
     }
 
     private formatConditionValue(value: unknown): string {
