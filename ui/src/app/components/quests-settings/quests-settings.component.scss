@@ -1,7 +1,22 @@
+:host {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    height: 100%;
+}
+
 .quests-settings {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 16px;
+    flex: 1;
+    min-height: 0;
 }
 
 .quests-toolbar {

@@ -848,8 +848,22 @@ def read_stdin(chat: Chat):
                 )
             if data.get("type") == "get_quest_catalog":
                 results = chat.quest_catalog_manager.get_catalog()
+                emit_message(
+                    "quest_catalog",
+                    data=results.get("catalog"),
+                    raw=results.get("raw", ""),
+                    error=results.get("error"),
+                    path=results.get("path"),
+                )
             if data.get("type") == "save_quest_catalog":
-                chat.quest_catalog_manager.save_catalog(data.get("data"))
+                save_result = chat.quest_catalog_manager.save_catalog(data.get("data"))
+                emit_message(
+                    "quest_catalog_saved",
+                    success=save_result.get("success", False),
+                    message=save_result.get("message"),
+                    data=save_result.get("catalog"),
+                    raw=save_result.get("raw", ""),
+                )
             if data.get("type") == "init_overlay":
                 emit_message("running_config", config=config)
             if data.get("type") == "web_search":
@@ -930,9 +944,23 @@ if __name__ == "__main__":
                 if data.get("type") == "init_overlay":
                     update_config(config, {}) # Ensure that the overlay gets a new config on start
                 if data.get("type") == "get_quest_catalog":
-                    quest_catalog_manager.get_catalog()
+                    results = quest_catalog_manager.get_catalog()
+                    emit_message(
+                        "quest_catalog",
+                        data=results.get("catalog"),
+                        raw=results.get("raw", ""),
+                        error=results.get("error"),
+                        path=results.get("path"),
+                    )
                 if data.get("type") == "save_quest_catalog":
-                    quest_catalog_manager.save_catalog(data.get("data"))
+                    save_result = quest_catalog_manager.save_catalog(data.get("data"))
+                    emit_message(
+                        "quest_catalog_saved",
+                        success=save_result.get("success", False),
+                        message=save_result.get("message"),
+                        data=save_result.get("catalog"),
+                        raw=save_result.get("raw", ""),
+                    )
                 if data.get("type") == "enable_remote_tracing":
                     from lib.Logger import enable_remote_tracing
 

@@ -47,3 +47,25 @@ mat-panel-title mat-icon {
   gap: 0.5rem;
   padding: 0.5rem 1rem;
 }
+
+.quest-editor-section {
+  padding-top: 0;
+}
+
+.quest-editor-section p {
+  margin-bottom: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.quest-editor-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.quest-editor-buttons button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+}

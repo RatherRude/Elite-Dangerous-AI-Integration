@@ -1,4 +1,4 @@
-import { Component, OnDestroy } from "@angular/core";
+import { Component, EventEmitter, OnDestroy, Output } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import {
     MatFormField,
@@ -61,6 +61,8 @@ import { SettingsGridComponent } from "../settings-grid/settings-grid.component"
     styleUrl: "./advanced-settings.component.css",
 })
 export class AdvancedSettingsComponent implements OnDestroy {
+    @Output() questEditorOpen = new EventEmitter<void>();
+    
     config: Config | null = null;
     system: SystemInfo | null = null;
     character: Character | null = null;
@@ -280,5 +282,9 @@ export class AdvancedSettingsComponent implements OnDestroy {
             // Reset the input so the same file can be selected again
             input.value = '';
         }
+    }
+
+    openQuestEditor(): void {
+        this.questEditorOpen.emit();
     }
 }

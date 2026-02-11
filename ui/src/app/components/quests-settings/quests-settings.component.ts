@@ -2,9 +2,11 @@ import {
     AfterViewInit,
     Component,
     ElementRef,
+    EventEmitter,
     NgZone,
     OnDestroy,
     OnInit,
+    Output,
     ViewChild,
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
@@ -54,6 +56,8 @@ type ConditionValueKind = "string" | "number" | "boolean" | "null";
     styleUrl: "./quests-settings.component.scss",
 })
 export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit {
+    @Output() closeRequested = new EventEmitter<void>();
+    
     catalog: QuestCatalog | null = null;
     rawYaml = "";
     selectedQuestId: string | null = null;
@@ -117,10 +121,14 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
             }),
         );
 
+        // Always reload the catalog when component initializes to ensure fresh data
         this.questsService.loadCatalog();
     }
 
     ngAfterViewInit(): void {
+        if (!this.catalog && !this.loadPending) {
+            this.questsService.loadCatalog();
+        }
         this.initializeNetwork();
         this.bindStageGraphListeners();
         this.scheduleLayout();
@@ -680,5 +688,9 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
             return value;
         }
         return JSON.stringify(value);
+    }
+
+    closeEditor(): void {
+        this.closeRequested.emit();
     }
 }
