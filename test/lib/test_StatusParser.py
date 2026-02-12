@@ -31,9 +31,6 @@ def test_statusparser_file_update(status_file_path):
     with open(os.path.join(status_file_path, "Status.json"), "w") as f:
         json.dump(old_status, f)
 
-    # Give the watch thread time to detect the change (it checks every 1 second)
-    time.sleep(1.1)
-
     # Wait for update
     status_event = parser.status_queue.get(timeout=1)
     assert status_event["event"] == "Status"
@@ -48,13 +45,10 @@ def test_statusparser_file_update(status_file_path):
     with open(os.path.join(status_file_path, "Status.json"), "w") as f:
         json.dump(new_status, f)
 
-    # Give the watch thread time to detect the change (it checks every 1 second)
-    time.sleep(1.1)
-
     # Wait for update
-    status_event = parser.status_queue.get(timeout=1)
+    status_event = parser.status_queue.get(timeout=10)
     assert status_event["event"] == "Status"
     assert status_event["flags"]["LandingGearDown"] == True
 
-    landinggear_event = parser.status_queue.get(timeout=1)
+    landinggear_event = parser.status_queue.get(timeout=10)
     assert landinggear_event["event"] == "LandingGearDown"
