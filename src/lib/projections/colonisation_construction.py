@@ -77,6 +77,7 @@ class ColonisationConstruction(Projection[ColonisationConstructionStateModel]):
                     self.state.ConstructionFailed = False
                     self.state.ResourcesRequired = []
                     self.state.MarketID = 0
+                    self.state.StarSystem = "Unknown"
 
         if isinstance(event, GameEvent) and event.content.get("event") == "Location":
             payload = cast(LocationEvent, event.content)
