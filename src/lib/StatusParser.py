@@ -309,12 +309,15 @@ class StatusParser:
         flags2_new = new_status.get("flags2") or {}
 
         # Only emit status events when the mode is unchanged and keys exist.
-        mode_checks = (
+        mode_checks = [
             (flags_old, flags_new, "InMainShip"),
             (flags_old, flags_new, "InFighter"),
             (flags_old, flags_new, "InSRV"),
-            (flags2_old, flags2_new, "OnFoot"),
-        )
+        ]
+        # Only check OnFoot if flags2 exists in both statuses
+        if old_status.get("flags2") is not None and new_status.get("flags2") is not None:
+            mode_checks.append((flags2_old, flags2_new, "OnFoot"))
+
         for old_dict, new_dict, key in mode_checks:
             if key not in old_dict or key not in new_dict:
                 return events
