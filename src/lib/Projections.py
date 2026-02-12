@@ -23,6 +23,7 @@ from .projections.friends import Friends
 from .projections.fss_signals import FSSSignals
 from .projections.idle import Idle
 from .projections.in_combat import InCombat
+from .projections.in_docking_range import InDockingRange
 from .projections.location import Location, LocationState
 from .projections.materials import Materials
 from .projections.missions import Missions, MissionsStateModel
@@ -75,6 +76,7 @@ def registerProjections(
     event_manager.register_projection(Idle(idle_timeout))
     event_manager.register_projection(StoredModules())
     event_manager.register_projection(StoredShips())
+    event_manager.register_projection(InDockingRange())
 
     event_manager.register_projection(ModuleInfo())
     event_manager.register_projection(ShipLocker())
