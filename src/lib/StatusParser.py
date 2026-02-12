@@ -318,11 +318,11 @@ class StatusParser:
         if old_status.get("flags2") is not None and new_status.get("flags2") is not None:
             mode_checks.append((flags2_old, flags2_new, "OnFoot"))
 
-        for old_dict, new_dict, key in mode_checks:
-            if key not in old_dict or key not in new_dict:
-                return events
-            if old_dict[key] != new_dict[key]:
-                return events
+        # for old_dict, new_dict, key in mode_checks:
+        #     if key not in old_dict or key not in new_dict:
+        #         return events
+        #     if old_dict[key] != new_dict[key]:
+        #         return events
 
         # Only in mainship
         if new_status["flags"]["InMainShip"]:
