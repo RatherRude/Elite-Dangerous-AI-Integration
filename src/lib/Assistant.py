@@ -690,7 +690,7 @@ class Assistant:
                 return True
 
             if isinstance(event, StatusEvent) and event.status.get("event") in self.enabled_game_events:
-                if event.status.get("event") in ["InDanger", "OutOfDanger"]:
+                if event.status.get("event") in ["InDanger", "OutofDanger"]:
                     if not character["react_to_danger_mining_var"]:
                         if states.get('ShipInfo', {}).get('IsMiningShip', False) and states.get('Location', {}).get('PlanetaryRing', False):
                             continue
