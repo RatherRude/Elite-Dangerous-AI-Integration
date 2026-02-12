@@ -397,7 +397,7 @@ class StatusParser:
         if (new_status["flags"]["InMainShip"] or new_status["flags"]["InFighter"] or new_status["flags"]["InSRV"] or
                 new_status["flags2"] and new_status["flags2"]["OnFoot"]):
             if old_status["flags"]["InDanger"] and new_status["flags"]["InDanger"] == False:
-                events.append({"event": "OutofDanger"})
+                events.append({"event": "OutOfDanger"})
             if old_status["flags"]["InDanger"] == False and new_status["flags"]["InDanger"]:
                 events.append({"event": "InDanger"})
 
