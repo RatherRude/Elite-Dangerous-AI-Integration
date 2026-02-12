@@ -1486,6 +1486,72 @@ class NavInfo(Projection[NavInfoStateModel]):
         super().__init__()
         self.system_db = system_db
 
+    @staticmethod
+    def _normalize_token(value: str) -> str:
+        return value.strip().lower().replace(" ", "").replace("_", "").replace("-", "")
+
+    def _extract_faction_states(self, event_content: object) -> set[str]:
+        states: set[str] = set()
+        if not isinstance(event_content, dict):
+            return states
+
+        system_faction = event_content.get("SystemFaction", {})
+        if isinstance(system_faction, dict):
+            faction_state = system_faction.get("FactionState")
+            if isinstance(faction_state, str) and faction_state:
+                states.add(self._normalize_token(faction_state))
+
+        factions = event_content.get("Factions", [])
+        if isinstance(factions, list):
+            for faction in factions:
+                if not isinstance(faction, dict):
+                    continue
+                faction_state = faction.get("FactionState")
+                if isinstance(faction_state, str) and faction_state:
+                    states.add(self._normalize_token(faction_state))
+
+                active_states = faction.get("ActiveStates", [])
+                if isinstance(active_states, list):
+                    for active_state in active_states:
+                        if not isinstance(active_state, dict):
+                            continue
+                        state_name = active_state.get("State")
+                        if isinstance(state_name, str) and state_name:
+                            states.add(self._normalize_token(state_name))
+
+        return states
+
+    def _get_hge_candidate_materials(self, event_content: object) -> tuple[list[str], set[str]]:
+        if not isinstance(event_content, dict):
+            return [], set()
+
+        population = event_content.get("Population", 0)
+        if not isinstance(population, int) or population <= 1_000_000:
+            return [], set()
+
+        allegiance_value = event_content.get("SystemAllegiance", "")
+        allegiance = self._normalize_token(allegiance_value) if isinstance(allegiance_value, str) else ""
+        states = self._extract_faction_states(event_content)
+        materials: set[str] = set()
+
+        if "outbreak" in states:
+            materials.add("Pharmaceutical Isolators")
+        if {"war", "civilwar", "civilunrest"} & states:
+            materials.add("Military Grade Alloys")
+        if "boom" in states:
+            materials.add("Proto Heat Radiators")
+            materials.add("Proto Radiolic Alloys")
+        if allegiance == "independent" and "civilunrest" in states:
+            materials.add("Improvised Components")
+        if allegiance in {"independent", "alliance"} and {"war", "civilwar"} & states:
+            materials.add("Military Supercapacitors")
+        if allegiance == "imperial" and ({"none", "election"} & states):
+            materials.add("Imperial Shielding")
+        if allegiance == "federation":
+            materials.add("Core Dynamics Composites")
+
+        return sorted(materials), states
+
     @override
     def process(self, event: Event) -> list[ProjectedEvent]:
         projected_events: list[ProjectedEvent] = []
@@ -1551,6 +1617,18 @@ class NavInfo(Projection[NavInfoStateModel]):
                 # Only warn if we can't reach any scoopable stars
                 if scoopable_stars == 0:
                     projected_events.append(ProjectedEvent(content={"event": "NoScoopableStars"}))
+
+            hge_materials, matched_states = self._get_hge_candidate_materials(event.content)
+            if hge_materials:
+                projected_events.append(ProjectedEvent(content={
+                    "event": "HGECandidateFound",
+                    "StarSystem": event.content.get("StarSystem", "Unknown"),
+                    "SystemAddress": event.content.get("SystemAddress"),
+                    "SystemAllegiance": event.content.get("SystemAllegiance"),
+                    "Population": event.content.get("Population", 0),
+                    "HGECandidateMaterials": hge_materials,
+                    "HGEMatchedStates": sorted(matched_states),
+                }))
 
         # Process FSDTarget
         if isinstance(event, GameEvent) and event.content.get('event') == 'FSDTarget':
