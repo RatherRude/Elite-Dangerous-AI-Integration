@@ -60,11 +60,16 @@ class ShipLockerEvent(TypedDict):
 
 
 # Loadout: 5496403 characters, 433 entries
-class LoadoutEventModulesItemEngineeringModifiersItem(TypedDict):
+class LoadoutEventModulesItemEngineeringModifiersItemA(TypedDict):
     LessIsGood: int
     OriginalValue: float
     Value: float
     Label: str
+class LoadoutEventModulesItemEngineeringModifiersItemB(TypedDict):
+    ValueStr: str
+    ValueStr_Localized: str
+    Label: str
+type LoadoutEventModulesItemEngineeringModifiersItem = LoadoutEventModulesItemEngineeringModifiersItemA | LoadoutEventModulesItemEngineeringModifiersItemB
 class LoadoutEventModulesItemEngineering(TypedDict):
     Level: int
     EngineerID: int

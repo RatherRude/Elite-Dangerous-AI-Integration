@@ -1,3 +1,5 @@
+from distro.distro import TypedDict
+from lib.EventModels import LoadoutEventModulesItemEngineering
 from typing import cast
 
 from typing_extensions import override
@@ -9,10 +11,15 @@ from pydantic import BaseModel, Field
 from ..EventModels import LoadoutEvent
 
 
-class LoadoutModifier(BaseModel):
+class LoadoutModifierA(BaseModel):
     LessIsGood: int
     OriginalValue: float
     Value: float
+    Label: str
+
+class LoadoutModifierB(BaseModel):
+    ValueStr: str
+    ValueStr_Localized: str
     Label: str
 
 
@@ -23,7 +30,7 @@ class LoadoutEngineering(BaseModel):
     ExperimentalEffect: str | None = None
     BlueprintID: int
     Quality: float
-    Modifiers: list[LoadoutModifier]
+    Modifiers: list[LoadoutModifierA | LoadoutModifierB] = Field(default_factory=list)
     ExperimentalEffect_Localised: str | None = None
     BlueprintName: str
 
@@ -81,9 +88,12 @@ class Loadout(Projection[LoadoutState]):
             for module in payload.get("Modules", []):
                 engineering = module.get("Engineering")
                 if isinstance(engineering, dict):
-                    modifiers = []
+                    modifiers: list[LoadoutModifierA | LoadoutModifierB] = []
                     for mod in engineering.get("Modifiers", []):
-                        modifiers.append(LoadoutModifier(**mod))
+                        if "LessIsGood" in mod:
+                            modifiers.append(LoadoutModifierA(**mod))
+                        elif "ValueStr" in mod:
+                            modifiers.append(LoadoutModifierB(**mod))
                     engineering_data = {**engineering, "Modifiers": modifiers}
                     engineering_model = LoadoutEngineering(**engineering_data)
                 else:
