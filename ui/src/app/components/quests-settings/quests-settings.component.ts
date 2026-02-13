@@ -547,7 +547,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
                     hierarchical: {
                         direction: "LR",
                         sortMethod: "directed",
-                        levelSeparation: 160,
+                        levelSeparation: 190,
                         nodeSpacing: 150,
                         treeSpacing: 220,
                         blockShifting: true,
