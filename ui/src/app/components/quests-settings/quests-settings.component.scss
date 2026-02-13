@@ -130,13 +130,12 @@
     border-radius: 8px;
     background: rgba(16, 16, 16, 0.4);
     padding: 6px;
-    overflow: hidden;
 }
 
 .stage-network {
     width: 100%;
-    height: 420px;
-    min-height: 320px;
+    height: 360px;
+    min-height: 260px;
 }
 
 .stage-card mat-card-header {
