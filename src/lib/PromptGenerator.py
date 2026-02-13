@@ -1787,8 +1787,7 @@ class PromptGenerator:
         if event_name == 'LaunchSRV':
             srv_event = cast(Dict[str, Any], content)
             srv_type = srv_event.get('SRVType_Localised')
-            player_controlled = "player-controlled" if srv_event.get('PlayerControlled') else "AI-controlled"
-            return f"{self.commander_name} has launched a {player_controlled} {srv_type} SRV."
+            return f"{self.commander_name} has launched their {srv_type} SRV."
 
         if event_name == 'ModuleInfo':
             return f"{self.commander_name} has viewed their module information."
