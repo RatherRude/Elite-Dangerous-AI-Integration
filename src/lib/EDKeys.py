@@ -193,7 +193,8 @@ class EDKeys:
             missing=self.missing_keys,
             collisions=collisions,
             unsupported=self.unsupported_keys,
-            start_mismatch=self.start_values_mismatch
+            start_mismatch=self.start_values_mismatch,
+            start_values=self.latest_start_values,
         )
 
     def get_bindings(self) -> dict[str, Any]:

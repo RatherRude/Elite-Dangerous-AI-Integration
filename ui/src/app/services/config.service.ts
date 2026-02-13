@@ -39,10 +39,8 @@ export interface KeybindsMessages extends BaseMessage {
     missing: string[];
     collisions: [string,string][];
     unsupported: string[];
-    start_mismatch?: {
-        file: string | null;
-        values: string[];
-    } | null;
+    start_mismatch?: boolean | { file: string | null; values: string[] } | null;
+    start_values?: string[];
     start_profile?: string | null;
     start_profile_bindings_missing?: boolean;
 }

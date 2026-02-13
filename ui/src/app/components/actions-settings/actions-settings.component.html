@@ -11,6 +11,16 @@
                         <div class="keybind-warning-content">
                             Different keybind profiles are selected for the four game modes. Please refer to <a target="_blank" rel="noopener noreferrer" href="https://ratherrude.github.io/Elite-Dangerous-AI-Integration/20_actions/">our documentation</a> for more information.
                         </div>
+                        @if (keybindsData.start_values && keybindsData.start_values.length > 0) {
+                            <div class="keybind-warning-content start-values">
+                                <strong>Current profiles:</strong>
+                                <ul>
+                                    @for (v of keybindsData.start_values; track $index) {
+                                        <li><strong>{{ startValueLabels[$index] || ('Profile ' + ($index + 1)) }}:</strong> {{ v }}</li>
+                                    }
+                                </ul>
+                            </div>
+                        }
                     </div>
                 }
 

@@ -37,6 +37,9 @@ export class ActionsSettingsComponent {
     keybindsSubscription: Subscription;
     keybindsData: KeybindsMessages | null = null;
 
+    /** Labels for start_values in order: general, ship, SRV, on-foot */
+    readonly startValueLabels = ['General', 'Ship', 'SRV', 'On-foot'];
+
     // Collapsible toggles for details
     showWeaponTypes = false;
     // Track which weapons are in edit mode (by index)
