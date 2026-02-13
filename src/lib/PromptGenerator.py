@@ -1732,7 +1732,7 @@ class PromptGenerator:
 
         if event_name == 'DockSRV':
             srv_event = cast(Dict[str, Any], content)
-            srv_type = srv_event.get('SRVType', 'SRV')
+            srv_type = srv_event.get('SRVType_Localised', 'SRV')
             return f"{self.commander_name} has docked their {srv_type} with the ship."
 
         if event_name == 'EndCrewSession':
@@ -1786,7 +1786,7 @@ class PromptGenerator:
 
         if event_name == 'LaunchSRV':
             srv_event = cast(Dict[str, Any], content)
-            srv_type = srv_event.get('SRVType', 'SRV')
+            srv_type = srv_event.get('SRVType_Localised', 'SRV')
             player_controlled = "player-controlled" if srv_event.get('PlayerControlled') else "AI-controlled"
             return f"{self.commander_name} has launched a {player_controlled} {srv_type}."
 
