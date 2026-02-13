@@ -188,13 +188,13 @@ class EDKeys:
                     ):
                         collisions.append([key, collision_candidate])
 
-        start_mismatch = None
-        if self.start_values_mismatch:
-            start_mismatch = {
-                "file": self.latest_start_file,
-                "values": self.latest_start_values
-            }
-
+        emit_message(
+            "keybinds",
+            missing=self.missing_keys,
+            collisions=collisions,
+            unsupported=self.unsupported_keys,
+            start_mismatch=self.start_values_mismatch
+        )
 
     def get_bindings(self) -> dict[str, Any]:
         """Returns a dict struct with the direct input equivalent of the necessary elite keybindings"""
@@ -278,9 +278,12 @@ class EDKeys:
     def get_latest_keybinds(self):
         path_bindings = os.path.join(self.appdata_path + "/", "Options", "Bindings")
         try:
-            list_of_bindings = [join(path_bindings, f) for f in listdir(path_bindings) if
-                                isfile(join(path_bindings, f)) and f.endswith('.binds')]
-        except FileNotFoundError:
+            list_of_bindings = [
+                join(path_bindings, f)
+                for f in listdir(path_bindings)
+                if isfile(join(path_bindings, f)) and f.endswith(".binds")
+            ]
+        except FileNotFoundError as e:
             return None, None
 
         if not list_of_bindings:

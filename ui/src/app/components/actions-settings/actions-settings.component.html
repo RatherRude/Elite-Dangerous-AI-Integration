@@ -6,13 +6,10 @@
                     <div class="keybind-warning-section">
                         <div class="keybind-warning-header">
                             <mat-icon style="color: #ff9800;">playlist_remove</mat-icon>
-                            <strong style="color: #ff9800;">Binding Preset Mismatch in .start file</strong>
+                            <strong style="color: #ff9800;">Error loading keybinds</strong>
                         </div>
                         <div class="keybind-warning-content">
-                            The latest <code>.start</code> file does not contain the same preset name on all 4 lines.
-                            @if (keybindsData.start_mismatch.values.length) {
-                                Values found: {{ keybindsData.start_mismatch.values.join(', ') }}
-                            }
+                            Different keybind profiles are selected for the four game modes. Please refer to <a target="_blank" rel="noopener noreferrer" href="https://ratherrude.github.io/Elite-Dangerous-AI-Integration/20_actions/">our documentation</a> for more information.
                         </div>
                     </div>
                 }
