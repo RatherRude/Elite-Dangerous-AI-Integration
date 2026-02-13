@@ -4,7 +4,7 @@ from typing_extensions import override
 from pydantic import BaseModel, Field
 
 from ..Event import Event, GameEvent, ProjectedEvent
-from ..EventModels import FSDJumpEvent, FSDTargetEvent, NavRouteEvent, ScanEvent
+from ..EventModels import FSDJumpEvent, FSDTargetEvent, NavRouteEvent, ScanEvent, FSSBodySignalsEvent
 from ..EventManager import Projection
 from ..SystemDatabase import SystemDatabase
 
@@ -213,5 +213,22 @@ class NavInfo(Projection[NavInfoStateModel]):
 
                 if was_discovered is False:
                     projected_events.append(ProjectedEvent(content={"event": "FirstPlayerSystemDiscovered"}))
+
+        if isinstance(event, GameEvent) and event.content.get("event") == "FSSBodySignals":
+            payload = cast(FSSBodySignalsEvent, event.content)
+            signals = payload.get("Signals", [])
+            if isinstance(signals, list):
+                biological_count: int | None = None
+                for s in signals:
+                    if isinstance(s, dict) and s.get("Type") == "$SAA_SignalType_Biological;":
+                        biological_count = s.get("Count")
+                        break
+                if biological_count is not None:
+                    count = biological_count if isinstance(biological_count, int) else 0
+                    projected_events.append(ProjectedEvent(content={
+                        "event": "FSSBiologicalSignals",
+                        "BodyName": payload.get("BodyName"),
+                        "Count": count,
+                    }))
 
         return projected_events

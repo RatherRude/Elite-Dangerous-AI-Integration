@@ -19,7 +19,7 @@ class LoadoutModifierA(BaseModel):
 
 class LoadoutModifierB(BaseModel):
     ValueStr: str
-    ValueStr_Localized: str
+    ValueStr_Localised: str
     Label: str
 
 

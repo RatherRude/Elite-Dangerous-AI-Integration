@@ -332,7 +332,7 @@ default_config = {
             "FsdMassLocked": False,
             "LowFuelWarningCleared": True,
             "LowFuelWarning": True,
-            "OutofDanger": True,
+            "OutOfDanger": True,
             "InDanger": True,
             "NightVisionOff": False,
             "NightVisionOn": False,

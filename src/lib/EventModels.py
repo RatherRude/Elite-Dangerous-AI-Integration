@@ -67,7 +67,7 @@ class LoadoutEventModulesItemEngineeringModifiersItemA(TypedDict):
     Label: str
 class LoadoutEventModulesItemEngineeringModifiersItemB(TypedDict):
     ValueStr: str
-    ValueStr_Localized: str
+    ValueStr_Localised: str
     Label: str
 type LoadoutEventModulesItemEngineeringModifiersItem = LoadoutEventModulesItemEngineeringModifiersItemA | LoadoutEventModulesItemEngineeringModifiersItemB
 class LoadoutEventModulesItemEngineering(TypedDict):

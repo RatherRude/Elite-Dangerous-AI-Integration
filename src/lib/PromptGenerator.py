@@ -2253,6 +2253,10 @@ class PromptGenerator:
             return f"Quest update: {quest_title}."
         if event_name == 'FirstPlayerSystemDiscovered':
             return f"{self.commander_name} has a new system discovered."
+        if event_name == 'FSSBiologicalSignals':
+            body_name = (content or {}).get('BodyName') or 'unknown body'
+            count = (content or {}).get('Count', 0)
+            return f"{self.commander_name} found {count} biological signal(s) on {body_name}."
         if event_name == 'FetchRemoteModuleCompleted':
             module_event = cast(Dict[str, Any], content or {})
             module_name = module_event.get('ModuleName') or 'module'
