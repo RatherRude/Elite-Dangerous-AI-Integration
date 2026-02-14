@@ -1732,8 +1732,8 @@ class PromptGenerator:
 
         if event_name == 'DockSRV':
             srv_event = cast(Dict[str, Any], content)
-            srv_type = srv_event.get('SRVType', 'SRV')
-            return f"{self.commander_name} has docked their {srv_type} with the ship."
+            srv_type = srv_event.get('SRVType_Localised')
+            return f"{self.commander_name} has docked their {srv_type} SRV with the ship."
 
         if event_name == 'EndCrewSession':
             end_crew_event = cast(Dict[str, Any], content)
@@ -1786,9 +1786,8 @@ class PromptGenerator:
 
         if event_name == 'LaunchSRV':
             srv_event = cast(Dict[str, Any], content)
-            srv_type = srv_event.get('SRVType', 'SRV')
-            player_controlled = "player-controlled" if srv_event.get('PlayerControlled') else "AI-controlled"
-            return f"{self.commander_name} has launched a {player_controlled} {srv_type}."
+            srv_type = srv_event.get('SRVType_Localised')
+            return f"{self.commander_name} has launched their {srv_type} SRV."
 
         if event_name == 'ModuleInfo':
             return f"{self.commander_name} has viewed their module information."
@@ -2211,6 +2210,19 @@ class PromptGenerator:
             return f"{self.commander_name} took the third and final biological sample."
         if event_name == 'NoScoopableStars':
             return f"{self.commander_name}'s fuel is insufficient to reach the destination and there are not enough scoopable stars on the route. Alternative route required."
+        if event_name == 'HGECandidateFound':
+            hge_event = cast(Dict[str, Any], content or {})
+            star_system = hge_event.get('StarSystem', 'this system')
+            materials = hge_event.get('HGECandidateMaterials', [])
+
+            if not isinstance(materials, list):
+                materials = []
+
+            if materials:
+                material_text = ', '.join(str(m) for m in materials)
+                return f"{self.commander_name} has entered HGE candidate system {star_system}. Potential high-grade materials available: {material_text}."
+
+            return f"{self.commander_name} has entered HGE candidate system {star_system}."
         if event_name == 'RememberLimpets':
             return f"{self.commander_name} has cargo capacity available to buy limpets. Remember to buy more."
         if event_name == 'BountyScanned':
@@ -2240,6 +2252,10 @@ class PromptGenerator:
             return f"Quest update: {quest_title}."
         if event_name == 'FirstPlayerSystemDiscovered':
             return f"{self.commander_name} has a new system discovered."
+        if event_name == 'FSSBiologicalSignals':
+            body_name = (content or {}).get('BodyName') or 'unknown body'
+            count = (content or {}).get('Count', 0)
+            return f"{self.commander_name} found {count} biological signal(s) on {body_name}."
         if event_name == 'FetchRemoteModuleCompleted':
             module_event = cast(Dict[str, Any], content or {})
             module_name = module_event.get('ModuleName') or 'module'

@@ -1,533 +1,495 @@
-version: "1.1"
+version: '0.1'
 quests:
-  - id: "ebreach_snack_run"
-    title: "E-Breach Emergency"
-    description: "Your ship AI insists you must buy an E-Breach immediately."
-    active: false
-    stages:
-      - id: "find_anarchy"
-        description: "Find an anarchy system."
-        instructions: "Jump to an anarchy system and keep an eye on system security."
-        plan:
-          - conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "FSDJump"
-              - source: "event"
-                path: "SystemSecurity"
-                operator: "equals"
-                value: "$GAlAXY_MAP_INFO_state_anarchy;"
-            actions:
-              - action: "log"
-                message: "Anarchy system confirmed. Find a station."
-              - action: "advance_stage"
-                target_stage_id: "find_station"
-      - id: "find_station"
-        description: "Find a station."
-        instructions: "Locate a station and drop from supercruise."
-        plan:
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "dock_at_station"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "SupercruiseExit"
-              - source: "event"
-                path: "BodyType"
-                operator: "equals"
-                value: "Station"
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "find_anarchy"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "StartJump"
-              - source: "event"
-                path: "JumpType"
-                operator: "equals"
-                value: "Hyperspace"
-      - id: "dock_at_station"
-        description: "Dock at the station."
-        instructions: "Request docking clearance and land."
-        plan:
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "find_anarchy"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "StartJump"
-              - source: "event"
-                path: "JumpType"
-                operator: "equals"
-                value: "Hyperspace"
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "find_station"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "StartJump"
-              - source: "event"
-                path: "JumpType"
-                operator: "equals"
-                value: "Supercruise"
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "disembark"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "Docked"
-      - id: "disembark"
-        description: "Disembark at the station."
-        instructions: "Leave your ship and head inside."
-        plan:
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "dock_at_station"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "Undock"
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "pioneer_supplies"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "Disembark"
-      - id: "pioneer_supplies"
-        description: "Find Pioneer Supplies."
-        instructions: "Locate Pioneer Supplies and buy an E-Breach."
-        plan:
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "disembark"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "Embark"
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "return_to_ship"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "BuyMicroResources"
-              - source: "event"
-                path: "Name"
-                operator: "equals"
-                value: "bypass"
-      - id: "return_to_ship"
-        description: "Return to your ship."
-        instructions: "Hurry back to your ship with the E-Breach, it's an emergency after all."
-        plan:
-          - conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "Embark"
-            actions:
-              - action: "advance_stage"
-                target_stage_id: "outro"
-      - id: "outro"
-        description: "Just a snack?"
-        instructions: "The urgent E-Breach was for your AI's snack stash. Mission accomplished."
-        plan:
-          - conditions: []
-            actions:
-              - action: "log"
-                message: "Crisis averted. It was just a snack run."
-              - action: "set_active"
-                quest_id: "ebreach_snack_run"
-                active: false
-  - id: "ancient_orb_pilgrimage_intro"
-    title: "The Break of Dawn"
-    description: "A mysterious call from the void draws you in."
-    active: false
-    stages:
-      - id: "find_guardian_system"
-        description: "Find Guardian-controlled space."
-        instructions: "Jump to a system aligned with the Guardians."
-        plan:
-          - conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "FSDJump"
-              - source: "event"
-                path: "SystemAllegiance"
-                operator: "equals"
-                value: "Guardian"
-            actions:
-              - action: "log"
-                message: "Guardian space reached. Find the ancient ruins."
-          - conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "FSDJump"
-              - source: "event"
-                path: "SystemAllegiance"
-                operator: "equals"
-                value: "Guardian"
-            actions:
-              - action: "advance_stage"
-                target_stage_id: "find_ruins"
-      - id: "find_ruins"
-        description: "Find the ancient ruins."
-        instructions: "Locate the Guardian ruins on a planet's surface."
-        plan:
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "near_ruins"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "ApproachSettlement"
-              - source: "event"
-                path: "Name"
-                operator: "equals"
-                value: "Ancient Ruins"
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "find_guardian_system"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "StartJump"
-              - source: "event"
-                path: "JumpType"
-                operator: "equals"
-                value: "Hyperspace"
-      - id: "near_ruins"
-        description: "Land near the ruins."
-        instructions: "Touch down near the Guardian ruins."
-        plan:
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "landed"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "Landed"
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "find_ruins"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "StartJump"
-              - source: "event"
-                path: "JumpType"
-                operator: "equals"
-                value: "Supercruise"
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "find_guardian_system"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "StartJump"
-              - source: "event"
-                path: "JumpType"
-                operator: "equals"
-                value: "Hyperspace"
-      - id: "landed"
-        description: "Find the guardian orb."
-        instructions: "Disembark and locate the guardian orb near the ruins."
-        plan:
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "near_ruins"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "LiftOff"
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "enter_srv"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "Disembark"
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "collect_orb"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "LaunchSRV"
-      - id: "enter_srv"
-        description: "Enter your SRV."
-        instructions: "Embark into your SRV to reach the orb."
-        plan:
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "landed"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "Embark"
-              - source: "event"
-                path: "SRV"
-                operator: "equals"
-                value: false
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "collect_orb"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "Embark"
-              - source: "event"
-                path: "SRV"
-                operator: "equals"
-                value: true
-      - id: "collect_orb"
-        description: "Collect the guardian orb."
-        instructions: "Retrieve the orb with your SRV."
-        plan:
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "outro"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "CollectCargo"
-              - source: "event"
-                path: "Type"
-                operator: "equals"
-                value: "ancientorb"
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "near_ruins"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "LiftOff"
-      - id: "outro"
-        description: "The beacon speaks."
-        instructions: "A new hand touches the beacon."
-        plan:
-          - conditions: []
-            actions:
-              - action: "log"
-                message: "A new hand touches the beacon."
-              - action: "set_active"
-                quest_id: "ancient_orb_pilgrimage"
-                active: true
-              - action: "set_active"
-                quest_id: "ancient_orb_pilgrimage_intro"
-                active: false
-  - id: "ancient_orb_pilgrimage"
-    title: "Orb of Meridia"
-    description: "The Guardian AI joins you to experience the universe and collect data."
-    active: false
-    stages:
-      - id: "orb_call"
-        description: "The orb awakens."
-        instructions: "The orb stirs. Bring it to Iah Bulu and hear the beacon's truth."
-        plan:
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "travel_to_iah_bulu"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "CollectCargo"
-              - source: "event"
-                path: "Type"
-                operator: "equals"
-                value: "ancientorb"
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "skip_outro"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "EjectCargo"
-              - source: "event"
-                path: "Type"
-                operator: "equals"
-                value: "ancientorb"
-      - id: "travel_to_iah_bulu"
-        description: "Bring the orb to Iah Bulu."
-        instructions: "Jump to the Iah Bulu system."
-        plan:
-          - conditions: []
-            actions:
-              - action: "log"
-                message: "The orb hums louder as you approach Iah Bulu."
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "arrive_metcalf"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "FSDJump"
-              - source: "event"
-                path: "StarSystem"
-                operator: "equals"
-                value: "Iah Bulu"
-      - id: "arrive_metcalf"
-        description: "Find Metcalf Ring."
-        instructions: "Locate Metcalf Ring and drop from supercruise."
-        plan:
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "dock_metcalf"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "SupercruiseExit"
-              - source: "event"
-                path: "BodyType"
-                operator: "equals"
-                value: "Station"
-              - source: "event"
-                path: "Body"
-                operator: "equals"
-                value: "Metcalf Ring"
-      - id: "dock_metcalf"
-        description: "Dock at Metcalf Ring."
-        instructions: "Request docking clearance at Metcalf Ring."
-        plan:
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "station_services"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "Docked"
-              - source: "event"
-                path: "StationName"
-                operator: "equals"
-                value: "Metcalf Ring"
-      - id: "station_services"
-        description: "Listen to the station."
-        instructions: "The orb insists you linger. Browse the facilities until it relents."
-        plan:
-          - actions:
-              - action: "log"
-                message: "Shipyard echoes with ancient static."
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "Shipyard"
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "station_services"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "Shipyard"
-          - actions:
-              - action: "log"
-                message: "Outfitting screens flicker with Guardian glyphs."
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "Outfitting"
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "station_services"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "Outfitting"
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "bounty_hunt"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "Undock"
-      - id: "bounty_hunt"
-        description: "Show the orb battle."
-        instructions: "The AI craves combat. Earn a single bounty with a value of at least 300,000."
-        plan:
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "return_metcalf"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "Bounty"
-              - source: "event"
-                path: "TotalReward"
-                operator: "equals"
-                value: 300000
-      - id: "return_metcalf"
-        description: "Return to Metcalf Ring."
-        instructions: "The orb quiets. Dock at Metcalf Ring and listen."
-        plan:
-          - conditions: []
-            actions:
-              - action: "log"
-                message: "The beacon's call sharpens as you approach the ring."
-          - actions:
-              - action: "advance_stage"
-                target_stage_id: "outro"
-            conditions:
-              - source: "event"
-                path: "event"
-                operator: "equals"
-                value: "Docked"
-              - source: "event"
-                path: "StationName"
-                operator: "equals"
-                value: "Metcalf Ring"
-      - id: "outro"
-        description: "It's only the beginning."
-        instructions: "Find a thargoid probe."
-        plan:
-          - conditions: []
-            actions:
-              - action: "log"
-                message: "A new hand touches the beacon."
-      - id: "skip_outro"
-        description: "The call fades."
-        instructions: "You cast the orb aside. The beacon falls silent."
-        plan:
-          - conditions: []
-            actions:
-              - action: "log"
-                message: "The orb's voice is gone."
-
+- id: ebreach_snack_run
+  title: E-Breach Emergency
+  description: Your ship AI insists you must buy an E-Breach immediately.
+  active: false
+  stages:
+  - id: find_anarchy
+    description: Find an anarchy system.
+    instructions: Jump to an anarchy system and keep an eye on system security.
+    plan:
+    - conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: FSDJump
+      - source: event
+        path: SystemSecurity
+        operator: equals
+        value: $GAlAXY_MAP_INFO_state_anarchy;
+      actions:
+      - action: log
+        message: Anarchy system confirmed. Find a station.
+      - action: advance_stage
+        target_stage_id: find_station
+  - id: find_station
+    description: Find a station.
+    instructions: Locate a station and drop from supercruise.
+    plan:
+    - actions:
+      - action: advance_stage
+        target_stage_id: dock_at_station
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: SupercruiseExit
+      - source: event
+        path: BodyType
+        operator: equals
+        value: Station
+    - actions:
+      - action: advance_stage
+        target_stage_id: find_anarchy
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: StartJump
+      - source: event
+        path: JumpType
+        operator: equals
+        value: Hyperspace
+  - id: dock_at_station
+    description: Dock at the station.
+    instructions: Request docking clearance and land.
+    plan:
+    - actions:
+      - action: advance_stage
+        target_stage_id: find_anarchy
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: StartJump
+      - source: event
+        path: JumpType
+        operator: equals
+        value: Hyperspace
+    - actions:
+      - action: advance_stage
+        target_stage_id: find_station
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: StartJump
+      - source: event
+        path: JumpType
+        operator: equals
+        value: Supercruise
+    - actions:
+      - action: advance_stage
+        target_stage_id: disembark
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: Docked
+  - id: disembark
+    description: Disembark at the station.
+    instructions: Leave your ship and head inside.
+    plan:
+    - actions:
+      - action: advance_stage
+        target_stage_id: dock_at_station
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: Undock
+    - actions:
+      - action: advance_stage
+        target_stage_id: pioneer_supplies
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: Disembark
+  - id: pioneer_supplies
+    description: Find Pioneer Supplies.
+    instructions: Locate Pioneer Supplies and buy an E-Breach.
+    plan:
+    - actions:
+      - action: advance_stage
+        target_stage_id: disembark
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: Embark
+    - actions:
+      - action: advance_stage
+        target_stage_id: return_to_ship
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: BuyMicroResources
+      - source: event
+        path: Name
+        operator: equals
+        value: bypass
+  - id: return_to_ship
+    description: Return to your ship.
+    instructions: Hurry back to your ship with the E-Breach, it's an emergency after
+      all.
+    plan:
+    - conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: Embark
+      actions:
+      - action: advance_stage
+        target_stage_id: outro
+  - id: outro
+    description: Just a snack?
+    instructions: The urgent E-Breach was for your AI's snack stash. Mission accomplished.
+    plan:
+    - conditions: []
+      actions:
+      - action: log
+        message: Crisis averted. It was just a snack run.
+      - action: set_active
+        quest_id: ebreach_snack_run
+        active: false
+- id: ancient_orb_pilgrimage_intro
+  title: The Break of Dawn
+  description: A mysterious call from the void draws you in.
+  active: false
+  stages:
+  - id: find_guardian_system
+    description: Find Guardian-controlled space.
+    instructions: Jump to a system aligned with the Guardians that has a Guardian
+      Structure.
+    plan:
+    - conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: FSDJump
+      - source: event
+        path: SystemAllegiance
+        operator: equals
+        value: Guardian
+      actions:
+      - action: log
+        message: Guardian space reached. Find the ancient ruins.
+    - conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: FSDJump
+      - source: event
+        path: SystemAllegiance
+        operator: equals
+        value: Guardian
+      actions:
+      - action: advance_stage
+        target_stage_id: find_ruins
+  - id: find_ruins
+    description: Find the Guardian Structure.
+    instructions: Locate the Guardian Structure on a planet's surface.
+    plan:
+    - actions:
+      - action: advance_stage
+        target_stage_id: near_ruins
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: ApproachSettlement
+      - source: event
+        path: Name_Localised
+        operator: equals
+        value: Guardian Structure
+    - actions:
+      - action: advance_stage
+        target_stage_id: find_guardian_system
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: StartJump
+      - source: event
+        path: JumpType
+        operator: equals
+        value: Hyperspace
+  - id: near_ruins
+    description: Land near the ruins.
+    instructions: Touch down near the Guardian ruins.
+    plan:
+    - actions:
+      - action: advance_stage
+        target_stage_id: landed
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: Touchdown
+    - actions:
+      - action: advance_stage
+        target_stage_id: find_ruins
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: StartJump
+      - source: event
+        path: JumpType
+        operator: equals
+        value: Supercruise
+    - actions:
+      - action: advance_stage
+        target_stage_id: find_guardian_system
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: StartJump
+      - source: event
+        path: JumpType
+        operator: equals
+        value: Hyperspace
+  - id: landed
+    description: Find the guardian orb.
+    instructions: Disembark and locate the guardian orb near the ruins.
+    plan:
+    - actions:
+      - action: advance_stage
+        target_stage_id: near_ruins
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: LiftOff
+    - actions:
+      - action: advance_stage
+        target_stage_id: enter_srv
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: Disembark
+    - actions:
+      - action: advance_stage
+        target_stage_id: collect_orb
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: LaunchSRV
+  - id: enter_srv
+    description: Enter your SRV.
+    instructions: Embark into your SRV to reach the orb.
+    plan:
+    - actions:
+      - action: advance_stage
+        target_stage_id: landed
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: Embark
+      - source: event
+        path: SRV
+        operator: equals
+        value: false
+    - actions:
+      - action: advance_stage
+        target_stage_id: collect_orb
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: Embark
+      - source: event
+        path: SRV
+        operator: equals
+        value: true
+  - id: collect_orb
+    description: Collect the guardian orb.
+    instructions: Retrieve the orb with your SRV.
+    plan:
+    - actions:
+      - action: advance_stage
+        target_stage_id: outro
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: CollectCargo
+      - source: event
+        path: Type
+        operator: equals
+        value: ancientorb
+    - actions:
+      - action: advance_stage
+        target_stage_id: near_ruins
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: LiftOff
+  - id: outro
+    description: The beacon speaks.
+    instructions: A new hand touches the beacon.
+    plan:
+    - conditions: []
+      actions:
+      - action: log
+        message: A new hand touches the beacon.
+      - action: set_active
+        quest_id: ancient_orb_pilgrimage
+        active: true
+      - action: set_active
+        quest_id: ancient_orb_pilgrimage_intro
+        active: false
+- id: ancient_orb_pilgrimage
+  title: Orb of Meridia
+  description: The Guardian AI joins you to experience the universe and collect data.
+  active: false
+  stages:
+  - id: travel_to_iah_bulu
+    description: Bring the orb to Iah Bulu.
+    instructions: The orb stirs. Bring it to Iah Bulu and hear the beacon's truth.
+    plan:
+    - actions:
+      - action: advance_stage
+        target_stage_id: arrive_metcalf
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: FSDJump
+      - source: event
+        path: StarSystem
+        operator: equals
+        value: Iah Bulu
+  - id: arrive_metcalf
+    description: Find Metcalf Ring.
+    instructions: Locate Metcalf Ring and drop from supercruise.
+    plan:
+    - actions:
+      - action: advance_stage
+        target_stage_id: dock_metcalf
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: SupercruiseExit
+      - source: event
+        path: BodyType
+        operator: equals
+        value: Station
+      - source: event
+        path: Body
+        operator: equals
+        value: Metcalf Ring
+  - id: dock_metcalf
+    description: Dock at Metcalf Ring.
+    instructions: Request docking clearance at Metcalf Ring.
+    plan:
+    - actions:
+      - action: advance_stage
+        target_stage_id: station_services
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: Docked
+      - source: event
+        path: StationName
+        operator: equals
+        value: Metcalf Ring
+  - id: station_services
+    description: Listen to the station.
+    instructions: The orb insists you linger. Browse the facilities until it relents.
+    plan:
+    - actions:
+      - action: log
+        message: Shipyard echoes with ancient static.
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: Shipyard
+    - actions:
+      - action: advance_stage
+        target_stage_id: station_services
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: Shipyard
+    - actions:
+      - action: log
+        message: Outfitting screens flicker with Guardian glyphs.
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: Outfitting
+    - actions:
+      - action: advance_stage
+        target_stage_id: station_services
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: Outfitting
+    - actions:
+      - action: advance_stage
+        target_stage_id: bounty_hunt
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: Undock
+  - id: bounty_hunt
+    description: Show the orb battle.
+    instructions: The AI craves combat. Earn a single bounty with a value of at least
+      300,000.
+    plan:
+    - actions:
+      - action: advance_stage
+        target_stage_id: return_metcalf
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: Bounty
+      - source: event
+        path: TotalReward
+        operator: equals
+        value: 300000
+  - id: return_metcalf
+    description: Return to Metcalf Ring.
+    instructions: The orb quiets. Dock at Metcalf Ring and listen.
+    plan:
+    - conditions: []
+      actions:
+      - action: log
+        message: The beacon's call sharpens as you approach the ring.
+    - actions:
+      - action: advance_stage
+        target_stage_id: outro
+      conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: Docked
+      - source: event
+        path: StationName
+        operator: equals
+        value: Metcalf Ring
+  - id: outro
+    description: It's only the beginning.
+    instructions: Find a thargoid probe.
+    plan:
+    - conditions: []
+      actions:
+      - action: log
+        message: A new hand touches the beacon.

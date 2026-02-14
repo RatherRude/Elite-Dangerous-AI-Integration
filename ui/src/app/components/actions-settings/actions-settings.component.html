@@ -1,7 +1,29 @@
 <div class="settings-grid">
     @if (config) {
-        @if (keybindsData && (keybindsData.missing.length > 0 || keybindsData.collisions.length > 0 || keybindsData.unsupported.length > 0)) {
+        @if (keybindsData && (keybindsData.missing.length > 0 || keybindsData.collisions.length > 0 || keybindsData.unsupported.length > 0 || !!keybindsData.start_mismatch)) {
             <div class="keybind-warning-box">
+                @if (keybindsData.start_mismatch) {
+                    <div class="keybind-warning-section">
+                        <div class="keybind-warning-header">
+                            <mat-icon style="color: #ff9800;">playlist_remove</mat-icon>
+                            <strong style="color: #ff9800;">Error loading keybinds</strong>
+                        </div>
+                        <div class="keybind-warning-content">
+                            Different keybind profiles are selected for the four game modes. Please refer to <a target="_blank" rel="noopener noreferrer" href="https://ratherrude.github.io/Elite-Dangerous-AI-Integration/20_actions/">our documentation</a> for more information.
+                        </div>
+                        @if (keybindsData.start_values && keybindsData.start_values.length > 0) {
+                            <div class="keybind-warning-content start-values">
+                                <strong>Current profiles:</strong>
+                                <ul>
+                                    @for (v of keybindsData.start_values; track $index) {
+                                        <li><strong>{{ startValueLabels[$index] || ('Profile ' + ($index + 1)) }}:</strong> {{ v }}</li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+                    </div>
+                }
+
                 @if (keybindsData.missing.length > 0) {
                     <div class="keybind-warning-section">
                         <div class="keybind-warning-header">
