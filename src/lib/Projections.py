@@ -2308,19 +2308,24 @@ class DockingEvents(Projection[DockingEventsStateModel]):
                 self.state.Timestamp = event.content['timestamp']
 
         if isinstance(event, GameEvent) and event.content.get('event') == 'Music':
-            if event.content.get('MusicTrack', "Unknown") == "DockingComputer":
+            music_track = event.content.get('MusicTrack', "Unknown")
+            if music_track == "DockingComputer" and self.state.DockingComputerState not in ["activated", "auto-docking"]:
                 self.state.DockingComputerState = 'activated'
                 if self.state.LastEventType == "DockingGranted":
                     self.state.DockingComputerState = "auto-docking"
                     projected_events.append(ProjectedEvent(content={"event": "DockingComputerDocking"}))
 
-                elif self.state.LastEventType == "Undocked" and self.state.StationType in ['Coriolis', 'Orbis', 'Ocellus']:
+                elif self.state.LastEventType == "Undocked" and self.state.StationType in ['Coriolis', 'Orbis', 'Ocellus', 'Dodec']:
                     self.state.DockingComputerState = "auto-docking"
                     projected_events.append(ProjectedEvent(content={"event": "DockingComputerUndocking"}))
 
-            elif self.state.DockingComputerState == "auto-docking":
-                self.state.DockingComputerState = "deactivated"
-                projected_events.append(ProjectedEvent(content={"event": "DockingComputerDeactivated"}))
+            elif self.state.DockingComputerState in ["activated", "auto-docking"]:
+                allowed_tracks = ["starport", "notrack"]
+                if music_track.lower() == "exploration":
+                    self.state.DockingComputerState = "deactivated"
+                elif music_track.lower() in allowed_tracks:
+                    self.state.DockingComputerState = "deactivated"
+                    projected_events.append(ProjectedEvent(content={"event": "DockingComputerDeactivated"}))
 
         return projected_events
 
