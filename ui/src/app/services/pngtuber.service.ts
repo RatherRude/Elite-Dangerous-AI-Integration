@@ -55,16 +55,22 @@ export class PngTuberService {
                 if (message.event.kind === 'assistant') {
                     this.actionSubject.next('speaking');
                 }
+                if (message.event.kind === 'assistant_speaking') {
+                    this.actionSubject.next('speaking');
+                }
                 if (message.event.kind === 'assistant_completed') {
                     this.actionSubject.next('idle');
                 }
                 if (message.event.kind === 'assistant_acting') {
                     this.actionSubject.next('acting');
                 }
+                if (message.event.kind === 'play_sound' || message.event.kind === 'scripted_dialog') {
+                    this.actionSubject.next('speaking');
+                }
             }
         )
         this.chatService.chatHistory$.subscribe((chat)=>{
-            const preview = chat.filter(value => ['covas', 'cmdr', 'action'].includes(value.role)).slice(-2)
+            const preview = chat.filter(value => ['covas', 'cmdr', 'action', 'scripted_dialog'].includes(value.role)).slice(-2)
             this.chatPreviewSubject.next(preview)
         })
         this.chatService.chatMessage$.subscribe((msg)=>{

@@ -41,6 +41,7 @@ class Assistant:
         self.short_term_memories = []
         self.quest_db = QuestDatabase()
         self.quest_catalog: dict[str, dict[str, Any]] = {}
+        self.quest_actors: dict[str, dict[str, Any]] = {}
         self.quests_loaded = False
         self.quest_version = "0"
 
@@ -131,10 +132,25 @@ class Assistant:
             with quests_path.open('r', encoding='utf-8') as handle:
                 data = yaml.safe_load(handle) or {}
             self.quest_version = str(data.get('version', '0'))
+            raw_actors = data.get('actors', [])
+            if not isinstance(raw_actors, list):
+                raw_actors = []
+            actors: list[dict[str, Any]] = []
+            for actor in raw_actors:
+                if not isinstance(actor, dict):
+                    continue
+                actor_id = actor.get('id')
+                if isinstance(actor_id, str):
+                    normalized_actor = dict(actor)
+                    normalized_actor.setdefault('prompt', '')
+                    normalized_actor.setdefault('name_color', '#7cb3ff')
+                    actors.append(normalized_actor)
+            self.quest_actors = {actor["id"]: actor for actor in actors}
             raw_quests = data.get('quests', [])
             if not isinstance(raw_quests, list):
                 log('warn', 'Quest file format invalid: quests is not a list')
                 self.quest_catalog = {}
+                self.quest_actors = {}
                 self.quests_loaded = False
                 return
             quests: list[dict[str, Any]] = []
@@ -157,6 +173,7 @@ class Assistant:
         except Exception as e:
             log('error', 'Failed to load quests', e, traceback.format_exc())
             self.quest_catalog = {}
+            self.quest_actors = {}
             self.quests_loaded = False
 
     def _sync_quests_to_db(self) -> None:
@@ -376,6 +393,7 @@ class Assistant:
             url = step.get('url')
             transcription = step.get('transcription')
             actor_id = step.get('actor_id')
+            actor_voice = None
             if not isinstance(url, str) or not url:
                 log('warn', f"Quest action play_sound missing or invalid url")
                 return
@@ -385,7 +403,44 @@ class Assistant:
             if actor_id is not None and not isinstance(actor_id, str):
                 log('warn', "Quest action play_sound has invalid actor_id")
                 actor_id = None
-            self.event_manager.add_play_sound(url, transcription, actor_id)
+            if actor_id:
+                actor = self.quest_actors.get(actor_id)
+                if isinstance(actor, dict):
+                    voice = actor.get('voice')
+                    if isinstance(voice, str) and voice:
+                        actor_voice = voice
+            self.event_manager.add_play_sound(url, transcription, actor_id, actor_voice)
+            return
+        if action == 'scripted_dialog':
+            actor_id = step.get('actor_id')
+            transcription = step.get('transcription')
+            if not isinstance(actor_id, str) or not actor_id:
+                log('warn', "Quest action scripted_dialog missing or invalid actor_id")
+                return
+            if not isinstance(transcription, str) or not transcription:
+                log('warn', "Quest action scripted_dialog missing or invalid transcription")
+                return
+            actor = self.quest_actors.get(actor_id)
+            if not isinstance(actor, dict):
+                log('warn', f"Quest action scripted_dialog actor '{actor_id}' not found")
+                return
+            actor_voice = actor.get('voice')
+            if not isinstance(actor_voice, str) or not actor_voice:
+                log('warn', f"Quest action scripted_dialog actor '{actor_id}' has no voice")
+                return
+            actor_prompt = actor.get('prompt')
+            actor_name = actor.get('name')
+            actor_name_color = actor.get('name_color')
+            avatar_url = actor.get('avatar_url')
+            self.event_manager.add_scripted_dialog(
+                actor_id=actor_id,
+                voice=actor_voice,
+                transcription=transcription,
+                actor_name=actor_name if isinstance(actor_name, str) else None,
+                actor_name_color=actor_name_color if isinstance(actor_name_color, str) else None,
+                avatar_url=avatar_url if isinstance(avatar_url, str) else None,
+                prompt=actor_prompt if isinstance(actor_prompt, str) else None,
+            )
             return
 
     def _advance_quest_stage(self, quest_def: dict[str, Any], target_stage_id: str | None, quest_id: str | None) -> None:
@@ -640,6 +695,7 @@ class Assistant:
                     return
 
             if response_text and not response_actions:
+                self.event_manager.add_assistant_speaking()
                 self.tts.say(response_text)
                 self.event_manager.add_conversation_event('assistant', response_text, reasons=reasons, processed_at=max_conversation_processed)
                 self.tts.wait_for_completion()

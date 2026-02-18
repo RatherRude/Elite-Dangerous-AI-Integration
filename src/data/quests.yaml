@@ -1,5 +1,11 @@
-version: '0.1'
-actors: []
+version: '0.2'
+actors:
+- id: actor_1
+  name: New Actor
+  name_color: '#7aff83'
+  voice: F1
+  avatar_url: avatar://avatar_1769272087289_brkn2x7li
+  prompt: ''
 quests:
 - id: ebreach_snack_run
   title: E-Breach Emergency
@@ -494,3 +500,22 @@ quests:
       actions:
       - action: log
         message: A new hand touches the beacon.
+- id: dialog_test
+  title: Dialog Test
+  description: Dialog Test
+  active: true
+  stages:
+  - id: c
+    description: Repeat scripted conversation
+    instructions: Do the thing!
+    plan:
+    - conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: NavRoute
+      actions:
+      - action: scripted_dialog
+        message: Describe the outcome.
+        actor_id: actor_1
+        transcription: Here is something rather smart!

@@ -163,6 +163,11 @@ class EventManager:
         self.incoming.put(event)
         # log('debug', event)
 
+    def add_assistant_speaking(self):
+        event = ConversationEvent(kind='assistant_speaking', content='')
+        self.incoming.put(event)
+        # log('debug', event)
+
     def add_assistant_complete_event(self):
         event = ConversationEvent(kind='assistant_completed', content='')
         self.incoming.put(event)
@@ -173,14 +178,49 @@ class EventManager:
         self.short_term_memory.replied_before(processed_at)
         self.incoming.put(event)
 
-    def add_play_sound(self, url: str, transcription: str, actor_id: str | None = None):
+    def add_play_sound(
+        self,
+        url: str,
+        transcription: str,
+        actor_id: str | None = None,
+        voice: str | None = None,
+    ):
         payload: dict[str, Any] = {"url": url, "transcription": transcription}
         if actor_id:
             payload["actor_id"] = actor_id
+        if voice:
+            payload["voice"] = voice
         content = json.dumps(payload)
         event = ConversationEvent(kind='play_sound', content=content)
         self.incoming.put(event)
         # log('debug', event)
+
+    def add_scripted_dialog(
+        self,
+        actor_id: str,
+        voice: str,
+        transcription: str,
+        actor_name: str | None = None,
+        actor_name_color: str | None = None,
+        avatar_url: str | None = None,
+        prompt: str | None = None,
+    ):
+        payload: dict[str, Any] = {
+            "actor_id": actor_id,
+            "voice": voice,
+            "transcription": transcription,
+        }
+        if actor_name:
+            payload["actor_name"] = actor_name
+        if actor_name_color:
+            payload["actor_name_color"] = actor_name_color
+        if avatar_url:
+            payload["avatar_url"] = avatar_url
+        if prompt:
+            payload["prompt"] = prompt
+        content = json.dumps(payload)
+        event = ConversationEvent(kind='scripted_dialog', content=content)
+        self.incoming.put(event)
 
     def add_projected_event(self, event: ProjectedEvent, source: Event):
         event.processed_at = source.processed_at

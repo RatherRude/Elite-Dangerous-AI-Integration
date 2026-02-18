@@ -179,7 +179,29 @@
 }
 
 .actor-fields {
-    grid-template-columns: repeat(3, minmax(160px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.actor-color-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px 0;
+}
+
+.actor-color-label {
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+.actor-color-field input[type="color"] {
+    width: 100%;
+    max-width: 96px;
+    height: 36px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
 }
 
 .actor-prompt-field {

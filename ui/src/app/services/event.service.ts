@@ -52,7 +52,15 @@ export interface StatusEvent {
 export interface ConversationEvent {
     content: string;
     timestamp: string;
-    kind: "user" | "user_speaking" | "assistant" | "assistant_acting" | "assistant_completed" | "play_sound";
+    kind:
+        | "user"
+        | "user_speaking"
+        | "assistant_speaking"
+        | "assistant"
+        | "assistant_acting"
+        | "assistant_completed"
+        | "play_sound"
+        | "scripted_dialog";
     processed_at: number;
 }
 

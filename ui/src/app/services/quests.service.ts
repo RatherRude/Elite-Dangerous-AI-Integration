@@ -11,6 +11,7 @@ export interface QuestCatalog {
 export interface QuestActor {
     id: string;
     name: string;
+    name_color: string;
     voice: string;
     avatar_url: string;
     prompt: string;
@@ -44,7 +45,7 @@ export interface QuestCondition {
 }
 
 export interface QuestAction {
-    action: "log" | "advance_stage" | "set_active" | "play_sound";
+    action: "log" | "advance_stage" | "set_active" | "play_sound" | "scripted_dialog";
     message?: string;
     target_stage_id?: string;
     quest_id?: string;

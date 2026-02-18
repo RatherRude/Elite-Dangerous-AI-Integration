@@ -196,7 +196,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
 sys.excepthook = handle_exception
 
 
-def show_chat_message(role: str, *args: Any):
+def show_chat_message(role: str, *args: Any, **payload: Any):
     output = io.StringIO()
     print(*args, file=output)
     contents = output.getvalue().strip()
@@ -205,7 +205,7 @@ def show_chat_message(role: str, *args: Any):
 
     # logger.info(contents)
 
-    emit_message("chat", role=role, message=contents)
+    emit_message("chat", role=role, message=contents, **payload)
 
 
 def log(prefix: Literal["info", "debug", "warn", "error"], message: Any, *args: Any):

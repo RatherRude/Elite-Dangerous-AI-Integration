@@ -86,6 +86,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
     private actorAvatarPreviewUrls = new Map<QuestActor, string>();
     questsListExpanded = true;
     actorsListExpanded = true;
+    readonly defaultActorNameColor = "#7cb3ff";
 
     @ViewChild("stageNetwork") stageNetworkRef?: ElementRef<HTMLDivElement>;
 
@@ -101,6 +102,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
         this.subscriptions.push(
             this.questsService.catalog$.subscribe((catalog) => {
                 this.catalog = catalog;
+                this.normalizeActorNameColors(catalog?.actors ?? []);
                 void this.syncActorAvatarPreviews(catalog?.actors ?? []);
                 if (
                     this.selectedQuestId &&
@@ -361,6 +363,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
         return {
             id: `actor_${actorIndex + 1}`,
             name: "New Actor",
+            name_color: this.defaultActorNameColor,
             voice: "en-US-AvaMultilingualNeural",
             avatar_url: "",
             prompt: "",
@@ -826,6 +829,17 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
             }
         }
         await Promise.all(actors.map((actor) => this.updateActorAvatarPreview(actor)));
+    }
+
+    private normalizeActorNameColors(actors: QuestActor[]): void {
+        for (const actor of actors) {
+            if (
+                !actor.name_color ||
+                !/^#[0-9a-fA-F]{6}$/.test(actor.name_color)
+            ) {
+                actor.name_color = this.defaultActorNameColor;
+            }
+        }
     }
 
     private async updateActorAvatarPreview(actor: QuestActor): Promise<void> {

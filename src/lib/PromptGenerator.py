@@ -2440,6 +2440,24 @@ class PromptGenerator:
         return None
 
     def conversation_message(self, event: ConversationEvent):
+        if event.kind == "scripted_dialog":
+            actor_name = "Unknown quest character"
+            spoken_text = event.content
+            try:
+                payload = json.loads(event.content)
+                if isinstance(payload, dict):
+                    parsed_name = payload.get("actor_name")
+                    parsed_text = payload.get("transcription")
+                    if isinstance(parsed_name, str) and parsed_name:
+                        actor_name = parsed_name
+                    if isinstance(parsed_text, str) and parsed_text:
+                        spoken_text = parsed_text
+            except Exception:
+                pass
+            return {
+                "role": "assistant",
+                "content": f"[Quest dialog] {actor_name} said: {spoken_text}",
+            }
         return {"role": event.kind, "content": event.content}
 
     def tool_messages(self, event: ToolEvent):
@@ -3542,7 +3560,7 @@ class PromptGenerator:
                         piece = message
                         conversational_pieces.append(piece)
 
-            if isinstance(event, ConversationEvent) and event.kind in ['user', 'assistant']:
+            if isinstance(event, ConversationEvent) and event.kind in ['user', 'assistant', 'scripted_dialog']:
                 piece = self.conversation_message(event)
                 conversational_pieces.append(piece)
 

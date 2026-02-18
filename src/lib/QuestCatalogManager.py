@@ -30,7 +30,7 @@ class QuestCatalogManager:
                 if not isinstance(actor, dict):
                     errors.append(f"Actor #{actor_index + 1} must be an object.")
                     continue
-                for field in ("id", "name", "voice", "avatar_url", "prompt"):
+                for field in ("id", "name", "name_color", "voice", "avatar_url", "prompt"):
                     if field not in actor:
                         errors.append(
                             f"Actor '{actor.get('id', actor_index + 1)}' missing {field}.",
@@ -42,6 +42,10 @@ class QuestCatalogManager:
                 if not isinstance(actor.get("name"), str):
                     errors.append(
                         f"Actor '{actor.get('id', actor_index + 1)}' name must be a string.",
+                    )
+                if not isinstance(actor.get("name_color"), str):
+                    errors.append(
+                        f"Actor '{actor.get('id', actor_index + 1)}' name_color must be a string.",
                     )
                 if not isinstance(actor.get("voice"), str):
                     errors.append(
@@ -164,9 +168,10 @@ class QuestCatalogManager:
                                 "advance_stage",
                                 "set_active",
                                 "play_sound",
+                                "scripted_dialog",
                             ):
                                 errors.append(
-                                    f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' action #{action_index + 1} action must be log, advance_stage, set_active, or play_sound.",
+                                    f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' action #{action_index + 1} action must be log, advance_stage, set_active, play_sound, or scripted_dialog.",
                                 )
                                 continue
                             if action_type == "log" and "message" not in action:
@@ -215,6 +220,20 @@ class QuestCatalogManager:
                                 errors.append(
                                     f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' action #{action_index + 1} actor_id references unknown actor.",
                                 )
+                            if (
+                                action_type == "scripted_dialog"
+                                and not isinstance(action.get("actor_id"), str)
+                            ):
+                                errors.append(
+                                    f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' action #{action_index + 1} missing actor_id.",
+                                )
+                            if (
+                                action_type == "scripted_dialog"
+                                and "transcription" not in action
+                            ):
+                                errors.append(
+                                    f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' action #{action_index + 1} missing transcription.",
+                                )
         return errors
 
     def get_catalog(self) -> dict[str, Any]:
@@ -243,6 +262,7 @@ class QuestCatalogManager:
                 for actor in data["actors"]:
                     if isinstance(actor, dict):
                         actor.setdefault("prompt", "")
+                        actor.setdefault("name_color", "#7cb3ff")
                         normalized_actors.append(actor)
                 data["actors"] = normalized_actors
             if "quests" not in data or not isinstance(data["quests"], list):

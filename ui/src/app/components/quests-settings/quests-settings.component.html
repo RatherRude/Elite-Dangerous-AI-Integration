@@ -125,6 +125,15 @@
                                     <mat-label>Voice</mat-label>
                                     <input matInput [(ngModel)]="selectedActor.voice">
                                 </mat-form-field>
+                                <div class="actor-color-field">
+                                    <span class="actor-color-label">Name Color</span>
+                                    <input
+                                        type="color"
+                                        [(ngModel)]="selectedActor.name_color"
+                                        [ngModelOptions]="{ standalone: true }"
+                                        [value]="selectedActor.name_color || defaultActorNameColor"
+                                        aria-label="Actor name color">
+                                </div>
                             </div>
                         </div>
                         <mat-form-field class="actor-prompt-field">
@@ -288,6 +297,7 @@
                                                             <mat-option value="advance_stage">advance_stage</mat-option>
                                                             <mat-option value="set_active">set_active</mat-option>
                                                             <mat-option value="play_sound">play_sound</mat-option>
+                                                            <mat-option value="scripted_dialog">scripted_dialog</mat-option>
                                                         </mat-select>
                                                     </mat-form-field>
 
@@ -348,6 +358,24 @@
                                                                     </mat-option>
                                                                 }
                                                             </mat-select>
+                                                        </mat-form-field>
+                                                    }
+                                                    @if (action.action === 'scripted_dialog') {
+                                                        <mat-form-field>
+                                                            <mat-label>Actor</mat-label>
+                                                            <mat-select [(ngModel)]="action.actor_id">
+                                                                @for (actorOption of catalog?.actors ?? []; track actorOption.id) {
+                                                                    <mat-option [value]="actorOption.id">
+                                                                        {{ actorOption.name || actorOption.id }}
+                                                                    </mat-option>
+                                                                }
+                                                            </mat-select>
+                                                        </mat-form-field>
+                                                        <mat-form-field>
+                                                            <mat-label>Transcription</mat-label>
+                                                            <textarea matInput rows="2"
+                                                                      [(ngModel)]="action.transcription"
+                                                                      placeholder="Dialog line to speak"></textarea>
                                                         </mat-form-field>
                                                     }
 
