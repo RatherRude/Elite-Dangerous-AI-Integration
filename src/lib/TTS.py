@@ -3,7 +3,7 @@ import re
 import threading
 import traceback
 from time import sleep, time
-from typing import Generator, Literal, Optional, Union, final
+from typing import Any, Callable, Generator, Literal, Optional, Union, final
 
 import pyaudio
 import strip_markdown
@@ -33,6 +33,31 @@ class TTS:
         thread = threading.Thread(target=self._playback_thread)
         thread.daemon = True
         thread.start()
+
+    def _normalize_queue_item(self, item: Any) -> dict[str, Any]:
+        if isinstance(item, str):
+            return {
+                "text": item,
+                "voice": None,
+                "on_start": None,
+                "on_complete": None,
+                "drop_if": None,
+            }
+        if isinstance(item, dict):
+            return {
+                "text": item.get("text", ""),
+                "voice": item.get("voice"),
+                "on_start": item.get("on_start"),
+                "on_complete": item.get("on_complete"),
+                "drop_if": item.get("drop_if"),
+            }
+        return {
+            "text": "",
+            "voice": None,
+            "on_start": None,
+            "on_complete": None,
+            "drop_if": None,
+        }
 
     def _get_output_device_index(self) -> Optional[int]: #Rewert from String to Index 
         for i in range(self.p.get_device_count()):
@@ -69,12 +94,32 @@ class TTS:
             while not self.is_aborted:
                 if not self.read_queue.empty():
                     self._is_playing = True
-                    text = self.read_queue.get()
+                    item = self._normalize_queue_item(self.read_queue.get())
+                    text = item.get("text")
+                    voice = item.get("voice")
+                    on_start = item.get("on_start")
+                    on_complete = item.get("on_complete")
+                    drop_if = item.get("drop_if")
+                    if not isinstance(text, str) or not text:
+                        continue
+                    if callable(drop_if) and drop_if():
+                        continue
                     try:
-                        self._playback_one(text, stream)
+                        if callable(on_start):
+                            try:
+                                on_start()
+                            except Exception as callback_error:
+                                log('warn', 'TTS on_start callback failed', callback_error)
+                        self._playback_one(text, stream, voice if isinstance(voice, str) else None)
                     except Exception as e:
-                        self.read_queue.put(text)
+                        self.read_queue.put(item)
                         raise e
+                    finally:
+                        if callable(on_complete):
+                            try:
+                                on_complete()
+                            except Exception as callback_error:
+                                log('warn', 'TTS on_complete callback failed', callback_error)
 
                 self._is_playing = False
 
@@ -83,7 +128,7 @@ class TTS:
             stream.stop_stream()
 
     @observe()
-    def _playback_one(self, text: str, stream: pyaudio.Stream):
+    def _playback_one(self, text: str, stream: pyaudio.Stream, voice_override: str | None = None):
         # Fix numberformatting for different providers
         text = re.sub(r"\d+(,\d{3})*(\.\d+)?", self._number_to_text, text)
         text = strip_markdown.strip_markdown(text)
@@ -93,7 +138,7 @@ class TTS:
         first_chunk = True
         underflow_count = 0
         empty_buffer_available = stream.get_write_available()
-        for chunk in self._stream_audio(text):
+        for chunk in self._stream_audio(text, voice_override):
             if not end_time:
                 end_time = time()
                 log('debug', f'Response time TTS', end_time - start_time)
@@ -120,7 +165,7 @@ class TTS:
         
 
     @observe()
-    def _stream_audio(self, text):
+    def _stream_audio(self, text: str, voice_override: str | None = None):
         if self.tts_model is None:
             word_count = len(text.split())
             words_per_minute = 150 * float(self.speed)
@@ -130,7 +175,8 @@ class TTS:
                 yield b"\x00" * 1024
         else:
             try:
-                for chunk in self.tts_model.synthesize(text, self.voice):
+                selected_voice = voice_override if voice_override else self.voice
+                for chunk in self.tts_model.synthesize(text, selected_voice):
                     yield chunk
             except Exception as e:
                 log('error', 'TTS synthesis error', e, traceback.format_exc())
@@ -146,8 +192,24 @@ class TTS:
         else:
             return match.group()
 
-    def say(self, text: str):
-        self.read_queue.put(text)
+    def say(
+        self,
+        text: str,
+        *,
+        voice: str | None = None,
+        on_start: Callable[[], None] | None = None,
+        on_complete: Callable[[], None] | None = None,
+        drop_if: Callable[[], bool] | None = None,
+    ):
+        self.read_queue.put(
+            {
+                "text": text,
+                "voice": voice,
+                "on_start": on_start,
+                "on_complete": on_complete,
+                "drop_if": drop_if,
+            },
+        )
 
     def abort(self):
         while not self.read_queue.empty():

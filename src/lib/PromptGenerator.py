@@ -2458,7 +2458,7 @@ class PromptGenerator:
                 "role": "assistant",
                 "content": f"[Quest dialog] {actor_name} said: {spoken_text}",
             }
-        return {"role": event.kind, "content": event.content}
+        return {"role": "assistant", "content": event.content}
 
     def tool_messages(self, event: ToolEvent):
         responses = []

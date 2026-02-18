@@ -1,6 +1,5 @@
 import copy
 import sys
-import queue
 from time import sleep
 from typing import Any, cast, final
 import os
@@ -317,12 +316,6 @@ class Chat:
         )
         self.is_replying = False
         self.listening = False
-        self.scripted_audio_queue: queue.Queue[dict[str, Any]] = queue.Queue()
-        self.scripted_audio_thread = threading.Thread(
-            target=self._scripted_audio_worker,
-            daemon=True,
-        )
-        self.scripted_audio_thread.start()
 
         log("debug", "Registering side effect...")
         self.event_manager.register_sideeffect(self.on_event)
@@ -400,7 +393,7 @@ class Chat:
             show_chat_message("quest", event.content)
         if event.kind in ["play_sound", "scripted_dialog"]:
             event = cast(ConversationEvent, event)
-            self._enqueue_scripted_audio_event(event.kind, event.content)
+            self._schedule_scripted_audio_event(event.kind, event.content)
 
         if isinstance(event, GameEvent) and event.content.get("event") == "FSDTarget":
             if "Name" in event.content:
@@ -796,7 +789,6 @@ class Chat:
                     and not self.assistant.is_replying
                     and not self.stt.recording
                     and not self.tts.get_is_playing()
-                    and self.scripted_audio_queue.empty()
                 ):
                     _events, projected_states = self.event_manager.get_current_state()
                     self.assistant.reply(projected_states)
@@ -820,7 +812,7 @@ class Chat:
         _, projected_states = self.event_manager.get_current_state()
         self.assistant.web_search(query, projected_states)
 
-    def _enqueue_scripted_audio_event(self, kind: str, content: str) -> None:
+    def _schedule_scripted_audio_event(self, kind: str, content: str) -> None:
         try:
             payload = json.loads(content) if content else {}
         except json.JSONDecodeError:
@@ -852,57 +844,29 @@ class Chat:
         if avatar_url and avatar_url.startswith("avatar://"):
             extracted_id = avatar_url[len("avatar://") :]
             avatar_id = extracted_id if extracted_id else None
-        self.scripted_audio_queue.put(
-            {
-                "kind": kind,
-                "transcription": transcription,
-                "voice": voice,
-                "actor_id": actor_id,
-                "actor_name": actor_name,
-                "actor_name_color": actor_name_color,
-                "avatar_id": avatar_id,
-            },
-        )
+        def on_start() -> None:
+            if kind == "scripted_dialog":
+                show_chat_message(
+                    "scripted_dialog",
+                    transcription,
+                    actor_id=actor_id if isinstance(actor_id, str) else None,
+                    actor_name=actor_name if isinstance(actor_name, str) else None,
+                    display_color=actor_name_color if isinstance(actor_name_color, str) else None,
+                    avatar_id=avatar_id if isinstance(avatar_id, str) else None,
+                    display_name=actor_name if isinstance(actor_name, str) and actor_name else "Scripted Dialog",
+                )
+            self.event_manager.add_assistant_speaking()
 
-    def _scripted_audio_worker(self) -> None:
-        while True:
-            item = self.scripted_audio_queue.get()
-            if not isinstance(item, dict):
-                continue
-            kind = str(item.get("kind", "scripted_dialog"))
-            transcription = str(item.get("transcription", ""))
-            if not transcription:
-                continue
-            voice = item.get("voice")
-            actor_id = item.get("actor_id")
-            actor_name = item.get("actor_name")
-            actor_name_color = item.get("actor_name_color")
-            avatar_id = item.get("avatar_id")
-            if self.stt.recording:
-                # If the user is currently speaking, drop queued scripted lines.
-                continue
-            previous_voice = self.tts.voice
-            try:
-                if kind == "scripted_dialog":
-                    show_chat_message(
-                        "scripted_dialog",
-                        transcription,
-                        actor_id=actor_id if isinstance(actor_id, str) else None,
-                        actor_name=actor_name if isinstance(actor_name, str) else None,
-                        display_color=actor_name_color if isinstance(actor_name_color, str) else None,
-                        avatar_id=avatar_id if isinstance(avatar_id, str) else None,
-                        display_name=actor_name if isinstance(actor_name, str) and actor_name else "Scripted Dialog",
-                    )
-                if isinstance(voice, str) and voice:
-                    self.tts.voice = voice
-                self.event_manager.add_assistant_speaking()
-                self.tts.say(transcription)
-                self.tts.wait_for_completion()
-            except Exception as e:
-                log("error", f"Error during {kind} speech playback", e, traceback.format_exc())
-            finally:
-                self.tts.voice = previous_voice
-                self.event_manager.add_assistant_complete_event()
+        def on_complete() -> None:
+            self.event_manager.add_assistant_complete_event()
+
+        self.tts.say(
+            transcription,
+            voice=voice if isinstance(voice, str) and voice else None,
+            on_start=on_start,
+            on_complete=on_complete,
+            drop_if=lambda: self.stt.recording,
+        )
 
 
 def read_stdin(chat: Chat):

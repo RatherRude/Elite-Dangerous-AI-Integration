@@ -1,10 +1,16 @@
 version: '0.2'
 actors:
 - id: actor_1
-  name: New Actor
-  name_color: '#7aff83'
+  name: Angel
+  name_color: '#adefff'
   voice: F1
-  avatar_url: avatar://avatar_1769272087289_brkn2x7li
+  avatar_url: avatar://avatar_1771453085772_va3ef6tmu
+  prompt: ''
+- id: actor_2
+  name: Devil
+  name_color: '#ff0000'
+  voice: M1
+  avatar_url: avatar://avatar_1763754441311_2dwnvfcdo
   prompt: ''
 quests:
 - id: ebreach_snack_run
@@ -518,4 +524,47 @@ quests:
       - action: scripted_dialog
         message: Describe the outcome.
         actor_id: actor_1
-        transcription: Here is something rather smart!
+        transcription: Commander… readings say it’s asleep. Thousands of years and
+          counting. We don’t have to wake it.
+      - action: scripted_dialog
+        message: Describe the outcome.
+        actor_id: actor_2
+        transcription: Asleep is just another word for unguarded. Think of the data
+          caches. Think of the tech brokers salivating.
+      - action: scripted_dialog
+        message: Describe the outcome.
+        actor_id: actor_1
+        transcription: The Guardians fell after trusting their own machines. History
+          is practically shouting at you.
+      - action: scripted_dialog
+        message: Describe the outcome.
+        actor_id: actor_2
+        transcription: History also rewards the curious. One power conduit, one scan—no
+          harm in asking the past a question.
+      - action: scripted_dialog
+        message: Describe the outcome.
+        actor_id: actor_1
+        transcription: You’re standing on a grave, Commander. Some doors stay closed
+          for a reason.
+      - action: scripted_dialog
+        message: Describe the outcome.
+        actor_id: actor_2
+        transcription: And some doors hide keys to survive what’s coming. Thargoids
+          don’t care about your reverence.
+      - action: scripted_dialog
+        message: Describe the outcome.
+        actor_id: actor_1
+        transcription: If the AI wakes… it may decide you’re the threat.
+      - action: scripted_dialog
+        message: Describe the outcome.
+        actor_id: actor_2
+        transcription: Or the student. Go on—your SRV turret’s already aligned.
+      - action: scripted_dialog
+        message: Describe the outcome.
+        actor_id: actor_1
+        transcription: You can leave. Mark the site. Walk away intact.
+      - action: scripted_dialog
+        message: Describe the outcome.
+        actor_id: actor_2
+        transcription: Or press the switch… and change the balance of the galaxy just
+          a little.
