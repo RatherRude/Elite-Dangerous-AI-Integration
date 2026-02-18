@@ -1,4 +1,5 @@
 version: '0.1'
+actors: []
 quests:
 - id: ebreach_snack_run
   title: E-Breach Emergency

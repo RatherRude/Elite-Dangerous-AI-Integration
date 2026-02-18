@@ -173,8 +173,11 @@ class EventManager:
         self.short_term_memory.replied_before(processed_at)
         self.incoming.put(event)
 
-    def add_play_sound(self, url: str, transcription: str):
-        content = json.dumps({"url": url, "transcription": transcription})
+    def add_play_sound(self, url: str, transcription: str, actor_id: str | None = None):
+        payload: dict[str, Any] = {"url": url, "transcription": transcription}
+        if actor_id:
+            payload["actor_id"] = actor_id
+        content = json.dumps(payload)
         event = ConversationEvent(kind='play_sound', content=content)
         self.incoming.put(event)
         # log('debug', event)

@@ -19,6 +19,42 @@ class QuestCatalogManager:
             return ["Quest catalog must be an object."]
         if not isinstance(catalog.get("version"), str):
             errors.append("Quest catalog version must be a string.")
+        actors = catalog.get("actors", [])
+        actor_ids: set[str] = set()
+        if actors is None:
+            actors = []
+        if not isinstance(actors, list):
+            errors.append("Quest catalog actors must be a list.")
+        else:
+            for actor_index, actor in enumerate(actors):
+                if not isinstance(actor, dict):
+                    errors.append(f"Actor #{actor_index + 1} must be an object.")
+                    continue
+                for field in ("id", "name", "voice", "avatar_url", "prompt"):
+                    if field not in actor:
+                        errors.append(
+                            f"Actor '{actor.get('id', actor_index + 1)}' missing {field}.",
+                        )
+                if not isinstance(actor.get("id"), str):
+                    errors.append(f"Actor #{actor_index + 1} id must be a string.")
+                else:
+                    actor_ids.add(actor["id"])
+                if not isinstance(actor.get("name"), str):
+                    errors.append(
+                        f"Actor '{actor.get('id', actor_index + 1)}' name must be a string.",
+                    )
+                if not isinstance(actor.get("voice"), str):
+                    errors.append(
+                        f"Actor '{actor.get('id', actor_index + 1)}' voice must be a string.",
+                    )
+                if not isinstance(actor.get("avatar_url"), str):
+                    errors.append(
+                        f"Actor '{actor.get('id', actor_index + 1)}' avatar_url must be a string.",
+                    )
+                if not isinstance(actor.get("prompt"), str):
+                    errors.append(
+                        f"Actor '{actor.get('id', actor_index + 1)}' prompt must be a string.",
+                    )
         quests = catalog.get("quests")
         if not isinstance(quests, list):
             errors.append("Quest catalog quests must be a list.")
@@ -165,6 +201,20 @@ class QuestCatalogManager:
                                 errors.append(
                                     f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' action #{action_index + 1} missing transcription.",
                                 )
+                            if "actor_id" in action and action.get("actor_id") is not None and not isinstance(
+                                action.get("actor_id"),
+                                str,
+                            ):
+                                errors.append(
+                                    f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' action #{action_index + 1} actor_id must be a string.",
+                                )
+                            if (
+                                isinstance(action.get("actor_id"), str)
+                                and action.get("actor_id") not in actor_ids
+                            ):
+                                errors.append(
+                                    f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' action #{action_index + 1} actor_id references unknown actor.",
+                                )
         return errors
 
     def get_catalog(self) -> dict[str, Any]:
@@ -186,6 +236,15 @@ class QuestCatalogManager:
                 }
             if "version" not in data:
                 data["version"] = "1.0"
+            if "actors" not in data or not isinstance(data["actors"], list):
+                data["actors"] = []
+            else:
+                normalized_actors: list[dict[str, Any]] = []
+                for actor in data["actors"]:
+                    if isinstance(actor, dict):
+                        actor.setdefault("prompt", "")
+                        normalized_actors.append(actor)
+                data["actors"] = normalized_actors
             if "quests" not in data or not isinstance(data["quests"], list):
                 data["quests"] = []
             return {"catalog": data, "raw": raw, "path": str(quests_path)}

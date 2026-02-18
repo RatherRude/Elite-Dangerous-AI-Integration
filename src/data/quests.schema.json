@@ -11,6 +11,12 @@
       "type": "string",
       "description": "Catalog version used to refresh stored quest state when newer."
     },
+    "actors": {
+      "type": "array",
+      "description": "List of quest actors used by quest content.",
+      "default": [],
+      "items": { "$ref": "#/$defs/actor" }
+    },
     "quests": {
       "type": "array",
       "description": "List of quest definitions.",
@@ -19,6 +25,34 @@
     }
   },
   "$defs": {
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "voice", "avatar_url", "prompt"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique actor identifier.",
+          "pattern": "^[A-Za-z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name for this actor."
+        },
+        "voice": {
+          "type": "string",
+          "description": "Voice identifier used by TTS."
+        },
+        "avatar_url": {
+          "type": "string",
+          "description": "Avatar URL (external URL or avatar://<avatarId>)."
+        },
+        "prompt": {
+          "type": "string",
+          "description": "Prompt/personality text associated with this actor."
+        }
+      }
+    },
     "quest": {
       "type": "object",
       "additionalProperties": false,
@@ -137,6 +171,11 @@
         "transcription": {
           "type": "string",
           "description": "Transcription text for play_sound actions."
+        },
+        "actor_id": {
+          "type": ["string", "null"],
+          "description": "Optional actor id used to attribute play_sound audio.",
+          "pattern": "^[A-Za-z0-9_\\-]+$"
         }
       },
       "allOf": [

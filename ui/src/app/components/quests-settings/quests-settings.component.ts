@@ -19,12 +19,15 @@ import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatExpansionModule } from "@angular/material/expansion";
+import { MatDialog } from "@angular/material/dialog";
 import { MatSnackBarModule } from "@angular/material/snack-bar";
+import { MatSnackBar } from "@angular/material/snack-bar";
 import { fromEvent, Subscription } from "rxjs";
 import { DataSet } from "vis-data";
 import { Network } from "vis-network";
 import type { Edge, Node } from "vis-network";
 import {
+    QuestActor,
     QuestAction,
     QuestCatalog,
     QuestCondition,
@@ -33,6 +36,11 @@ import {
     QuestStage,
     QuestsService,
 } from "../../services/quests.service";
+import {
+    AvatarCatalogDialogComponent,
+    AvatarCatalogResult,
+} from "../avatar-catalog-dialog/avatar-catalog-dialog.component";
+import { AvatarService } from "../../services/avatar.service";
 
 type ConditionValueKind = "string" | "number" | "boolean" | "null";
 
@@ -61,6 +69,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
     catalog: QuestCatalog | null = null;
     rawYaml = "";
     selectedQuestId: string | null = null;
+    selectedActorId: string | null = null;
     loadError: string | null = null;
     catalogPath: string | null = null;
     loadPending = false;
@@ -74,24 +83,37 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
     private stageGraphSubscriptions: Subscription[] = [];
     private collapsedStageKeys = new Set<string>();
     private collapseInitialized = false;
+    private actorAvatarPreviewUrls = new Map<QuestActor, string>();
+    questsListExpanded = true;
+    actorsListExpanded = true;
 
     @ViewChild("stageNetwork") stageNetworkRef?: ElementRef<HTMLDivElement>;
 
     constructor(
         private questsService: QuestsService,
         private ngZone: NgZone,
+        private dialog: MatDialog,
+        private snackBar: MatSnackBar,
+        private avatarService: AvatarService,
     ) {}
 
     ngOnInit(): void {
         this.subscriptions.push(
             this.questsService.catalog$.subscribe((catalog) => {
                 this.catalog = catalog;
+                void this.syncActorAvatarPreviews(catalog?.actors ?? []);
                 if (
                     this.selectedQuestId &&
                     !catalog?.quests.some((quest) => quest.id === this.selectedQuestId)
                 ) {
                     this.selectedQuestId = null;
                     this.selectedStageId = null;
+                }
+                if (
+                    this.selectedActorId &&
+                    !catalog?.actors?.some((actor) => actor.id === this.selectedActorId)
+                ) {
+                    this.selectedActorId = null;
                 }
                 if (catalog && !this.collapseInitialized) {
                     this.collapseAllStages(catalog);
@@ -139,6 +161,8 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
         this.stageGraphSubscriptions.forEach((subscription) =>
             subscription.unsubscribe(),
         );
+        this.actorAvatarPreviewUrls.forEach((url) => URL.revokeObjectURL(url));
+        this.actorAvatarPreviewUrls.clear();
         if (this.network) {
             this.network.destroy();
             this.network = null;
@@ -164,10 +188,31 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
         return quest.stages.find((stage) => stage.id === this.selectedStageId) || null;
     }
 
+    get selectedActor(): QuestActor | null {
+        if (!this.catalog || !this.selectedActorId) {
+            return null;
+        }
+        return this.catalog.actors?.find((actor) => actor.id === this.selectedActorId) || null;
+    }
+
     selectQuest(questId: string): void {
         this.selectedQuestId = questId;
+        this.selectedActorId = null;
         this.selectedStageId = null;
         this.scheduleLayout();
+    }
+
+    selectActor(actorId: string): void {
+        this.selectedActorId = actorId;
+        this.selectedQuestId = null;
+        this.selectedStageId = null;
+        this.scheduleLayout();
+    }
+
+    onActorIdChange(actor: QuestActor): void {
+        if (this.selectedActor === actor) {
+            this.selectedActorId = actor.id;
+        }
     }
 
     onStageIdChange(stage: QuestStage): void {
@@ -191,11 +236,12 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
 
     addQuest(): void {
         if (!this.catalog) {
-            this.catalog = { version: "1.0", quests: [] };
+            this.catalog = { version: "1.0", actors: [], quests: [] };
         }
         const newQuest = this.createQuest();
         this.catalog.quests = [...this.catalog.quests, newQuest];
         this.selectedQuestId = newQuest.id;
+        this.selectedActorId = null;
         this.selectedStageId = null;
         this.collapseStagesForQuest(newQuest);
         this.scheduleLayout();
@@ -213,6 +259,36 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
             this.selectedStageId = null;
         }
         this.scheduleLayout();
+    }
+
+    addActor(): void {
+        if (!this.catalog) {
+            this.catalog = { version: "1.0", actors: [], quests: [] };
+        }
+        if (!this.catalog.actors) {
+            this.catalog.actors = [];
+        }
+        const actor = this.createActor();
+        this.catalog.actors = [...this.catalog.actors, actor];
+        this.selectedActorId = actor.id;
+        this.selectedQuestId = null;
+        this.selectedStageId = null;
+    }
+
+    removeActor(index: number): void {
+        if (!this.catalog?.actors?.[index]) {
+            return;
+        }
+        const removedActor = this.catalog.actors[index];
+        const previousUrl = this.actorAvatarPreviewUrls.get(removedActor);
+        if (previousUrl) {
+            URL.revokeObjectURL(previousUrl);
+            this.actorAvatarPreviewUrls.delete(removedActor);
+        }
+        this.catalog.actors.splice(index, 1);
+        if (removedActor.id === this.selectedActorId) {
+            this.selectedActorId = this.catalog.actors[0]?.id ?? null;
+        }
     }
 
     addStage(quest: QuestDefinition): void {
@@ -277,6 +353,17 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
             description: "Describe the quest objective.",
             active: false,
             stages: [this.createStage()],
+        };
+    }
+
+    createActor(): QuestActor {
+        const actorIndex = this.catalog?.actors?.length ?? 0;
+        return {
+            id: `actor_${actorIndex + 1}`,
+            name: "New Actor",
+            voice: "en-US-AvaMultilingualNeural",
+            avatar_url: "",
+            prompt: "",
         };
     }
 
@@ -692,5 +779,87 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
 
     closeEditor(): void {
         this.closeRequested.emit();
+    }
+
+    openActorAvatarCatalog(actor: QuestActor): void {
+        const dialogRef = this.dialog.open(AvatarCatalogDialogComponent, {
+            width: "850px",
+            maxWidth: "95vw",
+            data: { currentAvatarId: this.extractAvatarCatalogId(actor.avatar_url) },
+        });
+        dialogRef.afterClosed().subscribe((result: AvatarCatalogResult | undefined) => {
+            if (!result) {
+                return;
+            }
+            actor.avatar_url = result.avatarId ? `avatar://${result.avatarId}` : "";
+            void this.updateActorAvatarPreview(actor);
+        });
+    }
+
+    getActorAvatarPreviewUrl(actor: QuestActor): string {
+        if (!actor.avatar_url) {
+            return "";
+        }
+        const avatarId = this.extractAvatarCatalogId(actor.avatar_url);
+        if (!avatarId) {
+            return actor.avatar_url;
+        }
+        return this.actorAvatarPreviewUrls.get(actor) ?? "";
+    }
+
+    private extractAvatarCatalogId(avatarUrl: string | null | undefined): string | null {
+        if (!avatarUrl) {
+            return null;
+        }
+        if (!avatarUrl.startsWith("avatar://")) {
+            return null;
+        }
+        return avatarUrl.slice("avatar://".length) || null;
+    }
+
+    private async syncActorAvatarPreviews(actors: QuestActor[]): Promise<void> {
+        const actorSet = new Set(actors);
+        for (const [actor, existingUrl] of this.actorAvatarPreviewUrls.entries()) {
+            if (!actorSet.has(actor)) {
+                URL.revokeObjectURL(existingUrl);
+                this.actorAvatarPreviewUrls.delete(actor);
+            }
+        }
+        await Promise.all(actors.map((actor) => this.updateActorAvatarPreview(actor)));
+    }
+
+    private async updateActorAvatarPreview(actor: QuestActor): Promise<void> {
+        const existingUrl = this.actorAvatarPreviewUrls.get(actor);
+        const avatarId = this.extractAvatarCatalogId(actor.avatar_url);
+        if (!avatarId) {
+            if (existingUrl) {
+                URL.revokeObjectURL(existingUrl);
+                this.actorAvatarPreviewUrls.delete(actor);
+            }
+            return;
+        }
+        try {
+            const avatarUrl = await this.avatarService.getAvatar(avatarId);
+            if (!avatarUrl) {
+                if (existingUrl) {
+                    URL.revokeObjectURL(existingUrl);
+                    this.actorAvatarPreviewUrls.delete(actor);
+                }
+                return;
+            }
+            if (existingUrl && existingUrl !== avatarUrl) {
+                URL.revokeObjectURL(existingUrl);
+            }
+            this.actorAvatarPreviewUrls.set(actor, avatarUrl);
+        } catch (error) {
+            if (existingUrl) {
+                URL.revokeObjectURL(existingUrl);
+                this.actorAvatarPreviewUrls.delete(actor);
+            }
+            this.snackBar.open("Failed to load actor avatar", "Dismiss", {
+                duration: 3000,
+            });
+            console.error("Error loading actor avatar:", error);
+        }
     }
 }

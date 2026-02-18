@@ -4,7 +4,16 @@ import { BaseCommand, BaseMessage, TauriService } from "./tauri.service";
 
 export interface QuestCatalog {
     version: string;
+    actors?: QuestActor[];
     quests: QuestDefinition[];
+}
+
+export interface QuestActor {
+    id: string;
+    name: string;
+    voice: string;
+    avatar_url: string;
+    prompt: string;
 }
 
 export interface QuestDefinition {
@@ -42,6 +51,7 @@ export interface QuestAction {
     active?: boolean;
     url?: string;
     transcription?: string;
+    actor_id?: string | null;
 }
 
 export interface GetQuestCatalogMessage extends BaseCommand {

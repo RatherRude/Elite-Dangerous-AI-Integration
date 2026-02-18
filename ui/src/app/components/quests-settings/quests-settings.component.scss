@@ -49,10 +49,10 @@
     align-items: start;
 }
 
-.quest-list mat-card-header {
+.left-lists {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .quest-list mat-card-title,
@@ -64,6 +64,10 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
+}
+
+.list-header-actions {
+    margin-bottom: 6px;
 }
 
 .quest-entry {
@@ -78,6 +82,24 @@
     flex: 1;
     justify-content: flex-start;
     text-align: left;
+}
+
+.actor-list-avatar {
+    width: 24px;
+    height: 24px;
+    margin-right: 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(85, 85, 85, 0.7);
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.actor-list-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .quest-entry.selected {
@@ -116,6 +138,56 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 8px;
+}
+
+.actor-avatar-large {
+    width: 72px;
+    height: 72px;
+    border-radius: 6px;
+    border: 1px solid rgba(85, 85, 85, 0.7);
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(22, 22, 22, 0.8);
+}
+
+.actor-avatar-large img {
+    width: 100%;
+    height: 100%;
+}
+
+.avatar-picker-button {
+    width: 72px;
+    height: 72px;
+    min-width: 72px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.actor-top-row {
+    display: grid;
+    grid-template-columns: 84px 1fr;
+    gap: 10px;
+    align-items: start;
+}
+
+.actor-fields {
+    grid-template-columns: repeat(3, minmax(160px, 1fr));
+}
+
+.actor-prompt-field {
+    width: 100%;
+    margin-top: 8px;
+}
+
+.sprite-corner {
+    width: 200%;
+    height: 200%;
+    object-fit: cover;
+    object-position: top left;
 }
 
 .stage-toolbar {

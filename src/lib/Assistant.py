@@ -375,13 +375,17 @@ class Assistant:
         if action == 'play_sound':
             url = step.get('url')
             transcription = step.get('transcription')
+            actor_id = step.get('actor_id')
             if not isinstance(url, str) or not url:
                 log('warn', f"Quest action play_sound missing or invalid url")
                 return
             if not isinstance(transcription, str):
                 log('warn', f"Quest action play_sound missing or invalid transcription")
                 return
-            self.event_manager.add_play_sound(url, transcription)
+            if actor_id is not None and not isinstance(actor_id, str):
+                log('warn', "Quest action play_sound has invalid actor_id")
+                actor_id = None
+            self.event_manager.add_play_sound(url, transcription, actor_id)
             return
 
     def _advance_quest_stage(self, quest_def: dict[str, Any], target_stage_id: str | None, quest_id: str | None) -> None:

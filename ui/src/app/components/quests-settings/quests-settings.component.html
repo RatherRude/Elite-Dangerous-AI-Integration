@@ -23,38 +23,117 @@
     </div>
 
     <div class="quests-layout">
-        <mat-card class="quest-list">
-            <mat-card-header>
-                <mat-card-title>
-                    Quests
-                    <button mat-icon-button color="primary" (click)="addQuest()">
-                        <mat-icon>add</mat-icon>
-                    </button>
-                </mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
+        <mat-card class="left-lists">
+            <mat-expansion-panel [expanded]="questsListExpanded" (opened)="questsListExpanded = true" (closed)="questsListExpanded = false">
+                <mat-expansion-panel-header>
+                    <mat-panel-title>Quests</mat-panel-title>
+                </mat-expansion-panel-header>
+                <div class="list-header-actions">
+                    <button mat-stroked-button color="primary" (click)="addQuest()">Add Quest</button>
+                </div>
                 @if (catalog?.quests?.length) {
                     @for (quest of catalog?.quests; track quest.id; let questIndex = $index) {
-                        <div class="quest-entry"
-                             [class.selected]="quest.id === selectedQuestId">
+                        <div class="quest-entry" [class.selected]="quest.id === selectedQuestId">
                             <button mat-button (click)="selectQuest(quest.id)">
                                 <span class="quest-title">{{ quest.title || quest.id }}</span>
                             </button>
-                            <button mat-icon-button color="warn"
-                                    (click)="removeQuest(questIndex)"
-                                    aria-label="Remove quest">
+                            <button mat-icon-button color="warn" (click)="removeQuest(questIndex)" aria-label="Remove quest">
                                 <mat-icon>remove</mat-icon>
                             </button>
                         </div>
                     }
                 } @else {
-                    <p class="empty-state">No quests yet. Add one to begin.</p>
+                    <p class="empty-state">No quests yet.</p>
                 }
-            </mat-card-content>
+            </mat-expansion-panel>
+
+            <mat-expansion-panel [expanded]="actorsListExpanded" (opened)="actorsListExpanded = true" (closed)="actorsListExpanded = false">
+                <mat-expansion-panel-header>
+                    <mat-panel-title>Actors</mat-panel-title>
+                </mat-expansion-panel-header>
+                <div class="list-header-actions">
+                    <button mat-stroked-button color="primary" (click)="addActor()">Add Actor</button>
+                </div>
+                @if (catalog?.actors?.length) {
+                    @for (actor of catalog?.actors ?? []; track actor.id; let actorIndex = $index) {
+                        <div class="quest-entry" [class.selected]="actor.id === selectedActorId">
+                            <button mat-button (click)="selectActor(actor.id)">
+                                <span class="actor-list-avatar">
+                                    @if (getActorAvatarPreviewUrl(actor)) {
+                                        <img [src]="getActorAvatarPreviewUrl(actor)" [alt]="actor.name + ' avatar'">
+                                    } @else if (actor.avatar_url) {
+                                        <img [src]="actor.avatar_url" [alt]="actor.name + ' avatar'">
+                                    } @else {
+                                        <mat-icon>person</mat-icon>
+                                    }
+                                </span>
+                                <span class="quest-title">{{ actor.name || actor.id }}</span>
+                            </button>
+                            <button mat-icon-button color="warn" (click)="removeActor(actorIndex)" aria-label="Remove actor">
+                                <mat-icon>remove</mat-icon>
+                            </button>
+                        </div>
+                    }
+                } @else {
+                    <p class="empty-state">No actors yet.</p>
+                }
+            </mat-expansion-panel>
         </mat-card>
 
         <div class="quest-editor">
-            @if (selectedQuest) {
+            @if (selectedActor) {
+                <mat-card class="actor-details">
+                    <mat-card-header>
+                        <mat-card-title>
+                            Actor Details
+                            <button
+                                mat-icon-button
+                                color="warn"
+                                (click)="removeActor((catalog?.actors ?? []).indexOf(selectedActor))"
+                                aria-label="Remove selected actor">
+                                <mat-icon>remove</mat-icon>
+                            </button>
+                        </mat-card-title>
+                    </mat-card-header>
+                    <mat-card-content>
+                        <div class="actor-top-row">
+                            <button
+                                mat-stroked-button
+                                class="avatar-picker-button"
+                                (click)="openActorAvatarCatalog(selectedActor)"
+                                aria-label="Change avatar">
+                                <span class="actor-avatar-large">
+                                    @if (getActorAvatarPreviewUrl(selectedActor)) {
+                                        <img class="sprite-corner" [src]="getActorAvatarPreviewUrl(selectedActor)" [alt]="selectedActor.name + ' avatar'">
+                                    } @else if (selectedActor.avatar_url) {
+                                        <img class="sprite-corner" [src]="selectedActor.avatar_url" [alt]="selectedActor.name + ' avatar'">
+                                    } @else {
+                                        <mat-icon>person</mat-icon>
+                                    }
+                                </span>
+                            </button>
+                            <div class="quest-fields actor-fields">
+                                <mat-form-field>
+                                    <mat-label>Actor Id</mat-label>
+                                    <input matInput [(ngModel)]="selectedActor.id" (ngModelChange)="onActorIdChange(selectedActor)">
+                                </mat-form-field>
+                                <mat-form-field>
+                                    <mat-label>Name</mat-label>
+                                    <input matInput [(ngModel)]="selectedActor.name">
+                                </mat-form-field>
+                                <mat-form-field>
+                                    <mat-label>Voice</mat-label>
+                                    <input matInput [(ngModel)]="selectedActor.voice">
+                                </mat-form-field>
+                            </div>
+                        </div>
+                        <mat-form-field class="actor-prompt-field">
+                            <mat-label>Prompt</mat-label>
+                            <textarea matInput rows="4" [(ngModel)]="selectedActor.prompt"></textarea>
+                        </mat-form-field>
+                    </mat-card-content>
+                </mat-card>
+            } @else if (selectedQuest) {
                 <mat-card class="quest-meta">
                     <mat-card-title>Quest Details</mat-card-title>
                     <mat-card-content>
@@ -259,6 +338,17 @@
                                                                       [(ngModel)]="action.transcription"
                                                                       placeholder="Text description of the sound"></textarea>
                                                         </mat-form-field>
+                                                        <mat-form-field>
+                                                            <mat-label>Actor (optional)</mat-label>
+                                                            <mat-select [(ngModel)]="action.actor_id">
+                                                                <mat-option [value]="null">None</mat-option>
+                                                                @for (actorOption of catalog?.actors ?? []; track actorOption.id) {
+                                                                    <mat-option [value]="actorOption.id">
+                                                                        {{ actorOption.name || actorOption.id }}
+                                                                    </mat-option>
+                                                                }
+                                                            </mat-select>
+                                                        </mat-form-field>
                                                     }
 
                                                     <button mat-icon-button color="warn"
@@ -292,25 +382,11 @@
             } @else {
                 <mat-card class="empty-editor">
                     <mat-card-content>
-                        <p>Select a quest to edit its stages.</p>
-                        @if (catalog && !catalog.quests.length) {
-                            <p class="empty-state">No quests found in the catalog.</p>
-                        }
+                        <p>Select a quest or actor from the left list.</p>
                     </mat-card-content>
                 </mat-card>
             }
 
-            <mat-expansion-panel class="yaml-panel">
-                <mat-expansion-panel-header>
-                    <mat-panel-title>Raw quests.yaml</mat-panel-title>
-                </mat-expansion-panel-header>
-                <mat-form-field class="yaml-field">
-                    <textarea matInput rows="12" [value]="rawYaml" readonly></textarea>
-                </mat-form-field>
-                @if (!rawYaml) {
-                    <div class="empty-state">No raw data received yet.</div>
-                }
-            </mat-expansion-panel>
         </div>
     </div>
 </div>
