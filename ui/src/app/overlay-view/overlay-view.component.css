@@ -65,6 +65,7 @@
   /*transform: rotate3d(0, 1, 0, -20deg);*/
   transform: translateX(0);
   transition: transform 0.26s ease-out;
+  will-change: transform;
   &.idle {
     transform: translateX(150%)
   }
@@ -88,6 +89,12 @@
   background-repeat: no-repeat;
   /* No transform by default */
   transform: none;
+  opacity: 1;
+  visibility: visible;
+  will-change: opacity;
+  transition:
+    opacity 0.12s linear 0.1s,
+    visibility 0s linear 0s;
   
   &.listening {
     background-position: 0% 0%;
@@ -106,6 +113,15 @@
   }
   
 
+}
+
+/* Hide avatar immediately while the character slides out to avoid edge peeking */
+.overlay-character.idle .overlay-pngtuber {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.08s linear 0s,
+    visibility 0s linear 0.08s;
 }
 
 

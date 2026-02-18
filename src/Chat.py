@@ -858,7 +858,10 @@ class Chat:
             self.event_manager.add_assistant_speaking()
 
         def on_complete() -> None:
-            self.event_manager.add_assistant_complete_event()
+            # Avoid clearing avatar/state between back-to-back queued lines.
+            # Only emit completion when this was the last queued utterance.
+            if not self.tts.has_queued_items():
+                self.event_manager.add_assistant_complete_event()
 
         self.tts.say(
             transcription,

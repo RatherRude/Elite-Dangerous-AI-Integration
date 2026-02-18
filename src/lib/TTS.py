@@ -220,6 +220,9 @@ class TTS:
     def get_is_playing(self):
         return self._is_playing or not self.read_queue.empty()
 
+    def has_queued_items(self) -> bool:
+        return not self.read_queue.empty()
+
     @observe()
     def wait_for_completion(self):
         while self.get_is_playing():
