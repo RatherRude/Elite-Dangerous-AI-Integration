@@ -28,9 +28,6 @@
                 <mat-expansion-panel-header>
                     <mat-panel-title>Quests</mat-panel-title>
                 </mat-expansion-panel-header>
-                <div class="list-header-actions">
-                    <button mat-stroked-button color="primary" (click)="addQuest()">Add Quest</button>
-                </div>
                 @if (catalog?.quests?.length) {
                     @for (quest of catalog?.quests; track quest.id; let questIndex = $index) {
                         <div class="quest-entry" [class.selected]="quest.id === selectedQuestId">
@@ -45,24 +42,24 @@
                 } @else {
                     <p class="empty-state">No quests yet.</p>
                 }
+                <div class="list-footer-actions">
+                    <button mat-stroked-button color="primary" (click)="addQuest()">Add Quest</button>
+                </div>
             </mat-expansion-panel>
 
             <mat-expansion-panel [expanded]="actorsListExpanded" (opened)="actorsListExpanded = true" (closed)="actorsListExpanded = false">
                 <mat-expansion-panel-header>
                     <mat-panel-title>Actors</mat-panel-title>
                 </mat-expansion-panel-header>
-                <div class="list-header-actions">
-                    <button mat-stroked-button color="primary" (click)="addActor()">Add Actor</button>
-                </div>
                 @if (catalog?.actors?.length) {
                     @for (actor of catalog?.actors ?? []; track actor.id; let actorIndex = $index) {
                         <div class="quest-entry" [class.selected]="actor.id === selectedActorId">
                             <button mat-button (click)="selectActor(actor.id)">
                                 <span class="actor-list-avatar">
                                     @if (getActorAvatarPreviewUrl(actor)) {
-                                        <img [src]="getActorAvatarPreviewUrl(actor)" [alt]="actor.name + ' avatar'">
+                                        <img class="sprite-corner" [src]="getActorAvatarPreviewUrl(actor)" [alt]="actor.name + ' avatar'">
                                     } @else if (actor.avatar_url) {
-                                        <img [src]="actor.avatar_url" [alt]="actor.name + ' avatar'">
+                                        <img class="sprite-corner" [src]="actor.avatar_url" [alt]="actor.name + ' avatar'">
                                     } @else {
                                         <mat-icon>person</mat-icon>
                                     }
@@ -77,6 +74,9 @@
                 } @else {
                     <p class="empty-state">No actors yet.</p>
                 }
+                <div class="list-footer-actions">
+                    <button mat-stroked-button color="primary" (click)="addActor()">Add Actor</button>
+                </div>
             </mat-expansion-panel>
         </mat-card>
 

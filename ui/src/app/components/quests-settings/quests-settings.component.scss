@@ -66,8 +66,8 @@
     gap: 8px;
 }
 
-.list-header-actions {
-    margin-bottom: 6px;
+.list-footer-actions {
+    margin-top: 8px;
 }
 
 .quest-entry {
@@ -92,14 +92,13 @@
     border: 1px solid rgba(85, 85, 85, 0.7);
     overflow: hidden;
     display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    align-items: flex-start;
+    justify-content: flex-start;
 }
 
 .actor-list-avatar img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
 }
 
 .quest-entry.selected {
@@ -147,9 +146,14 @@
     border: 1px solid rgba(85, 85, 85, 0.7);
     overflow: hidden;
     display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    align-items: flex-start;
+    justify-content: flex-start;
     background: rgba(22, 22, 22, 0.8);
+}
+
+.actor-list-avatar mat-icon,
+.actor-avatar-large mat-icon {
+    margin: auto;
 }
 
 .actor-avatar-large img {
@@ -183,7 +187,8 @@
     margin-top: 8px;
 }
 
-.sprite-corner {
+.actor-avatar-large img.sprite-corner,
+.actor-list-avatar img.sprite-corner {
     width: 200%;
     height: 200%;
     object-fit: cover;
