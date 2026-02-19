@@ -2453,7 +2453,7 @@ class PromptGenerator:
         resolved_name = actor_name if isinstance(actor_name, str) and actor_name else "Unknown quest character"
         resolved_text = transcription if isinstance(transcription, str) and transcription else ""
         return {
-            "role": "assistant",
+            "role": "user",
             "content": f"[Quest dialog] {resolved_name} said: {resolved_text}",
         }
 
