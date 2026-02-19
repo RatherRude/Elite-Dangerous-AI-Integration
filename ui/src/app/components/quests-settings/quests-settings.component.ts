@@ -211,9 +211,17 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
         this.scheduleLayout();
     }
 
-    onActorIdChange(actor: QuestActor): void {
-        if (this.selectedActor === actor) {
-            this.selectedActorId = actor.id;
+    onActorIdChange(nextActorId: string): void {
+        const previousId = this.selectedActorId;
+        if (previousId && previousId !== nextActorId) {
+            this.replaceActorReferences(previousId, nextActorId);
+        }
+        this.selectedActorId = nextActorId;
+    }
+
+    onQuestIdChange(quest: QuestDefinition): void {
+        if (this.selectedQuest === quest) {
+            this.selectedQuestId = quest.id;
         }
     }
 
@@ -613,6 +621,23 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
 
     private collapseAllStages(catalog: QuestCatalog): void {
         catalog.quests.forEach((quest) => this.collapseStagesForQuest(quest));
+    }
+
+    private replaceActorReferences(previousId: string, nextId: string): void {
+        if (!this.catalog) {
+            return;
+        }
+        for (const quest of this.catalog.quests) {
+            for (const stage of quest.stages) {
+                for (const step of stage.plan ?? []) {
+                    for (const action of step.actions ?? []) {
+                        if (action.actor_id === previousId) {
+                            action.actor_id = nextId;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private bindStageGraphListeners(): void {

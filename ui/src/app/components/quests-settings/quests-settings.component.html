@@ -115,7 +115,11 @@
                             <div class="quest-fields actor-fields">
                                 <mat-form-field>
                                     <mat-label>Actor Id</mat-label>
-                                    <input matInput [(ngModel)]="selectedActor.id" (ngModelChange)="onActorIdChange(selectedActor)">
+                                    <input
+                                        matInput
+                                        [(ngModel)]="selectedActor.id"
+                                        [ngModelOptions]="{ updateOn: 'blur' }"
+                                        (ngModelChange)="onActorIdChange($event)">
                                 </mat-form-field>
                                 <mat-form-field>
                                     <mat-label>Name</mat-label>
@@ -149,7 +153,11 @@
                         <div class="quest-fields">
                             <mat-form-field>
                                 <mat-label>Quest Id</mat-label>
-                                <input matInput [(ngModel)]="selectedQuest.id">
+                                <input
+                                    matInput
+                                    [(ngModel)]="selectedQuest.id"
+                                    [ngModelOptions]="{ updateOn: 'blur' }"
+                                    (ngModelChange)="onQuestIdChange(selectedQuest)">
                             </mat-form-field>
                             <mat-form-field>
                                 <mat-label>Title</mat-label>
@@ -197,8 +205,11 @@
                             <div class="stage-meta">
                                 <mat-form-field>
                                     <mat-label>Stage Id</mat-label>
-                                <input matInput [(ngModel)]="selectedStage.id"
-                                       (ngModelChange)="onStageIdChange(selectedStage)">
+                                <input
+                                    matInput
+                                    [(ngModel)]="selectedStage.id"
+                                    [ngModelOptions]="{ updateOn: 'blur' }"
+                                    (ngModelChange)="onStageIdChange(selectedStage)">
                                 </mat-form-field>
                                 <mat-form-field>
                                     <mat-label>Description</mat-label>
