@@ -76,6 +76,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
     lastLoadedAt: string | null = null;
     selectedStageId: string | null = null;
     private network: Network | null = null;
+    private networkContainer: HTMLDivElement | null = null;
     private nodes = new DataSet<Node>();
     private edges = new DataSet<Edge>();
     private subscriptions: Subscription[] = [];
@@ -169,6 +170,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
             this.network.destroy();
             this.network = null;
         }
+        this.networkContainer = null;
     }
 
     get selectedQuest(): QuestDefinition | null {
@@ -659,13 +661,23 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
     }
 
     private initializeNetwork(): void {
+        const container = this.stageNetworkRef?.nativeElement;
+        if (!container) {
+            if (this.network) {
+                this.network.destroy();
+                this.network = null;
+            }
+            this.networkContainer = null;
+            return;
+        }
+        if (this.network && this.networkContainer !== container) {
+            this.network.destroy();
+            this.network = null;
+        }
         if (this.network) {
             return;
         }
-        const container = this.stageNetworkRef?.nativeElement;
-        if (!container) {
-            return;
-        }
+        this.networkContainer = container;
         this.network = new Network(
             container,
             { nodes: this.nodes, edges: this.edges },
@@ -728,9 +740,15 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
 
     private refreshNetwork(): void {
         const quest = this.selectedQuest;
-        if (!this.network || !quest) {
+        if (!quest) {
             this.nodes.clear();
             this.edges.clear();
+            if (this.network) {
+                this.network.setData({ nodes: this.nodes, edges: this.edges });
+            }
+            return;
+        }
+        if (!this.network) {
             return;
         }
 

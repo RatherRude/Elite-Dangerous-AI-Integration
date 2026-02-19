@@ -12,6 +12,12 @@ actors:
   voice: M1
   avatar_url: avatar://avatar_1763754441311_2dwnvfcdo
   prompt: ''
+- id: default_covas
+  name: covas
+  name_color: '#0011ff'
+  voice: F1
+  avatar_url: ''
+  prompt: ''
 quests:
 - id: ebreach_snack_run
   title: E-Breach Emergency
@@ -506,7 +512,7 @@ quests:
       actions:
       - action: log
         message: A new hand touches the beacon.
-- id: dialog_test
+- id: dialog_test2
   title: Dialog Test
   description: Dialog Test
   active: true
@@ -568,3 +574,13 @@ quests:
         actor_id: actor_2
         transcription: Or press the switch… and change the balance of the galaxy just
           a little.
+    - conditions:
+      - source: event
+        path: event
+        operator: equals
+        value: ReceiveText
+      actions:
+      - action: npc_message
+        message: Describe the outcome.
+        actor_id: default_covas
+        transcription: hahahaha!
