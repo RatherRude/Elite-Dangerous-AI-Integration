@@ -701,8 +701,35 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
                     color: {
                         background: "rgba(32, 32, 32, 0.9)",
                         border: "rgba(70, 70, 70, 0.9)",
+                        highlight: {
+                            background: "#ffa724",
+                            border: "#ffa724",
+                        },
+                        hover: {
+                            background: "#ffa724",
+                            border: "#ffa724",
+                        },
                     },
                     font: { color: "#f0f0f0", size: 12 },
+                    chosen: {
+                        node: (
+                            _values: any,
+                            _id: string | number,
+                            _selected: boolean,
+                            _hovering: boolean,
+                        ) => {
+                            _values.color = "#ffa724";
+                            _values.borderColor = "#ffa724";
+                        },
+                        label: (
+                            values: { color?: string },
+                            _id: string | number,
+                            _selected: boolean,
+                            _hovering: boolean,
+                        ) => {
+                            values.color = "#000000";
+                        },
+                    },
                     widthConstraint: { maximum: 220 },
                 },
                 edges: {
