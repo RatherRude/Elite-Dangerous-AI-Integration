@@ -1,7 +1,6 @@
 from pydantic import ValidationError
 import hashlib
 import inspect
-import json
 import traceback
 from abc import ABC, abstractmethod
 from datetime import timezone, datetime
@@ -185,17 +184,19 @@ class EventManager:
         actor_id: str | None = None,
         voice: str | None = None,
     ):
-        payload: dict[str, Any] = {"url": url, "transcription": transcription}
+        payload: dict[str, Any] = {
+            "event": "QuestEvent",
+            "action": "play_sound",
+            "url": url,
+            "transcription": transcription,
+        }
         if actor_id:
             payload["actor_id"] = actor_id
         if voice:
             payload["voice"] = voice
-        content = json.dumps(payload)
-        event = ConversationEvent(kind='play_sound', content=content)
-        self.incoming.put(event)
-        # log('debug', event)
+        self.add_quest_event(payload)
 
-    def add_scripted_dialog(
+    def add_npc_message(
         self,
         actor_id: str,
         voice: str,
@@ -206,6 +207,8 @@ class EventManager:
         prompt: str | None = None,
     ):
         payload: dict[str, Any] = {
+            "event": "QuestEvent",
+            "action": "npc_message",
             "actor_id": actor_id,
             "voice": voice,
             "transcription": transcription,
@@ -218,9 +221,7 @@ class EventManager:
             payload["avatar_url"] = avatar_url
         if prompt:
             payload["prompt"] = prompt
-        content = json.dumps(payload)
-        event = ConversationEvent(kind='scripted_dialog', content=content)
-        self.incoming.put(event)
+        self.add_quest_event(payload)
 
     def add_projected_event(self, event: ProjectedEvent, source: Event):
         event.processed_at = source.processed_at

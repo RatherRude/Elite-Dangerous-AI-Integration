@@ -69,6 +69,7 @@ from lib.Event import (
     ExternalEvent,
     GameEvent,
     MemoryEvent,
+    QuestEvent,
     ProjectedEvent,
     StatusEvent,
     ToolEvent,
@@ -389,11 +390,18 @@ class Chat:
             event = cast(MemoryEvent, event)
             show_chat_message("memory", event.content)
         if event.kind == "quest":
-            event = cast(MemoryEvent, event)
-            show_chat_message("quest", event.content)
-        if event.kind in ["play_sound", "scripted_dialog"]:
-            event = cast(ConversationEvent, event)
-            self._schedule_scripted_audio_event(event.kind, event.content)
+            event = cast(QuestEvent, event)
+            action_value = event.content.get("action") if isinstance(event.content, dict) else None
+            action_name = (
+                action_value
+                if isinstance(action_value, str) and action_value in ["play_sound", "npc_message"]
+                else None
+            )
+            is_audio_quest_action = action_name is not None
+            if not is_audio_quest_action:
+                show_chat_message("quest", event.content)
+            if is_audio_quest_action:
+                self._schedule_quest_audio_event(action_name, cast(dict[str, Any], event.content))
 
         if isinstance(event, GameEvent) and event.content.get("event") == "FSDTarget":
             if "Name" in event.content:
@@ -812,18 +820,13 @@ class Chat:
         _, projected_states = self.event_manager.get_current_state()
         self.assistant.web_search(query, projected_states)
 
-    def _schedule_scripted_audio_event(self, kind: str, content: str) -> None:
-        try:
-            payload = json.loads(content) if content else {}
-        except json.JSONDecodeError:
-            log("warn", f"Invalid {kind} payload: not JSON")
-            return
+    def _schedule_quest_audio_event(self, action: str, payload: dict[str, Any]) -> None:
         if not isinstance(payload, dict):
-            log("warn", f"Invalid {kind} payload: not an object")
+            log("warn", f"Invalid quest payload for action {action}: not an object")
             return
         transcription = payload.get("transcription")
         if not isinstance(transcription, str) or not transcription:
-            log("warn", f"Invalid {kind} payload: missing transcription")
+            log("warn", f"Invalid quest payload for action {action}: missing transcription")
             return
         voice = payload.get("voice")
         if not isinstance(voice, str) or not voice:
@@ -844,16 +847,17 @@ class Chat:
         if avatar_url and avatar_url.startswith("avatar://"):
             extracted_id = avatar_url[len("avatar://") :]
             avatar_id = extracted_id if extracted_id else None
+
         def on_start() -> None:
-            if kind == "scripted_dialog":
+            if action == "npc_message":
                 show_chat_message(
-                    "scripted_dialog",
+                    "npc_message",
                     transcription,
                     actor_id=actor_id if isinstance(actor_id, str) else None,
                     actor_name=actor_name if isinstance(actor_name, str) else None,
                     display_color=actor_name_color if isinstance(actor_name_color, str) else None,
                     avatar_id=avatar_id if isinstance(avatar_id, str) else None,
-                    display_name=actor_name if isinstance(actor_name, str) and actor_name else "Scripted Dialog",
+                    display_name=actor_name if isinstance(actor_name, str) and actor_name else "NPC",
                 )
             self.event_manager.add_assistant_speaking()
 

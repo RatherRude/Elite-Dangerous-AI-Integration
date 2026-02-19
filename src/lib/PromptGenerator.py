@@ -2233,6 +2233,8 @@ class PromptGenerator:
             return f"{self.commander_name} is no longer in combat."
         if event_name == 'QuestEvent':
             action = content.get('action')
+            if action in ('play_sound', 'npc_message'):
+                return None
             quest_title = content.get('quest_title') or content.get('quest_id') or 'Unknown quest'
             if action == 'advance_stage':
                 stage_name = content.get('stage_name') or content.get('stage_id') or 'unknown stage'
@@ -2440,25 +2442,20 @@ class PromptGenerator:
         return None
 
     def conversation_message(self, event: ConversationEvent):
-        if event.kind == "scripted_dialog":
-            actor_name = "Unknown quest character"
-            spoken_text = event.content
-            try:
-                payload = json.loads(event.content)
-                if isinstance(payload, dict):
-                    parsed_name = payload.get("actor_name")
-                    parsed_text = payload.get("transcription")
-                    if isinstance(parsed_name, str) and parsed_name:
-                        actor_name = parsed_name
-                    if isinstance(parsed_text, str) and parsed_text:
-                        spoken_text = parsed_text
-            except Exception:
-                pass
-            return {
-                "role": "assistant",
-                "content": f"[Quest dialog] {actor_name} said: {spoken_text}",
-            }
         return {"role": event.kind, "content": event.content}
+
+    def quest_conversation_message(self, event: QuestEvent):
+        action = event.content.get("action") if isinstance(event.content, dict) else None
+        if action != "npc_message":
+            return None
+        actor_name = event.content.get("actor_name") if isinstance(event.content, dict) else None
+        transcription = event.content.get("transcription") if isinstance(event.content, dict) else None
+        resolved_name = actor_name if isinstance(actor_name, str) and actor_name else "Unknown quest character"
+        resolved_text = transcription if isinstance(transcription, str) and transcription else ""
+        return {
+            "role": "assistant",
+            "content": f"[Quest dialog] {resolved_name} said: {resolved_text}",
+        }
 
     def tool_messages(self, event: ToolEvent):
         responses = []
@@ -3560,9 +3557,15 @@ class PromptGenerator:
                         piece = message
                         conversational_pieces.append(piece)
 
-            if isinstance(event, ConversationEvent) and event.kind in ['user', 'assistant', 'scripted_dialog']:
+            if isinstance(event, ConversationEvent) and event.kind in ['user', 'assistant']:
                 piece = self.conversation_message(event)
                 conversational_pieces.append(piece)
+
+            if isinstance(event, QuestEvent):
+                quest_piece = self.quest_conversation_message(event)
+                if quest_piece:
+                    piece = quest_piece
+                    conversational_pieces.append(piece)
 
             if isinstance(event, ToolEvent):
                 tool_messages = self.tool_messages(event)

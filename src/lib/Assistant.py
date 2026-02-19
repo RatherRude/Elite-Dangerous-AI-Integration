@@ -411,28 +411,28 @@ class Assistant:
                         actor_voice = voice
             self.event_manager.add_play_sound(url, transcription, actor_id, actor_voice)
             return
-        if action == 'scripted_dialog':
+        if action == 'npc_message':
             actor_id = step.get('actor_id')
             transcription = step.get('transcription')
             if not isinstance(actor_id, str) or not actor_id:
-                log('warn', "Quest action scripted_dialog missing or invalid actor_id")
+                log('warn', "Quest action npc_message missing or invalid actor_id")
                 return
             if not isinstance(transcription, str) or not transcription:
-                log('warn', "Quest action scripted_dialog missing or invalid transcription")
+                log('warn', "Quest action npc_message missing or invalid transcription")
                 return
             actor = self.quest_actors.get(actor_id)
             if not isinstance(actor, dict):
-                log('warn', f"Quest action scripted_dialog actor '{actor_id}' not found")
+                log('warn', f"Quest action npc_message actor '{actor_id}' not found")
                 return
             actor_voice = actor.get('voice')
             if not isinstance(actor_voice, str) or not actor_voice:
-                log('warn', f"Quest action scripted_dialog actor '{actor_id}' has no voice")
+                log('warn', f"Quest action npc_message actor '{actor_id}' has no voice")
                 return
             actor_prompt = actor.get('prompt')
             actor_name = actor.get('name')
             actor_name_color = actor.get('name_color')
             avatar_url = actor.get('avatar_url')
-            self.event_manager.add_scripted_dialog(
+            self.event_manager.add_npc_message(
                 actor_id=actor_id,
                 voice=actor_voice,
                 transcription=transcription,

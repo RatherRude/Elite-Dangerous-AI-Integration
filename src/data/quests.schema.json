@@ -148,7 +148,7 @@
         "action": {
           "type": "string",
           "description": "Action to execute when step conditions are met.",
-          "enum": ["log", "advance_stage", "set_active", "play_sound", "scripted_dialog"]
+          "enum": ["log", "advance_stage", "set_active", "play_sound", "npc_message"]
         },
         "message": {
           "type": "string",
@@ -222,7 +222,7 @@
         },
         {
           "if": {
-            "properties": { "action": { "const": "scripted_dialog" } },
+            "properties": { "action": { "const": "npc_message" } },
             "required": ["action"]
           },
           "then": {

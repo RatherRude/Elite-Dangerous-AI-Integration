@@ -93,7 +93,7 @@ export class ChatContainerComponent implements AfterViewChecked, OnChanges, OnDe
 
   private applyLimit(): void {
     const filteredChat = this.fullChat.filter((msg) => !this.isFilteredEvent(msg));
-    const limitedRoles = ["covas", "cmdr", "action", "scripted_dialog"];
+    const limitedRoles = ["covas", "cmdr", "action", "npc_message"];
 
     if (typeof this.limit === "number" && this.limit > 0) {
       this.chat = filteredChat
@@ -144,7 +144,7 @@ export class ChatContainerComponent implements AfterViewChecked, OnChanges, OnDe
         return "#E91E63";
       case "action":
         return "#FF9800";
-      case "scripted_dialog":
+      case "npc_message":
         return "#7cb3ff";
       default:
         return "inherit";

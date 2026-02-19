@@ -168,10 +168,10 @@ class QuestCatalogManager:
                                 "advance_stage",
                                 "set_active",
                                 "play_sound",
-                                "scripted_dialog",
+                                "npc_message",
                             ):
                                 errors.append(
-                                    f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' action #{action_index + 1} action must be log, advance_stage, set_active, play_sound, or scripted_dialog.",
+                                    f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' action #{action_index + 1} action must be log, advance_stage, set_active, play_sound, or npc_message.",
                                 )
                                 continue
                             if action_type == "log" and "message" not in action:
@@ -221,14 +221,14 @@ class QuestCatalogManager:
                                     f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' action #{action_index + 1} actor_id references unknown actor.",
                                 )
                             if (
-                                action_type == "scripted_dialog"
+                                action_type == "npc_message"
                                 and not isinstance(action.get("actor_id"), str)
                             ):
                                 errors.append(
                                     f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' action #{action_index + 1} missing actor_id.",
                                 )
                             if (
-                                action_type == "scripted_dialog"
+                                action_type == "npc_message"
                                 and "transcription" not in action
                             ):
                                 errors.append(

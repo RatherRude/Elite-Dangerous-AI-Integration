@@ -58,9 +58,7 @@ export interface ConversationEvent {
         | "assistant_speaking"
         | "assistant"
         | "assistant_acting"
-        | "assistant_completed"
-        | "play_sound"
-        | "scripted_dialog";
+        | "assistant_completed";
     processed_at: number;
 }
 
@@ -82,6 +80,14 @@ export interface QuestEvent {
         stage_description?: string | null;
         stage_instructions?: string | null;
         active?: boolean;
+        url?: string;
+        transcription?: string;
+        actor_id?: string;
+        actor_name?: string;
+        actor_name_color?: string;
+        avatar_url?: string;
+        voice?: string;
+        prompt?: string;
         version?: string;
         quest_count?: number;
         [key: string]: any;

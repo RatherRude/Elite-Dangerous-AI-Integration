@@ -11,7 +11,7 @@ class BaseMessage(TypedDict):
 
 class ConversationMessage(TypedDict):
     type: Literal['conversation']
-    kind: Literal['user', 'assistant', 'assistant_speaking', 'assistant_completed', 'play_sound', 'scripted_dialog']
+    kind: Literal['user', 'assistant', 'assistant_speaking', 'assistant_completed']
     content: str
 
 class ConfigMessage(TypedDict):

@@ -45,7 +45,7 @@ export interface QuestCondition {
 }
 
 export interface QuestAction {
-    action: "log" | "advance_stage" | "set_active" | "play_sound" | "scripted_dialog";
+    action: "log" | "advance_stage" | "set_active" | "play_sound" | "npc_message";
     message?: string;
     target_stage_id?: string;
     quest_id?: string;

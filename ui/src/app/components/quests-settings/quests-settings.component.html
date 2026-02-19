@@ -297,7 +297,7 @@
                                                             <mat-option value="advance_stage">advance_stage</mat-option>
                                                             <mat-option value="set_active">set_active</mat-option>
                                                             <mat-option value="play_sound">play_sound</mat-option>
-                                                            <mat-option value="scripted_dialog">scripted_dialog</mat-option>
+                                                            <mat-option value="npc_message">npc_message</mat-option>
                                                         </mat-select>
                                                     </mat-form-field>
 
@@ -360,7 +360,7 @@
                                                             </mat-select>
                                                         </mat-form-field>
                                                     }
-                                                    @if (action.action === 'scripted_dialog') {
+                                                    @if (action.action === 'npc_message') {
                                                         <mat-form-field>
                                                             <mat-label>Actor</mat-label>
                                                             <mat-select [(ngModel)]="action.actor_id">

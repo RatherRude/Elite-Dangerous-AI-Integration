@@ -27,6 +27,8 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
   private currentAvatarUrl: string | null = null;
   private baseAvatarUrl: string | null = null;
   private scriptedAvatarUrl: string | null = null;
+  private scriptedAvatarId: string | null = null;
+  private scriptedAvatarRequestSeq = 0;
   private subscriptions: Subscription[] = [];
 
   // Overlay display settings
@@ -80,7 +82,7 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
         if (!msg) {
           return;
         }
-        if (msg.role === "scripted_dialog") {
+        if (msg.role === "npc_message") {
           void this.setScriptedAvatar(msg.avatar_id);
         }
       }),
@@ -89,13 +91,6 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
       eventService.events$.subscribe((messages) => {
         const message = messages.at(-1);
         if (!message) {
-          return;
-        }
-        if (message.event.kind === "scripted_dialog") {
-          const payload = this.parseScriptedDialogPayload(message.event.content);
-          if (payload?.avatarId) {
-            void this.setScriptedAvatar(payload.avatarId);
-          }
           return;
         }
         if (message.event.kind === "assistant_completed") {
@@ -211,8 +206,18 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
       this.clearScriptedAvatar();
       return;
     }
+    if (this.scriptedAvatarId === avatarId && this.scriptedAvatarUrl) {
+      return;
+    }
+    const requestSeq = ++this.scriptedAvatarRequestSeq;
     try {
       const avatarUrl = await this.avatarService.getAvatar(avatarId);
+      if (requestSeq !== this.scriptedAvatarRequestSeq) {
+        if (avatarUrl) {
+          URL.revokeObjectURL(avatarUrl);
+        }
+        return;
+      }
       if (!avatarUrl) {
         this.clearScriptedAvatar();
         return;
@@ -220,6 +225,7 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
       if (this.scriptedAvatarUrl && this.scriptedAvatarUrl !== avatarUrl) {
         URL.revokeObjectURL(this.scriptedAvatarUrl);
       }
+      this.scriptedAvatarId = avatarId;
       this.scriptedAvatarUrl = avatarUrl;
       this.currentAvatarUrl = avatarUrl;
       this.applyAvatarBackground();
@@ -230,36 +236,14 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
   }
 
   private clearScriptedAvatar(): void {
+    this.scriptedAvatarRequestSeq += 1;
+    this.scriptedAvatarId = null;
     if (this.scriptedAvatarUrl) {
       URL.revokeObjectURL(this.scriptedAvatarUrl);
       this.scriptedAvatarUrl = null;
     }
     this.currentAvatarUrl = this.baseAvatarUrl;
     this.applyAvatarBackground();
-  }
-
-  private parseScriptedDialogPayload(content: string | undefined): { avatarId?: string } | null {
-    if (!content) {
-      return null;
-    }
-    try {
-      const parsed = JSON.parse(content);
-      if (!parsed || typeof parsed !== "object") {
-        return null;
-      }
-      const avatarUrl = (parsed as { avatar_url?: unknown }).avatar_url;
-      if (typeof avatarUrl === "string" && avatarUrl.startsWith("avatar://")) {
-        const avatarId = avatarUrl.slice("avatar://".length);
-        return { avatarId: avatarId || undefined };
-      }
-      const avatarId = (parsed as { avatar_id?: unknown }).avatar_id;
-      if (typeof avatarId === "string" && avatarId) {
-        return { avatarId };
-      }
-      return null;
-    } catch {
-      return null;
-    }
   }
 
   public getLogColor(role: string): string {
@@ -278,7 +262,7 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
         return "#E91E63";
       case "action":
         return "#FF9800";
-      case "scripted_dialog":
+      case "npc_message":
         return "#7cb3ff";
       default:
         return "inherit";
