@@ -151,9 +151,9 @@ class QuestCatalogManager:
                                 errors.append(
                                     f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' condition #{condition_index + 1} operator must be equals or ==.",
                                 )
-                            if condition.get("source") not in ("event", "projection"):
+                            if condition.get("source") != "event":
                                 errors.append(
-                                    f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' condition #{condition_index + 1} source must be event or projection.",
+                                    f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' condition #{condition_index + 1} source must be event.",
                                 )
                     if isinstance(actions, list):
                         for action_index, action in enumerate(actions):

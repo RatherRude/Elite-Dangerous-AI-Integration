@@ -249,27 +249,16 @@ class Assistant:
             if not isinstance(operator, str):
                 operator = 'equals'
             expected = condition.get('value')
-            actual = self._resolve_condition_value(source, path, event, projected_states)
+            actual = self._resolve_condition_value(source, path, event)
             if not self._compare_condition(actual, expected, operator):
                 log('debug', f"Quest condition failed: source={source} path={path} operator={operator} expected={expected} actual={actual}")
                 return False
         return True
 
-    def _resolve_condition_value(self, source: str, path: str, event: Event, projected_states: ProjectedStates) -> Any:
-        if source == 'projection':
-            return self._resolve_projection_value(path, projected_states)
+    def _resolve_condition_value(self, source: str, path: str, event: Event) -> Any:
         if source == 'event':
             return self._resolve_event_value(path, event)
         return None
-
-    def _resolve_projection_value(self, path: str, projected_states: ProjectedStates) -> Any:
-        if not path:
-            return None
-        parts = path.split('.')
-        root = parts[0]
-        remainder = '.'.join(parts[1:])
-        projection_data = get_state_dict(projected_states, root, default={})
-        return self._get_nested_value(projection_data, remainder)
 
     def _resolve_event_value(self, path: str, event: Event) -> Any:
         if not path:

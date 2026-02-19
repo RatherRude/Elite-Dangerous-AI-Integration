@@ -38,7 +38,7 @@ export interface QuestPlanStep {
 }
 
 export interface QuestCondition {
-    source: "projection" | "event";
+    source: "event";
     path: string;
     operator: "equals" | "==";
     value: string | number | boolean | null;
