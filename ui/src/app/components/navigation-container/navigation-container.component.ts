@@ -91,7 +91,12 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
                 this.ensureValidNavigationTarget();
             }),
             this.projectionsService.getProjection("NavInfo").subscribe((navInfo) => {
+                const navRouteChanged = this.hasNavRouteChanged(this.navInfo, navInfo);
                 this.navInfo = navInfo;
+                if (navRouteChanged) {
+                    this.selectedNavigationTarget = "commander";
+                    this.updateSystemContext(this.commanderSystemName, this.commanderSystemAddress);
+                }
                 this.ensureValidNavigationTarget();
             }),
             this.tauriService.output$.subscribe((message) => this.handleBackendMessage(message)),
@@ -163,6 +168,26 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
         if (carrierType === "FleetCarrier") return "Fleet Carrier";
         if (carrierType === "SquadronCarrier") return "Squadron Carrier";
         return carrierType && carrierType !== "Unknown" ? carrierType : "Fleet Carrier";
+    }
+
+    private hasNavRouteChanged(previousNavInfo: any, nextNavInfo: any): boolean {
+        const previousRoute = Array.isArray(previousNavInfo?.NavRoute) ? previousNavInfo.NavRoute : [];
+        const nextRoute = Array.isArray(nextNavInfo?.NavRoute) ? nextNavInfo.NavRoute : [];
+        if (previousRoute.length !== nextRoute.length) {
+            return true;
+        }
+        for (let i = 0; i < nextRoute.length; i += 1) {
+            const prev = previousRoute[i] ?? {};
+            const next = nextRoute[i] ?? {};
+            if (
+                prev?.StarSystem !== next?.StarSystem ||
+                prev?.SystemAddress !== next?.SystemAddress ||
+                prev?.Scoopable !== next?.Scoopable
+            ) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private ensureValidNavigationTarget(): void {
