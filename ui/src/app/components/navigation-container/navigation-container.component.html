@@ -3,12 +3,36 @@
         <div class="system-info">
             <div class="system-title">
                 <h2>{{ currentSystemName || 'Unknown System' }}</h2>
-                @if (getCarrierOptions().length) {
+                @if (getNavigationOptions().length) {
                     <mat-form-field class="system-selector" appearance="fill">
                         <mat-select [(ngModel)]="selectedNavigationTarget" (selectionChange)="onNavigationTargetChange()">
                             <mat-option value="commander">Current Location</mat-option>
-                            @for (option of getCarrierOptions(); track option.id) {
-                                <mat-option [value]="option.id">{{ formatCarrierOption(option) }}</mat-option>
+                            @if (getCarrierNavigationOptions().length) {
+                                <mat-optgroup label="Carriers">
+                                    @for (option of getCarrierNavigationOptions(); track option.id) {
+                                        <mat-option [value]="option.id">{{ formatNavigationOption(option) }}</mat-option>
+                                    }
+                                </mat-optgroup>
+                            }
+                            @if (getNavRouteNavigationOptions().length) {
+                                <mat-optgroup label="Nav Route">
+                                    @for (option of getNavRouteNavigationOptions(); track option.id) {
+                                        <mat-option [value]="option.id">
+                                            <span class="nav-route-option">
+                                                <span class="nav-route-option-main">{{ formatNavigationOption(option) }}</span>
+                                                @if (option.scoopable !== null) {
+                                                    <mat-icon
+                                                        class="nav-route-scoop-icon"
+                                                        [class.nav-route-scoop-icon--unscoopable]="!option.scoopable"
+                                                        [attr.aria-label]="option.scoopable ? 'Scoopable star' : 'Not scoopable'"
+                                                    >
+                                                        local_gas_station
+                                                    </mat-icon>
+                                                }
+                                            </span>
+                                        </mat-option>
+                                    }
+                                </mat-optgroup>
                             }
                         </mat-select>
                     </mat-form-field>

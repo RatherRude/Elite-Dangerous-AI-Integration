@@ -14,6 +14,9 @@ import { EventMessage, EventService, GameEvent } from "../../services/event.serv
 import { ProjectionsService } from "../../services/projections.service";
 import { GetSystemEventsMessage, SystemEventsMessage, TauriService } from "../../services/tauri.service";
 
+type NavigationOption = { id: string; label: string; systemName: string; systemAddress: number | null };
+type NavigationRouteOption = NavigationOption & { scoopable: boolean | null };
+
 @Component({
     selector: "app-navigation-container",
     standalone: true,
@@ -37,8 +40,9 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
     currentSystemAddress: number | null = null;
     commanderSystemName: string = "Unknown";
     commanderSystemAddress: number | null = null;
-    selectedNavigationTarget: "commander" | number = "commander";
+    selectedNavigationTarget: "commander" | string = "commander";
     fleetCarriers: any = null;
+    navInfo: any = null;
 
     isLoading = false;
     errorMessage: string | null = null;
@@ -86,6 +90,10 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
                 this.fleetCarriers = fleetCarriers;
                 this.ensureValidNavigationTarget();
             }),
+            this.projectionsService.getProjection("NavInfo").subscribe((navInfo) => {
+                this.navInfo = navInfo;
+                this.ensureValidNavigationTarget();
+            }),
             this.tauriService.output$.subscribe((message) => this.handleBackendMessage(message)),
             this.eventService.events$.subscribe((events) => this.handleGameEvents(events)),
         );
@@ -104,32 +112,51 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
             this.updateSystemContext(this.commanderSystemName, this.commanderSystemAddress);
             return;
         }
-        const carrier = this.getCarrierOptions().find(option => option.id === this.selectedNavigationTarget);
-        if (!carrier) {
+        const option = this.getNavigationOptions().find((entry) => entry.id === this.selectedNavigationTarget);
+        if (!option) {
             this.selectedNavigationTarget = "commander";
             this.updateSystemContext(this.commanderSystemName, this.commanderSystemAddress);
             return;
         }
-        const address = carrier.systemAddress && carrier.systemAddress !== 0 ? carrier.systemAddress : null;
-        this.updateSystemContext(carrier.systemName || "Unknown", address);
+        const address = option.systemAddress && option.systemAddress !== 0 ? option.systemAddress : null;
+        this.updateSystemContext(option.systemName || "Unknown", address);
     }
 
-    getCarrierOptions(): Array<{ id: number; name: string; typeLabel: string; systemName: string; systemAddress: number | null }> {
+    getNavigationOptions(): NavigationOption[] {
+        return [...this.getCarrierNavigationOptions(), ...this.getNavRouteNavigationOptions()];
+    }
+
+    getCarrierNavigationOptions(): NavigationOption[] {
         const carriers = this.fleetCarriers?.Carriers || {};
         return Object.values(carriers)
             .map((carrier: any) => ({
-                id: carrier?.CarrierID,
-                name: carrier?.Name || "Unknown",
-                typeLabel: this.getCarrierTypeLabel(carrier?.CarrierType),
+                id: `carrier:${carrier?.CarrierID}`,
+                label: `${carrier?.Name || "Unknown"} (${this.getCarrierTypeLabel(carrier?.CarrierType)})`,
                 systemName: carrier?.StarSystem || "Unknown",
                 systemAddress: carrier?.SystemAddress ?? null,
             }))
-            .filter((carrier) => typeof carrier.id === "number")
-            .sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
+            .filter((carrier) => carrier.id !== "carrier:undefined")
+            .sort((a, b) => a.label.localeCompare(b.label));
     }
 
-    formatCarrierOption(option: { name: string; typeLabel: string }): string {
-        return `${option.name} (${option.typeLabel})`;
+    getNavRouteNavigationOptions(): NavigationRouteOption[] {
+        const route = Array.isArray(this.navInfo?.NavRoute) ? this.navInfo.NavRoute : [];
+        return route
+            .map((entry: any, index: number): NavigationRouteOption => {
+                const systemName = entry?.StarSystem || "Unknown";
+                return {
+                    id: `nav-route:${index}`,
+                    label: systemName,
+                    systemName,
+                    systemAddress: typeof entry?.SystemAddress === "number" ? entry.SystemAddress : null,
+                    scoopable: typeof entry?.Scoopable === "boolean" ? entry.Scoopable : null,
+                };
+            })
+            .filter((entry: NavigationRouteOption) => entry.systemName !== "Unknown");
+    }
+
+    formatNavigationOption(option: { label: string }): string {
+        return option.label;
     }
 
     private getCarrierTypeLabel(carrierType: string | null | undefined): string {
@@ -139,9 +166,9 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
     }
 
     private ensureValidNavigationTarget(): void {
-        const options = this.getCarrierOptions();
-        const carrierIds = new Set(options.map(option => option.id));
-        if (this.selectedNavigationTarget !== "commander" && !carrierIds.has(this.selectedNavigationTarget)) {
+        const options = this.getNavigationOptions();
+        const optionIds = new Set(options.map((option) => option.id));
+        if (this.selectedNavigationTarget !== "commander" && !optionIds.has(this.selectedNavigationTarget)) {
             this.selectedNavigationTarget = "commander";
             this.updateSystemContext(this.commanderSystemName, this.commanderSystemAddress);
         }
