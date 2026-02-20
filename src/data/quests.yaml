@@ -1,23 +1,35 @@
-version: '0.2'
+version: '0.3'
 actors:
 - id: actor_1
-  name: Angel
+  name: Good
   name_color: '#adefff'
   voice: F1
   avatar_url: avatar://avatar_1771453085772_va3ef6tmu
   prompt: ''
 - id: actor_2
-  name: Devil
+  name: Evil
   name_color: '#ff0000'
-  voice: M1
+  voice: F4
   avatar_url: avatar://avatar_1763754441311_2dwnvfcdo
   prompt: ''
 - id: default_covas
   name: covas
   name_color: '#0011ff'
   voice: F1
-  avatar_url: ''
+  avatar_url: avatar://avatar_1771542370053_sfkt8ceb2
   prompt: ''
+- id: unknown
+  name: Unknown
+  name_color: '#ff0000'
+  voice: F4
+  avatar_url: avatar://avatar_1771542370053_sfkt8ceb2
+  prompt: A cryptic and distant voice that speaks in riddles.
+- id: meridian
+  name: Meridian
+  name_color: '#7fe6ff'
+  voice: F1
+  avatar_url: avatar://avatar_1763754789792_txhu8zvke
+  prompt: A curious Guardian AI newly awakened from an ancient orb.
 quests:
 - id: ebreach_snack_run
   title: E-Breach Emergency
@@ -194,8 +206,10 @@ quests:
         operator: equals
         value: Guardian
       actions:
-      - action: log
-        message: Guardian space reached. Find the ancient ruins.
+      - action: npc_message
+        actor_id: unknown
+        transcription: You crossed the threshold, Commander. Keep following the signal
+          into the ruins.
     - conditions:
       - source: event
         path: event
@@ -333,6 +347,10 @@ quests:
     instructions: Retrieve the orb with your SRV.
     plan:
     - actions:
+      - action: npc_message
+        actor_id: meridian
+        transcription: At last. I am Meridian. Your touch has woken me, and our journey
+          begins now.
       - action: advance_stage
         target_stage_id: outro
       conditions:
@@ -358,8 +376,10 @@ quests:
     plan:
     - conditions: []
       actions:
-      - action: log
-        message: A new hand touches the beacon.
+      - action: npc_message
+        actor_id: meridian
+        transcription: The silence is broken. Carry me onward, and I will show you
+          what still sleeps among the stars.
       - action: set_active
         quest_id: ancient_orb_pilgrimage
         active: true
@@ -428,32 +448,19 @@ quests:
     instructions: The orb insists you linger. Browse the facilities until it relents.
     plan:
     - actions:
-      - action: log
-        message: Shipyard echoes with ancient static.
+      - action: npc_message
+        actor_id: meridian
+        transcription: These docks hum with primitive machinery. Crude, but useful.
       conditions:
       - source: event
         path: event
         operator: equals
         value: Shipyard
     - actions:
-      - action: advance_stage
-        target_stage_id: station_services
-      conditions:
-      - source: event
-        path: event
-        operator: equals
-        value: Shipyard
-    - actions:
-      - action: log
-        message: Outfitting screens flicker with Guardian glyphs.
-      conditions:
-      - source: event
-        path: event
-        operator: equals
-        value: Outfitting
-    - actions:
-      - action: advance_stage
-        target_stage_id: station_services
+      - action: npc_message
+        actor_id: meridian
+        transcription: Their outfitting systems are unsophisticated. I can still make
+          use of what they have.
       conditions:
       - source: event
         path: event
@@ -490,8 +497,10 @@ quests:
     plan:
     - conditions: []
       actions:
-      - action: log
-        message: The beacon's call sharpens as you approach the ring.
+      - action: npc_message
+        actor_id: meridian
+        transcription: Metcalf Ring again. Good. I need proximity to continue reconstructing
+          my memory lattice.
     - actions:
       - action: advance_stage
         target_stage_id: outro
@@ -510,12 +519,14 @@ quests:
     plan:
     - conditions: []
       actions:
-      - action: log
-        message: A new hand touches the beacon.
-- id: dialog_test2
+      - action: npc_message
+        actor_id: meridian
+        transcription: This is only the beginning, Commander. Keep me close, and I
+          will guide you to what the Guardians left behind.
+- id: dialog_test
   title: Dialog Test
   description: Dialog Test
-  active: true
+  active: false
   stages:
   - id: c
     description: Repeat scripted conversation
@@ -564,7 +575,7 @@ quests:
       - action: npc_message
         message: Describe the outcome.
         actor_id: actor_2
-        transcription: Or the student. Go on—your SRV turret’s already aligned.
+        transcription: Or the student. Go on, your SRV turret’s already aligned.
       - action: npc_message
         message: Describe the outcome.
         actor_id: actor_1
@@ -583,4 +594,6 @@ quests:
       - action: npc_message
         message: Describe the outcome.
         actor_id: default_covas
-        transcription: hahahaha!
+        transcription: 'For the good of all of us.
+
+          Except the ones who are dead.'
