@@ -5,6 +5,8 @@ import yaml
 
 from .Logger import log
 
+FALLBACK_STAGE_ID = "__fallback__"
+
 
 def remove_orphaned_quest_states(
     db: Any,
@@ -82,6 +84,7 @@ class QuestCatalogManager:
             if not isinstance(quest, dict):
                 errors.append(f"Quest #{quest_index + 1} must be an object.")
                 continue
+            advance_targets: list[tuple[str, str, int, int]] = []
             for field in ("id", "title", "description", "stages"):
                 if field not in quest:
                     errors.append(
@@ -117,6 +120,10 @@ class QuestCatalogManager:
                 if not isinstance(stage.get("id"), str):
                     errors.append(
                         f"Quest '{quest.get('id', quest_index + 1)}' stage #{stage_index + 1} id must be a string.",
+                    )
+                if stage.get("is_fallback") is not None:
+                    errors.append(
+                        f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' must not define is_fallback; use quest.fallback_stage.",
                     )
                 if not isinstance(stage.get("description"), str):
                     errors.append(
@@ -200,6 +207,18 @@ class QuestCatalogManager:
                                 errors.append(
                                     f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' action #{action_index + 1} missing target_stage_id.",
                                 )
+                            if action_type == "advance_stage" and isinstance(
+                                action.get("target_stage_id"),
+                                str,
+                            ):
+                                advance_targets.append(
+                                    (
+                                        action["target_stage_id"],
+                                        stage.get("id", stage_index + 1),
+                                        step_index + 1,
+                                        action_index + 1,
+                                    ),
+                                )
                             if (
                                 action_type == "set_active"
                                 and "quest_id" not in action
@@ -266,6 +285,74 @@ class QuestCatalogManager:
                                 errors.append(
                                     f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' action #{action_index + 1} missing transcription.",
                                 )
+            fallback_stage = quest.get("fallback_stage")
+            if fallback_stage is not None:
+                if not isinstance(fallback_stage, dict):
+                    errors.append(
+                        f"Quest '{quest.get('id', quest_index + 1)}' fallback_stage must be an object.",
+                    )
+                else:
+                    for field in ("description", "instructions"):
+                        if field not in fallback_stage:
+                            errors.append(
+                                f"Quest '{quest.get('id', quest_index + 1)}' fallback_stage missing {field}.",
+                            )
+                    if not isinstance(fallback_stage.get("description"), str):
+                        errors.append(
+                            f"Quest '{quest.get('id', quest_index + 1)}' fallback_stage description must be a string.",
+                        )
+                    if not isinstance(fallback_stage.get("instructions"), str):
+                        errors.append(
+                            f"Quest '{quest.get('id', quest_index + 1)}' fallback_stage instructions must be a string.",
+                        )
+                    fallback_plan = fallback_stage.get("plan", [])
+                    if fallback_plan is None:
+                        fallback_plan = []
+                    if not isinstance(fallback_plan, list):
+                        errors.append(
+                            f"Quest '{quest.get('id', quest_index + 1)}' fallback_stage plan must be a list.",
+                        )
+                    else:
+                        for step_index, step in enumerate(fallback_plan):
+                            if not isinstance(step, dict):
+                                errors.append(
+                                    f"Quest '{quest.get('id', quest_index + 1)}' fallback_stage plan step #{step_index + 1} must be an object.",
+                                )
+                                continue
+                            conditions = step.get("conditions")
+                            actions = step.get("actions")
+                            if not isinstance(conditions, list):
+                                errors.append(
+                                    f"Quest '{quest.get('id', quest_index + 1)}' fallback_stage plan step #{step_index + 1} conditions must be a list.",
+                                )
+                            if not isinstance(actions, list):
+                                errors.append(
+                                    f"Quest '{quest.get('id', quest_index + 1)}' fallback_stage plan step #{step_index + 1} actions must be a list.",
+                                )
+                            if isinstance(actions, list):
+                                for action_index, action in enumerate(actions):
+                                    if not isinstance(action, dict):
+                                        errors.append(
+                                            f"Quest '{quest.get('id', quest_index + 1)}' fallback_stage action #{action_index + 1} must be an object.",
+                                        )
+                                        continue
+                                    if (
+                                        action.get("action") == "advance_stage"
+                                        and isinstance(action.get("target_stage_id"), str)
+                                    ):
+                                        advance_targets.append(
+                                            (
+                                                action["target_stage_id"],
+                                                "fallback_stage",
+                                                step_index + 1,
+                                                action_index + 1,
+                                            ),
+                                        )
+            for target_stage_id, source_stage_id, step_number, action_number in advance_targets:
+                if target_stage_id == FALLBACK_STAGE_ID:
+                    errors.append(
+                        f"Quest '{quest.get('id', quest_index + 1)}' stage '{source_stage_id}' plan step #{step_number} action #{action_number} cannot advance to fallback stage '{FALLBACK_STAGE_ID}'.",
+                    )
         return errors
 
     def get_catalog(self) -> dict[str, Any]:

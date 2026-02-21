@@ -33,6 +33,7 @@ import {
     QuestAudioImportResult,
     QuestCondition,
     QuestDefinition,
+    QuestFallbackStage,
     QuestPlanStep,
     QuestStage,
     QuestsService,
@@ -44,6 +45,7 @@ import {
 import { AvatarService } from "../../services/avatar.service";
 
 type ConditionValueKind = "string" | "number" | "boolean" | "null";
+const FALLBACK_STAGE_NODE_ID = "__fallback__";
 
 @Component({
     selector: "app-quests-settings",
@@ -103,6 +105,9 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
     ngOnInit(): void {
         this.subscriptions.push(
             this.questsService.catalog$.subscribe((catalog) => {
+                for (const quest of catalog?.quests ?? []) {
+                    this.ensureFallbackStage(quest);
+                }
                 this.catalog = catalog;
                 this.normalizeActorNameColors(catalog?.actors ?? []);
                 void this.syncActorAvatarPreviews(catalog?.actors ?? []);
@@ -187,10 +192,26 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
 
     get selectedStage(): QuestStage | null {
         const quest = this.selectedQuest;
-        if (!quest || !this.selectedStageId) {
+        if (!quest || !this.selectedStageId || this.selectedStageId === FALLBACK_STAGE_NODE_ID) {
             return null;
         }
         return quest.stages.find((stage) => stage.id === this.selectedStageId) || null;
+    }
+
+    get selectedFallbackStage(): QuestFallbackStage | null {
+        const quest = this.selectedQuest;
+        if (!quest || this.selectedStageId !== FALLBACK_STAGE_NODE_ID) {
+            return null;
+        }
+        return this.ensureFallbackStage(quest);
+    }
+
+    get selectedStageEditor(): QuestStage | QuestFallbackStage | null {
+        return this.selectedStage || this.selectedFallbackStage;
+    }
+
+    get isFallbackSelected(): boolean {
+        return this.selectedStageId === FALLBACK_STAGE_NODE_ID;
     }
 
     get selectedActor(): QuestActor | null {
@@ -261,6 +282,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
             this.catalog = { version: "1.0", actors: [], quests: [] };
         }
         const newQuest = this.createQuest();
+        this.ensureFallbackStage(newQuest);
         this.catalog.quests = [...this.catalog.quests, newQuest];
         this.selectedQuestId = newQuest.id;
         this.selectedActorId = null;
@@ -336,7 +358,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
         this.scheduleLayout();
     }
 
-    addPlanStep(stage: QuestStage): void {
+    addPlanStep(stage: QuestStage | QuestFallbackStage): void {
         if (!stage.plan) {
             stage.plan = [];
         }
@@ -344,7 +366,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
         this.scheduleLayout();
     }
 
-    removePlanStep(stage: QuestStage, index: number): void {
+    removePlanStep(stage: QuestStage | QuestFallbackStage, index: number): void {
         stage.plan?.splice(index, 1);
         this.scheduleLayout();
     }
@@ -406,6 +428,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
             description: "Describe the quest objective.",
             active: false,
             stages: [this.createStage()],
+            fallback_stage: this.createFallbackStage(),
         };
     }
 
@@ -427,6 +450,14 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
             id: `stage_${stageIndex + 1}`,
             description: "Describe this stage.",
             instructions: "Provide player-facing instructions.",
+            plan: [this.createPlanStep()],
+        };
+    }
+
+    createFallbackStage(): QuestFallbackStage {
+        return {
+            description: "Fallback",
+            instructions: "Always evaluated and cannot become active.",
             plan: [this.createPlanStep()],
         };
     }
@@ -524,7 +555,11 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
         return quest.stages.find((stage) => stage.id === stageId) || null;
     }
 
-    getAdvanceStageTargets(stage: QuestStage): string[] {
+    getAdvanceTargetStageOptions(quest: QuestDefinition): QuestStage[] {
+        return quest.stages;
+    }
+
+    getAdvanceStageTargets(stage: QuestStage | QuestFallbackStage): string[] {
         const targets: string[] = [];
         for (const step of stage.plan ?? []) {
             for (const action of step.actions ?? []) {
@@ -536,7 +571,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
         return [...new Set(targets)];
     }
 
-    getAdvanceStageLinks(stage: QuestStage): { targetId: string; label: string }[] {
+    getAdvanceStageLinks(stage: QuestStage | QuestFallbackStage): { targetId: string; label: string }[] {
         const links: { targetId: string; label: string }[] = [];
         for (const step of stage.plan ?? []) {
             const label = this.getAdvanceStageLabel(step);
@@ -619,12 +654,6 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
                     distances.set(targetId, currentDistance + 1);
                     queue.push(targetId);
                 }
-            }
-        }
-
-        for (const stage of quest.stages) {
-            if (!distances.has(stage.id)) {
-                distances.set(stage.id, 0);
             }
         }
 
@@ -820,10 +849,21 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
             return;
         }
 
-        const nodes: Node[] = quest.stages.map((stage) => ({
-            id: stage.id,
-            label: stage.description || stage.id,
-        }));
+        const fallbackStage = this.ensureFallbackStage(quest);
+        const regularStageCount = quest.stages.length;
+        const fallbackColumnX = Math.max(regularStageCount, 1) * 280;
+        const nodes: Node[] = [
+            ...quest.stages.map((stage) => ({
+                id: stage.id,
+                label: stage.description || stage.id,
+            })),
+            {
+                id: FALLBACK_STAGE_NODE_ID,
+                label: `${fallbackStage.description || "Fallback"}\n(Fallback)`,
+                x: fallbackColumnX,
+                fixed: { x: true, y: false },
+            },
+        ];
         const edges: Edge[] = [];
 
         let edgeIndex = 0;
@@ -859,6 +899,28 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
                 });
             }
         }
+        for (const link of this.getAdvanceStageLinks(fallbackStage)) {
+            if (!this.getStageById(quest, link.targetId)) {
+                continue;
+            }
+            edges.push({
+                id: `edge-${edgeIndex += 1}`,
+                from: FALLBACK_STAGE_NODE_ID,
+                to: link.targetId,
+                label: link.label || undefined,
+                arrows: { to: { enabled: true, scaleFactor: 0.7 } },
+                color: {
+                    color: "rgba(255, 180, 90, 0.8)",
+                },
+                font: {
+                    color: "rgba(255, 210, 150, 0.95)",
+                    size: 11,
+                    strokeWidth: 3,
+                    strokeColor: "rgba(35, 22, 8, 0.8)",
+                },
+                smooth: { enabled: true, type: "cubicBezier", roundness: 0.2 },
+            });
+        }
 
         this.nodes.clear();
         this.edges.clear();
@@ -889,6 +951,17 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
             return value;
         }
         return JSON.stringify(value);
+    }
+
+    private ensureFallbackStage(quest: QuestDefinition): QuestFallbackStage {
+        if (!quest.fallback_stage || typeof quest.fallback_stage !== "object") {
+            quest.fallback_stage = this.createFallbackStage();
+            return quest.fallback_stage;
+        }
+        if (!Array.isArray(quest.fallback_stage.plan)) {
+            quest.fallback_stage.plan = [];
+        }
+        return quest.fallback_stage;
     }
 
     closeEditor(): void {

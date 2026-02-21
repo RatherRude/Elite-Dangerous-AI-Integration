@@ -23,10 +23,17 @@ export interface QuestDefinition {
     description: string;
     active?: boolean;
     stages: QuestStage[];
+    fallback_stage?: QuestFallbackStage;
 }
 
 export interface QuestStage {
     id: string;
+    description: string;
+    instructions: string;
+    plan?: QuestPlanStep[];
+}
+
+export interface QuestFallbackStage {
     description: string;
     instructions: string;
     plan?: QuestPlanStep[];

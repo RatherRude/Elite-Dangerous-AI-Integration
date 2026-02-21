@@ -86,6 +86,9 @@
           "description": "Ordered or referenced quest stages.",
           "minItems": 1,
           "items": { "$ref": "#/$defs/stage" }
+        },
+        "fallback_stage": {
+          "$ref": "#/$defs/fallbackStage"
         }
       }
     },
@@ -110,6 +113,27 @@
         "plan": {
           "type": "array",
           "description": "Condition/action pairs evaluated for this stage.",
+          "items": { "$ref": "#/$defs/planStep" },
+          "default": []
+        }
+      }
+    },
+    "fallbackStage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["description", "instructions"],
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "Short summary of the fallback stage."
+        },
+        "instructions": {
+          "type": "string",
+          "description": "Player-facing instructions for the fallback stage."
+        },
+        "plan": {
+          "type": "array",
+          "description": "Condition/action pairs evaluated for the fallback stage.",
           "items": { "$ref": "#/$defs/planStep" },
           "default": []
         }

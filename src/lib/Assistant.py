@@ -22,6 +22,8 @@ from .actions.Actions import set_speed, fire_weapons, get_visuals
 from .Projections import get_state_dict, ProjectedStates
 from .QuestCatalogManager import remove_orphaned_quest_states
 
+FALLBACK_STAGE_ID = "__fallback__"
+
 @final
 class Assistant:
     def __init__(self, config: Config, enabled_game_events: list[str], event_manager: EventManager, action_manager: ActionManager, llmModel: LLMModel, tts: TTS, prompt_generator: PromptGenerator, embeddingModel: EmbeddingModel | None = None, disabled_game_events: list[str] | None = None):
@@ -209,7 +211,10 @@ class Assistant:
             if not stages:
                 log('warn', f"Quest '{quest_id}' has no stages, skipping")
                 continue
-            first_stage = stages[0]
+            first_stage = self._get_first_non_fallback_stage(stages)
+            if not first_stage:
+                log('warn', f"Quest '{quest_id}' has no non-fallback stages, skipping")
+                continue
             stage_id = first_stage.get('id')
             if not stage_id:
                 log('warn', f"Quest '{quest_id}' first stage missing id, skipping")
@@ -245,13 +250,16 @@ class Assistant:
             if not stage_def:
                 log('warn', f"Quest '{quest_id}' stage '{stage_id}' missing from catalog")
                 continue
-            conditions = stage_def.get('conditions', [])
-            if conditions and not self._conditions_met(conditions, event, projected_states):
-                continue
-            plan = stage_def.get('plan', [])
-            if not plan:
-                continue
-            self._trigger_quest_stage_plan(quest_def, stage_def, state, event, projected_states)
+            self._evaluate_quest_stage(quest_def, stage_def, state, event, projected_states)
+            fallback_stage_def = self._get_fallback_stage_def(quest_def)
+            if fallback_stage_def:
+                self._evaluate_quest_stage(
+                    quest_def,
+                    fallback_stage_def,
+                    state,
+                    event,
+                    projected_states,
+                )
 
     def _get_stage_def(self, quest_def: dict[str, Any], stage_id: str | None) -> dict[str, Any] | None:
         if not stage_id:
@@ -260,6 +268,34 @@ class Assistant:
             if stage.get('id') == stage_id:
                 return stage
         return None
+
+    def _get_fallback_stage_def(self, quest_def: dict[str, Any]) -> dict[str, Any] | None:
+        fallback_stage = quest_def.get('fallback_stage')
+        if isinstance(fallback_stage, dict):
+            return fallback_stage
+        return None
+
+    def _get_first_non_fallback_stage(self, stages: list[Any]) -> dict[str, Any] | None:
+        for stage in stages:
+            if isinstance(stage, dict):
+                return stage
+        return None
+
+    def _evaluate_quest_stage(
+        self,
+        quest_def: dict[str, Any],
+        stage_def: dict[str, Any],
+        state: QuestState,
+        event: Event,
+        projected_states: ProjectedStates,
+    ) -> None:
+        conditions = stage_def.get('conditions', [])
+        if conditions and not self._conditions_met(conditions, event, projected_states):
+            return
+        plan = stage_def.get('plan', [])
+        if not plan:
+            return
+        self._trigger_quest_stage_plan(quest_def, stage_def, state, event, projected_states)
 
     def _conditions_met(self, conditions: list[dict[str, Any]], event: Event, projected_states: ProjectedStates) -> bool:
         for condition in conditions:
@@ -495,6 +531,9 @@ class Assistant:
 
     def _advance_quest_stage(self, quest_def: dict[str, Any], target_stage_id: str | None, quest_id: str | None) -> None:
         if not quest_id or not target_stage_id:
+            return
+        if target_stage_id == FALLBACK_STAGE_ID:
+            log('warn', f"Quest '{quest_id}' cannot advance to fallback stage '{FALLBACK_STAGE_ID}'")
             return
         stages = quest_def.get('stages', [])
         stage_ids = [stage.get('id') for stage in stages]
