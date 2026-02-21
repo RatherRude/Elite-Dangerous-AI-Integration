@@ -22,6 +22,7 @@ import { MatExpansionModule } from "@angular/material/expansion";
 import { MatDialog } from "@angular/material/dialog";
 import { MatSnackBarModule } from "@angular/material/snack-bar";
 import { MatSnackBar } from "@angular/material/snack-bar";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { fromEvent, Subscription } from "rxjs";
 import { DataSet } from "vis-data";
 import { Network } from "vis-network";
@@ -62,6 +63,7 @@ const FALLBACK_STAGE_NODE_ID = "__fallback__";
         MatSlideToggle,
         MatExpansionModule,
         MatSnackBarModule,
+        MatTooltipModule,
     ],
     templateUrl: "./quests-settings.component.html",
     styleUrl: "./quests-settings.component.scss",

@@ -33,7 +33,7 @@
                             <button mat-button (click)="selectQuest(quest.id)">
                                 <span class="quest-title">{{ quest.title || quest.id }}</span>
                             </button>
-                            <button mat-icon-button color="warn" (click)="removeQuest(questIndex)" aria-label="Remove quest">
+                            <button mat-icon-button color="warn" (click)="removeQuest(questIndex)" aria-label="Remove quest" matTooltip="Remove this quest">
                                 <mat-icon>remove</mat-icon>
                             </button>
                         </div>
@@ -65,7 +65,7 @@
                                 </span>
                                 <span class="quest-title">{{ actor.name || actor.id }}</span>
                             </button>
-                            <button mat-icon-button color="warn" (click)="removeActor(actorIndex)" aria-label="Remove actor">
+                            <button mat-icon-button color="warn" (click)="removeActor(actorIndex)" aria-label="Remove actor" matTooltip="Remove this actor">
                                 <mat-icon>remove</mat-icon>
                             </button>
                         </div>
@@ -89,7 +89,8 @@
                                 mat-icon-button
                                 color="warn"
                                 (click)="removeActor((catalog?.actors ?? []).indexOf(selectedActor))"
-                                aria-label="Remove selected actor">
+                                    aria-label="Remove selected actor"
+                                    matTooltip="Remove this actor">
                                 <mat-icon>remove</mat-icon>
                             </button>
                         </mat-card-title>
@@ -178,7 +179,7 @@
                 <div class="stage-toolbar">
                     <h3>
                         Stages
-                        <button mat-icon-button color="primary"
+                        <button mat-icon-button color="primary" matTooltip="Add a new stage"
                                 (click)="addStage(selectedQuest)">
                             <mat-icon>add</mat-icon>
                         </button>
@@ -195,7 +196,17 @@
                             <mat-card-title>
                                 <span>{{ selectedStageEditor.description || (isFallbackSelected ? 'Fallback' : 'Stage') }}</span>
                                 @if (!isFallbackSelected && selectedStage) {
-                                    <button mat-icon-button color="warn"
+                                    @if (isQuestStartStage(selectedQuest, selectedStage)) {
+                                        <span class="quest-start-indicator">Quest starts at this stage</span>
+                                    } @else {
+                                        <button mat-stroked-button color="primary"
+                                                (click)="setQuestStartStage(selectedQuest, selectedStage)">
+                                            Set as Quest Start
+                                        </button>
+                                    }
+                                }
+                                @if (!isFallbackSelected && selectedStage) {
+                                    <button mat-icon-button color="warn" matTooltip="Remove this stage"
                                             (click)="removeStage(selectedQuest, selectedQuest.stages.indexOf(selectedStage))">
                                         <mat-icon>remove</mat-icon>
                                     </button>
@@ -213,14 +224,6 @@
                                         [ngModelOptions]="{ updateOn: 'blur' }"
                                         (ngModelChange)="onStageIdChange(selectedStage)">
                                     </mat-form-field>
-                                    @if (isQuestStartStage(selectedQuest, selectedStage)) {
-                                        <div class="quest-start-indicator">Quest Start</div>
-                                    } @else {
-                                        <button mat-stroked-button color="primary"
-                                                (click)="setQuestStartStage(selectedQuest, selectedStage)">
-                                            Set as Quest Start
-                                        </button>
-                                    }
                                 }
                                 <mat-form-field>
                                     <mat-label>Description</mat-label>
@@ -238,7 +241,7 @@
                                 <div class="plan-header">
                                     <h4>
                                         Choices
-                                        <button mat-icon-button color="primary"
+                                        <button mat-icon-button color="primary" matTooltip="Add a new choice"
                                                 (click)="addPlanStep(selectedStageEditor)">
                                             <mat-icon>add</mat-icon>
                                         </button>
@@ -249,7 +252,7 @@
                                         <div class="plan-step-header">
                                             <span>
                                                 Choice {{ stepIndex + 1 }}
-                                                <button mat-icon-button color="warn"
+                                                <button mat-icon-button color="warn" matTooltip="Remove this choice"
                                                         (click)="removePlanStep(selectedStageEditor, stepIndex)">
                                                     <mat-icon>remove</mat-icon>
                                                 </button>
@@ -260,7 +263,7 @@
                                             <div class="plan-section-header">
                                                 <h5>
                                                     Conditions
-                                                    <button mat-icon-button color="primary"
+                                                    <button mat-icon-button color="primary" matTooltip="Add a condition"
                                                             (click)="addCondition(step)">
                                                         <mat-icon>add</mat-icon>
                                                     </button>
@@ -291,7 +294,7 @@
                                                                    (input)="updateConditionValue(condition, $any($event.target).value); requestNetworkRefresh()">
                                                         </mat-form-field>
                                                     }
-                                                    <button mat-icon-button color="warn"
+                                                    <button mat-icon-button color="warn" matTooltip="Remove this condition"
                                                             (click)="removeCondition(step, conditionIndex)">
                                                         <mat-icon>remove</mat-icon>
                                                     </button>
@@ -303,7 +306,7 @@
                                             <div class="plan-section-header">
                                                 <h5>
                                                     Actions
-                                                    <button mat-icon-button color="primary"
+                                                    <button mat-icon-button color="primary" matTooltip="Add an action"
                                                             (click)="addAction(step)">
                                                         <mat-icon>add</mat-icon>
                                                     </button>
@@ -405,7 +408,7 @@
                                                         </mat-form-field>
                                                     }
 
-                                                    <button mat-icon-button color="warn"
+                                                    <button mat-icon-button color="warn" matTooltip="Remove this action"
                                                             (click)="removeAction(step, actionIndex)">
                                                         <mat-icon>remove</mat-icon>
                                                     </button>
