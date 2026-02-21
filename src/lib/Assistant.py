@@ -125,6 +125,19 @@ class Assistant:
     def _get_quest_audio_dir(self) -> Path:
         return Path(__file__).resolve().parent.parent / "data" / "audio"
 
+    def _get_character_tts_voice(self) -> str:
+        """Return the active character's TTS voice for fallback when an actor has no voice."""
+        characters = self.config.get('characters') or []
+        if not characters:
+            return 'nova'
+        idx = self.config.get('active_character_index', 0)
+        idx = max(0, min(idx, len(characters) - 1))
+        ch = characters[idx] if isinstance(characters[idx], dict) else None
+        voice = ch.get('tts_voice') if ch else None
+        if isinstance(voice, str) and voice.strip():
+            return voice.strip()
+        return 'nova'
+
     def _resolve_quest_audio_path(self, file_name: str) -> Path | None:
         normalized_name = file_name.replace("\\", "/")
         if "/" in normalized_name:
@@ -463,8 +476,8 @@ class Assistant:
                 return
             actor_voice = actor.get('voice')
             if not isinstance(actor_voice, str) or not actor_voice:
-                log('warn', f"Quest action npc_message actor '{actor_id}' has no voice")
-                return
+                actor_voice = self._get_character_tts_voice()
+                # log('info', f"Quest action npc_message actor '{actor_id}' has no voice; using character voice")
             actor_prompt = actor.get('prompt')
             actor_name = actor.get('name')
             actor_name_color = actor.get('name_color')
