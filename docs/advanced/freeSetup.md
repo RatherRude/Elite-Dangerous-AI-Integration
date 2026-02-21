@@ -1,33 +1,16 @@
 # Getting started for "free"
 
-There are 3 main components that need to be configured for a free setup: LLM, STT, TTS.
+**Recommended:** For free local STT, TTS and embedding with the least amount of configuration, use the [official COVAS Labs plugins](../plugins/index.md#first-official-plugins). They provide ready-to-use Parakeet (STT), Supertonic (TTS) and Gemma (embedding) with minimal setup.
+
+---
+
+The main components for a free setup are: LLM, Agent (optional), STT, TTS, and optionally Vision and Embedding.
 
 ## 1. LLM Configuration
 The LLM is the brains of the operation. It is responsible for understanding the context of the conversation and generating the next response or dispatching actions. The LLM is a large model that requires a lot of resources to run, so it requires either using a cloud service or having a really good GPU available.
 
 
-### 1.1 Using Google AI Studio (cloud-based)
-The cloud service https://aistudio.google.com provides access to free models, requiring only a google account to set up.
-
-*Upsides:*
-- Daily free quota
-- Does not require a powerful GPU
-- Good response times
-
-*Downsides*
-- Requires a Google account
-- Rate-limited, so you may run out of quota after a while
-- Does not provide great STT
-- Does not support TTS, so you need to mix and match with other services
-
-Once logged in you can create your API key and start using it with COVAS:NEXT:
-
-```
-LLM Provider: Google AI Studio
-LLM API Key: <your API key>
-```
-
-### 1.2 Using OpenRouter.ai (cloud-based)
+### 1.1 Using OpenRouter.ai (cloud-based)
 The cloud service https://openrouter.ai provides a free tier that can be used to run the LLM. 
 
 *Upsides:*
@@ -52,7 +35,7 @@ LLM API Key: <your API key>
 Allow Actions: Disable (Unless you use a paid model that supports actions)
 ```
 
-### 1.3 Using Ollama (local)
+### 1.2 Using Ollama (local)
 https://ollama.com is a third-party application that can run the LLM locally on your computer. 
 
 *Upsides:*
@@ -77,7 +60,7 @@ LLM Endpoint URL: http://localhost:11434/v1
 LLM API Key: <empty>
 ```
 
-### 1.4 Using LMStudio (local)
+### 1.3 Using LMStudio (local)
 https://lmstudio.ai is a third-party application that can run the LLM locally on your computer.
 
 *Upsides:*
@@ -104,7 +87,7 @@ LLM Endpoint URL: http://localhost:1234/v1
 LLM API Key: <empty>
 ```
 
-### 1.5 Using AIServer (local)
+### 1.4 Using AIServer (local)
 You can read more about the AIServer [here](./AIServer.md).
 
 *Upsides:*
@@ -118,12 +101,24 @@ You can read more about the AIServer [here](./AIServer.md).
 - May struggle with multilingual input/output
 - Higher latency than cloud services
 
-## 2. STT Configuration
+## 2. Agent Configuration
+The Agent is a search sub-LLM that answers queries posed by the main LLM. It chains web and knowledge actions in a loop to find answers. Higher accuracy matters more here than for the main chat LLM—consider using an online LLM for the Agent even if the main LLM is local. You can use the same provider as the main LLM (e.g. LM Studio, Ollama), but set the main LLM to no reasoning effort and the Agent LLM to at least Low reasoning effort for better search accuracy. The Agent is served the same way as the main LLM (LM Studio, Ollama, cloud, etc.); configure it in the same style as section 1.
+
+## 3. STT Configuration
 The Speech-to-Text (STT) component is responsible for converting your voice into text that the LLM can understand. No cloud service is available that provides free STT, so you will need to run it locally. Luckily it requires a little less resources and can be run on a weaker GPU or even a CPU.
 
-Currently, the only option for free STT is using the local AIServer, if you know of any other free STT services, please let us know.
+### 3.1 Using Parakeet plugin (local, recommended)
+The [Parakeet STT plugin](../plugins/index.md#first-official-plugins) is the official free local STT from COVAS Labs. Download from [Releases](https://github.com/COVAS-Labs/plugin-parakeet-stt/releases), extract to your `plugins` folder, and select it in COVAS:NEXT. Multilingual, minimal configuration.
 
-### 2.1 Using AIServer (local)
+*Upsides:*
+- Free, local, no account required
+- Multilingual
+- Easiest free STT setup
+
+*Downsides:*
+- Requires a GPU or capable CPU for real-time transcription
+
+### 3.2 Using AIServer (local)
 You can read more about the AIServer [here](./AIServer.md).
 
 *Upsides:*
@@ -136,35 +131,24 @@ You can read more about the AIServer [here](./AIServer.md).
 - May struggle with multilingual input/output
 - Higher latency than cloud services
 
-### 2.2 Using Google AI Studio (cloud-based)
-The cloud service https://aistudio.google.com provides access to free models, requiring only a google account to set up.
+## 4. TTS Configuration
+The Text-to-Speech (TTS) component is responsible for reading out the responses of the LLM. Edge-TTS is a free cloud service and is used by default. Alternatively, you can use the official Supertonic plugin or the AIServer to run TTS locally.
 
-These models can be multi-modal allowing for the ability to transcribe and make it function as a STT service.
+### 4.1 Using Supertonic plugin (local, recommended)
+The [Supertonic TTS plugin](../plugins/index.md#first-official-plugins) is the official free local TTS from COVAS Labs. Download from [Releases](https://github.com/COVAS-Labs/plugin-supertonic-tts/releases), extract to your `plugins` folder, and select it in COVAS:NEXT. Multilingual, minimal configuration.
 
 *Upsides:*
-- Daily free quota
-- Does not require a powerful GPU
-- Good response times
+- Free, local, no account required
+- Multilingual
+- Easiest free local TTS setup
 
-*Downsides*
-- Requires a Google account
-- Never as accurate as designated STT models (like whisper-1 or gpt-4o-mini-transcribe)
+*Downsides:*
+- Requires a GPU or capable CPU for real-time synthesis
 
-Once logged in you can create your API key and start using it with COVAS:NEXT:
-
-```
-STT Provider: Google AI Studio (Multi-Modal)
-STT Model Name: gemini-2.0-flash-lite
-STT API Key: <your API key>
-```
-
-## 3. TTS Configuration
-The Text-to-Speech (TTS) component is responsible for reading out the responses of the LLM. Edge-TTS is a free cloud service and is used by default. Alternatively, you can use the AIServer to run TTS locally.
-
-### 3.1 Using Edge-TTS (cloud-based)
+### 4.2 Using Edge-TTS (cloud-based)
 We recommend using Edge-TTS as it is free and has good latency and quality.
 
-### 3.1 Using AIServer (local)
+### 4.3 Using AIServer (local)
 You can read more about the AIServer [here](./AIServer.md).
 
 *Upsides:*
@@ -176,6 +160,39 @@ You can read more about the AIServer [here](./AIServer.md).
 - Tricky to set up, as it is still highly experimental
 - May struggle with multilingual input/output
 - Higher latency than cloud services
+
+## 5. Vision Configuration
+Vision requires an LLM that is multimodal or has image-understanding (e.g. text-from-image) capabilities. It can be the same as the main LLM or a smaller model dedicated to vision. Same serving options as the main LLM (LM Studio, Ollama, cloud, etc.).
+
+## 6. Embedding Configuration
+Embedding is used to search the logbook—a persistent memory stored in a vector database. Entries are compared via embeddings to find the most relevant ones. For a free setup, use the plugin first; AIServer is the other option.
+
+### 6.1 Using Gemma plugin (local, recommended)
+The [Gemma embedding plugin](../plugins/index.md#first-official-plugins) is the official free local embedding from COVAS Labs. Download from [Releases](https://github.com/COVAS-Labs/plugin-gemma-embedding/releases), extract to your `plugins` folder, and select it in COVAS:NEXT. Multilingual, minimal configuration.
+
+*Upsides:*
+- Free, local, no account required
+- Multilingual
+- Easiest free embedding setup
+
+*Downsides:*
+- Requires a GPU or capable CPU
+
+### 6.2 Using AIServer (local)
+You can read more about the AIServer [here](./AIServer.md). Use the **embeddinggemma-300m** model as the recommended option for embeddings.
+
+*Upsides:*
+- Can be used offline
+- It is free, except for the cost of the GPU and electricity
+- No rate limiting (except for the hardware)
+
+*Downsides:*
+- Tricky to set up, as it is still highly experimental
+- Higher latency than a dedicated plugin
+
+## Note on Google AI Studio
+
+Google AI Studio (aistudio.google.com) previously offered a daily free quota that made it a viable free option for LLM and multi-modal STT. They have since changed their daily rates and free tier limits; in its current state it is effectively unusable for free use. We have removed it from the recommended options above. If their free tier improves again in the future, you can still select Google AI Studio as LLM or STT provider in COVAS:NEXT if you have an API key.
 
 ## Troubleshooting
 
