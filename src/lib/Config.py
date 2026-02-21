@@ -708,7 +708,7 @@ def migrate(data: dict) -> dict:
         elif provider == 'google-ai-studio':
             if model in ['gemini-2.5-flash', 'gemini-2.5-flash-lite']:
                 reasoning_effort = 'high'
-            elif model == 'gemini-2.5-pro':
+            elif model in ['gemini-2.5-pro', 'gemini-3-flash-preview']:
                 reasoning_effort = 'low'
                 
         data['agent_llm_reasoning_effort'] = reasoning_effort
@@ -758,6 +758,14 @@ def migrate(data: dict) -> dict:
                 character['event_reactions'] = to_event_reactions(legacy_game_events, legacy_disabled)
             elif 'event_reactions' not in character:
                 character['event_reactions'] = default_event_reactions
+
+    if data['config_version'] < 12:
+        data['config_version'] = 12
+
+        if data.get('vision_provider') == 'google-ai-studio' and data.get('vision_model_name') == 'gemini-2.0-flash':
+            data['vision_model_name'] = 'gemini-2.5-flash'
+        if data.get('stt_provider') == 'google-ai-studio' and data.get('stt_model_name') == 'gemini-2.0-flash-lite':
+            data['stt_model_name'] = 'gemini-2.5-flash-lite'
 
     return data
 
@@ -1340,7 +1348,7 @@ def update_config(config: Config, data: dict) -> Config:
 
         elif data["llm_provider"] == "google-ai-studio":
             data["llm_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
-            data["llm_model_name"] = "gemini-2.5-flash"
+            data["llm_model_name"] = "gemini-3-flash-preview"
             data["llm_api_key"] = ""
             data["tools_var"] = True
             data["llm_reasoning_effort"] = "none"
@@ -1374,9 +1382,9 @@ def update_config(config: Config, data: dict) -> Config:
 
         elif data["agent_llm_provider"] == "google-ai-studio":
             data["agent_llm_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
-            data["agent_llm_model_name"] = "gemini-2.5-flash"
+            data["agent_llm_model_name"] = "gemini-3-flash-preview"
             data["agent_llm_api_key"] = ""
-            data["agent_llm_reasoning_effort"] = "high"
+            data["agent_llm_reasoning_effort"] = "low"
 
         elif data["agent_llm_provider"] == "local-ai-server":
             data["agent_llm_endpoint"] = "http://127.0.0.1:8080"
@@ -1408,7 +1416,7 @@ def update_config(config: Config, data: dict) -> Config:
 
         elif data["vision_provider"] == "google-ai-studio":
             data["vision_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
-            data["vision_model_name"] = "gemini-2.0-flash"
+            data["vision_model_name"] = "gemini-2.5-flash"
             data["vision_api_key"] = ""
             data["vision_var"] = True
 
@@ -1449,7 +1457,7 @@ def update_config(config: Config, data: dict) -> Config:
 
         if data["stt_provider"] == "google-ai-studio":
             data["stt_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
-            data["stt_model_name"] = "gemini-2.0-flash-lite"
+            data["stt_model_name"] = "gemini-2.5-flash-lite"
             data["stt_api_key"] = ""
 
         if data["stt_provider"] == "custom-multi-modal":
