@@ -80,7 +80,7 @@ export interface QuestEvent {
         stage_description?: string | null;
         stage_instructions?: string | null;
         active?: boolean;
-        url?: string;
+        file_name?: string;
         transcription?: string;
         actor_id?: string;
         actor_name?: string;

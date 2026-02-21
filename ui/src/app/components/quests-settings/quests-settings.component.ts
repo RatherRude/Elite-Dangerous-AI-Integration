@@ -30,6 +30,7 @@ import {
     QuestActor,
     QuestAction,
     QuestCatalog,
+    QuestAudioImportResult,
     QuestCondition,
     QuestDefinition,
     QuestPlanStep,
@@ -355,6 +356,37 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
     removeAction(step: QuestPlanStep, index: number): void {
         step.actions.splice(index, 1);
         this.scheduleLayout();
+    }
+
+    async selectPlaySoundFile(action: QuestAction): Promise<void> {
+        try {
+            const result: QuestAudioImportResult =
+                await this.questsService.importQuestAudioFile(this.catalogPath);
+            if (result.canceled) {
+                return;
+            }
+            if (!result.fileName) {
+                throw new Error("No file name returned by picker.");
+            }
+            action.file_name = result.fileName;
+            // Drop legacy URL value so saves are filename-based.
+            delete action.url;
+            const status = result.reused
+                ? "Reused existing audio file"
+                : "Imported audio file";
+            this.snackBar.open(`${status}: ${result.fileName}`, "Dismiss", {
+                duration: 2500,
+            });
+        } catch (error) {
+            const message =
+                error instanceof Error
+                    ? error.message
+                    : "Failed to import quest audio file";
+            this.snackBar.open(message, "Dismiss", {
+                duration: 3000,
+            });
+            console.error("Error importing quest audio file:", error);
+        }
     }
 
     createQuest(): QuestDefinition {

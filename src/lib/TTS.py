@@ -2,9 +2,11 @@ import queue
 import re
 import threading
 import traceback
+from pathlib import Path
 from time import sleep, time
 from typing import Any, Callable, Generator, Literal, Optional, Union, final
 
+import miniaudio
 import pyaudio
 import strip_markdown
 from num2words import num2words
@@ -37,7 +39,9 @@ class TTS:
     def _normalize_queue_item(self, item: Any) -> dict[str, Any]:
         if isinstance(item, str):
             return {
+                "type": "text",
                 "text": item,
+                "file_path": None,
                 "voice": None,
                 "on_start": None,
                 "on_complete": None,
@@ -45,14 +49,18 @@ class TTS:
             }
         if isinstance(item, dict):
             return {
+                "type": item.get("type", "text"),
                 "text": item.get("text", ""),
+                "file_path": item.get("file_path"),
                 "voice": item.get("voice"),
                 "on_start": item.get("on_start"),
                 "on_complete": item.get("on_complete"),
                 "drop_if": item.get("drop_if"),
             }
         return {
+            "type": "text",
             "text": "",
+            "file_path": None,
             "voice": None,
             "on_start": None,
             "on_complete": None,
@@ -95,13 +103,13 @@ class TTS:
                 if not self.read_queue.empty():
                     self._is_playing = True
                     item = self._normalize_queue_item(self.read_queue.get())
+                    item_type = item.get("type")
                     text = item.get("text")
+                    file_path = item.get("file_path")
                     voice = item.get("voice")
                     on_start = item.get("on_start")
                     on_complete = item.get("on_complete")
                     drop_if = item.get("drop_if")
-                    if not isinstance(text, str) or not text:
-                        continue
                     if callable(drop_if) and drop_if():
                         continue
                     try:
@@ -110,7 +118,14 @@ class TTS:
                                 on_start()
                             except Exception as callback_error:
                                 log('warn', 'TTS on_start callback failed', callback_error)
-                        self._playback_one(text, stream, voice if isinstance(voice, str) else None)
+                        if item_type == "audio_file":
+                            if not isinstance(file_path, str) or not file_path:
+                                continue
+                            self._playback_audio_file(file_path, stream)
+                        else:
+                            if not isinstance(text, str) or not text:
+                                continue
+                            self._playback_one(text, stream, voice if isinstance(voice, str) else None)
                     except Exception as e:
                         self.read_queue.put(item)
                         raise e
@@ -182,6 +197,24 @@ class TTS:
                 log('error', 'TTS synthesis error', e, traceback.format_exc())
                 show_chat_message('error', 'TTS synthesis error:', str(e))
 
+    @observe()
+    def _playback_audio_file(self, file_path: str, stream: pyaudio.Stream):
+        resolved = Path(file_path)
+        if not resolved.exists():
+            raise FileNotFoundError(f"Audio file not found: {resolved}")
+        frames_to_read = max(1, self.frames_per_buffer // self.sample_size)
+        pcm_stream = miniaudio.stream_file(
+            str(resolved),
+            output_format=miniaudio.SampleFormat.SIGNED16,
+            nchannels=1,
+            sample_rate=24000,
+            frames_to_read=frames_to_read,
+        )
+        for frame in pcm_stream:
+            if self.is_aborted:
+                break
+            stream.write(frame.tobytes(), exception_on_underflow=False)
+
     def _number_to_text(self, match: re.Match[str]):
         """Converts numbers like 100,203.12 to one hundred thousand two hundred three point one two"""
         if len(match.group()) <= 2:
@@ -205,6 +238,26 @@ class TTS:
             {
                 "text": text,
                 "voice": voice,
+                "on_start": on_start,
+                "on_complete": on_complete,
+                "drop_if": drop_if,
+            },
+        )
+
+    def play_audio_file(
+        self,
+        file_path: str,
+        *,
+        on_start: Callable[[], None] | None = None,
+        on_complete: Callable[[], None] | None = None,
+        drop_if: Callable[[], bool] | None = None,
+    ):
+        self.read_queue.put(
+            {
+                "type": "audio_file",
+                "file_path": file_path,
+                "text": "",
+                "voice": None,
                 "on_start": on_start,
                 "on_complete": on_complete,
                 "drop_if": drop_if,

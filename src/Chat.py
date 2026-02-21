@@ -820,6 +820,14 @@ class Chat:
         _, projected_states = self.event_manager.get_current_state()
         self.assistant.web_search(query, projected_states)
 
+    def _resolve_quest_audio_file_path(self, file_name: str) -> Path | None:
+        normalized_name = file_name.replace("\\", "/")
+        if "/" in normalized_name:
+            return None
+        if not normalized_name.lower().endswith((".mp3", ".wav")):
+            return None
+        return Path(__file__).resolve().parent / "data" / "audio" / normalized_name
+
     def _schedule_quest_audio_event(self, action: str, payload: dict[str, Any]) -> None:
         if not isinstance(payload, dict):
             log("warn", f"Invalid quest payload for action {action}: not an object")
@@ -848,8 +856,22 @@ class Chat:
             extracted_id = avatar_url[len("avatar://") :]
             avatar_id = extracted_id if extracted_id else None
 
+        audio_file_path: Path | None = None
+        if action == "play_sound":
+            file_name = payload.get("file_name")
+            if not isinstance(file_name, str) or not file_name:
+                log("warn", "Invalid quest payload for action play_sound: missing file_name")
+                return
+            audio_file_path = self._resolve_quest_audio_file_path(file_name)
+            if audio_file_path is None:
+                log("warn", f"Invalid quest payload for action play_sound: unsafe file_name '{file_name}'")
+                return
+            if not audio_file_path.exists():
+                log("warn", f"Quest audio file does not exist: {audio_file_path}")
+                return
+
         def on_start() -> None:
-            if action == "npc_message":
+            if action in ("npc_message", "play_sound"):
                 show_chat_message(
                     "npc_message",
                     transcription,
@@ -867,13 +889,21 @@ class Chat:
             if not self.tts.has_queued_items():
                 self.event_manager.add_assistant_complete_event()
 
-        self.tts.say(
-            transcription,
-            voice=voice if isinstance(voice, str) and voice else None,
-            on_start=on_start,
-            on_complete=on_complete,
-            drop_if=lambda: self.stt.recording,
-        )
+        if action == "play_sound" and audio_file_path is not None:
+            self.tts.play_audio_file(
+                str(audio_file_path),
+                on_start=on_start,
+                on_complete=on_complete,
+                drop_if=lambda: self.stt.recording,
+            )
+        else:
+            self.tts.say(
+                transcription,
+                voice=voice if isinstance(voice, str) and voice else None,
+                on_start=on_start,
+                on_complete=on_complete,
+                drop_if=lambda: self.stt.recording,
+            )
 
 
 def read_stdin(chat: Chat):

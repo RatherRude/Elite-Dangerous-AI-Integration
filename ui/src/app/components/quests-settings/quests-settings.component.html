@@ -348,11 +348,15 @@
                                                         </mat-slide-toggle>
                                                     }
                                                     @if (action.action === 'play_sound') {
-                                                        <mat-form-field>
-                                                            <mat-label>URL</mat-label>
-                                                            <input matInput [(ngModel)]="action.url"
-                                                                   placeholder="https://example.com/sound.mp3">
-                                                        </mat-form-field>
+                                                        <div class="play-sound-picker">
+                                                            <span class="play-sound-file-name">
+                                                                {{ action.file_name || 'No file selected' }}
+                                                            </span>
+                                                            <button mat-stroked-button color="primary" class="play-sound-select-button"
+                                                                    (click)="selectPlaySoundFile(action)">
+                                                                Select MP3/WAV
+                                                            </button>
+                                                        </div>
                                                         <mat-form-field>
                                                             <mat-label>Transcription</mat-label>
                                                             <textarea matInput rows="2"

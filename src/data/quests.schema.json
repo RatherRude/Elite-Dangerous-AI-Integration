@@ -169,9 +169,9 @@
           "description": "Whether the quest should be active for set_active actions.",
           "default": true
         },
-        "url": {
+        "file_name": {
           "type": "string",
-          "description": "URL of the sound file to play for play_sound actions."
+          "description": "Filename of the sound file in the catalog audio folder for play_sound actions."
         },
         "transcription": {
           "type": "string",
@@ -217,7 +217,7 @@
             "required": ["action"]
           },
           "then": {
-            "required": ["url", "transcription"]
+            "required": ["file_name", "transcription"]
           }
         },
         {

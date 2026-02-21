@@ -307,6 +307,27 @@
     grid-template-columns: 140px minmax(200px, 1fr) minmax(180px, 1fr) auto;
 }
 
+.play-sound-picker {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    width: 100%;
+}
+
+.play-sound-file-name {
+    font-size: 12px;
+    opacity: 0.85;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.play-sound-select-button {
+    width: 100%;
+    min-width: 0;
+}
+
 .link-preview {
     display: flex;
     align-items: center;

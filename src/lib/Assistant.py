@@ -121,6 +121,17 @@ class Assistant:
     def _get_quests_path(self) -> Path:
         return Path(__file__).resolve().parent.parent / "data" / "quests.yaml"
 
+    def _get_quest_audio_dir(self) -> Path:
+        return Path(__file__).resolve().parent.parent / "data" / "audio"
+
+    def _resolve_quest_audio_path(self, file_name: str) -> Path | None:
+        normalized_name = file_name.replace("\\", "/")
+        if "/" in normalized_name:
+            return None
+        if not normalized_name.lower().endswith((".mp3", ".wav")):
+            return None
+        return self._get_quest_audio_dir() / normalized_name
+
     def _load_quests(self) -> None:
         try:
             quests_path = self._get_quests_path()
@@ -379,12 +390,26 @@ class Assistant:
             })
             return
         if action == 'play_sound':
-            url = step.get('url')
+            file_name = step.get('file_name')
+            if file_name is None and isinstance(step.get('url'), str):
+                # Backward compatibility for old quest entries.
+                file_name = step.get('url')
             transcription = step.get('transcription')
             actor_id = step.get('actor_id')
             actor_voice = None
-            if not isinstance(url, str) or not url:
-                log('warn', f"Quest action play_sound missing or invalid url")
+            actor_name = None
+            actor_name_color = None
+            avatar_url = None
+            actor_prompt = None
+            if not isinstance(file_name, str) or not file_name:
+                log('warn', "Quest action play_sound missing or invalid file_name")
+                return
+            audio_path = self._resolve_quest_audio_path(file_name)
+            if audio_path is None:
+                log('warn', f"Quest action play_sound has unsafe or invalid file_name: {file_name}")
+                return
+            if not audio_path.exists():
+                log('warn', f"Quest action play_sound file not found: {audio_path}")
                 return
             if not isinstance(transcription, str):
                 log('warn', f"Quest action play_sound missing or invalid transcription")
@@ -398,7 +423,28 @@ class Assistant:
                     voice = actor.get('voice')
                     if isinstance(voice, str) and voice:
                         actor_voice = voice
-            self.event_manager.add_play_sound(url, transcription, actor_id, actor_voice)
+                    actor_name_value = actor.get('name')
+                    if isinstance(actor_name_value, str) and actor_name_value:
+                        actor_name = actor_name_value
+                    actor_name_color_value = actor.get('name_color')
+                    if isinstance(actor_name_color_value, str) and actor_name_color_value:
+                        actor_name_color = actor_name_color_value
+                    avatar_url_value = actor.get('avatar_url')
+                    if isinstance(avatar_url_value, str) and avatar_url_value:
+                        avatar_url = avatar_url_value
+                    prompt_value = actor.get('prompt')
+                    if isinstance(prompt_value, str) and prompt_value:
+                        actor_prompt = prompt_value
+            self.event_manager.add_play_sound(
+                file_name,
+                transcription,
+                actor_id,
+                actor_voice,
+                actor_name,
+                actor_name_color,
+                avatar_url,
+                actor_prompt,
+            )
             return
         if action == 'npc_message':
             actor_id = step.get('actor_id')

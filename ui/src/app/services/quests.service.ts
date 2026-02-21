@@ -50,9 +50,19 @@ export interface QuestAction {
     target_stage_id?: string;
     quest_id?: string;
     active?: boolean;
+    file_name?: string;
+    // Backward compatibility for legacy catalogs.
     url?: string;
     transcription?: string;
     actor_id?: string | null;
+}
+
+export interface QuestAudioImportResult {
+    canceled: boolean;
+    fileName?: string;
+    copied?: boolean;
+    reused?: boolean;
+    destinationPath?: string;
 }
 
 export interface GetQuestCatalogMessage extends BaseCommand {
@@ -152,5 +162,34 @@ export class QuestsService {
             data: catalog,
         };
         this.tauriService.send_command(command);
+    }
+
+    public async importQuestAudioFile(
+        catalogPath: string | null,
+    ): Promise<QuestAudioImportResult> {
+        if (!catalogPath) {
+            throw new Error("Quest catalog path is not available.");
+        }
+        if (!window.electronAPI?.invoke) {
+            throw new Error("Electron API is not available.");
+        }
+        let result: unknown;
+        try {
+            result = await window.electronAPI.invoke("select_quest_audio_file", {
+                catalogPath,
+            });
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            if (message.includes("No handler registered for 'select_quest_audio_file'")) {
+                throw new Error(
+                    "Audio picker backend is not loaded. Restart the desktop app to pick files.",
+                );
+            }
+            throw error;
+        }
+        if (!result || typeof result !== "object") {
+            throw new Error("Audio import failed: invalid response.");
+        }
+        return result as QuestAudioImportResult;
     }
 }

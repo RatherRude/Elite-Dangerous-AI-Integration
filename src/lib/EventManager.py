@@ -179,21 +179,33 @@ class EventManager:
 
     def add_play_sound(
         self,
-        url: str,
+        file_name: str,
         transcription: str,
         actor_id: str | None = None,
         voice: str | None = None,
+        actor_name: str | None = None,
+        actor_name_color: str | None = None,
+        avatar_url: str | None = None,
+        prompt: str | None = None,
     ):
         payload: dict[str, Any] = {
             "event": "QuestEvent",
             "action": "play_sound",
-            "url": url,
+            "file_name": file_name,
             "transcription": transcription,
         }
         if actor_id:
             payload["actor_id"] = actor_id
         if voice:
             payload["voice"] = voice
+        if actor_name:
+            payload["actor_name"] = actor_name
+        if actor_name_color:
+            payload["actor_name_color"] = actor_name_color
+        if avatar_url:
+            payload["avatar_url"] = avatar_url
+        if prompt:
+            payload["prompt"] = prompt
         self.add_quest_event(payload)
 
     def add_npc_message(

@@ -2446,12 +2446,17 @@ class PromptGenerator:
 
     def quest_conversation_message(self, event: QuestEvent):
         action = event.content.get("action") if isinstance(event.content, dict) else None
-        if action != "npc_message":
+        if action not in ("npc_message", "play_sound"):
             return None
         actor_name = event.content.get("actor_name") if isinstance(event.content, dict) else None
         transcription = event.content.get("transcription") if isinstance(event.content, dict) else None
         resolved_name = actor_name if isinstance(actor_name, str) and actor_name else "Unknown quest character"
         resolved_text = transcription if isinstance(transcription, str) and transcription else ""
+        if action == "play_sound":
+            return {
+                "role": "user",
+                "content": f"[Quest sound] {resolved_name} triggered quest audio: {resolved_text}",
+            }
         return {
             "role": "user",
             "content": f"[Quest dialog] {resolved_name} said: {resolved_text}",

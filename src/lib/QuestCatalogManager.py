@@ -194,11 +194,28 @@ class QuestCatalogManager:
                                 )
                             if (
                                 action_type == "play_sound"
-                                and "url" not in action
+                                and "file_name" not in action
                             ):
                                 errors.append(
-                                    f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' action #{action_index + 1} missing url.",
+                                    f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' action #{action_index + 1} missing file_name.",
                                 )
+                            if action_type == "play_sound":
+                                file_name = action.get("file_name")
+                                if not isinstance(file_name, str) or not file_name.strip():
+                                    errors.append(
+                                        f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' action #{action_index + 1} file_name must be a non-empty string.",
+                                    )
+                                else:
+                                    normalized_name = file_name.replace("\\", "/")
+                                    if "/" in normalized_name:
+                                        errors.append(
+                                            f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' action #{action_index + 1} file_name must not contain path separators.",
+                                        )
+                                    lowered = normalized_name.lower()
+                                    if not (lowered.endswith(".mp3") or lowered.endswith(".wav")):
+                                        errors.append(
+                                            f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' action #{action_index + 1} file_name must end with .mp3 or .wav.",
+                                        )
                             if (
                                 action_type == "play_sound"
                                 and "transcription" not in action
