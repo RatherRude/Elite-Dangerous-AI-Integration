@@ -74,6 +74,10 @@ export interface SaveQuestCatalogMessage extends BaseCommand {
     data: QuestCatalog;
 }
 
+export interface ResetQuestProgressMessage extends BaseCommand {
+    type: "reset_quest_progress";
+}
+
 export interface QuestCatalogMessage extends BaseMessage {
     type: "quest_catalog";
     data: QuestCatalog;
@@ -160,6 +164,14 @@ export class QuestsService {
             type: "save_quest_catalog",
             timestamp: new Date().toISOString(),
             data: catalog,
+        };
+        this.tauriService.send_command(command);
+    }
+
+    public resetQuestProgress(): void {
+        const command: ResetQuestProgressMessage = {
+            type: "reset_quest_progress",
+            timestamp: new Date().toISOString(),
         };
         this.tauriService.send_command(command);
     }

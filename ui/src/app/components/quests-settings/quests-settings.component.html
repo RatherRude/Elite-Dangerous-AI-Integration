@@ -3,10 +3,9 @@
         <div class="toolbar-title">
             <h2>Quest Catalog</h2>
             @if (catalog) {
-                <mat-form-field appearance="outline" class="version-field">
-                    <mat-label>Version</mat-label>
-                    <input matInput [(ngModel)]="catalog.version">
-                </mat-form-field>
+                <button mat-stroked-button color="warn" (click)="resetQuestProgress()">
+                    Reset Quest Progress
+                </button>
             }
         </div>
         <div class="toolbar-actions">

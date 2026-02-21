@@ -926,6 +926,14 @@ class QuestDatabase():
         ''', (int(active), quest_id))
         conn.commit()
 
+    def delete_all(self) -> None:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(f'''
+            DELETE FROM {self.table_name}
+        ''')
+        conn.commit()
+
 @final
 class CodeStore():
     def __init__(self, store_name: str):

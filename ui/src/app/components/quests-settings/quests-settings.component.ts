@@ -247,6 +247,15 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
         }
     }
 
+    resetQuestProgress(): void {
+        this.questsService.resetQuestProgress();
+        this.snackBar.open(
+            "Quest progress reset. Restart AI to repopulate from YAML.",
+            "Dismiss",
+            { duration: 3000 },
+        );
+    }
+
     addQuest(): void {
         if (!this.catalog) {
             this.catalog = { version: "1.0", actors: [], quests: [] };

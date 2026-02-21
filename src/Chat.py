@@ -961,6 +961,13 @@ def read_stdin(chat: Chat):
                     data=save_result.get("catalog"),
                     raw=save_result.get("raw", ""),
                 )
+            if data.get("type") == "reset_quest_progress":
+                try:
+                    chat.quest_database.delete_all()
+                    emit_message("quest_progress_reset", success=True)
+                except Exception as e:
+                    log("error", f"Failed to reset quest progress: {e}")
+                    emit_message("quest_progress_reset", success=False, message=str(e))
             if data.get("type") == "init_overlay":
                 emit_message("running_config", config=config)
             if data.get("type") == "web_search":
@@ -1058,6 +1065,13 @@ if __name__ == "__main__":
                         data=save_result.get("catalog"),
                         raw=save_result.get("raw", ""),
                     )
+                if data.get("type") == "reset_quest_progress":
+                    try:
+                        QuestDatabase().delete_all()
+                        emit_message("quest_progress_reset", success=True)
+                    except Exception as e:
+                        log("error", f"Failed to reset quest progress: {e}")
+                        emit_message("quest_progress_reset", success=False, message=str(e))
                 if data.get("type") == "enable_remote_tracing":
                     from lib.Logger import enable_remote_tracing
 
