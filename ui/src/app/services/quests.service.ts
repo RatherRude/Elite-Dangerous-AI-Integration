@@ -22,6 +22,7 @@ export interface QuestDefinition {
     title: string;
     description: string;
     active?: boolean;
+    initial_stage_id?: string;
     stages: QuestStage[];
     fallback_stage?: QuestFallbackStage;
 }

@@ -81,6 +81,11 @@
           "description": "Whether the quest starts active by default.",
           "default": false
         },
+        "initial_stage_id": {
+          "type": "string",
+          "description": "Stage id that should be used when the quest starts.",
+          "pattern": "^[A-Za-z0-9_\\-]+$"
+        },
         "stages": {
           "type": "array",
           "description": "Ordered or referenced quest stages.",

@@ -107,6 +107,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
             this.questsService.catalog$.subscribe((catalog) => {
                 for (const quest of catalog?.quests ?? []) {
                     this.ensureFallbackStage(quest);
+                    this.ensureInitialStageId(quest);
                 }
                 this.catalog = catalog;
                 this.normalizeActorNameColors(catalog?.actors ?? []);
@@ -250,6 +251,10 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
     }
 
     onStageIdChange(stage: QuestStage): void {
+        const quest = this.selectedQuest;
+        if (quest && quest.initial_stage_id && !quest.stages.some((candidate) => candidate.id === quest.initial_stage_id)) {
+            quest.initial_stage_id = stage.id;
+        }
         this.selectedStageId = stage.id;
         this.scheduleLayout();
     }
@@ -338,6 +343,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
     addStage(quest: QuestDefinition): void {
         const newStage = this.createStage(quest);
         quest.stages = [...quest.stages, newStage];
+        this.ensureInitialStageId(quest);
         const collapseKey = this.getStageCollapseKey(quest.id, newStage.id);
         if (collapseKey) {
             this.collapsedStageKeys.add(collapseKey);
@@ -348,6 +354,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
     removeStage(quest: QuestDefinition, index: number): void {
         const removedStageId = quest.stages[index]?.id;
         quest.stages.splice(index, 1);
+        this.ensureInitialStageId(quest);
         const collapseKey = this.getStageCollapseKey(quest.id, removedStageId);
         if (collapseKey) {
             this.collapsedStageKeys.delete(collapseKey);
@@ -422,12 +429,14 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
 
     createQuest(): QuestDefinition {
         const questIndex = this.catalog?.quests.length ?? 0;
+        const initialStage = this.createStage();
         return {
             id: `new_quest_${questIndex + 1}`,
             title: "New Quest",
             description: "Describe the quest objective.",
             active: false,
-            stages: [this.createStage()],
+            initial_stage_id: initialStage.id,
+            stages: [initialStage],
             fallback_stage: this.createFallbackStage(),
         };
     }
@@ -458,7 +467,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
         return {
             description: "Fallback",
             instructions: "Always evaluated and cannot become active.",
-            plan: [this.createPlanStep()],
+            plan: [],
         };
     }
 
@@ -559,6 +568,15 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
         return quest.stages;
     }
 
+    isQuestStartStage(quest: QuestDefinition, stage: QuestStage): boolean {
+        return quest.initial_stage_id === stage.id;
+    }
+
+    setQuestStartStage(quest: QuestDefinition, stage: QuestStage): void {
+        quest.initial_stage_id = stage.id;
+        this.scheduleLayout();
+    }
+
     getAdvanceStageTargets(stage: QuestStage | QuestFallbackStage): string[] {
         const targets: string[] = [];
         for (const step of stage.plan ?? []) {
@@ -629,7 +647,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
         quest.stages.forEach((stage) => stageMap.set(stage.id, stage));
         const distances = new Map<string, number>();
         const columns: QuestStage[][] = [];
-        const startStage = quest.stages[0];
+        const startStage = this.getQuestStartStage(quest);
         if (!startStage) {
             return { columns, distances };
         }
@@ -962,6 +980,24 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
             quest.fallback_stage.plan = [];
         }
         return quest.fallback_stage;
+    }
+
+    private getQuestStartStage(quest: QuestDefinition): QuestStage | null {
+        const initialStageId = quest.initial_stage_id;
+        if (initialStageId) {
+            const selected = quest.stages.find((stage) => stage.id === initialStageId) || null;
+            if (selected) {
+                return selected;
+            }
+        }
+        return quest.stages[0] || null;
+    }
+
+    private ensureInitialStageId(quest: QuestDefinition): void {
+        if (quest.initial_stage_id && quest.stages.some((stage) => stage.id === quest.initial_stage_id)) {
+            return;
+        }
+        quest.initial_stage_id = quest.stages[0]?.id;
     }
 
     closeEditor(): void {

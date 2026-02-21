@@ -84,6 +84,7 @@ class QuestCatalogManager:
             if not isinstance(quest, dict):
                 errors.append(f"Quest #{quest_index + 1} must be an object.")
                 continue
+            stage_ids: set[str] = set()
             advance_targets: list[tuple[str, str, int, int]] = []
             for field in ("id", "title", "description", "stages"):
                 if field not in quest:
@@ -121,6 +122,8 @@ class QuestCatalogManager:
                     errors.append(
                         f"Quest '{quest.get('id', quest_index + 1)}' stage #{stage_index + 1} id must be a string.",
                     )
+                else:
+                    stage_ids.add(stage["id"])
                 if stage.get("is_fallback") is not None:
                     errors.append(
                         f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' must not define is_fallback; use quest.fallback_stage.",
@@ -285,6 +288,16 @@ class QuestCatalogManager:
                                 errors.append(
                                     f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' action #{action_index + 1} missing transcription.",
                                 )
+            initial_stage_id = quest.get("initial_stage_id")
+            if initial_stage_id is not None:
+                if not isinstance(initial_stage_id, str):
+                    errors.append(
+                        f"Quest '{quest.get('id', quest_index + 1)}' initial_stage_id must be a string.",
+                    )
+                elif initial_stage_id not in stage_ids:
+                    errors.append(
+                        f"Quest '{quest.get('id', quest_index + 1)}' initial_stage_id '{initial_stage_id}' must reference an existing stage id.",
+                    )
             fallback_stage = quest.get("fallback_stage")
             if fallback_stage is not None:
                 if not isinstance(fallback_stage, dict):

@@ -213,6 +213,14 @@
                                         [ngModelOptions]="{ updateOn: 'blur' }"
                                         (ngModelChange)="onStageIdChange(selectedStage)">
                                     </mat-form-field>
+                                    @if (isQuestStartStage(selectedQuest, selectedStage)) {
+                                        <div class="quest-start-indicator">Quest Start</div>
+                                    } @else {
+                                        <button mat-stroked-button color="primary"
+                                                (click)="setQuestStartStage(selectedQuest, selectedStage)">
+                                            Set as Quest Start
+                                        </button>
+                                    }
                                 }
                                 <mat-form-field>
                                     <mat-label>Description</mat-label>

@@ -207,17 +207,9 @@ class Assistant:
         remove_orphaned_quest_states(self.quest_db, set(self.quest_catalog.keys()))
         for quest_id, quest in self.quest_catalog.items():
             existing = self.quest_db.get(quest_id)
-            stages = quest.get('stages', [])
-            if not stages:
-                log('warn', f"Quest '{quest_id}' has no stages, skipping")
-                continue
-            first_stage = self._get_first_non_fallback_stage(stages)
-            if not first_stage:
-                log('warn', f"Quest '{quest_id}' has no non-fallback stages, skipping")
-                continue
-            stage_id = first_stage.get('id')
+            stage_id = self._get_initial_stage_id(quest)
             if not stage_id:
-                log('warn', f"Quest '{quest_id}' first stage missing id, skipping")
+                log('warn', f"Quest '{quest_id}' has no valid initial stage id, skipping")
                 continue
             active = bool(quest.get('active', False))
             if existing is None:
@@ -280,6 +272,22 @@ class Assistant:
             if isinstance(stage, dict):
                 return stage
         return None
+
+    def _get_initial_stage_id(self, quest_def: dict[str, Any]) -> str | None:
+        stages = quest_def.get('stages', [])
+        if not isinstance(stages, list):
+            return None
+        initial_stage_id = quest_def.get('initial_stage_id')
+        if isinstance(initial_stage_id, str):
+            for stage in stages:
+                if isinstance(stage, dict) and stage.get('id') == initial_stage_id:
+                    return initial_stage_id
+            log('warn', f"Quest '{quest_def.get('id', 'unknown')}' initial_stage_id '{initial_stage_id}' not found in stages")
+        first_stage = self._get_first_non_fallback_stage(stages)
+        if not isinstance(first_stage, dict):
+            return None
+        stage_id = first_stage.get('id')
+        return stage_id if isinstance(stage_id, str) else None
 
     def _evaluate_quest_stage(
         self,
@@ -422,10 +430,9 @@ class Assistant:
             existing = self.quest_db.get(target_quest_id)
             if existing is None:
                 target_def = self.quest_catalog.get(target_quest_id)
-                stages = target_def.get('stages', []) if isinstance(target_def, dict) else []
-                first_stage_id = stages[0].get('id') if stages else None
-                if isinstance(first_stage_id, str):
-                    self.quest_db.set(target_quest_id, first_stage_id, active_value, self.quest_version)
+                initial_stage_id = self._get_initial_stage_id(target_def) if isinstance(target_def, dict) else None
+                if isinstance(initial_stage_id, str):
+                    self.quest_db.set(target_quest_id, initial_stage_id, active_value, self.quest_version)
                     log('info', f"Quest '{target_quest_id}' set active={active_value} (initialized)")
             else:
                 self.quest_db.set_active(target_quest_id, active_value)

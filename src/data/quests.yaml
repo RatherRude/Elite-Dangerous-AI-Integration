@@ -22,6 +22,7 @@ quests:
 - id: ebreach_snack_run
   title: E-Breach Emergency
   description: Your ship AI insists you must buy an E-Breach immediately.
+  initial_stage_id: find_anarchy
   active: false
   stages:
   - id: find_anarchy
@@ -174,9 +175,14 @@ quests:
       - action: set_active
         quest_id: ebreach_snack_run
         active: false
+  fallback_stage:
+    description: Fallback
+    instructions: Always evaluated and cannot become active.
+    plan: []
 - id: ancient_orb_pilgrimage_intro
   title: The Break of Dawn
   description: A mysterious call from the void draws you in.
+  initial_stage_id: find_guardian_system
   active: false
   stages:
   - id: find_guardian_system
@@ -374,9 +380,14 @@ quests:
       - action: set_active
         quest_id: ancient_orb_pilgrimage_intro
         active: false
+  fallback_stage:
+    description: Fallback
+    instructions: Always evaluated and cannot become active.
+    plan: []
 - id: ancient_orb_pilgrimage
   title: Orb of Meridia
   description: The Guardian AI joins you to experience the universe and collect data.
+  initial_stage_id: travel_to_iah_bulu
   active: false
   stages:
   - id: travel_to_iah_bulu
@@ -511,3 +522,7 @@ quests:
         actor_id: meridian
         transcription: This is only the beginning, Commander. Keep me close, and I
           will guide you to what the Guardians left behind.
+  fallback_stage:
+    description: Fallback
+    instructions: Always evaluated and cannot become active.
+    plan: []
