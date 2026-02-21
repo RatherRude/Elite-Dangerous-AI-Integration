@@ -155,7 +155,7 @@ class Assistant:
                 if isinstance(actor_id, str):
                     normalized_actor = dict(actor)
                     normalized_actor.setdefault('prompt', '')
-                    normalized_actor.setdefault('name_color', '#7cb3ff')
+                    normalized_actor.setdefault('name_color', '#2196F3')
                     actors.append(normalized_actor)
             self.quest_actors = {actor["id"]: actor for actor in actors}
             raw_quests = data.get('quests', [])

@@ -88,7 +88,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
     private actorAvatarPreviewUrls = new Map<QuestActor, string>();
     questsListExpanded = true;
     actorsListExpanded = true;
-    readonly defaultActorNameColor = "#7cb3ff";
+    readonly defaultActorNameColor = "#2196F3";
 
     @ViewChild("stageNetwork") stageNetworkRef?: ElementRef<HTMLDivElement>;
 

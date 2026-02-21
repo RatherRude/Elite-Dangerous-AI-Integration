@@ -263,7 +263,7 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
       case "action":
         return "#FF9800";
       case "npc_message":
-        return "#7cb3ff";
+        return "#2196F3";
       default:
         return "inherit";
     }

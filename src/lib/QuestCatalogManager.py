@@ -294,7 +294,7 @@ class QuestCatalogManager:
                 for actor in data["actors"]:
                     if isinstance(actor, dict):
                         actor.setdefault("prompt", "")
-                        actor.setdefault("name_color", "#7cb3ff")
+                        actor.setdefault("name_color", "#2196F3")
                         normalized_actors.append(actor)
                 data["actors"] = normalized_actors
             if "quests" not in data or not isinstance(data["quests"], list):

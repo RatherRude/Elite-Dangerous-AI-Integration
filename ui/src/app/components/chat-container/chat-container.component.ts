@@ -145,7 +145,7 @@ export class ChatContainerComponent implements AfterViewChecked, OnChanges, OnDe
       case "action":
         return "#FF9800";
       case "npc_message":
-        return "#7cb3ff";
+        return "#2196F3";
       default:
         return "inherit";
     }
