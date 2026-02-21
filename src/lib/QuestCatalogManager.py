@@ -6,6 +6,21 @@ import yaml
 from .Logger import log
 
 
+def remove_orphaned_quest_states(
+    db: Any,
+    catalog_quest_ids: set[str],
+) -> None:
+    """
+    Remove from the database any quest state whose quest_id is not in the catalog.
+    Call this when quests are loaded so the YAML catalog is the source of truth.
+    """
+    for state in db.get_all():
+        quest_id = state.get("quest_id") if isinstance(state, dict) else getattr(state, "quest_id", None)
+        if quest_id is not None and quest_id not in catalog_quest_ids:
+            db.delete(quest_id)
+            log("info", f"Removed orphaned quest state from database: {quest_id}")
+
+
 class QuestCatalogManager:
     def __init__(self, reload_callback: Callable[[], None] | None = None):
         self.reload_callback = reload_callback

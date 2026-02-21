@@ -20,6 +20,7 @@ import yaml
 from threading import Thread
 from .actions.Actions import set_speed, fire_weapons, get_visuals
 from .Projections import get_state_dict, ProjectedStates
+from .QuestCatalogManager import remove_orphaned_quest_states
 
 @final
 class Assistant:
@@ -188,6 +189,7 @@ class Assistant:
             self.quests_loaded = False
 
     def _sync_quests_to_db(self) -> None:
+        remove_orphaned_quest_states(self.quest_db, set(self.quest_catalog.keys()))
         for quest_id, quest in self.quest_catalog.items():
             existing = self.quest_db.get(quest_id)
             stages = quest.get('stages', [])

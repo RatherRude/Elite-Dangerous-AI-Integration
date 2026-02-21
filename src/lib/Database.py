@@ -926,6 +926,15 @@ class QuestDatabase():
         ''', (int(active), quest_id))
         conn.commit()
 
+    def delete(self, quest_id: str) -> None:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(f'''
+            DELETE FROM {self.table_name}
+            WHERE quest_id = ?
+        ''', (quest_id,))
+        conn.commit()
+
     def delete_all(self) -> None:
         conn = get_connection()
         cursor = conn.cursor()
