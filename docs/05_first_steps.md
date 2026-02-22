@@ -15,43 +15,24 @@ The AI Character Prompt is a description of the AI's personality. You can modify
 
 The integration uses your microphone for speech recognition. We support voice activation and push-to-talk (PTT). When using voice activation, we recommend using headphones to avoid the AI hearing itself, which causes a feedback loop.
 
-## Event Trigger
+## Event Triggers
 
-Certain actions within the game can trigger events that the AI can respond to. For example, when the ship is in danger, the AI can be programmed to inform you. Depending on your preferences, you can choose to silence some of these events or have the AI respond to other events. The "Events Triggers" section of the settings allows you to configure which events the AI should respond to, making the AI more or less chatty.
+Changes in the game world can trigger events that the AI can respond to. For example, when the ship is in danger, the AI can be programmed to inform you. These reactions are configured in the UI in the **Reactions** tab of the settings, where you can choose to silence some events or have the AI respond to others, making the AI more or less chatty.
+
+For a more in-depth guide on reactions and event triggers, see the [Reactions](./25_reactions.md) page.
 
 ## Keyboard Bindings
 
-For a more detailed explanation, see the [Actions](./20_actions.md) page.
+Certain keyboard bindings are required for the AI to trigger game actions. In the **Actions** tab of the settings, the UI will inform you if actions are unassigned, conflicting, or unsupported. Actions can be toggled on and off to disable unwanted ones, such as ejecting all cargo.
 
-In order for the AI to perform actions within the game a list of assigned keyboard buttons is recommended:
-- fire: Start firing primary weapons.
-- fireSecondary: Start firing secondary weapons.
-- hyperSuperCombination: Initiate FSD Jump, required to jump to the next system or enter supercruise.
-- setSpeedZero: Set speed to 0%.
-- setSpeed50: Set speed to 50%.
-- setSpeed100: Set speed to 100%.
-- deployHeatSink: Deploy heat sink.
-- deployHardpointToggle: Deploy or retract hardpoints.
-- increaseEnginesPower: Increase engine power.
-- increaseWeaponsPower: Increase weapon power.
-- increaseSystemsPower: Increase systems power.
-- galaxyMapOpen: Open or close the galaxy map.
-- systemMapOpen: Open or close the system map.
-- cycleNextTarget: Cycle to the next target.
-- cycleFireGroupNext: Cycle to the next fire group.
-- shipSpotLightToggle: Toggle ship spotlight.
-- ejectAllCargo: Eject all cargo.
-- landingGearToggle: Toggle landing gear.
-- useShieldCell: Use a shield cell.
-- fireChaffLauncher: Fire chaff launcher.
-- nightVisionToggle: Toggle night vision.
-- recallDismissShip: Recall or dismiss ship, available on foot and inside SRV.
-  
-The following buttons are required to perform advanced UI actions, like setting routes:
-- UI Up
-- UI Right
-- UI Select
-- UI Back
+For a full list of actions and their required keyboard buttons, see the [Actions](./20_actions.md) page.
+
+## Avatars
+
+Avatars allow you to give the AI a face. You provide a 2×2 grid with equal sections; each section shows the same styled character in one of four attitudes:
+
+| <img src="../ui/src/assets/cn_avatar_default.png" alt="Default avatar grid" width="120" /> | **Top-left:** the character is listening<br>**Top-right:** the character is speaking<br>**Bottom-left:** the character is thinking<br>**Bottom-right:** the character is performing searches or actions |
+|----------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 
 ## Upgrading the AI
 
