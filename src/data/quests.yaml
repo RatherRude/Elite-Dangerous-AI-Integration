@@ -214,6 +214,9 @@ quests:
         operator: equals
         value: Guardian
       actions:
+      - action: npc_message
+        actor_id: unknown
+        transcription: The ruins remember. Go to the surface.
       - action: advance_stage
         target_stage_id: find_ruins
   - id: find_ruins
@@ -221,6 +224,9 @@ quests:
     instructions: Locate the Guardian Structure on a planet's surface.
     plan:
     - actions:
+      - action: npc_message
+        actor_id: unknown
+        transcription: You are close. Land where the old light slept.
       - action: advance_stage
         target_stage_id: near_ruins
       conditions:
@@ -249,6 +255,9 @@ quests:
     instructions: Touch down near the Guardian ruins.
     plan:
     - actions:
+      - action: npc_message
+        actor_id: unknown
+        transcription: The ground remembers. Leave the ship.
       - action: advance_stage
         target_stage_id: landed
       conditions:
@@ -293,6 +302,9 @@ quests:
         operator: equals
         value: LiftOff
     - actions:
+      - action: npc_message
+        actor_id: unknown
+        transcription: Walk, or take the small vessel. One of them leads to the heart.
       - action: advance_stage
         target_stage_id: enter_srv
       conditions:
@@ -301,6 +313,9 @@ quests:
         operator: equals
         value: Disembark
     - actions:
+      - action: npc_message
+        actor_id: unknown
+        transcription: The vehicle will carry you to the source.
       - action: advance_stage
         target_stage_id: collect_orb
       conditions:
@@ -349,6 +364,9 @@ quests:
         actor_id: meridian
         transcription: The silence is broken. Carry me onward, and I will show you
           what still sleeps among the stars.
+      - action: npc_message
+        actor_id: meridian
+        transcription: Do not fear me. I have slept long enough.
       - action: set_active
         quest_id: ancient_orb_pilgrimage_intro
       - action: set_active
@@ -386,6 +404,9 @@ quests:
     instructions: The orb stirs. Bring it to Iah Bulu and hear the beacon's truth.
     plan:
     - actions:
+      - action: npc_message
+        actor_id: meridian
+        transcription: Iah Bulu. The name echoes in my lattice. Take me to the ring.
       - action: advance_stage
         target_stage_id: arrive_metcalf
       conditions:
@@ -402,6 +423,9 @@ quests:
     instructions: Locate Metcalf Ring and drop from supercruise.
     plan:
     - actions:
+      - action: npc_message
+        actor_id: meridian
+        transcription: There. The station. Let us dock.
       - action: advance_stage
         target_stage_id: dock_metcalf
       conditions:
@@ -422,6 +446,9 @@ quests:
     instructions: Request docking clearance at Metcalf Ring.
     plan:
     - actions:
+      - action: npc_message
+        actor_id: meridian
+        transcription: Docked. I can feel their networks. Show me the rest.
       - action: advance_stage
         target_stage_id: station_services
       conditions:
@@ -470,6 +497,9 @@ quests:
       300,000.
     plan:
     - actions:
+      - action: npc_message
+        actor_id: meridian
+        transcription: Their fear is data. Useful. Now take me back.
       - action: advance_stage
         target_stage_id: return_metcalf
       conditions:
@@ -492,6 +522,9 @@ quests:
         transcription: Metcalf Ring again. Good. I need proximity to continue reconstructing
           my memory lattice.
     - actions:
+      - action: npc_message
+        actor_id: meridian
+        transcription: We are back. Let me process what we have seen.
       - action: advance_stage
         target_stage_id: outro
       conditions:
@@ -513,6 +546,11 @@ quests:
         actor_id: meridian
         transcription: This is only the beginning, Commander. Keep me close, and I
           will guide you to what the Guardians left behind.
+    - conditions: []
+      actions:
+      - action: npc_message
+        actor_id: unknown
+        transcription: The orb has chosen. What sleeps will wake in time.
   fallback_stage:
     description: Fallback
     instructions: Always evaluated and cannot become active.
