@@ -6,6 +6,13 @@ import yaml
 from .Logger import log
 
 FALLBACK_STAGE_ID = "__fallback__"
+ALLOWED_ACTION_FIELDS: dict[str, set[str]] = {
+    "log": {"action", "message"},
+    "advance_stage": {"action", "target_stage_id"},
+    "set_active": {"action", "quest_id", "active"},
+    "play_sound": {"action", "file_name", "transcription", "actor_id"},
+    "npc_message": {"action", "actor_id", "transcription"},
+}
 
 
 def remove_orphaned_quest_states(
@@ -29,6 +36,26 @@ class QuestCatalogManager:
 
     def get_catalog_path(self) -> Path:
         return Path(__file__).resolve().parent.parent / "data" / "quests.yaml"
+
+    def _validate_action_fields(
+        self,
+        action: dict[str, Any],
+        action_type: str,
+        quest_id: Any,
+        stage_id: Any,
+        action_index: int,
+    ) -> list[str]:
+        errors: list[str] = []
+        allowed_fields = ALLOWED_ACTION_FIELDS.get(action_type, {"action"})
+        invalid_fields = [
+            key for key in action.keys()
+            if key not in allowed_fields
+        ]
+        for key in invalid_fields:
+            errors.append(
+                f"Quest '{quest_id}' stage '{stage_id}' action #{action_index} field '{key}' is not valid for action '{action_type}'.",
+            )
+        return errors
 
     def validate_catalog(self, catalog: Any) -> list[str]:
         errors: list[str] = []
@@ -199,6 +226,15 @@ class QuestCatalogManager:
                                     f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' action #{action_index + 1} action must be log, advance_stage, set_active, play_sound, or npc_message.",
                                 )
                                 continue
+                            errors.extend(
+                                self._validate_action_fields(
+                                    action,
+                                    action_type,
+                                    quest.get("id", quest_index + 1),
+                                    stage.get("id", stage_index + 1),
+                                    action_index + 1,
+                                ),
+                            )
                             if action_type == "log" and "message" not in action:
                                 errors.append(
                                     f"Quest '{quest.get('id', quest_index + 1)}' stage '{stage.get('id', stage_index + 1)}' action #{action_index + 1} missing message.",
@@ -358,6 +394,16 @@ class QuestCatalogManager:
                                                 action["target_stage_id"],
                                                 "fallback_stage",
                                                 step_index + 1,
+                                                action_index + 1,
+                                            ),
+                                        )
+                                    if action.get("action") in ALLOWED_ACTION_FIELDS:
+                                        errors.extend(
+                                            self._validate_action_fields(
+                                                action,
+                                                action["action"],
+                                                quest.get("id", quest_index + 1),
+                                                "fallback_stage",
                                                 action_index + 1,
                                             ),
                                         )

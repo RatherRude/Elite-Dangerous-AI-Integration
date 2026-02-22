@@ -171,92 +171,58 @@
     },
     "planAction": {
       "type": "object",
-      "additionalProperties": false,
       "required": ["action"],
       "properties": {
         "action": {
           "type": "string",
           "description": "Action to execute when step conditions are met.",
           "enum": ["log", "advance_stage", "set_active", "play_sound", "npc_message"]
-        },
-        "message": {
-          "type": "string",
-          "description": "Debug log message for log actions."
-        },
-        "target_stage_id": {
-          "type": "string",
-          "description": "Stage id to advance to for advance_stage actions.",
-          "pattern": "^[A-Za-z0-9_\\-]+$"
-        },
-        "quest_id": {
-          "type": "string",
-          "description": "Quest id to activate/deactivate for set_active actions.",
-          "pattern": "^[A-Za-z0-9_\\-]+$"
-        },
-        "active": {
-          "type": "boolean",
-          "description": "Whether the quest should be active for set_active actions.",
-          "default": true
-        },
-        "file_name": {
-          "type": "string",
-          "description": "Filename of the sound file in the catalog audio folder for play_sound actions."
-        },
-        "transcription": {
-          "type": "string",
-          "description": "Transcription text for play_sound actions."
-        },
-        "actor_id": {
-          "type": ["string", "null"],
-          "description": "Optional actor id used to attribute play_sound audio.",
-          "pattern": "^[A-Za-z0-9_\\-]+$"
         }
       },
-      "allOf": [
+      "oneOf": [
         {
-          "if": {
-            "properties": { "action": { "const": "log" } },
-            "required": ["action"]
+          "additionalProperties": false,
+          "properties": {
+            "action": { "const": "log" },
+            "message": { "type": "string" }
           },
-          "then": {
-            "required": ["message"]
-          }
+          "required": ["action", "message"]
         },
         {
-          "if": {
-            "properties": { "action": { "const": "advance_stage" } },
-            "required": ["action"]
+          "additionalProperties": false,
+          "properties": {
+            "action": { "const": "advance_stage" },
+            "target_stage_id": { "type": "string", "pattern": "^[A-Za-z0-9_\\-]+$" }
           },
-          "then": {
-            "required": ["target_stage_id"]
-          }
+          "required": ["action", "target_stage_id"]
         },
         {
-          "if": {
-            "properties": { "action": { "const": "set_active" } },
-            "required": ["action"]
+          "additionalProperties": false,
+          "properties": {
+            "action": { "const": "set_active" },
+            "quest_id": { "type": "string", "pattern": "^[A-Za-z0-9_\\-]+$" },
+            "active": { "type": "boolean" }
           },
-          "then": {
-            "required": ["quest_id"]
-          }
+          "required": ["action", "quest_id"]
         },
         {
-          "if": {
-            "properties": { "action": { "const": "play_sound" } },
-            "required": ["action"]
+          "additionalProperties": false,
+          "properties": {
+            "action": { "const": "play_sound" },
+            "file_name": { "type": "string" },
+            "transcription": { "type": "string" },
+            "actor_id": { "type": ["string", "null"], "pattern": "^[A-Za-z0-9_\\-]+$" }
           },
-          "then": {
-            "required": ["file_name", "transcription"]
-          }
+          "required": ["action", "file_name", "transcription"]
         },
         {
-          "if": {
-            "properties": { "action": { "const": "npc_message" } },
-            "required": ["action"]
+          "additionalProperties": false,
+          "properties": {
+            "action": { "const": "npc_message" },
+            "actor_id": { "type": "string", "pattern": "^[A-Za-z0-9_\\-]+$" },
+            "transcription": { "type": "string" }
           },
-          "then": {
-            "required": ["actor_id", "transcription"]
-          }
+          "required": ["action", "actor_id", "transcription"]
         }
       ]
     },

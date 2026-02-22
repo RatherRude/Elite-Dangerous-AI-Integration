@@ -317,7 +317,7 @@
                                                     <mat-form-field>
                                                         <mat-label>Action</mat-label>
                                                     <mat-select [(ngModel)]="action.action"
-                                                                (ngModelChange)="requestNetworkRefresh()">
+                                                                (ngModelChange)="onActionTypeChange(action)">
                                                             <mat-option value="log">log</mat-option>
                                                             <mat-option value="advance_stage">advance_stage</mat-option>
                                                             <mat-option value="set_active">set_active</mat-option>

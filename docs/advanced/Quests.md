@@ -396,7 +396,7 @@ Required per action:
 - `log`: `message`
 - `advance_stage`: `target_stage_id`
 - `set_active`: `quest_id` (optional `active`, defaults `true`)
-- `play_sound`: `url`, `transcription` (optional `actor_id`)
+- `play_sound`: `file_name`, `transcription` (optional `actor_id`)
 - `npc_message`: `actor_id`, `transcription`
 
 ## Runtime lifecycle
@@ -485,7 +485,7 @@ Note: if the resolved value is missing (`None`), equality returns false.
 
 ### `play_sound`
 
-- Requires valid `url` and `transcription`.
+- Requires valid `file_name` (`.mp3`/`.wav`) and `transcription`.
 - Optional `actor_id`:
   - if actor exists and has voice, that voice is attached to event payload
 - Emits quest audio event via `EventManager.add_play_sound(...)`.

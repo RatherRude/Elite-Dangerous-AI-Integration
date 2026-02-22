@@ -345,8 +345,15 @@ quests:
         actor_id: meridian
         transcription: At last. I am Meridian. Your touch has woken me, and our journey
           begins now.
-      - action: advance_stage
-        target_stage_id: outro
+      - action: npc_message
+        actor_id: meridian
+        transcription: The silence is broken. Carry me onward, and I will show you
+          what still sleeps among the stars.
+      - action: set_active
+        quest_id: ancient_orb_pilgrimage_intro
+      - action: set_active
+        quest_id: ancient_orb_pilgrimage
+        active: true
       conditions:
       - source: event
         path: event
@@ -364,22 +371,6 @@ quests:
         path: event
         operator: equals
         value: LiftOff
-  - id: outro
-    description: The beacon speaks.
-    instructions: A new hand touches the beacon.
-    plan:
-    - conditions: []
-      actions:
-      - action: npc_message
-        actor_id: meridian
-        transcription: The silence is broken. Carry me onward, and I will show you
-          what still sleeps among the stars.
-      - action: set_active
-        quest_id: ancient_orb_pilgrimage
-        active: true
-      - action: set_active
-        quest_id: ancient_orb_pilgrimage_intro
-        active: false
   fallback_stage:
     description: Fallback
     instructions: Always evaluated and cannot become active.

@@ -449,9 +449,6 @@ class Assistant:
             return
         if action == 'play_sound':
             file_name = step.get('file_name')
-            if file_name is None and isinstance(step.get('url'), str):
-                # Backward compatibility for old quest entries.
-                file_name = step.get('url')
             transcription = step.get('transcription')
             actor_id = step.get('actor_id')
             actor_voice = None

@@ -398,6 +398,52 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
         this.scheduleLayout();
     }
 
+    onActionTypeChange(action: QuestAction): void {
+        const nextType = action.action;
+        const preservedMessage = action.message;
+        const preservedTargetStageId = action.target_stage_id;
+        const preservedQuestId = action.quest_id;
+        const preservedActive = action.active;
+        const preservedFileName = action.file_name;
+        const preservedTranscription = action.transcription;
+        const preservedActorId = action.actor_id;
+
+        delete action.message;
+        delete action.target_stage_id;
+        delete action.quest_id;
+        delete action.active;
+        delete action.file_name;
+        delete action.transcription;
+        delete action.actor_id;
+
+        switch (nextType) {
+            case "log":
+                action.message = preservedMessage || "Describe the outcome.";
+                break;
+            case "advance_stage":
+                action.target_stage_id = preservedTargetStageId;
+                break;
+            case "set_active":
+                action.quest_id = preservedQuestId;
+                if (typeof preservedActive === "boolean") {
+                    action.active = preservedActive;
+                }
+                break;
+            case "play_sound":
+                action.file_name = preservedFileName;
+                action.transcription = preservedTranscription;
+                action.actor_id = preservedActorId ?? null;
+                break;
+            case "npc_message":
+                action.actor_id = preservedActorId ?? null;
+                action.transcription = preservedTranscription;
+                break;
+            default:
+                break;
+        }
+        this.requestNetworkRefresh();
+    }
+
     async selectPlaySoundFile(action: QuestAction): Promise<void> {
         try {
             const result: QuestAudioImportResult =
@@ -409,8 +455,6 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
                 throw new Error("No file name returned by picker.");
             }
             action.file_name = result.fileName;
-            // Drop legacy URL value so saves are filename-based.
-            delete action.url;
             const status = result.reused
                 ? "Reused existing audio file"
                 : "Imported audio file";
@@ -677,6 +721,15 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
             }
         }
 
+        // Keep unconnected stages deterministic and vertical by order.
+        let nextDistance = Math.max(...Array.from(distances.values()), -1) + 1;
+        for (const stage of quest.stages) {
+            if (!distances.has(stage.id)) {
+                distances.set(stage.id, nextDistance);
+                nextDistance += 1;
+            }
+        }
+
         const maxDistance = Math.max(
             ...Array.from(distances.values()),
             0,
@@ -869,18 +922,20 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
             return;
         }
 
+        const graph = this.buildStageGraph(quest);
         const fallbackStage = this.ensureFallbackStage(quest);
-        const regularStageCount = quest.stages.length;
-        const fallbackColumnX = Math.max(regularStageCount, 1) * 280;
+        const maxLevel = Math.max(...Array.from(graph.distances.values()), 0);
         const nodes: Node[] = [
             ...quest.stages.map((stage) => ({
                 id: stage.id,
                 label: stage.description || stage.id,
+                level: graph.distances.get(stage.id) ?? 0,
             })),
             {
                 id: FALLBACK_STAGE_NODE_ID,
                 label: `${fallbackStage.description || "Fallback"}\n(Fallback)`,
-                x: fallbackColumnX,
+                level: 0,
+                x: (maxLevel + 1) * 280,
                 fixed: { x: true, y: false },
             },
         ];
@@ -941,7 +996,6 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
                 smooth: { enabled: true, type: "cubicBezier", roundness: 0.2 },
             });
         }
-
         this.nodes.clear();
         this.edges.clear();
         this.nodes.add(nodes);

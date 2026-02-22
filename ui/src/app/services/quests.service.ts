@@ -59,8 +59,6 @@ export interface QuestAction {
     quest_id?: string;
     active?: boolean;
     file_name?: string;
-    // Backward compatibility for legacy catalogs.
-    url?: string;
     transcription?: string;
     actor_id?: string | null;
 }
