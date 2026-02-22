@@ -36,4 +36,4 @@ Avatars allow you to give the AI a face. You provide a 2×2 grid with equal sect
 
 ## Upgrading the AI
 
-You will automatically receive a notification when a new version of the AI is available during the launch of the application. After downloading the new version, you can extract the files into a new folder and run the new version. To keep you configuration settings, you can copy the `config.json` file from the old folder to the new folder. To keep your previous conversations, you can copy the `covas.db` file from the old foldere to the new folder.
+You will automatically receive a notification when a new version of the AI is available during the launch of the application. After downloading the new version, run the MSI installer. The one-click installer updates your existing installation; your configuration and conversations are migrated automatically.
