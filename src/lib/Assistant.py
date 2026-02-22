@@ -108,7 +108,7 @@ class Assistant:
             conversational_messages = [1 for e in short_term if isinstance(e, ConversationEvent) or isinstance(e, ToolEvent)]
             
             log(prefix='info', message=f'Short-term memory length: {len(short_term)} events ({len(conversational_messages)} conversational) since {last_memory_time}, already summarizing: {self.is_summarizing}')
-            if (len(conversational_messages) > 40 or len(short_term) > 120) and not self.is_summarizing and (time() - last_memory_time) >= 60:
+            if (len(conversational_messages) > 40 or len(short_term) > 120) and not self.is_summarizing and (time() - last_memory_time) >= 300:
                 log('info', f'Starting summarization of {len(short_term[30:])} events into long-term memory')
                 self.is_summarizing = True
                 Thread(target=self.summarize_memory, args=(short_term[30:],), daemon=True).start()
