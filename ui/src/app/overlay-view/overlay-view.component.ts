@@ -1,5 +1,4 @@
-import { Component, OnDestroy, OnInit, ElementRef, ViewChild, AfterViewInit } from "@angular/core";
-import { ActivatedRoute } from "@angular/router";
+import { Component, OnDestroy, ElementRef, ViewChild, AfterViewInit } from "@angular/core";
 import { TauriService } from "../services/tauri.service";
 import { Subscription } from "rxjs";
 import { CommonModule } from "@angular/common";
@@ -9,6 +8,7 @@ import {AvatarService} from "../services/avatar.service";
 import {CharacterService} from "../services/character.service";
 import {Config, ConfigService} from "../services/config.service";
 import {GenUiRenderComponent} from "../components/gen-ui-render/gen-ui-render.component";
+import { EventService } from "../services/event.service";
 
 @Component({
   selector: "app-overlay-view",
@@ -25,6 +25,10 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
   chat: ChatMessage[] = []
   
   private currentAvatarUrl: string | null = null;
+  private baseAvatarUrl: string | null = null;
+  private scriptedAvatarUrl: string | null = null;
+  private scriptedAvatarId: string | null = null;
+  private scriptedAvatarRequestSeq = 0;
   private subscriptions: Subscription[] = [];
 
   // Overlay display settings
@@ -39,7 +43,8 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     private chatService: ChatService,
     private avatarService: AvatarService,
     private characterService: CharacterService,
-    private configService: ConfigService
+    private configService: ConfigService,
+    private eventService: EventService,
   ) {
     // Subscribe to run mode changes
     this.subscriptions.push(
@@ -65,9 +70,33 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     // Subscribe to avatar URL changes from character service
     this.subscriptions.push(
       characterService.avatarUrl$.subscribe(avatarUrl => {
-        this.currentAvatarUrl = avatarUrl;
+        this.baseAvatarUrl = avatarUrl;
+        if (!this.scriptedAvatarUrl) {
+          this.currentAvatarUrl = avatarUrl;
+        }
         this.applyAvatarBackground();
       })
+    );
+    this.subscriptions.push(
+      chatService.chatMessage$.subscribe((msg) => {
+        if (!msg) {
+          return;
+        }
+        if (msg.role === "npc_message") {
+          void this.setScriptedAvatar(msg.avatar_id);
+        }
+      }),
+    );
+    this.subscriptions.push(
+      eventService.events$.subscribe((messages) => {
+        const message = messages.at(-1);
+        if (!message) {
+          return;
+        }
+        if (message.event.kind === "assistant_completed") {
+          this.clearScriptedAvatar();
+        }
+      }),
     );
 
     // Subscribe to config changes to get overlay settings
@@ -172,6 +201,51 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     }, 10); // Slightly longer timeout to handle *ngIf rendering
   }
 
+  private async setScriptedAvatar(avatarId?: string): Promise<void> {
+    if (!avatarId) {
+      this.clearScriptedAvatar();
+      return;
+    }
+    if (this.scriptedAvatarId === avatarId && this.scriptedAvatarUrl) {
+      return;
+    }
+    const requestSeq = ++this.scriptedAvatarRequestSeq;
+    try {
+      const avatarUrl = await this.avatarService.getAvatar(avatarId);
+      if (requestSeq !== this.scriptedAvatarRequestSeq) {
+        if (avatarUrl) {
+          URL.revokeObjectURL(avatarUrl);
+        }
+        return;
+      }
+      if (!avatarUrl) {
+        this.clearScriptedAvatar();
+        return;
+      }
+      if (this.scriptedAvatarUrl && this.scriptedAvatarUrl !== avatarUrl) {
+        URL.revokeObjectURL(this.scriptedAvatarUrl);
+      }
+      this.scriptedAvatarId = avatarId;
+      this.scriptedAvatarUrl = avatarUrl;
+      this.currentAvatarUrl = avatarUrl;
+      this.applyAvatarBackground();
+    } catch (error) {
+      console.error("Error loading scripted dialog avatar:", error);
+      this.clearScriptedAvatar();
+    }
+  }
+
+  private clearScriptedAvatar(): void {
+    this.scriptedAvatarRequestSeq += 1;
+    this.scriptedAvatarId = null;
+    if (this.scriptedAvatarUrl) {
+      URL.revokeObjectURL(this.scriptedAvatarUrl);
+      this.scriptedAvatarUrl = null;
+    }
+    this.currentAvatarUrl = this.baseAvatarUrl;
+    this.applyAvatarBackground();
+  }
+
   public getLogColor(role: string): string {
     switch (role.toLowerCase()) {
       case "error":
@@ -188,6 +262,8 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
         return "#E91E63";
       case "action":
         return "#FF9800";
+      case "npc_message":
+        return "#2196F3";
       default:
         return "inherit";
     }

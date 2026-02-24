@@ -20,6 +20,9 @@ import yaml
 from threading import Thread
 from .actions.Actions import set_speed, fire_weapons, get_visuals
 from .Projections import get_state_dict, ProjectedStates
+from .QuestCatalogManager import remove_orphaned_quest_states
+
+FALLBACK_STAGE_ID = "__fallback__"
 
 @final
 class Assistant:
@@ -41,6 +44,7 @@ class Assistant:
         self.short_term_memories = []
         self.quest_db = QuestDatabase()
         self.quest_catalog: dict[str, dict[str, Any]] = {}
+        self.quest_actors: dict[str, dict[str, Any]] = {}
         self.quests_loaded = False
         self.quest_version = "0"
 
@@ -104,7 +108,7 @@ class Assistant:
             conversational_messages = [1 for e in short_term if isinstance(e, ConversationEvent) or isinstance(e, ToolEvent)]
             
             log(prefix='info', message=f'Short-term memory length: {len(short_term)} events ({len(conversational_messages)} conversational) since {last_memory_time}, already summarizing: {self.is_summarizing}')
-            if (len(conversational_messages) > 40 or len(short_term) > 120) and not self.is_summarizing and (time() - last_memory_time) >= 60:
+            if (len(conversational_messages) > 40 or len(short_term) > 120) and not self.is_summarizing and (time() - last_memory_time) >= 300:
                 log('info', f'Starting summarization of {len(short_term[30:])} events into long-term memory')
                 self.is_summarizing = True
                 Thread(target=self.summarize_memory, args=(short_term[30:],), daemon=True).start()
@@ -120,6 +124,30 @@ class Assistant:
     def _get_quests_path(self) -> Path:
         return Path(__file__).resolve().parent.parent / "data" / "quests.yaml"
 
+    def _get_quest_audio_dir(self) -> Path:
+        return Path(__file__).resolve().parent.parent / "data" / "audio"
+
+    def _get_character_tts_voice(self) -> str:
+        """Return the active character's TTS voice for fallback when an actor has no voice."""
+        characters = self.config.get('characters') or []
+        if not characters:
+            return 'nova'
+        idx = self.config.get('active_character_index', 0)
+        idx = max(0, min(idx, len(characters) - 1))
+        ch = characters[idx] if isinstance(characters[idx], dict) else None
+        voice = ch.get('tts_voice') if ch else None
+        if isinstance(voice, str) and voice.strip():
+            return voice.strip()
+        return 'nova'
+
+    def _resolve_quest_audio_path(self, file_name: str) -> Path | None:
+        normalized_name = file_name.replace("\\", "/")
+        if "/" in normalized_name:
+            return None
+        if not normalized_name.lower().endswith((".mp3", ".wav")):
+            return None
+        return self._get_quest_audio_dir() / normalized_name
+
     def _load_quests(self) -> None:
         try:
             quests_path = self._get_quests_path()
@@ -131,10 +159,25 @@ class Assistant:
             with quests_path.open('r', encoding='utf-8') as handle:
                 data = yaml.safe_load(handle) or {}
             self.quest_version = str(data.get('version', '0'))
+            raw_actors = data.get('actors', [])
+            if not isinstance(raw_actors, list):
+                raw_actors = []
+            actors: list[dict[str, Any]] = []
+            for actor in raw_actors:
+                if not isinstance(actor, dict):
+                    continue
+                actor_id = actor.get('id')
+                if isinstance(actor_id, str):
+                    normalized_actor = dict(actor)
+                    normalized_actor.setdefault('prompt', '')
+                    normalized_actor.setdefault('name_color', '#2196F3')
+                    actors.append(normalized_actor)
+            self.quest_actors = {actor["id"]: actor for actor in actors}
             raw_quests = data.get('quests', [])
             if not isinstance(raw_quests, list):
                 log('warn', 'Quest file format invalid: quests is not a list')
                 self.quest_catalog = {}
+                self.quest_actors = {}
                 self.quests_loaded = False
                 return
             quests: list[dict[str, Any]] = []
@@ -157,19 +200,16 @@ class Assistant:
         except Exception as e:
             log('error', 'Failed to load quests', e, traceback.format_exc())
             self.quest_catalog = {}
+            self.quest_actors = {}
             self.quests_loaded = False
 
     def _sync_quests_to_db(self) -> None:
+        remove_orphaned_quest_states(self.quest_db, set(self.quest_catalog.keys()))
         for quest_id, quest in self.quest_catalog.items():
             existing = self.quest_db.get(quest_id)
-            stages = quest.get('stages', [])
-            if not stages:
-                log('warn', f"Quest '{quest_id}' has no stages, skipping")
-                continue
-            first_stage = stages[0]
-            stage_id = first_stage.get('id')
+            stage_id = self._get_initial_stage_id(quest)
             if not stage_id:
-                log('warn', f"Quest '{quest_id}' first stage missing id, skipping")
+                log('warn', f"Quest '{quest_id}' has no valid initial stage id, skipping")
                 continue
             active = bool(quest.get('active', False))
             if existing is None:
@@ -202,13 +242,16 @@ class Assistant:
             if not stage_def:
                 log('warn', f"Quest '{quest_id}' stage '{stage_id}' missing from catalog")
                 continue
-            conditions = stage_def.get('conditions', [])
-            if conditions and not self._conditions_met(conditions, event, projected_states):
-                continue
-            plan = stage_def.get('plan', [])
-            if not plan:
-                continue
-            self._trigger_quest_stage_plan(quest_def, stage_def, state, event, projected_states)
+            self._evaluate_quest_stage(quest_def, stage_def, state, event, projected_states)
+            fallback_stage_def = self._get_fallback_stage_def(quest_def)
+            if fallback_stage_def:
+                self._evaluate_quest_stage(
+                    quest_def,
+                    fallback_stage_def,
+                    state,
+                    event,
+                    projected_states,
+                )
 
     def _get_stage_def(self, quest_def: dict[str, Any], stage_id: str | None) -> dict[str, Any] | None:
         if not stage_id:
@@ -217,6 +260,50 @@ class Assistant:
             if stage.get('id') == stage_id:
                 return stage
         return None
+
+    def _get_fallback_stage_def(self, quest_def: dict[str, Any]) -> dict[str, Any] | None:
+        fallback_stage = quest_def.get('fallback_stage')
+        if isinstance(fallback_stage, dict):
+            return fallback_stage
+        return None
+
+    def _get_first_non_fallback_stage(self, stages: list[Any]) -> dict[str, Any] | None:
+        for stage in stages:
+            if isinstance(stage, dict):
+                return stage
+        return None
+
+    def _get_initial_stage_id(self, quest_def: dict[str, Any]) -> str | None:
+        stages = quest_def.get('stages', [])
+        if not isinstance(stages, list):
+            return None
+        initial_stage_id = quest_def.get('initial_stage_id')
+        if isinstance(initial_stage_id, str):
+            for stage in stages:
+                if isinstance(stage, dict) and stage.get('id') == initial_stage_id:
+                    return initial_stage_id
+            log('warn', f"Quest '{quest_def.get('id', 'unknown')}' initial_stage_id '{initial_stage_id}' not found in stages")
+        first_stage = self._get_first_non_fallback_stage(stages)
+        if not isinstance(first_stage, dict):
+            return None
+        stage_id = first_stage.get('id')
+        return stage_id if isinstance(stage_id, str) else None
+
+    def _evaluate_quest_stage(
+        self,
+        quest_def: dict[str, Any],
+        stage_def: dict[str, Any],
+        state: QuestState,
+        event: Event,
+        projected_states: ProjectedStates,
+    ) -> None:
+        conditions = stage_def.get('conditions', [])
+        if conditions and not self._conditions_met(conditions, event, projected_states):
+            return
+        plan = stage_def.get('plan', [])
+        if not plan:
+            return
+        self._trigger_quest_stage_plan(quest_def, stage_def, state, event, projected_states)
 
     def _conditions_met(self, conditions: list[dict[str, Any]], event: Event, projected_states: ProjectedStates) -> bool:
         for condition in conditions:
@@ -232,27 +319,16 @@ class Assistant:
             if not isinstance(operator, str):
                 operator = 'equals'
             expected = condition.get('value')
-            actual = self._resolve_condition_value(source, path, event, projected_states)
+            actual = self._resolve_condition_value(source, path, event)
             if not self._compare_condition(actual, expected, operator):
                 log('debug', f"Quest condition failed: source={source} path={path} operator={operator} expected={expected} actual={actual}")
                 return False
         return True
 
-    def _resolve_condition_value(self, source: str, path: str, event: Event, projected_states: ProjectedStates) -> Any:
-        if source == 'projection':
-            return self._resolve_projection_value(path, projected_states)
+    def _resolve_condition_value(self, source: str, path: str, event: Event) -> Any:
         if source == 'event':
             return self._resolve_event_value(path, event)
         return None
-
-    def _resolve_projection_value(self, path: str, projected_states: ProjectedStates) -> Any:
-        if not path:
-            return None
-        parts = path.split('.')
-        root = parts[0]
-        remainder = '.'.join(parts[1:])
-        projection_data = get_state_dict(projected_states, root, default={})
-        return self._get_nested_value(projection_data, remainder)
 
     def _resolve_event_value(self, path: str, event: Event) -> Any:
         if not path:
@@ -354,10 +430,9 @@ class Assistant:
             existing = self.quest_db.get(target_quest_id)
             if existing is None:
                 target_def = self.quest_catalog.get(target_quest_id)
-                stages = target_def.get('stages', []) if isinstance(target_def, dict) else []
-                first_stage_id = stages[0].get('id') if stages else None
-                if isinstance(first_stage_id, str):
-                    self.quest_db.set(target_quest_id, first_stage_id, active_value, self.quest_version)
+                initial_stage_id = self._get_initial_stage_id(target_def) if isinstance(target_def, dict) else None
+                if isinstance(initial_stage_id, str):
+                    self.quest_db.set(target_quest_id, initial_stage_id, active_value, self.quest_version)
                     log('info', f"Quest '{target_quest_id}' set active={active_value} (initialized)")
             else:
                 self.quest_db.set_active(target_quest_id, active_value)
@@ -372,9 +447,97 @@ class Assistant:
                 "active": active_value,
             })
             return
+        if action == 'play_sound':
+            file_name = step.get('file_name')
+            transcription = step.get('transcription')
+            actor_id = step.get('actor_id')
+            actor_voice = None
+            actor_name = None
+            actor_name_color = None
+            avatar_url = None
+            actor_prompt = None
+            if not isinstance(file_name, str) or not file_name:
+                log('warn', "Quest action play_sound missing or invalid file_name")
+                return
+            audio_path = self._resolve_quest_audio_path(file_name)
+            if audio_path is None:
+                log('warn', f"Quest action play_sound has unsafe or invalid file_name: {file_name}")
+                return
+            if not audio_path.exists():
+                log('warn', f"Quest action play_sound file not found: {audio_path}")
+                return
+            if not isinstance(transcription, str):
+                log('warn', f"Quest action play_sound missing or invalid transcription")
+                return
+            if actor_id is not None and not isinstance(actor_id, str):
+                log('warn', "Quest action play_sound has invalid actor_id")
+                actor_id = None
+            if actor_id:
+                actor = self.quest_actors.get(actor_id)
+                if isinstance(actor, dict):
+                    voice = actor.get('voice')
+                    if isinstance(voice, str) and voice:
+                        actor_voice = voice
+                    actor_name_value = actor.get('name')
+                    if isinstance(actor_name_value, str) and actor_name_value:
+                        actor_name = actor_name_value
+                    actor_name_color_value = actor.get('name_color')
+                    if isinstance(actor_name_color_value, str) and actor_name_color_value:
+                        actor_name_color = actor_name_color_value
+                    avatar_url_value = actor.get('avatar_url')
+                    if isinstance(avatar_url_value, str) and avatar_url_value:
+                        avatar_url = avatar_url_value
+                    prompt_value = actor.get('prompt')
+                    if isinstance(prompt_value, str) and prompt_value:
+                        actor_prompt = prompt_value
+            self.event_manager.add_play_sound(
+                file_name,
+                transcription,
+                actor_id,
+                actor_voice,
+                actor_name,
+                actor_name_color,
+                avatar_url,
+                actor_prompt,
+            )
+            return
+        if action == 'npc_message':
+            actor_id = step.get('actor_id')
+            transcription = step.get('transcription')
+            if not isinstance(actor_id, str) or not actor_id:
+                log('warn', "Quest action npc_message missing or invalid actor_id")
+                return
+            if not isinstance(transcription, str) or not transcription:
+                log('warn', "Quest action npc_message missing or invalid transcription")
+                return
+            actor = self.quest_actors.get(actor_id)
+            if not isinstance(actor, dict):
+                log('warn', f"Quest action npc_message actor '{actor_id}' not found")
+                return
+            actor_voice = actor.get('voice')
+            if not isinstance(actor_voice, str) or not actor_voice:
+                actor_voice = self._get_character_tts_voice()
+                # log('info', f"Quest action npc_message actor '{actor_id}' has no voice; using character voice")
+            actor_prompt = actor.get('prompt')
+            actor_name = actor.get('name')
+            actor_name_color = actor.get('name_color')
+            avatar_url = actor.get('avatar_url')
+            self.event_manager.add_npc_message(
+                actor_id=actor_id,
+                voice=actor_voice,
+                transcription=transcription,
+                actor_name=actor_name if isinstance(actor_name, str) else None,
+                actor_name_color=actor_name_color if isinstance(actor_name_color, str) else None,
+                avatar_url=avatar_url if isinstance(avatar_url, str) else None,
+                prompt=actor_prompt if isinstance(actor_prompt, str) else None,
+            )
+            return
 
     def _advance_quest_stage(self, quest_def: dict[str, Any], target_stage_id: str | None, quest_id: str | None) -> None:
         if not quest_id or not target_stage_id:
+            return
+        if target_stage_id == FALLBACK_STAGE_ID:
+            log('warn', f"Quest '{quest_id}' cannot advance to fallback stage '{FALLBACK_STAGE_ID}'")
             return
         stages = quest_def.get('stages', [])
         stage_ids = [stage.get('id') for stage in stages]
@@ -625,6 +788,7 @@ class Assistant:
                     return
 
             if response_text and not response_actions:
+                self.event_manager.add_assistant_speaking()
                 self.tts.say(response_text)
                 self.event_manager.add_conversation_event('assistant', response_text, reasons=reasons, processed_at=max_conversation_processed)
                 self.tts.wait_for_completion()

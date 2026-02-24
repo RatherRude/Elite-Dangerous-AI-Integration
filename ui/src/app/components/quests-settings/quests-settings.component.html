@@ -1,0 +1,449 @@
+<div class="quests-settings">
+    <div class="quests-toolbar">
+        <div class="toolbar-title">
+            <h2>Quest Catalog</h2>
+            @if (catalog) {
+                <button mat-stroked-button color="warn" (click)="resetQuestProgress()">
+                    Reset Quest Progress
+                </button>
+            }
+        </div>
+        <div class="toolbar-actions">
+            <button mat-stroked-button color="primary" (click)="reloadCatalog()">
+                Reload
+            </button>
+            <button mat-raised-button color="primary" (click)="saveCatalog()">
+                Save
+            </button>
+            <button mat-stroked-button color="accent" (click)="closeEditor()">
+                Close
+            </button>
+        </div>
+    </div>
+
+    <div class="quests-layout">
+        <mat-card class="left-lists">
+            <mat-expansion-panel [expanded]="questsListExpanded" (opened)="questsListExpanded = true" (closed)="questsListExpanded = false">
+                <mat-expansion-panel-header>
+                    <mat-panel-title>Quests</mat-panel-title>
+                </mat-expansion-panel-header>
+                @if (catalog?.quests?.length) {
+                    @for (quest of catalog?.quests; track quest.id; let questIndex = $index) {
+                        <div class="quest-entry" [class.selected]="quest.id === selectedQuestId">
+                            <button mat-button (click)="selectQuest(quest.id)">
+                                <span class="quest-title">{{ quest.title || quest.id }}</span>
+                            </button>
+                            <button mat-icon-button color="warn" (click)="removeQuest(questIndex)" aria-label="Remove quest" matTooltip="Remove this quest">
+                                <mat-icon>remove</mat-icon>
+                            </button>
+                        </div>
+                    }
+                } @else {
+                    <p class="empty-state">No quests yet.</p>
+                }
+                <div class="list-footer-actions">
+                    <button mat-stroked-button color="primary" (click)="addQuest()">Add Quest</button>
+                </div>
+            </mat-expansion-panel>
+
+            <mat-expansion-panel [expanded]="actorsListExpanded" (opened)="actorsListExpanded = true" (closed)="actorsListExpanded = false">
+                <mat-expansion-panel-header>
+                    <mat-panel-title>Actors</mat-panel-title>
+                </mat-expansion-panel-header>
+                @if (catalog?.actors?.length) {
+                    @for (actor of catalog?.actors ?? []; track actor.id; let actorIndex = $index) {
+                        <div class="quest-entry" [class.selected]="actor.id === selectedActorId">
+                            <button mat-button (click)="selectActor(actor.id)">
+                                <span class="actor-list-avatar">
+                                    @if (getActorAvatarPreviewUrl(actor)) {
+                                        <img class="sprite-corner" [src]="getActorAvatarPreviewUrl(actor)" [alt]="actor.name + ' avatar'">
+                                    } @else if (actor.avatar_url) {
+                                        <img class="sprite-corner" [src]="actor.avatar_url" [alt]="actor.name + ' avatar'">
+                                    } @else {
+                                        <mat-icon>person</mat-icon>
+                                    }
+                                </span>
+                                <span class="quest-title">{{ actor.name || actor.id }}</span>
+                            </button>
+                            <button mat-icon-button color="warn" (click)="removeActor(actorIndex)" aria-label="Remove actor" matTooltip="Remove this actor">
+                                <mat-icon>remove</mat-icon>
+                            </button>
+                        </div>
+                    }
+                } @else {
+                    <p class="empty-state">No actors yet.</p>
+                }
+                <div class="list-footer-actions">
+                    <button mat-stroked-button color="primary" (click)="addActor()">Add Actor</button>
+                </div>
+            </mat-expansion-panel>
+        </mat-card>
+
+        <div class="quest-editor">
+            @if (selectedActor) {
+                <mat-card class="actor-details">
+                    <mat-card-header>
+                        <mat-card-title>
+                            Actor Details
+                            <button
+                                mat-icon-button
+                                color="warn"
+                                (click)="removeActor((catalog?.actors ?? []).indexOf(selectedActor))"
+                                    aria-label="Remove selected actor"
+                                    matTooltip="Remove this actor">
+                                <mat-icon>remove</mat-icon>
+                            </button>
+                        </mat-card-title>
+                    </mat-card-header>
+                    <mat-card-content>
+                        <div class="actor-top-row">
+                            <button
+                                mat-stroked-button
+                                class="avatar-picker-button"
+                                (click)="openActorAvatarCatalog(selectedActor)"
+                                aria-label="Change avatar">
+                                <span class="actor-avatar-large">
+                                    @if (getActorAvatarPreviewUrl(selectedActor)) {
+                                        <img class="sprite-corner" [src]="getActorAvatarPreviewUrl(selectedActor)" [alt]="selectedActor.name + ' avatar'">
+                                    } @else if (selectedActor.avatar_url) {
+                                        <img class="sprite-corner" [src]="selectedActor.avatar_url" [alt]="selectedActor.name + ' avatar'">
+                                    } @else {
+                                        <mat-icon>person</mat-icon>
+                                    }
+                                </span>
+                            </button>
+                            <div class="quest-fields actor-fields">
+                                <mat-form-field>
+                                    <mat-label>Actor Id</mat-label>
+                                    <input
+                                        matInput
+                                        [(ngModel)]="selectedActor.id"
+                                        [ngModelOptions]="{ updateOn: 'blur' }"
+                                        (ngModelChange)="onActorIdChange($event)">
+                                </mat-form-field>
+                                <mat-form-field>
+                                    <mat-label>Name</mat-label>
+                                    <input matInput [(ngModel)]="selectedActor.name">
+                                </mat-form-field>
+                                <mat-form-field>
+                                    <mat-label>Voice</mat-label>
+                                    <input matInput [(ngModel)]="selectedActor.voice">
+                                </mat-form-field>
+                                <div class="actor-color-field">
+                                    <span class="actor-color-label">Name Color</span>
+                                    <input
+                                        type="color"
+                                        [(ngModel)]="selectedActor.name_color"
+                                        [ngModelOptions]="{ standalone: true }"
+                                        [value]="selectedActor.name_color || defaultActorNameColor"
+                                        aria-label="Actor name color">
+                                </div>
+                            </div>
+                        </div>
+                        <mat-form-field class="actor-prompt-field">
+                            <mat-label>Prompt</mat-label>
+                            <textarea matInput rows="4" [(ngModel)]="selectedActor.prompt"></textarea>
+                        </mat-form-field>
+                    </mat-card-content>
+                </mat-card>
+            } @else if (selectedQuest) {
+                <mat-card class="quest-meta">
+                    <mat-card-title>Quest Details</mat-card-title>
+                    <mat-card-content>
+                        <div class="quest-fields">
+                            <mat-form-field>
+                                <mat-label>Quest Id</mat-label>
+                                <input
+                                    matInput
+                                    [(ngModel)]="selectedQuest.id"
+                                    [ngModelOptions]="{ updateOn: 'blur' }"
+                                    (ngModelChange)="onQuestIdChange(selectedQuest)">
+                            </mat-form-field>
+                            <mat-form-field>
+                                <mat-label>Title</mat-label>
+                                <input matInput [(ngModel)]="selectedQuest.title">
+                            </mat-form-field>
+                            <mat-form-field>
+                                <mat-label>Description</mat-label>
+                                <textarea matInput rows="3"
+                                          [(ngModel)]="selectedQuest.description"></textarea>
+                            </mat-form-field>
+                            <mat-slide-toggle
+                                [(ngModel)]="selectedQuest.active">
+                                Active on start
+                            </mat-slide-toggle>
+                        </div>
+                    </mat-card-content>
+                </mat-card>
+
+                <div class="stage-toolbar">
+                    <h3>
+                        Stages
+                        <button mat-icon-button color="primary" matTooltip="Add a new stage"
+                                (click)="addStage(selectedQuest)">
+                            <mat-icon>add</mat-icon>
+                        </button>
+                    </h3>
+                </div>
+
+                <div class="stage-graph">
+                    <div class="stage-network" #stageNetwork></div>
+                </div>
+
+                @if (selectedStageEditor) {
+                    <mat-card class="stage-card selected-stage">
+                        <mat-card-header>
+                            <mat-card-title>
+                                <span>{{ selectedStageEditor.description || (isFallbackSelected ? 'Fallback' : 'Stage') }}</span>
+                                @if (!isFallbackSelected && selectedStage) {
+                                    @if (isQuestStartStage(selectedQuest, selectedStage)) {
+                                        <span class="quest-start-indicator">Quest starts at this stage</span>
+                                    } @else {
+                                        <button mat-stroked-button color="primary"
+                                                (click)="setQuestStartStage(selectedQuest, selectedStage)">
+                                            Set as Quest Start
+                                        </button>
+                                    }
+                                }
+                                @if (!isFallbackSelected && selectedStage) {
+                                    <button mat-icon-button color="warn" matTooltip="Remove this stage"
+                                            (click)="removeStage(selectedQuest, selectedQuest.stages.indexOf(selectedStage))">
+                                        <mat-icon>remove</mat-icon>
+                                    </button>
+                                }
+                            </mat-card-title>
+                        </mat-card-header>
+                        <mat-card-content>
+                            <div class="stage-meta">
+                                @if (!isFallbackSelected && selectedStage) {
+                                    <mat-form-field>
+                                        <mat-label>Stage Id</mat-label>
+                                    <input
+                                        matInput
+                                        [(ngModel)]="selectedStage.id"
+                                        [ngModelOptions]="{ updateOn: 'blur' }"
+                                        (ngModelChange)="onStageIdChange(selectedStage)">
+                                    </mat-form-field>
+                                }
+                                <mat-form-field>
+                                    <mat-label>Description</mat-label>
+                                <input matInput [(ngModel)]="selectedStageEditor.description"
+                                       (ngModelChange)="requestNetworkRefresh()">
+                                </mat-form-field>
+                                <mat-form-field>
+                                    <mat-label>Instructions</mat-label>
+                                    <textarea matInput rows="2"
+                                              [(ngModel)]="selectedStageEditor.instructions"></textarea>
+                                </mat-form-field>
+                            </div>
+
+                            <div class="plan-steps">
+                                <div class="plan-header">
+                                    <h4>
+                                        Choices
+                                        <button mat-icon-button color="primary" matTooltip="Add a new choice"
+                                                (click)="addPlanStep(selectedStageEditor)">
+                                            <mat-icon>add</mat-icon>
+                                        </button>
+                                    </h4>
+                                </div>
+                                @for (step of selectedStageEditor.plan ?? []; track stepIndex; let stepIndex = $index) {
+                                    <mat-card class="plan-step">
+                                        <div class="plan-step-header">
+                                            <span>
+                                                Choice {{ stepIndex + 1 }}
+                                                <button mat-icon-button color="warn" matTooltip="Remove this choice"
+                                                        (click)="removePlanStep(selectedStageEditor, stepIndex)">
+                                                    <mat-icon>remove</mat-icon>
+                                                </button>
+                                            </span>
+                                        </div>
+
+                                        <div class="plan-section">
+                                            <div class="plan-section-header">
+                                                <h5>
+                                                    Conditions
+                                                    <button mat-icon-button color="primary" matTooltip="Add a condition"
+                                                            (click)="addCondition(step)">
+                                                        <mat-icon>add</mat-icon>
+                                                    </button>
+                                                </h5>
+                                            </div>
+                                            @for (condition of step.conditions; track conditionIndex; let conditionIndex = $index) {
+                                                <div class="condition-row condensed">
+                                                    <mat-form-field>
+                                                        <mat-label>Property</mat-label>
+                                                        <input matInput [(ngModel)]="condition.path">
+                                                    </mat-form-field>
+                                                    @if (getConditionValueKind(condition) === 'boolean') {
+                                                        <mat-form-field>
+                                                            <mat-label>Value</mat-label>
+                                                            <mat-select [(ngModel)]="condition.value"
+                                                                        (ngModelChange)="requestNetworkRefresh()">
+                                                                <mat-option [value]="true">true</mat-option>
+                                                                <mat-option [value]="false">false</mat-option>
+                                                            </mat-select>
+                                                        </mat-form-field>
+                                                    } @else {
+                                                        <mat-form-field>
+                                                            <mat-label>Value</mat-label>
+                                                            <input matInput
+                                                                   [disabled]="getConditionValueKind(condition) === 'null'"
+                                                                   [type]="getConditionValueKind(condition) === 'number' ? 'number' : 'text'"
+                                                                   [value]="condition.value ?? ''"
+                                                                   (input)="updateConditionValue(condition, $any($event.target).value); requestNetworkRefresh()">
+                                                        </mat-form-field>
+                                                    }
+                                                    <button mat-icon-button color="warn" matTooltip="Remove this condition"
+                                                            (click)="removeCondition(step, conditionIndex)">
+                                                        <mat-icon>remove</mat-icon>
+                                                    </button>
+                                                </div>
+                                            }
+                                        </div>
+
+                                        <div class="plan-section">
+                                            <div class="plan-section-header">
+                                                <h5>
+                                                    Actions
+                                                    <button mat-icon-button color="primary" matTooltip="Add an action"
+                                                            (click)="addAction(step)">
+                                                        <mat-icon>add</mat-icon>
+                                                    </button>
+                                                </h5>
+                                            </div>
+                                            @for (action of step.actions; track actionIndex; let actionIndex = $index) {
+                                                <div class="action-row">
+                                                    <mat-form-field>
+                                                        <mat-label>Action</mat-label>
+                                                    <mat-select [(ngModel)]="action.action"
+                                                                (ngModelChange)="onActionTypeChange(action)">
+                                                            <mat-option value="log">log</mat-option>
+                                                            <mat-option value="advance_stage">advance_stage</mat-option>
+                                                            <mat-option value="set_active">set_active</mat-option>
+                                                            <mat-option value="play_sound">play_sound</mat-option>
+                                                            <mat-option value="npc_message">npc_message</mat-option>
+                                                        </mat-select>
+                                                    </mat-form-field>
+
+                                                    @if (action.action === 'log') {
+                                                        <mat-form-field>
+                                                            <mat-label>Message</mat-label>
+                                                            <input matInput [(ngModel)]="action.message">
+                                                        </mat-form-field>
+                                                    }
+                                                    @if (action.action === 'advance_stage') {
+                                                        <mat-form-field>
+                                                            <mat-label>Target Stage</mat-label>
+                                                            <mat-select [(ngModel)]="action.target_stage_id"
+                                                                        (ngModelChange)="requestNetworkRefresh()">
+                                                                @for (stageOption of getAdvanceTargetStageOptions(selectedQuest); track stageOption.id) {
+                                                                    <mat-option [value]="stageOption.id">
+                                                                        {{ stageOption.description || stageOption.id }}
+                                                                    </mat-option>
+                                                                }
+                                                            </mat-select>
+                                                        </mat-form-field>
+                                                    }
+                                                    @if (action.action === 'set_active') {
+                                                        <mat-form-field>
+                                                            <mat-label>Quest Id</mat-label>
+                                                            <mat-select [(ngModel)]="action.quest_id">
+                                                                @for (questOption of catalog?.quests ?? []; track questOption.id) {
+                                                                    <mat-option [value]="questOption.id">
+                                                                        {{ questOption.title || questOption.id }}
+                                                                    </mat-option>
+                                                                }
+                                                            </mat-select>
+                                                        </mat-form-field>
+                                                        <mat-slide-toggle
+                                                            [(ngModel)]="action.active">
+                                                            Active
+                                                        </mat-slide-toggle>
+                                                    }
+                                                    @if (action.action === 'play_sound') {
+                                                        <div class="play-sound-picker">
+                                                            <span class="play-sound-file-name">
+                                                                {{ action.file_name || 'No file selected' }}
+                                                            </span>
+                                                            <button mat-stroked-button color="primary" class="play-sound-select-button"
+                                                                    (click)="selectPlaySoundFile(action)">
+                                                                Select MP3/WAV
+                                                            </button>
+                                                        </div>
+                                                        <mat-form-field>
+                                                            <mat-label>Transcription</mat-label>
+                                                            <textarea matInput rows="2"
+                                                                      [(ngModel)]="action.transcription"
+                                                                      placeholder="Text description of the sound"></textarea>
+                                                        </mat-form-field>
+                                                        <mat-form-field>
+                                                            <mat-label>Actor (optional)</mat-label>
+                                                            <mat-select [(ngModel)]="action.actor_id">
+                                                                <mat-option [value]="null">None</mat-option>
+                                                                @for (actorOption of catalog?.actors ?? []; track actorOption.id) {
+                                                                    <mat-option [value]="actorOption.id">
+                                                                        {{ actorOption.name || actorOption.id }}
+                                                                    </mat-option>
+                                                                }
+                                                            </mat-select>
+                                                        </mat-form-field>
+                                                    }
+                                                    @if (action.action === 'npc_message') {
+                                                        <mat-form-field>
+                                                            <mat-label>Actor</mat-label>
+                                                            <mat-select [(ngModel)]="action.actor_id">
+                                                                @for (actorOption of catalog?.actors ?? []; track actorOption.id) {
+                                                                    <mat-option [value]="actorOption.id">
+                                                                        {{ actorOption.name || actorOption.id }}
+                                                                    </mat-option>
+                                                                }
+                                                            </mat-select>
+                                                        </mat-form-field>
+                                                        <mat-form-field>
+                                                            <mat-label>Transcription</mat-label>
+                                                            <textarea matInput rows="2"
+                                                                      [(ngModel)]="action.transcription"
+                                                                      placeholder="Dialog line to speak"></textarea>
+                                                        </mat-form-field>
+                                                    }
+
+                                                    <button mat-icon-button color="warn" matTooltip="Remove this action"
+                                                            (click)="removeAction(step, actionIndex)">
+                                                        <mat-icon>remove</mat-icon>
+                                                    </button>
+
+                                                    @if (action.action === 'advance_stage') {
+                                                        <div class="link-preview">
+                                                            @if (getStageById(selectedQuest, action.target_stage_id)) {
+                                                            } @else if (action.target_stage_id) {
+                                                                <span class="link-missing">Missing stage</span>
+                                                            }
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    </mat-card>
+                                }
+                            </div>
+                        </mat-card-content>
+                    </mat-card>
+                } @else {
+                    <mat-card class="empty-editor">
+                        <mat-card-content>
+                            <p>Select a stage in the graph to edit its details.</p>
+                        </mat-card-content>
+                    </mat-card>
+                }
+            } @else {
+                <mat-card class="empty-editor">
+                    <mat-card-content>
+                        <p>Select a quest or actor from the left list.</p>
+                    </mat-card-content>
+                </mat-card>
+            }
+
+        </div>
+    </div>
+</div>

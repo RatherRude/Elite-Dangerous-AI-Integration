@@ -1,4 +1,4 @@
-<mat-tab-group mat-stretch-tabs="false" mat-align-tabs="start" [(selectedIndex)]="selectedIndex">
+<mat-tab-group mat-stretch-tabs="false" mat-align-tabs="start" [(selectedIndex)]="selectedIndex" [style.display]="showQuestEditor ? 'none' : 'flex'">
     <mat-tab>
         <ng-template mat-tab-label>
             <mat-icon class="tab-icon">settings</mat-icon>
@@ -72,6 +72,18 @@
         </div>
     </mat-tab>
 
+<!--    <mat-tab>-->
+<!--        <ng-template mat-tab-label>-->
+<!--            <mat-icon class="tab-icon">assignment</mat-icon>-->
+<!--            Quests-->
+<!--        </ng-template>-->
+<!--        <div class="tab-content">-->
+<!--            @if (config) {-->
+<!--                <app-quests-settings></app-quests-settings>-->
+<!--            }-->
+<!--        </div>-->
+<!--    </mat-tab>-->
+
     <mat-tab>
         <ng-template mat-tab-label>
             <mat-icon class="tab-icon">tune</mat-icon>
@@ -79,7 +91,7 @@
         </ng-template>
         <div class="tab-content">
             @if (config) {
-                <app-advanced-settings></app-advanced-settings>
+                <app-advanced-settings (questEditorOpen)="openQuestEditor()"></app-advanced-settings>
             }
         </div>
     </mat-tab>
@@ -98,4 +110,12 @@
         </mat-tab>
     }
 </mat-tab-group>
+
+@if (showQuestEditor && config) {
+    <div class="quest-editor-overlay">
+        <div class="quest-editor-container">
+            <app-quests-settings (closeRequested)="closeQuestEditor()"></app-quests-settings>
+        </div>
+    </div>
+}
 

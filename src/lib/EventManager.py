@@ -4,9 +4,9 @@ import inspect
 import traceback
 from abc import ABC, abstractmethod
 from datetime import timezone, datetime
-from typing import Any, Generic, Literal, Callable, TypeVar, final, get_type_hints, get_args, get_origin
+from typing import Any, Generic, Literal, Callable, TypeVar, final, get_type_hints, get_args, get_origin, cast
 from typing_extensions import deprecated
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from .Database import EventStore, KeyValueStore, VectorStore
 from .EDJournal import *
@@ -31,7 +31,14 @@ class Projection(ABC, Generic[StateModel]):
     def __init__(self):
         # Get the StateModel from class attribute or type hints
         state_model_type = self._get_state_model_type()
-        self.state: StateModel = state_model_type()  # type: ignore
+        try:
+            self.state: StateModel = state_model_type()  # type: ignore
+        except ValidationError as exc:
+            log("error", "Projection state init failed:", self.__class__.__name__, exc)
+            self.state = cast(StateModel, state_model_type.model_construct())
+        except Exception as exc:
+            log("error", "Projection state init error:", self.__class__.__name__, exc)
+            self.state = cast(StateModel, state_model_type.model_construct())
         self.last_processed: float = 0.0
 
     def _get_state_model_type(self) -> type[BaseModel]:
@@ -54,7 +61,11 @@ class Projection(ABC, Generic[StateModel]):
     def get_default_state(self) -> StateModel:
         """Returns a new instance of the state model with default values."""
         state_model_type = self._get_state_model_type()
-        return state_model_type()  # type: ignore
+        try:
+            return state_model_type()  # type: ignore
+        except ValidationError as exc:
+            log("error", "Projection default state init failed:", self.__class__.__name__, exc)
+            return cast(StateModel, state_model_type.model_construct())
 
     @abstractmethod
     def process(self, event: Event) -> None | list[ProjectedEvent]:
@@ -151,6 +162,11 @@ class EventManager:
         self.incoming.put(event)
         # log('debug', event)
 
+    def add_assistant_speaking(self):
+        event = ConversationEvent(kind='assistant_speaking', content='')
+        self.incoming.put(event)
+        # log('debug', event)
+
     def add_assistant_complete_event(self):
         event = ConversationEvent(kind='assistant_completed', content='')
         self.incoming.put(event)
@@ -160,7 +176,64 @@ class EventManager:
         event = ConversationEvent(kind='assistant_acting', content='')
         self.short_term_memory.replied_before(processed_at)
         self.incoming.put(event)
-        # log('debug', event)
+
+    def add_play_sound(
+        self,
+        file_name: str,
+        transcription: str,
+        actor_id: str | None = None,
+        voice: str | None = None,
+        actor_name: str | None = None,
+        actor_name_color: str | None = None,
+        avatar_url: str | None = None,
+        prompt: str | None = None,
+    ):
+        payload: dict[str, Any] = {
+            "event": "QuestEvent",
+            "action": "play_sound",
+            "file_name": file_name,
+            "transcription": transcription,
+        }
+        if actor_id:
+            payload["actor_id"] = actor_id
+        if voice:
+            payload["voice"] = voice
+        if actor_name:
+            payload["actor_name"] = actor_name
+        if actor_name_color:
+            payload["actor_name_color"] = actor_name_color
+        if avatar_url:
+            payload["avatar_url"] = avatar_url
+        if prompt:
+            payload["prompt"] = prompt
+        self.add_quest_event(payload)
+
+    def add_npc_message(
+        self,
+        actor_id: str,
+        voice: str,
+        transcription: str,
+        actor_name: str | None = None,
+        actor_name_color: str | None = None,
+        avatar_url: str | None = None,
+        prompt: str | None = None,
+    ):
+        payload: dict[str, Any] = {
+            "event": "QuestEvent",
+            "action": "npc_message",
+            "actor_id": actor_id,
+            "voice": voice,
+            "transcription": transcription,
+        }
+        if actor_name:
+            payload["actor_name"] = actor_name
+        if actor_name_color:
+            payload["actor_name_color"] = actor_name_color
+        if avatar_url:
+            payload["avatar_url"] = avatar_url
+        if prompt:
+            payload["prompt"] = prompt
+        self.add_quest_event(payload)
 
     def add_projected_event(self, event: ProjectedEvent, source: Event):
         event.processed_at = source.processed_at
@@ -266,9 +339,10 @@ class EventManager:
         except Exception as e:
             log('error', 'Error processing event', event, 'with projection', projection, e, traceback.format_exc())
             return []
-        if event.processed_at < projection.last_processed:
+        if event.processed_at and projection.last_processed and event.processed_at < projection.last_processed:
             log('warn', 'Projection', projection_name, 'is running backwards in time!', 'Event:', event.processed_at, 'Projection:', projection.last_processed)
-        projection.last_processed = event.processed_at
+        if event.processed_at > 0:
+            projection.last_processed = max(projection.last_processed, event.processed_at)
         if not save_later:
             self.projection_store.set(projection_name, {"state": projection.state.model_dump(), "last_processed": projection.last_processed})
         return projected_events if projected_events else []
@@ -341,7 +415,12 @@ class EventManager:
                 projection.last_processed = stored["last_processed"]
             except ValidationError as ve:
                 log('error', 'Validation error while deserializing state for projection', projection_class_name, ve)
-                projection.state = state_model_type.model_validate(default_state_dict)
+                try:
+                    projection.state = state_model_type.model_validate(default_state_dict)
+                except ValidationError as default_exc:
+                    log('error', 'Default state validation failed for projection', projection_class_name, default_exc)
+                    projection.state = state_model_type.model_construct()  # type: ignore[assignment]
+                    projection.last_processed = 0.0
 
             for event in self.processed + self.pending:
                 if event.processed_at > 0.0 and event.processed_at <= projection.last_processed:

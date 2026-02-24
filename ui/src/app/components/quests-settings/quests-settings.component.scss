@@ -1,0 +1,400 @@
+:host {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    height: 100%;
+}
+
+.quests-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 16px;
+    flex: 1;
+    min-height: 0;
+}
+
+.quests-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.toolbar-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.version-field {
+    width: 160px;
+}
+
+.toolbar-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.quests-layout {
+    display: grid;
+    grid-template-columns: minmax(220px, 280px) 1fr;
+    gap: 8px;
+    align-items: start;
+}
+
+.left-lists {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.quest-list mat-card-title,
+.stage-card mat-card-title,
+.plan-header h4,
+.plan-section-header h5,
+.plan-step-header span,
+.stage-toolbar h3 {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.list-footer-actions {
+    margin-top: 8px;
+}
+
+.quest-entry {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 2px 0;
+}
+
+.quest-entry button[mat-button] {
+    flex: 1;
+    justify-content: flex-start;
+    text-align: left;
+}
+
+.actor-list-avatar {
+    width: 24px;
+    height: 24px;
+    margin-right: 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(85, 85, 85, 0.7);
+    overflow: hidden;
+    display: inline-flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+}
+
+.actor-list-avatar img {
+    width: 100%;
+    height: 100%;
+}
+
+.quest-entry.selected {
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 6px;
+}
+
+.quest-title {
+    font-weight: 600;
+    margin-right: 8px;
+}
+
+
+.empty-state {
+    opacity: 0.7;
+    margin: 8px 0;
+}
+
+.quest-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.quest-error {
+    border-color: rgba(255, 120, 120, 0.6);
+}
+
+.quest-error .path,
+.quest-path {
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+.quest-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 8px;
+}
+
+.actor-avatar-large {
+    width: 72px;
+    height: 72px;
+    border-radius: 6px;
+    border: 1px solid rgba(85, 85, 85, 0.7);
+    overflow: hidden;
+    display: inline-flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    background: rgba(22, 22, 22, 0.8);
+}
+
+.actor-list-avatar mat-icon,
+.actor-avatar-large mat-icon {
+    margin: auto;
+}
+
+.actor-avatar-large img {
+    width: 100%;
+    height: 100%;
+}
+
+.avatar-picker-button {
+    width: 72px;
+    height: 72px;
+    min-width: 72px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.actor-top-row {
+    display: grid;
+    grid-template-columns: 84px 1fr;
+    gap: 10px;
+    align-items: start;
+}
+
+.actor-fields {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.actor-color-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px 0;
+}
+
+.actor-color-label {
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+.actor-color-field input[type="color"] {
+    width: 100%;
+    max-width: 96px;
+    height: 36px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+}
+
+.actor-prompt-field {
+    width: 100%;
+    margin-top: 8px;
+}
+
+.actor-avatar-large img.sprite-corner,
+.actor-list-avatar img.sprite-corner {
+    width: 200%;
+    height: 200%;
+    object-fit: cover;
+    object-position: top left;
+}
+
+.stage-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.stage-graph {
+    position: relative;
+    border: 1px solid rgba(60, 60, 60, 0.6);
+    border-radius: 8px;
+    background: rgba(16, 16, 16, 0.4);
+    padding: 6px;
+}
+
+.stage-network {
+    width: 100%;
+    height: 360px;
+    min-height: 260px;
+}
+
+.stage-card mat-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.quest-start-indicator {
+    font-style: italic;
+    opacity: 0.85;
+}
+
+.stage-title-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0;
+    min-width: 0;
+    text-align: left;
+}
+
+.stage-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 8px;
+}
+
+.plan-steps {
+    margin-top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.plan-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.plan-step {
+    padding: 0;
+}
+
+.plan-step-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0;
+}
+
+.plan-section {
+    margin-top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-left: 5px;
+}
+
+.plan-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.condition-row,
+.action-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 6px;
+    align-items: center;
+}
+
+.condition-row.condensed {
+    grid-template-columns: 140px minmax(200px, 1fr) minmax(180px, 1fr) auto;
+}
+
+.play-sound-picker {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    width: 100%;
+}
+
+.play-sound-file-name {
+    font-size: 12px;
+    opacity: 0.85;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.play-sound-select-button {
+    width: 100%;
+    min-width: 0;
+}
+
+.link-preview {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    opacity: 0.8;
+    grid-column: 1 / -1;
+}
+
+.link-missing {
+    color: #ffb4a2;
+}
+
+.yaml-panel {
+    margin-top: 4px;
+}
+
+:host ::ng-deep .quests-settings .mat-mdc-card-header {
+    padding: 0;
+}
+
+:host ::ng-deep .quests-settings .mat-mdc-card,
+:host ::ng-deep .quests-settings .mat-mdc-card-content {
+    padding: 5px;
+}
+
+:host ::ng-deep .quests-settings .mat-mdc-card-title,
+:host ::ng-deep .quests-settings .mat-mdc-card-subtitle {
+    margin: 0;
+}
+
+:host ::ng-deep .quests-settings .mat-mdc-form-field {
+    margin: 0;
+    padding: 0;
+}
+
+:host ::ng-deep .quests-settings .mat-mdc-form-field-subscript-wrapper {
+    display: none;
+}
+
+.quests-settings .mat-icon-button,
+.quests-settings .mat-mdc-icon-button {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.quests-settings mat-icon,
+.quests-settings .mat-icon {
+    font-size: 12px;
+    width: 12px;
+    height: 12px;
+    line-height: 12px;
+}
+
+.yaml-field {
+    width: 100%;
+}
+h4, h5 {
+    margin: 0;
+}

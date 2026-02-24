@@ -1,7 +1,7 @@
 import json
 import platform
-import shutil
 import tempfile
+import os
 
 default_config = {
     "commander_name": "lucaelin",
@@ -332,7 +332,7 @@ default_config = {
             "FsdMassLocked": False,
             "LowFuelWarningCleared": True,
             "LowFuelWarning": True,
-            "OutofDanger": True,
+            "OutOfDanger": True,
             "InDanger": True,
             "NightVisionOff": False,
             "NightVisionOn": False,
@@ -354,7 +354,6 @@ default_config = {
 
 def test_chat_executable():
     import subprocess
-    import os
     
     # create temp dir
     temp_dir = tempfile.mkdtemp()
@@ -387,7 +386,7 @@ def test_chat_executable():
                 print(err)
             raise Exception("Chat.exe exited unexpectedly")
         print(line)
-        if '{"type": "ready"}' in line:
+        if '"type": "ready"' in line:
             break
 
     # assert that Chat.exe is running

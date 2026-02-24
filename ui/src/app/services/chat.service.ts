@@ -7,6 +7,11 @@ export interface ChatMessage extends BaseMessage {
     type: "chat";
     role: string;
     message: string;
+    actor_id?: string;
+    actor_name?: string;
+    avatar_id?: string;
+    display_name?: string;
+    display_color?: string;
 }
 
 export interface ToolEvent {

@@ -10,6 +10,7 @@ import sys
 from openai import OpenAI, APIError
 
 from .Logger import log
+from .UI import emit_message
 
 # List of game events categorized (legacy boolean defaults)
 game_events = {
@@ -35,7 +36,7 @@ game_events = {
     'Resurrect': True,
     'WeaponSelected': False,
     'InDanger': False,
-    'OutofDanger': False,
+    'OutOfDanger': False,
     'CombatEntered': True,
     'CombatExited': True,
     'LegalStateChanged': True,
@@ -295,11 +296,13 @@ game_events = {
     'PowerplayVoucher': False,
 
     # Exploration
+    'HGECandidateFound': False,
     'CodexEntry': False,
     'DiscoveryScan': False,
     'Scan': False,
     'FSSAllBodiesFound': False,
     'FSSBodySignals': False,
+    'FSSBiologicalSignals': True,
     'FSSDiscoveryScan': False,
     'FirstPlayerSystemDiscovered':False,
     'FleetCarrierDiscovered': False,
@@ -494,6 +497,9 @@ def get_ed_journals_path(config: Config) -> str:
         path = os.path.abspath(config['ed_journal_path'])
         return path
 
+    if platform.system() != "Windows":
+        return os.getcwd()
+
     from . import WindowsKnownPaths as winpaths
     saved_games = winpaths.get_path(winpaths.FOLDERID.SavedGames, winpaths.UserHandle.current)
     if saved_games is None:
@@ -524,6 +530,9 @@ def get_asset_path(filename: str) -> str:
 
 
 def migrate(data: dict) -> dict:
+    legacy_game_events = data.get('game_events', game_events)
+    if not isinstance(legacy_game_events, dict) or any(isinstance(value, dict) for value in legacy_game_events.values()):
+        legacy_game_events = game_events
     # Migrate vision_var to vision_provider
     if 'vision_var' in data and not data.get('vision_var'):
         data['vision_provider'] = 'none'
@@ -576,7 +585,7 @@ def migrate(data: dict) -> dict:
                 "tts_voice": 'en-US-AvaMultilingualNeural' if data.get('tts_voice', 'en-US-AvaMultilingualNeural') == 'en-GB-SoniaNeural' else data.get('tts_voice', 'en-US-AvaMultilingualNeural'),
                 "tts_speed": data.get('tts_speed', "1.2"),
                 "tts_prompt": data.get('tts_prompt', ""),
-                "event_reactions": default_event_reactions,
+                "event_reactions": to_event_reactions(legacy_game_events, ["Idle"]),
                 "event_reaction_enabled_var": data.get('event_reaction_enabled_var', True),
                 "react_to_text_local_var": data.get('react_to_text_local_var', True),
                 "react_to_text_starsystem_var": data.get('react_to_text_starsystem_var', True),
@@ -598,7 +607,7 @@ def migrate(data: dict) -> dict:
         if 'game_events' in data:
             for character in data['characters']:
                 legacy_disabled = character.get('disabled_game_events', [])
-                character['event_reactions'] = to_event_reactions(data['game_events'], legacy_disabled)
+                character['event_reactions'] = to_event_reactions(legacy_game_events, legacy_disabled)
                 character.pop('game_events', None)
                 character.pop('disabled_game_events', None)
             data.pop('game_events', None)
@@ -699,7 +708,7 @@ def migrate(data: dict) -> dict:
         elif provider == 'google-ai-studio':
             if model in ['gemini-2.5-flash', 'gemini-2.5-flash-lite']:
                 reasoning_effort = 'high'
-            elif model == 'gemini-2.5-pro':
+            elif model in ['gemini-2.5-pro', 'gemini-3-flash-preview']:
                 reasoning_effort = 'low'
                 
         data['agent_llm_reasoning_effort'] = reasoning_effort
@@ -749,6 +758,14 @@ def migrate(data: dict) -> dict:
                 character['event_reactions'] = to_event_reactions(legacy_game_events, legacy_disabled)
             elif 'event_reactions' not in character:
                 character['event_reactions'] = default_event_reactions
+
+    if data['config_version'] < 12:
+        data['config_version'] = 12
+
+        if data.get('vision_provider') == 'google-ai-studio' and data.get('vision_model_name') == 'gemini-2.0-flash':
+            data['vision_model_name'] = 'gemini-2.5-flash'
+        if data.get('stt_provider') == 'google-ai-studio' and data.get('stt_model_name') == 'gemini-2.0-flash-lite':
+            data['stt_model_name'] = 'gemini-2.5-flash-lite'
 
     return data
 
@@ -993,7 +1010,7 @@ def assign_ptt(config: Config, controller_manager):
     semaphore.acquire()
     controller_manager.listen_hotkey(on_hotkey_detected)
     semaphore.acquire()
-    print(json.dumps({"type": "config", "config": config}) + '\n')
+    emit_message("config", config=config)
     save_config(config)
     return config
 
@@ -1216,11 +1233,11 @@ def validate_config(config: Config) -> Config | None:
     # Send validation result message
     if not validation_result['skipped']:
         if validation_result['message']:
-            print(json.dumps({
-                "type": "model_validation",
-                "success": validation_result['success'],
-                "message": validation_result['message']
-            }) + '\n', flush=True)
+            emit_message(
+                "model_validation",
+                success=validation_result['success'],
+                message=validation_result['message'],
+            )
         
         if validation_result['success']:
             return validation_result['config']
@@ -1331,7 +1348,7 @@ def update_config(config: Config, data: dict) -> Config:
 
         elif data["llm_provider"] == "google-ai-studio":
             data["llm_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
-            data["llm_model_name"] = "gemini-2.5-flash"
+            data["llm_model_name"] = "gemini-3-flash-preview"
             data["llm_api_key"] = ""
             data["tools_var"] = True
             data["llm_reasoning_effort"] = "none"
@@ -1365,9 +1382,9 @@ def update_config(config: Config, data: dict) -> Config:
 
         elif data["agent_llm_provider"] == "google-ai-studio":
             data["agent_llm_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
-            data["agent_llm_model_name"] = "gemini-2.5-flash"
+            data["agent_llm_model_name"] = "gemini-3-flash-preview"
             data["agent_llm_api_key"] = ""
-            data["agent_llm_reasoning_effort"] = "high"
+            data["agent_llm_reasoning_effort"] = "low"
 
         elif data["agent_llm_provider"] == "local-ai-server":
             data["agent_llm_endpoint"] = "http://127.0.0.1:8080"
@@ -1399,7 +1416,7 @@ def update_config(config: Config, data: dict) -> Config:
 
         elif data["vision_provider"] == "google-ai-studio":
             data["vision_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
-            data["vision_model_name"] = "gemini-2.0-flash"
+            data["vision_model_name"] = "gemini-2.5-flash"
             data["vision_api_key"] = ""
             data["vision_var"] = True
 
@@ -1440,7 +1457,7 @@ def update_config(config: Config, data: dict) -> Config:
 
         if data["stt_provider"] == "google-ai-studio":
             data["stt_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
-            data["stt_model_name"] = "gemini-2.0-flash-lite"
+            data["stt_model_name"] = "gemini-2.5-flash-lite"
             data["stt_api_key"] = ""
 
         if data["stt_provider"] == "custom-multi-modal":
@@ -1522,7 +1539,7 @@ def update_config(config: Config, data: dict) -> Config:
 
     # Now merge and save as before
     new_config = cast(Config, {**config, **data})
-    print(json.dumps({"type": "config", "config": new_config}) + '\n')
+    emit_message("config", config=new_config)
     save_config(new_config)
     return new_config
 
@@ -1546,7 +1563,7 @@ def update_event_config(config: Config, section: str, event: str, value: str) ->
         # Update the event with clean name
         config["event_reactions"][event] = value
     
-    print(json.dumps({"type": "config", "config": config}) + '\n', flush=True)
+    emit_message("config", config=config)
     save_config(config)
     return config
 
@@ -1562,7 +1579,7 @@ def reset_game_events(config: Config, character_index: int|None=None) -> Config:
     else:
         log('warn', 'Trying to reset character events that does exist')
     
-    print(json.dumps({"type": "config", "config": config}) + '\n', flush=True)
+    emit_message("config", config=config)
     save_config(config)
     return config
 

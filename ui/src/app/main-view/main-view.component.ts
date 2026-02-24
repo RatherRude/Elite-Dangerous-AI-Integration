@@ -69,6 +69,7 @@ export class MainViewComponent implements OnInit, OnDestroy {
     private shipInfoSubscription!: Subscription;
     private hasAutoStarted = false;
     public usageDisclaimerAccepted = false;
+    public isQuestEditorOpen = false;
 
     constructor(
         private tauri: TauriService,
@@ -267,5 +268,9 @@ export class MainViewComponent implements OnInit, OnDestroy {
         } catch (error) {
             console.error("Failed to create overlay:", error);
         }
+    }
+
+    onQuestEditorVisibilityChange(isOpen: boolean): void {
+        this.isQuestEditorOpen = isOpen;
     }
 }

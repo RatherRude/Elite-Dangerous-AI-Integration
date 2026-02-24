@@ -16,13 +16,14 @@ from lib.Config import (
     load_config,
 )
 from lib.PluginManager import PluginManager
+from lib.UI import emit_message
 
 if __name__ == "__main__":
     try:
-        print(json.dumps({"type": "ready"})+'\n')
+        emit_message("ready")
         # Wait for start signal on stdin
         config = load_config()
-        print(json.dumps({"type": "config", "config": config})+'\n', flush=True)
+        emit_message("config", config=config)
         
 
         # Load plugins.
@@ -32,7 +33,7 @@ if __name__ == "__main__":
         log('debug', "Registering plugin settings for the UI...")
         plugin_manager.register_settings()
         plugin_manager.on_settings_changed(config)
-        print(json.dumps({"type": "start"})+'\n', flush=True)
+        emit_message("start")
         
 
         chat = Chat(config, plugin_manager)

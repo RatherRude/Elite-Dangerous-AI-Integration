@@ -1732,8 +1732,8 @@ class PromptGenerator:
 
         if event_name == 'DockSRV':
             srv_event = cast(Dict[str, Any], content)
-            srv_type = srv_event.get('SRVType', 'SRV')
-            return f"{self.commander_name} has docked their {srv_type} with the ship."
+            srv_type = srv_event.get('SRVType_Localised')
+            return f"{self.commander_name} has docked their {srv_type} SRV with the ship."
 
         if event_name == 'EndCrewSession':
             end_crew_event = cast(Dict[str, Any], content)
@@ -1786,9 +1786,8 @@ class PromptGenerator:
 
         if event_name == 'LaunchSRV':
             srv_event = cast(Dict[str, Any], content)
-            srv_type = srv_event.get('SRVType', 'SRV')
-            player_controlled = "player-controlled" if srv_event.get('PlayerControlled') else "AI-controlled"
-            return f"{self.commander_name} has launched a {player_controlled} {srv_type}."
+            srv_type = srv_event.get('SRVType_Localised')
+            return f"{self.commander_name} has launched their {srv_type} SRV."
 
         if event_name == 'ModuleInfo':
             return f"{self.commander_name} has viewed their module information."
@@ -2211,6 +2210,19 @@ class PromptGenerator:
             return f"{self.commander_name} took the third and final biological sample."
         if event_name == 'NoScoopableStars':
             return f"{self.commander_name}'s fuel is insufficient to reach the destination and there are not enough scoopable stars on the route. Alternative route required."
+        if event_name == 'HGECandidateFound':
+            hge_event = cast(Dict[str, Any], content or {})
+            star_system = hge_event.get('StarSystem', 'this system')
+            materials = hge_event.get('HGECandidateMaterials', [])
+
+            if not isinstance(materials, list):
+                materials = []
+
+            if materials:
+                material_text = ', '.join(str(m) for m in materials)
+                return f"{self.commander_name} has entered HGE candidate system {star_system}. Potential high-grade materials available: {material_text}."
+
+            return f"{self.commander_name} has entered HGE candidate system {star_system}."
         if event_name == 'RememberLimpets':
             return f"{self.commander_name} has cargo capacity available to buy limpets. Remember to buy more."
         if event_name == 'BountyScanned':
@@ -2221,6 +2233,8 @@ class PromptGenerator:
             return f"{self.commander_name} is no longer in combat."
         if event_name == 'QuestEvent':
             action = content.get('action')
+            if action in ('play_sound', 'npc_message'):
+                return None
             quest_title = content.get('quest_title') or content.get('quest_id') or 'Unknown quest'
             if action == 'advance_stage':
                 stage_name = content.get('stage_name') or content.get('stage_id') or 'unknown stage'
@@ -2240,6 +2254,10 @@ class PromptGenerator:
             return f"Quest update: {quest_title}."
         if event_name == 'FirstPlayerSystemDiscovered':
             return f"{self.commander_name} has a new system discovered."
+        if event_name == 'FSSBiologicalSignals':
+            body_name = (content or {}).get('BodyName') or 'unknown body'
+            count = (content or {}).get('Count', 0)
+            return f"{self.commander_name} found {count} biological signal(s) on {body_name}."
         if event_name == 'FetchRemoteModuleCompleted':
             module_event = cast(Dict[str, Any], content or {})
             module_name = module_event.get('ModuleName') or 'module'
@@ -2425,6 +2443,24 @@ class PromptGenerator:
 
     def conversation_message(self, event: ConversationEvent):
         return {"role": event.kind, "content": event.content}
+
+    def quest_conversation_message(self, event: QuestEvent):
+        action = event.content.get("action") if isinstance(event.content, dict) else None
+        if action not in ("npc_message", "play_sound"):
+            return None
+        actor_name = event.content.get("actor_name") if isinstance(event.content, dict) else None
+        transcription = event.content.get("transcription") if isinstance(event.content, dict) else None
+        resolved_name = actor_name if isinstance(actor_name, str) and actor_name else "Unknown quest character"
+        resolved_text = transcription if isinstance(transcription, str) and transcription else ""
+        if action == "play_sound":
+            return {
+                "role": "user",
+                "content": f"[Quest sound] {resolved_name} triggered quest audio: {resolved_text}",
+            }
+        return {
+            "role": "user",
+            "content": f"[Quest dialog] {resolved_name} said: {resolved_text}",
+        }
 
     def tool_messages(self, event: ToolEvent):
         responses = []
@@ -3122,7 +3158,7 @@ class PromptGenerator:
             status_entries.append(("Location", location_info))
             status_entries.append(("Local system", system_info))
             if not search_agent_context:
-                status_entries.append(("Stations in local system", stations_info))
+                status_entries.append(("Stations in local system (in ls to primary star)", stations_info))
                 status_entries.append(("Bodies in local system", bodies_info))
 
         # Community Goal
@@ -3169,6 +3205,9 @@ class PromptGenerator:
             
             for system in systems_to_process:
                 system_data = dict(system) if hasattr(system, 'model_dump') else {**system}  # Create a copy of the original system data
+                if isinstance(system_data, dict):
+                    for key_to_remove in ["StarClass", "SystemAddress", "StarPos"]:
+                        system_data.pop(key_to_remove, None)
                 
                 # Try to get additional info from system database
                 system_name = system_data.get("StarSystem") if isinstance(system_data, dict) else getattr(system, 'StarSystem', None)
@@ -3529,6 +3568,12 @@ class PromptGenerator:
             if isinstance(event, ConversationEvent) and event.kind in ['user', 'assistant']:
                 piece = self.conversation_message(event)
                 conversational_pieces.append(piece)
+
+            if isinstance(event, QuestEvent):
+                quest_piece = self.quest_conversation_message(event)
+                if quest_piece:
+                    piece = quest_piece
+                    conversational_pieces.append(piece)
 
             if isinstance(event, ToolEvent):
                 tool_messages = self.tool_messages(event)

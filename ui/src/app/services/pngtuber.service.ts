@@ -55,16 +55,25 @@ export class PngTuberService {
                 if (message.event.kind === 'assistant') {
                     this.actionSubject.next('speaking');
                 }
+                if (message.event.kind === 'assistant_speaking') {
+                    this.actionSubject.next('speaking');
+                }
                 if (message.event.kind === 'assistant_completed') {
                     this.actionSubject.next('idle');
                 }
                 if (message.event.kind === 'assistant_acting') {
                     this.actionSubject.next('acting');
                 }
+                if (
+                    message.event.kind === 'quest' &&
+                    ['play_sound', 'npc_message'].includes((message.event as any).content?.action)
+                ) {
+                    this.actionSubject.next('speaking');
+                }
             }
         )
         this.chatService.chatHistory$.subscribe((chat)=>{
-            const preview = chat.filter(value => ['covas', 'cmdr', 'action'].includes(value.role)).slice(-2)
+            const preview = chat.filter(value => ['covas', 'cmdr', 'action', 'npc_message'].includes(value.role)).slice(-2)
             this.chatPreviewSubject.next(preview)
         })
         this.chatService.chatMessage$.subscribe((msg)=>{

@@ -285,17 +285,44 @@ class StatusParser:
         """Loads data from the JSON file and returns a cleaned version"""
         try:
             with open(self.file_path, 'r', encoding='utf-8') as file:
-                data = json.load(file)
+                raw = file.read()
+                if not raw.strip():
+                    return {}
+                data = json.loads(raw)
         except json.JSONDecodeError:
             sleep(0.1)
             with open(self.file_path, 'r', encoding='utf-8') as file:
-                data = json.load(file)
+                raw = file.read()
+                if not raw.strip():
+                    return {}
+                data = json.loads(raw)
 
         return data
 
     def _create_delta_events(self, old_status: Status, new_status: Status):
         """Creates events specific field that has changed."""
         events = []
+
+        flags_old = old_status.get("flags") or {}
+        flags_new = new_status.get("flags") or {}
+        flags2_old = old_status.get("flags2") or {}
+        flags2_new = new_status.get("flags2") or {}
+
+        # Only emit status events when the mode is unchanged and keys exist.
+        mode_checks = [
+            (flags_old, flags_new, "InMainShip"),
+            (flags_old, flags_new, "InFighter"),
+            (flags_old, flags_new, "InSRV"),
+        ]
+        # Only check OnFoot if flags2 exists in both statuses
+        if old_status.get("flags2") is not None and new_status.get("flags2") is not None:
+            mode_checks.append((flags2_old, flags2_new, "OnFoot"))
+
+        for old_dict, new_dict, key in mode_checks:
+            if key not in old_dict or key not in new_dict:
+                return events
+            if old_dict[key] != new_dict[key]:
+                return events
 
         # Only in mainship
         if new_status["flags"]["InMainShip"]:
@@ -425,8 +452,6 @@ class StatusParser:
             if old_status["Gravity"] is None and new_status["Gravity"] is not None and new_status["Gravity"] > 2:
                 events.append({"event": "HighGravityWarning"})
         
-
-
         return events
 
 

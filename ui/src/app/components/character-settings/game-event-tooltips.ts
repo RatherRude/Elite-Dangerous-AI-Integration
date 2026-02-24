@@ -19,7 +19,7 @@ export const GameEventTooltips: Record<string, string> = {
   "Died": "COVAS:NEXT will react when your ship is destroyed and you are killed, identifying the attacker if known.",
   "Resurrect": "COVAS:NEXT will react when you respawn after death, noting your chosen rebuy option, cost, and any financial penalties.",
   "InDanger": "COVAS:NEXT will react when your ship is considered to be in danger.",
-  "OutofDanger": "COVAS:NEXT will react when your ship is no longer considered in danger.",
+  "OutOfDanger": "COVAS:NEXT will react when your ship is no longer considered in danger.",
   "CombatEntered": "COVAS:NEXT will react when combat begins.",
   "CombatExited": "COVAS:NEXT will react when combat ends.",
   "LegalStateChanged": "COVAS:NEXT will react when your legal status changes.",
@@ -297,6 +297,7 @@ export const GameEventTooltips: Record<string, string> = {
   "Scan": "COVAS:NEXT will react when you perform a detailed scan of a star, planet, or beacon. It includes data like body type, atmosphere, and more.",
   "FSSAllBodiesFound": "COVAS:NEXT will react when you’ve discovered every stellar body in a system using the FSS.",
   "FSSBodySignals": "COVAS:NEXT will react when you identify signals on a planet or moon using the FSS.",
+  "FSSBiologicalSignals": "COVAS:NEXT will react when you find biological signal using the FSS.",
   "FSSDiscoveryScan": "COVAS:NEXT will react when you perform a full system scan using the FSS scanner.",
   "FirstPlayerSystemDiscovered":"COVAS:NEXT will react if you’re the first player to discover a new system.",
   "FleetCarrierDiscovered": "COVAS:NEXT will react when you discover a Fleet Carrier signal via the FSS.",
@@ -331,6 +332,7 @@ export const GameEventTooltips: Record<string, string> = {
   "Scanned": "COVAS:NEXT will react when your ship is scanned to completion by another ship or faction.",
   "USSDrop": "COVAS:NEXT will react when you drop into a USS and log its type and threat level.",
   "NoScoopableStars": "COVAS:NEXT will react when no scoopable stars are within your jump range.",
+  "HGECandidateFound": "COVAS:NEXT will react when an FSD jump lands in a High Grade Emissions candidate system and can announce the likely high-grade materials (for example: Military Grade Alloys, Imperial Shielding, Core Dynamics Composites).",
 
 
 };

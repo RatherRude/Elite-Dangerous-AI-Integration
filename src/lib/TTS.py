@@ -2,9 +2,11 @@ import queue
 import re
 import threading
 import traceback
+from pathlib import Path
 from time import sleep, time
-from typing import Generator, Literal, Optional, Union, final
+from typing import Any, Callable, Generator, Literal, Optional, Union, final
 
+import miniaudio
 import pyaudio
 import strip_markdown
 from num2words import num2words
@@ -33,6 +35,37 @@ class TTS:
         thread = threading.Thread(target=self._playback_thread)
         thread.daemon = True
         thread.start()
+
+    def _normalize_queue_item(self, item: Any) -> dict[str, Any]:
+        if isinstance(item, str):
+            return {
+                "type": "text",
+                "text": item,
+                "file_path": None,
+                "voice": None,
+                "on_start": None,
+                "on_complete": None,
+                "drop_if": None,
+            }
+        if isinstance(item, dict):
+            return {
+                "type": item.get("type", "text"),
+                "text": item.get("text", ""),
+                "file_path": item.get("file_path"),
+                "voice": item.get("voice"),
+                "on_start": item.get("on_start"),
+                "on_complete": item.get("on_complete"),
+                "drop_if": item.get("drop_if"),
+            }
+        return {
+            "type": "text",
+            "text": "",
+            "file_path": None,
+            "voice": None,
+            "on_start": None,
+            "on_complete": None,
+            "drop_if": None,
+        }
 
     def _get_output_device_index(self) -> Optional[int]: #Rewert from String to Index 
         for i in range(self.p.get_device_count()):
@@ -69,12 +102,39 @@ class TTS:
             while not self.is_aborted:
                 if not self.read_queue.empty():
                     self._is_playing = True
-                    text = self.read_queue.get()
+                    item = self._normalize_queue_item(self.read_queue.get())
+                    item_type = item.get("type")
+                    text = item.get("text")
+                    file_path = item.get("file_path")
+                    voice = item.get("voice")
+                    on_start = item.get("on_start")
+                    on_complete = item.get("on_complete")
+                    drop_if = item.get("drop_if")
+                    if callable(drop_if) and drop_if():
+                        continue
                     try:
-                        self._playback_one(text, stream)
+                        if callable(on_start):
+                            try:
+                                on_start()
+                            except Exception as callback_error:
+                                log('warn', 'TTS on_start callback failed', callback_error)
+                        if item_type == "audio_file":
+                            if not isinstance(file_path, str) or not file_path:
+                                continue
+                            self._playback_audio_file(file_path, stream)
+                        else:
+                            if not isinstance(text, str) or not text:
+                                continue
+                            self._playback_one(text, stream, voice if isinstance(voice, str) else None)
                     except Exception as e:
-                        self.read_queue.put(text)
+                        self.read_queue.put(item)
                         raise e
+                    finally:
+                        if callable(on_complete):
+                            try:
+                                on_complete()
+                            except Exception as callback_error:
+                                log('warn', 'TTS on_complete callback failed', callback_error)
 
                 self._is_playing = False
 
@@ -83,7 +143,7 @@ class TTS:
             stream.stop_stream()
 
     @observe()
-    def _playback_one(self, text: str, stream: pyaudio.Stream):
+    def _playback_one(self, text: str, stream: pyaudio.Stream, voice_override: str | None = None):
         # Fix numberformatting for different providers
         text = re.sub(r"\d+(,\d{3})*(\.\d+)?", self._number_to_text, text)
         text = strip_markdown.strip_markdown(text)
@@ -93,7 +153,7 @@ class TTS:
         first_chunk = True
         underflow_count = 0
         empty_buffer_available = stream.get_write_available()
-        for chunk in self._stream_audio(text):
+        for chunk in self._stream_audio(text, voice_override):
             if not end_time:
                 end_time = time()
                 log('debug', f'Response time TTS', end_time - start_time)
@@ -120,7 +180,7 @@ class TTS:
         
 
     @observe()
-    def _stream_audio(self, text):
+    def _stream_audio(self, text: str, voice_override: str | None = None):
         if self.tts_model is None:
             word_count = len(text.split())
             words_per_minute = 150 * float(self.speed)
@@ -130,11 +190,30 @@ class TTS:
                 yield b"\x00" * 1024
         else:
             try:
-                for chunk in self.tts_model.synthesize(text, self.voice):
+                selected_voice = voice_override if voice_override else self.voice
+                for chunk in self.tts_model.synthesize(text, selected_voice):
                     yield chunk
             except Exception as e:
                 log('error', 'TTS synthesis error', e, traceback.format_exc())
                 show_chat_message('error', 'TTS synthesis error:', str(e))
+
+    @observe()
+    def _playback_audio_file(self, file_path: str, stream: pyaudio.Stream):
+        resolved = Path(file_path)
+        if not resolved.exists():
+            raise FileNotFoundError(f"Audio file not found: {resolved}")
+        frames_to_read = max(1, self.frames_per_buffer // self.sample_size)
+        pcm_stream = miniaudio.stream_file(
+            str(resolved),
+            output_format=miniaudio.SampleFormat.SIGNED16,
+            nchannels=1,
+            sample_rate=24000,
+            frames_to_read=frames_to_read,
+        )
+        for frame in pcm_stream:
+            if self.is_aborted:
+                break
+            stream.write(frame.tobytes(), exception_on_underflow=False)
 
     def _number_to_text(self, match: re.Match[str]):
         """Converts numbers like 100,203.12 to one hundred thousand two hundred three point one two"""
@@ -146,8 +225,44 @@ class TTS:
         else:
             return match.group()
 
-    def say(self, text: str):
-        self.read_queue.put(text)
+    def say(
+        self,
+        text: str,
+        *,
+        voice: str | None = None,
+        on_start: Callable[[], None] | None = None,
+        on_complete: Callable[[], None] | None = None,
+        drop_if: Callable[[], bool] | None = None,
+    ):
+        self.read_queue.put(
+            {
+                "text": text,
+                "voice": voice,
+                "on_start": on_start,
+                "on_complete": on_complete,
+                "drop_if": drop_if,
+            },
+        )
+
+    def play_audio_file(
+        self,
+        file_path: str,
+        *,
+        on_start: Callable[[], None] | None = None,
+        on_complete: Callable[[], None] | None = None,
+        drop_if: Callable[[], bool] | None = None,
+    ):
+        self.read_queue.put(
+            {
+                "type": "audio_file",
+                "file_path": file_path,
+                "text": "",
+                "voice": None,
+                "on_start": on_start,
+                "on_complete": on_complete,
+                "drop_if": drop_if,
+            },
+        )
 
     def abort(self):
         while not self.read_queue.empty():
@@ -157,6 +272,9 @@ class TTS:
 
     def get_is_playing(self):
         return self._is_playing or not self.read_queue.empty()
+
+    def has_queued_items(self) -> bool:
+        return not self.read_queue.empty()
 
     @observe()
     def wait_for_completion(self):

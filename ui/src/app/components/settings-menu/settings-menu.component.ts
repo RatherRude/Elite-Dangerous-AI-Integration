@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from "@angular/core";
+import { Component, EventEmitter, OnDestroy, OnInit, Output } from "@angular/core";
 import { MatCardModule } from "@angular/material/card";
 import { MatTabsModule } from "@angular/material/tabs";
 import {
@@ -33,6 +33,7 @@ import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { FormsModule } from "@angular/forms";
 import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
+import { QuestsSettingsComponent } from "../quests-settings/quests-settings.component";
 
 @Component({
     selector: "app-settings-menu",
@@ -59,6 +60,7 @@ import { MatButtonModule } from "@angular/material/button";
         CharacterSettingsComponent,
         EventReactionsSettingsComponent,
         GeneralSettingsComponent,
+        QuestsSettingsComponent,
         MatButtonModule,
     ],
     templateUrl: "./settings-menu.component.html",
@@ -77,6 +79,9 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     // Track current tab and temporary highlight state
     public selectedIndex = 0;
     public highlightDisclaimerCard = false;
+    public showQuestEditor = false;
+    
+    @Output() questEditorVisibilityChange = new EventEmitter<boolean>();
 
     constructor(
         private configService: ConfigService,
@@ -182,5 +187,19 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
                 });
             }
         }
+    }
+
+    openQuestEditor(): void {
+        this.showQuestEditor = true;
+        this.questEditorVisibilityChange.emit(true);
+        // Prevent body scrolling when overlay is open
+        document.body.style.overflow = 'hidden';
+    }
+
+    closeQuestEditor(): void {
+        this.showQuestEditor = false;
+        this.questEditorVisibilityChange.emit(false);
+        // Restore body scrolling when overlay is closed
+        document.body.style.overflow = '';
     }
 }

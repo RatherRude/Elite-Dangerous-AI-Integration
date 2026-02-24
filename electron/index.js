@@ -1,7 +1,9 @@
-const { app, BrowserWindow, ipcMain, protocol, net, screen, shell } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, protocol, net, screen, shell } = require('electron');
 const { spawn } = require('child_process');
 const path = require('path');
 const url = require('node:url')
+const fs = require('node:fs');
+const fsPromises = require('node:fs/promises');
 const contextMenu = require('electron-context-menu');
 const pino = require('pino')
 
@@ -410,6 +412,50 @@ app.whenReady().then(async ()=>{
       primary: display.primary
     }));
     return result;
+  });
+  ipcMain.handle('select_quest_audio_file', async (event, opts) => {
+    const catalogPath = opts?.catalogPath;
+    if (typeof catalogPath !== 'string' || !catalogPath) {
+      throw new Error('Missing catalogPath for audio import');
+    }
+
+    const selection = await dialog.showOpenDialog(mainWindow, {
+      title: 'Select quest audio file',
+      properties: ['openFile'],
+      filters: [
+        { name: 'Audio', extensions: ['mp3', 'wav'] },
+      ],
+    });
+
+    if (selection.canceled || !selection.filePaths?.length) {
+      return { canceled: true };
+    }
+
+    const sourcePath = selection.filePaths[0];
+    const extension = path.extname(sourcePath).toLowerCase();
+    if (!['.mp3', '.wav'].includes(extension)) {
+      throw new Error('Only MP3 and WAV files are supported.');
+    }
+
+    const fileName = path.basename(sourcePath);
+    const catalogDir = path.dirname(catalogPath);
+    const audioDir = path.join(catalogDir, 'audio');
+    const destinationPath = path.join(audioDir, fileName);
+
+    await fsPromises.mkdir(audioDir, { recursive: true });
+
+    const destinationExists = fs.existsSync(destinationPath);
+    if (!destinationExists) {
+      await fsPromises.copyFile(sourcePath, destinationPath);
+    }
+
+    return {
+      canceled: false,
+      fileName,
+      copied: !destinationExists,
+      reused: destinationExists,
+      destinationPath,
+    };
   });
 
   mainWindow.on('closed', () => {
