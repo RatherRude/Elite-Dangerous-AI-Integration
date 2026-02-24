@@ -3205,6 +3205,9 @@ class PromptGenerator:
             
             for system in systems_to_process:
                 system_data = dict(system) if hasattr(system, 'model_dump') else {**system}  # Create a copy of the original system data
+                if isinstance(system_data, dict):
+                    for key_to_remove in ["StarClass", "SystemAddress", "StarPos"]:
+                        system_data.pop(key_to_remove, None)
                 
                 # Try to get additional info from system database
                 system_name = system_data.get("StarSystem") if isinstance(system_data, dict) else getattr(system, 'StarSystem', None)
