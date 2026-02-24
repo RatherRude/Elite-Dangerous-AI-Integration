@@ -3158,7 +3158,7 @@ class PromptGenerator:
             status_entries.append(("Location", location_info))
             status_entries.append(("Local system", system_info))
             if not search_agent_context:
-                status_entries.append(("Stations in local system", stations_info))
+                status_entries.append(("Stations in local system (in ls to primary star)", stations_info))
                 status_entries.append(("Bodies in local system", bodies_info))
 
         # Community Goal
