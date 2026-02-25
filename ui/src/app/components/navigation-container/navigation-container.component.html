@@ -6,6 +6,7 @@
                 @if (getNavigationOptions().length) {
                     <mat-form-field class="system-selector" appearance="fill">
                         <mat-select [(ngModel)]="selectedNavigationTarget" (selectionChange)="onNavigationTargetChange()">
+                            <mat-select-trigger>{{ getSelectedNavigationTargetLabel() }}</mat-select-trigger>
                             <mat-option value="commander">Current Location</mat-option>
                             @if (getCarrierNavigationOptions().length) {
                                 <mat-optgroup label="Carriers">

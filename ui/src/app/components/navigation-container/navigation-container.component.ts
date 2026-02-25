@@ -164,6 +164,16 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
         return option.label;
     }
 
+    getSelectedNavigationTargetLabel(): string {
+        if (this.selectedNavigationTarget === "commander") {
+            return "Current Location";
+        }
+        const selectedOption = this.getNavigationOptions().find(
+            (option) => option.id === this.selectedNavigationTarget,
+        );
+        return selectedOption ? this.formatNavigationOption(selectedOption) : "Current Location";
+    }
+
     private getCarrierTypeLabel(carrierType: string | null | undefined): string {
         if (carrierType === "FleetCarrier") return "Fleet Carrier";
         if (carrierType === "SquadronCarrier") return "Squadron Carrier";
