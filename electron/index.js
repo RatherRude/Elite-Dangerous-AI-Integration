@@ -76,6 +76,130 @@ const config = isDevelopment ? {
   backend_args: [],
 }
 
+const IMAGE_EXTENSION_MIME_MAP = {
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.bmp': 'image/bmp',
+  '.svg': 'image/svg+xml',
+};
+const IMAGE_MIME_EXTENSION_MAP = {
+  'image/png': '.png',
+  'image/jpeg': '.jpg',
+  'image/gif': '.gif',
+  'image/webp': '.webp',
+  'image/bmp': '.bmp',
+  'image/svg+xml': '.svg',
+};
+const ALLOWED_AVATAR_EXTENSIONS = new Set(Object.keys(IMAGE_EXTENSION_MIME_MAP));
+
+function getAvatarDirectory() {
+  return path.join(config.backend_cwd, 'avatars');
+}
+
+function sanitizeAvatarFileName(fileName) {
+  if (typeof fileName !== 'string') {
+    return '';
+  }
+  const baseName = path.basename(fileName).trim();
+  if (!baseName) {
+    return '';
+  }
+  let sanitized = baseName.replace(/[<>:"/\\|?*\x00-\x1F]/g, '_');
+  sanitized = sanitized.replace(/[. ]+$/g, '');
+  const stem = path.basename(sanitized, path.extname(sanitized)).toUpperCase();
+  const reservedNames = new Set([
+    'CON',
+    'PRN',
+    'AUX',
+    'NUL',
+    'COM1',
+    'COM2',
+    'COM3',
+    'COM4',
+    'COM5',
+    'COM6',
+    'COM7',
+    'COM8',
+    'COM9',
+    'LPT1',
+    'LPT2',
+    'LPT3',
+    'LPT4',
+    'LPT5',
+    'LPT6',
+    'LPT7',
+    'LPT8',
+    'LPT9',
+  ]);
+  if (reservedNames.has(stem)) {
+    sanitized = `avatar_${sanitized}`;
+  }
+  return sanitized;
+}
+
+function getImageMimeTypeFromFileName(fileName) {
+  const ext = path.extname(fileName || '').toLowerCase();
+  return IMAGE_EXTENSION_MIME_MAP[ext] || 'application/octet-stream';
+}
+
+async function ensureAvatarDirectory() {
+  const avatarDir = getAvatarDirectory();
+  await fsPromises.mkdir(avatarDir, { recursive: true });
+  return avatarDir;
+}
+
+async function makeUniqueAvatarFileName(avatarDir, requestedFileName) {
+  const ext = path.extname(requestedFileName);
+  const stem = path.basename(requestedFileName, ext);
+  let candidate = requestedFileName;
+  let counter = 1;
+  while (fs.existsSync(path.join(avatarDir, candidate))) {
+    candidate = `${stem} (${counter})${ext}`;
+    counter += 1;
+  }
+  return candidate;
+}
+
+function normalizeAvatarFileName(fileName, mimeType) {
+  let safeFileName = sanitizeAvatarFileName(fileName);
+  if (!safeFileName) {
+    safeFileName = `avatar_${Date.now()}`;
+  }
+  let ext = path.extname(safeFileName).toLowerCase();
+  if (!ext && typeof mimeType === 'string' && IMAGE_MIME_EXTENSION_MAP[mimeType]) {
+    ext = IMAGE_MIME_EXTENSION_MAP[mimeType];
+    safeFileName = `${safeFileName}${ext}`;
+  }
+  if (!ALLOWED_AVATAR_EXTENSIONS.has(ext)) {
+    throw new Error(`Unsupported avatar file extension: ${ext || '(none)'}`);
+  }
+  return safeFileName;
+}
+
+function resolveAvatarFileName(avatarDir, requestedFileName) {
+  const normalized = sanitizeAvatarFileName(requestedFileName);
+  if (!normalized) {
+    return null;
+  }
+  const directPath = path.join(avatarDir, normalized);
+  if (fs.existsSync(directPath)) {
+    return normalized;
+  }
+  if (!path.extname(normalized)) {
+    for (const ext of ALLOWED_AVATAR_EXTENSIONS) {
+      const withExt = `${normalized}${ext}`;
+      const withExtPath = path.join(avatarDir, withExt);
+      if (fs.existsSync(withExtPath)) {
+        return withExt;
+      }
+    }
+  }
+  return null;
+}
+
 // list files in the backend directory
 try {
   // create backend_cwd if it doesn't exist
@@ -347,7 +471,7 @@ function createOverlayWindow(opts) {
   
   overlayWindow.loadURL(config.overlay);
   overlayWindow.setIgnoreMouseEvents(true);
-  // overlayWindow.webContents.openDevTools({ mode: 'detach' });
+  overlayWindow.webContents.openDevTools({ mode: 'detach' });
   
   if (opts.alwaysOnTop) {
     overlayWindow.setAlwaysOnTop(true, 'screen-saver', 2);
@@ -456,6 +580,101 @@ app.whenReady().then(async ()=>{
       reused: destinationExists,
       destinationPath,
     };
+  });
+  ipcMain.handle('avatar_upload', async (_event, opts) => {
+    const mimeType = opts?.mimeType;
+    const dataBase64 = opts?.dataBase64;
+    if (typeof dataBase64 !== 'string' || dataBase64.length === 0) {
+      throw new Error('Missing avatar payload');
+    }
+    const normalizedFileName = normalizeAvatarFileName(opts?.fileName, mimeType);
+    const avatarDir = await ensureAvatarDirectory();
+    const uniqueFileName = await makeUniqueAvatarFileName(avatarDir, normalizedFileName);
+    const destinationPath = path.join(avatarDir, uniqueFileName);
+    const imageBuffer = Buffer.from(dataBase64, 'base64');
+    await fsPromises.writeFile(destinationPath, imageBuffer);
+    const stats = await fsPromises.stat(destinationPath);
+    return {
+      fileName: uniqueFileName,
+      uploadTime: stats.mtime.toISOString(),
+      mimeType: getImageMimeTypeFromFileName(uniqueFileName),
+    };
+  });
+  ipcMain.handle('avatar_write_file', async (_event, opts) => {
+    const mimeType = opts?.mimeType;
+    const dataBase64 = opts?.dataBase64;
+    const overwrite = opts?.overwrite === true;
+    if (typeof dataBase64 !== 'string' || dataBase64.length === 0) {
+      throw new Error('Missing avatar payload');
+    }
+    const normalizedFileName = normalizeAvatarFileName(opts?.fileName, mimeType);
+    const avatarDir = await ensureAvatarDirectory();
+    const destinationPath = path.join(avatarDir, normalizedFileName);
+    if (!overwrite && fs.existsSync(destinationPath)) {
+      return {
+        written: false,
+        exists: true,
+        fileName: normalizedFileName,
+      };
+    }
+    const imageBuffer = Buffer.from(dataBase64, 'base64');
+    await fsPromises.writeFile(destinationPath, imageBuffer);
+    return {
+      written: true,
+      exists: false,
+      fileName: normalizedFileName,
+    };
+  });
+  ipcMain.handle('avatar_exists', async (_event, opts) => {
+    const avatarDir = await ensureAvatarDirectory();
+    return resolveAvatarFileName(avatarDir, opts?.fileName) !== null;
+  });
+  ipcMain.handle('avatar_get', async (_event, opts) => {
+    const avatarDir = await ensureAvatarDirectory();
+    const normalizedFileName = resolveAvatarFileName(avatarDir, opts?.fileName);
+    if (!normalizedFileName) {
+      return null;
+    }
+    const avatarPath = path.join(avatarDir, normalizedFileName);
+    const [buffer, stats] = await Promise.all([
+      fsPromises.readFile(avatarPath),
+      fsPromises.stat(avatarPath),
+    ]);
+    return {
+      fileName: normalizedFileName,
+      dataBase64: buffer.toString('base64'),
+      uploadTime: stats.mtime.toISOString(),
+      mimeType: getImageMimeTypeFromFileName(normalizedFileName),
+    };
+  });
+  ipcMain.handle('avatar_get_all', async () => {
+    const avatarDir = await ensureAvatarDirectory();
+    const entries = await fsPromises.readdir(avatarDir, { withFileTypes: true });
+    const files = entries
+      .filter((entry) => entry.isFile())
+      .map((entry) => entry.name)
+      .filter((name) => ALLOWED_AVATAR_EXTENSIONS.has(path.extname(name).toLowerCase()));
+    const avatarEntries = await Promise.all(files.map(async (fileName) => {
+      const fullPath = path.join(avatarDir, fileName);
+      const stats = await fsPromises.stat(fullPath);
+      return {
+        fileName,
+        uploadTime: stats.mtime.toISOString(),
+        mimeType: getImageMimeTypeFromFileName(fileName),
+      };
+    }));
+    avatarEntries.sort((a, b) => new Date(b.uploadTime).getTime() - new Date(a.uploadTime).getTime());
+    return avatarEntries;
+  });
+  ipcMain.handle('avatar_delete', async (_event, opts) => {
+    const avatarDir = await ensureAvatarDirectory();
+    const normalizedFileName = resolveAvatarFileName(avatarDir, opts?.fileName);
+    if (!normalizedFileName) {
+      return { deleted: false };
+    }
+    const avatarPath = path.join(avatarDir, normalizedFileName);
+    await fsPromises.unlink(avatarPath);
+    return { deleted: true };
   });
 
   mainWindow.on('closed', () => {
