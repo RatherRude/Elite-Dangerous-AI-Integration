@@ -767,6 +767,16 @@ def migrate(data: dict) -> dict:
         if data.get('stt_provider') == 'google-ai-studio' and data.get('stt_model_name') == 'gemini-2.0-flash-lite':
             data['stt_model_name'] = 'gemini-2.5-flash-lite'
 
+    if data['config_version'] < 13:
+        data['config_version'] = 13
+
+        if data.get('llm_provider') == 'google-ai-studio':
+            data['llm_model_name'] = 'gemini-3.1-flash-lite-preview'
+        if data.get('agent_llm_provider') == 'google-ai-studio':
+            data['agent_llm_model_name'] = 'gemini-3.1-flash-lite-preview'
+        if data.get('vision_provider') == 'google-ai-studio':
+            data['vision_model_name'] = 'gemini-3.1-flash-lite-preview'
+
     return data
 
 
@@ -1348,7 +1358,7 @@ def update_config(config: Config, data: dict) -> Config:
 
         elif data["llm_provider"] == "google-ai-studio":
             data["llm_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
-            data["llm_model_name"] = "gemini-3-flash-preview"
+            data["llm_model_name"] = "gemini-3.1-flash-lite-preview"
             data["llm_api_key"] = ""
             data["tools_var"] = True
             data["llm_reasoning_effort"] = "none"
@@ -1382,7 +1392,7 @@ def update_config(config: Config, data: dict) -> Config:
 
         elif data["agent_llm_provider"] == "google-ai-studio":
             data["agent_llm_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
-            data["agent_llm_model_name"] = "gemini-3-flash-preview"
+            data["agent_llm_model_name"] = "gemini-3.1-flash-lite-preview"
             data["agent_llm_api_key"] = ""
             data["agent_llm_reasoning_effort"] = "low"
 
