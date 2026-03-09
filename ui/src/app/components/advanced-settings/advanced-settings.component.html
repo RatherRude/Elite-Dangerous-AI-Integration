@@ -415,6 +415,12 @@
                 }
             }
         }
+        <label>
+            <mat-slide-toggle [(ngModel)]="config.overlay_show_hud"
+                              (ngModelChange)="onConfigChange({overlay_show_hud: $event})">
+                Generative UI (HUD)
+            </mat-slide-toggle>
+        </label>
         </mat-expansion-panel>
 
         <mat-expansion-panel>
