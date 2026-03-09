@@ -11,17 +11,14 @@ from ..PromptGenerator import PromptGenerator
 from ..Models import LLMModel
 from ..UI import send_message
 from ..Logger import log
-from ..GenUI import generate_ui_code
+from ..GenUI import generate_ui_code, build_default_component_code
 from ..Database import CodeStore
 
 # Type alias for projected states dictionary
 ProjectedStates = dict[str, BaseModel]
 
-# Default empty skeleton UI code - a minimal valid Preact component
-DEFAULT_UI_CODE = """const App = ({ state }) => {
-  return html`<div></div>`;
-};
-"""
+# Default empty skeleton UI code stored in serialized component-collection format
+DEFAULT_UI_CODE = build_default_component_code()
 
 
 class GenUIManager:
