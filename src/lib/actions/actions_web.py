@@ -140,6 +140,7 @@ def web_search_agent(
                         "reference_route": { "type": "object", "properties": { "source": { "type": "string" }, "destination": { "type": "string" } }, "required": ["source", "destination"], "description": "Search along a route instead of a single reference system." },
                         "name": { "type": "string", "description": "Required string in station name" },
                         "distance": { "type": "number", "description": "The maximum distance to search in" },
+                        "has_large_pad": { "type": "boolean", "description": "Filter for stations with large landing pad" },
                         "material_trader": { "type": "array", "items": { "type": "string", "enum": ["Encoded", "Manufactured", "Raw"] } },
                         "technology_broker": { "type": "array", "items": { "type": "string", "enum": ["Guardian", "Human"] } },
                         "modules": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" }, "class": { "type": "array", "items": { "type": "string" } }, "rating": { "type": "array", "items": { "type": "string" } } }, "required": ["name"] } },
