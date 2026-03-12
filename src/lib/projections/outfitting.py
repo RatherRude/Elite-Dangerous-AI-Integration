@@ -20,6 +20,7 @@ class OutfittingItem(BaseModel):
 
 
 class OutfittingState(BaseModel):
+    """Outfitting inventory and available modules at the current station."""
     MarketID: int | None = None
     StationName: str | None = None
     StarSystem: str | None = None

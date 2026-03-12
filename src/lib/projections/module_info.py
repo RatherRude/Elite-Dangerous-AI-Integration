@@ -25,6 +25,7 @@ class ModuleInfoModule(BaseModel):
 
 
 class ModuleInfoState(BaseModel):
+    """Current ship modules and their status (health, engineering, etc.) from ModuleInfo.json."""
     event: str | None = None
     timestamp: str | None = None
     Ship: str | None = None
