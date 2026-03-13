@@ -31,7 +31,7 @@ export interface Character {
     tts_voice: string;
     tts_speed: string;
     tts_prompt: string;
-    avatar?: string; // IndexedDB key for the avatar image
+    avatar?: string; // Avatar filename stored on disk
 
     
 

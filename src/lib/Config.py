@@ -392,7 +392,7 @@ class Character(TypedDict, total=False):
     tts_voice: str
     tts_speed: str
     tts_prompt: str
-    avatar: str  # IndexedDB key for the avatar image
+    avatar: str  # Avatar filename stored on disk
     event_reactions: dict[str, str]
     event_reaction_enabled_var: bool
     react_to_text_local_var: bool
