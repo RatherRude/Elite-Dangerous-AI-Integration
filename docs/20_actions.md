@@ -1273,66 +1273,133 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - ship pickup
     </details>
 
-## Available Online-Lookup Actions
+## Search Agent
 
-1. Galnet News
+The search agent is a secondary LLM that is started by the main conversational model whenever a query requires deeper lookup work. The main model packages your question together with a snapshot of the current game state and hands it off to this agent. From there, the search agent runs its own internal loop: it decides which tools to call, inspects the results, and keeps chaining further tool calls until it can construct a complete answer. Only when this internal loop converges does the search agent return a synthesized summary back to the main LLM, which then presents that final answer to you.
 
-    - `query`: String
+The tools available to the search agent fall into two groups.
 
-    Retrieves current interstellar news from Galnet. Answers the question that lead to tool usage.
+### External lookup tools
 
-2. System Finder (utilizes [Spansh API](https://spansh.co.uk/systems))
+These call external services or game APIs (Galnet, Spansh):
 
-    - `reference_system`: String (required unless `reference_route` is used)
-    - `reference_route`: Object with `source` and `destination` strings (optional; search along a route instead of a single system)
-    - `name`: String (optional)
-    - `distance`: Number (optional, default: 50000)
-    - `allegiance`: Array of strings (options: "Alliance", "Empire", "Federation", "Guardian", "Independent", "Pilots Federation", "Player Pilots", "Thargoid")
-    - `state`: Array of strings
-    - `government`: Array of strings
-    - `power`: Array of strings
-    - `primary_economy`: Array of strings
-    - `security`: Array of strings
-    - `thargoid_war_state`: Array of strings
-    - `population`: Object with `comparison` ("<" or ">") and `value` (Number)
-    - `sort_by`: String (optional; "distance" or "population". Default: distance)
-    - `size`: Integer (optional; number of results 1–25. Default: 3)
+1. **Galnet News (`get_galnet_news`)**
 
-    Find a star system based on various filters.
+    Retrieves current interstellar news from Galnet and answers questions about recent events.
 
-3. Station Finder (utilizes [Spansh API](https://spansh.co.uk/stations))
+    Key option:
+    - `query`: what you want the news summary to focus on, such as Thargoids, power politics, or recent events in a region.
 
-    - `reference_system`: String (required unless `reference_route` is used)
-    - `reference_route`: Object with `source` and `destination` strings (optional; search along a route instead of a single system)
-    - `name`: String (optional)
-    - `distance`: Number (optional, default: 50000)
-    - `has_large_pad`: Boolean (optional)
-    - `material_trader`: Array of strings (options: "Encoded", "Manufactured", "Raw")
-    - `technology_broker`: Array of strings (options: "Guardian", "Human")
-    - `modules`: Array of objects with `name` (String), `class` (Array), `rating` (Array)
-    - `commodities`: Array of objects with `name` (String), `amount` (Integer), `transaction` ("Buy" or "Sell")
-    - `ships`: Array of objects with `name` (String)
-    - `services`: Array of objects with `name` (String, options: "Black Market", "Interstellar Factors Contact")
-    - `sort_by`: String (optional; "distance" or "bestprice". Default: bestprice when commodities included)
-    - `include_player_fleetcarrier`: Boolean (optional; include Drake-Class Carrier / player-owned fleet carriers)
-    - `unfiltered_results`: Object (optional; set category to true to return all data for that category): `commodities`, `modules`, `ships` (each Boolean)
-    - `size`: Integer (optional; number of results 1–25. Default: 3)
+2. **System Finder (`system_finder`)** (utilizes [Spansh API](https://spansh.co.uk/systems))
 
-    Find a station based on various filters.
+    Finds star systems that match political, economic or conflict filters, either near a system or along a specified route.
 
-4. Body Finder (utilizes [Spansh API](https://spansh.co.uk/bodies))
+    Key options:
+    - `reference_system`: search around a single system.
+    - `reference_route`: search along a route from `source` to `destination` instead of around one system.
+    - `name`: require text in the system name.
+    - `distance`: maximum search radius.
+    - `allegiance`: limit by controlling power bloc, such as Alliance, Empire, Federation, Independent, or Thargoid.
+    - `state`: limit by faction/system state, such as Boom, War, Famine, or Civil Unrest.
+    - `government`: limit by government type, such as Democracy, Dictatorship, or Corporate.
+    - `power`: limit by Powerplay power.
+    - `primary_economy`: limit by economy type, such as Industrial, High Tech, or Extraction.
+    - `security`: limit by security level.
+    - `thargoid_war_state`: limit by Thargoid war status.
+    - `population`: filter for systems above or below a given population.
+    - `sort_by`: order results by distance or population.
+    - `size`: number of results to return.
 
-    - `reference_system`: String (required unless `reference_route` is used)
-    - `reference_route`: Object with `source` and `destination` strings (optional; search along a route instead of a single system)
-    - `name`: String (optional)
-    - `distance`: Number (optional, default: 50000)
-    - `subtype`: Array of strings
-    - `landmark_subtype`: Array of strings
-    - `rings`: Object (optional) with `material` (String) and `hotspots` (Integer)
-    - `signals`: Array of strings (optional; options: "Biological", "Geological", "Human", "Guardian", "Thargoid" — filter for signals on body surface)
-    - `size`: Integer (optional; number of results 1–25. Default: 3)
+3. **Station Finder (`station_finder`)** (utilizes [Spansh API](https://spansh.co.uk/stations))
 
-    Find a celestial body based on various filters.
+    Finds stations for ships, modules, markets, services, and traders, with sensible distance/price-aware sorting.
+
+    Key options:
+    - `reference_system`: search around a single system.
+    - `reference_route`: search along a route from `source` to `destination`.
+    - `name`: require text in the station name.
+    - `distance`: maximum search radius.
+    - `has_large_pad`: only include stations with large pads.
+    - `material_trader`: look for Raw, Manufactured, or Encoded material traders.
+    - `technology_broker`: look for Human or Guardian tech brokers.
+    - `modules`: search for specific outfitting items; can further narrow by class and rating.
+    - `commodities`: search for markets buying or selling a named commodity, with requested amount.
+    - `ships`: search for shipyards stocking a named ship.
+    - `services`: look for special services such as Black Market or Interstellar Factors.
+    - `sort_by`: order results by distance or best price.
+    - `include_player_fleetcarrier`: include player-owned carriers in the results.
+    - `unfiltered_results`: return full commodity/module/ship data instead of only the matched entries.
+    - `size`: number of results to return.
+
+4. **Body Finder (`body_finder`)** (utilizes [Spansh API](https://spansh.co.uk/bodies))
+
+    Finds celestial bodies such as mining hotspots or worlds with specific surface signals near you or along a route.
+
+    Key options:
+    - `reference_system`: search around a single system.
+    - `reference_route`: search along a route from `source` to `destination`.
+    - `name`: require text in the body name.
+    - `distance`: maximum search radius.
+    - `subtype`: limit by body type, such as a specific planet or star subtype.
+    - `landmark_subtype`: limit by landmark type.
+    - `rings`: search for ring bodies with a named material and a minimum number of hotspots.
+    - `signals`: limit by surface signal type: Biological, Geological, Human, Guardian, or Thargoid.
+    - `size`: number of results to return.
+
+### Internal game-state tools
+
+These are driven primarily by local projections and static data; they never perform network requests:
+
+1. **Engineer Finder (`engineer_finder`)**
+
+    Uses both static engineer definitions and your current in-game engineer progress to build a filtered overview of ship and suit engineers.
+
+    Key options:
+    - `name`: find a specific engineer by name.
+    - `system`: limit by engineer location or system.
+    - `modifications`: search by what the engineer can modify, such as FSD range or multi-cannons.
+    - `progress`: limit by your unlock state: Unknown, Known, Invited, or Unlocked.
+
+    Results combine static engineer data with your live save data, including unlock progress, next steps, rank progress where relevant, and distance from your current location.
+
+2. **Blueprint Finder (`blueprint_finder`)**
+
+    Cross-references static engineering blueprints with your current inventories and engineer progress to answer questions like “who can do this mod, at which grade, and what materials am I missing?”.
+
+    Key options:
+    - `modifications`: one or more modification names, such as Increased FSD Range or Overcharged Power Plant.
+    - `engineer`: limit to a specific engineer.
+    - `module`: limit to a specific module or weapon.
+    - `grade`: limit to a specific blueprint grade.
+
+    It checks blueprint definitions, calculates total material costs by grade, compares them against your ship and suit inventories, and lists missing materials together with engineers that can apply the blueprint. Results are returned in YAML so larger blueprint trees stay readable.
+
+3. **Material Finder (`material_finder`)**
+
+    Searches engineering and suit materials across your live inventories and known sourcing information, so the agent can see both how many you have and where to obtain more.
+
+    Key options:
+    - `name`: one or more material names, with fuzzy matching for partial names.
+    - `grade`: limit by ship-material grade from 1 to 5.
+    - `type`: narrow by category: `raw`, `manufactured`, `encoded` for ship materials; `items`, `components`, `data`, `consumables` for Odyssey materials; or the broader `ship` and `suit` groups.
+
+    It reads your live material counts from `Materials` and `ShipLocker`, merges them where needed, and supplements them with known sourcing and trader information so the agent can explain both what you are missing and where to get it.
+
+4. **Stored Ships (`get_stored_ships`)**
+
+    Lists ships at the current station and in remote storage, grouped by location. Includes ship type, custom name, HOT status, and transfer times where relevant.
+
+5. **Stored Ship Modules (`get_stored_ship_modules`)**
+
+    Lists stored modules grouped by star system. Includes localized names where available, engineering modifications and grades, and HOT status.
+
+6. **Fleet Carriers (`get_fleet_carriers`)**
+
+    Summarizes known carriers, including name, type, system, callsign, docking rules, fuel, jump range, crew, installed services, finances, and active trade orders.
+
+7. **Commander Data (`get_commander_data`)**
+
+    Aggregates commander profile, reputation, rank progress, squadron data, and statistics so the agent can ground its answer in your current progression.
 
 ## UI Actions
 
