@@ -333,6 +333,7 @@ export const GameEventTooltips: Record<string, string> = {
   "USSDrop": "COVAS:NEXT will react when you drop into a USS and log its type and threat level.",
   "NoScoopableStars": "COVAS:NEXT will react when no scoopable stars are within your jump range.",
   "HGECandidateFound": "COVAS:NEXT will react when an FSD jump lands in a High Grade Emissions candidate system and can announce the likely high-grade materials (for example: Military Grade Alloys, Imperial Shielding, Core Dynamics Composites).",
+  "HighValueLandmarksBody": "COVAS:NEXT will react when FSD jump lands in a system with high value landmarks",
 
 
 };

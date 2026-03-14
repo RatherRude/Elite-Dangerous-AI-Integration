@@ -2223,6 +2223,21 @@ class PromptGenerator:
                 return f"{self.commander_name} has entered HGE candidate system {star_system}. Potential high-grade materials available: {material_text}."
 
             return f"{self.commander_name} has entered HGE candidate system {star_system}."
+        if event_name == 'HighValueLandmarksBody':
+            hvl_event = cast(Dict[str, Any], content or {})
+            star_system = hvl_event.get('StarSystem', 'this system')
+            body_name = hvl_event.get('BodyName', 'Unknown body')
+            value = hvl_event.get('Value', 0)
+            total_value = hvl_event.get('TotalValue', 0)
+            try:
+                value_fmt = f"{int(value):,}" if isinstance(value, (int, float)) else str(value)
+                total_fmt = f"{int(total_value):,}" if isinstance(total_value, (int, float)) else str(total_value)
+            except (TypeError, ValueError):
+                value_fmt, total_fmt = str(value), str(total_value)
+            return (
+                f"{self.commander_name} is in system {star_system}. "
+                f"Body {body_name} has high-value landmarks: max single value {value_fmt} credits, total value {total_fmt} credits."
+            )
         if event_name == 'RememberLimpets':
             return f"{self.commander_name} has cargo capacity available to buy limpets. Remember to buy more."
         if event_name == 'BountyScanned':
