@@ -25,6 +25,7 @@ class MarketItem(BaseModel):
 
 
 class MarketState(BaseModel):
+    """Market commodity prices, stock, and demand at the current station."""
     MarketID: int | None = None
     StationName: str | None = None
     StarSystem: str | None = None

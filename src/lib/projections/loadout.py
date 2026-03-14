@@ -53,6 +53,7 @@ class LoadoutFuelCapacity(BaseModel):
 
 
 class LoadoutState(BaseModel):
+    """Current ship loadout including modules, fuel capacity, hull, and rebuy value."""
     ShipName: str | None = None
     HullValue: int | None = None
     HullHealth: float | None = None

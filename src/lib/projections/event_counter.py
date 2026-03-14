@@ -6,6 +6,7 @@ from ..EventManager import Projection
 
 
 class EventCounterState(BaseModel):
+    """Event count used for ordering and debugging."""
     count: int = 0
 
 

@@ -297,6 +297,7 @@ game_events = {
 
     # Exploration
     'HGECandidateFound': False,
+    'HighValueLandmarksBody': False,
     'CodexEntry': False,
     'DiscoveryScan': False,
     'Scan': False,
