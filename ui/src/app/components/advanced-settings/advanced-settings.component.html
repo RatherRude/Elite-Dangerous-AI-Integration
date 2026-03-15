@@ -418,9 +418,14 @@
         <label>
             <mat-slide-toggle [(ngModel)]="config.overlay_show_hud"
                               (ngModelChange)="onConfigChange({overlay_show_hud: $event})">
-                Generative UI (HUD)
+                Allow Generative UI (HUD)
             </mat-slide-toggle>
+            <span class="generative-ui-warning">
+                <mat-icon>warning</mat-icon>
+                Warning: Performing UI changes creates noticeable cost!
+            </span>
         </label>
+
         </mat-expansion-panel>
 
         <mat-expansion-panel>
