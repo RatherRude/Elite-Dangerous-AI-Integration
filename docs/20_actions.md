@@ -1353,9 +1353,9 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 
 The **Generative UI (HUD)** is an overlay that displays AI-generated Preact components visualizing your current game state (ship status, cargo, location, etc.). The Agent LLM can create and update these components in response to your requests, so you can have a custom HUD that shows exactly what you care about.
 
-- **Enable/disable:** In the app, go to **Settings → Advanced → Agent LLM Settings** and turn the **Generative UI (HUD)** toggle on or off. This corresponds to the config option `overlay_show_hud`.
+- **Enable/disable:** In the app, go to **Settings → Advanced → Agent LLM Settings** and turn the **Generative UI (HUD)** toggle on or off.
 - **Behavior:** When enabled, the overlay appears (with the other overlay elements) and shows the current generated UI. You can ask the AI to change what is displayed (e.g. “show my fuel and jump range”) and it will generate or edit the overlay components accordingly.
-- **Technical note:** The overlay is built from a small set of editable Preact components (with a root `App` component) that receive game state via projections; the Agent LLM has tools to list, read, edit, and validate these components.
+- **Technical note:** The overlay is built from a small set of editable Preact components (with a root `App` component) that receive game state via projections; the Agent LLM has tools to list, read, edit, and validate these components. Changes may take a while to complete.
 
 ## Miscellaneous Actions
 
