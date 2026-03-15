@@ -260,14 +260,14 @@ class FSDJumpEventConflictsItem(TypedDict):
 class FSDJumpEvent(TypedDict):
     SystemAllegiance: str
     SystemEconomy: str
-    SystemFaction: NotRequired[FSDJumpEventSystemfaction]
+    SystemFaction: NotRequired["LocationEventSystemfaction"]
     SystemSecurity: str
     StarPos: list[float]
     JumpDist: float
     timestamp: str
     FuelLevel: float
     PowerplayState: NotRequired[str]
-    Factions: NotRequired[list[FSDJumpEventFactionsItem]]
+    Factions: NotRequired[list["LocationEventFactionsItem"]]
     Multicrew: bool
     SystemEconomy_Localised: str
     Taxi: bool
@@ -293,14 +293,14 @@ class FSDJumpEvent(TypedDict):
 class CarrierJumpEvent(TypedDict):
     SystemAllegiance: str
     SystemEconomy: str
-    SystemFaction: NotRequired[FSDJumpEventSystemfaction]
+    SystemFaction: NotRequired["LocationEventSystemfaction"]
     SystemSecurity: str
     StarPos: list[float]
     JumpDist: float
     timestamp: str
     FuelLevel: float
     PowerplayState: NotRequired[str]
-    Factions: NotRequired[list[FSDJumpEventFactionsItem]]
+    Factions: NotRequired[list["LocationEventFactionsItem"]]
     Multicrew: bool
     SystemEconomy_Localised: str
     Taxi: bool
@@ -579,7 +579,8 @@ class LocationEventFactionsItem(TypedDict):
     PendingStates: NotRequired[list[LocationEventFactionsItemPendingstatesItem]]
     ActiveStates: NotRequired[list[LocationEventFactionsItemActivestatesItem]]
     Allegiance: str
-    Happiness_Localised: str
+    SquadronFaction: NotRequired[bool]
+    Happiness_Localised: NotRequired[str]
     MyReputation: float
     Name: str
     FactionState: str

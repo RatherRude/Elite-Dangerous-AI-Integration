@@ -14,6 +14,8 @@ from ..EventModels import (
     LeaveBodyEvent,
     LiftoffEvent,
     LocationEvent,
+    LocationEventFactionsItem,
+    LocationEventSystemfaction,
     SupercruiseEntryEvent,
     SupercruiseExitEvent,
     TouchdownEvent,
@@ -25,6 +27,9 @@ class LocationState(BaseModel):
     """Current location of the commander in the galaxy."""
     StarSystem: str = Field(default="Unknown", description="Current star system name")
     SystemAddress: Optional[int] = Field(default=None, description="Unique system address for the current star system")
+    SystemFaction: Optional[LocationEventSystemfaction] = Field(default=None, description="Controlling faction for the current system")
+    Factions: Optional[list[LocationEventFactionsItem]] = Field(default=None, description="Known factions present in the current system")
+    Powers: Optional[list[str]] = Field(default=None, description="Powers present in the current system")
     Star: Optional[str] = Field(default=None, description="Current star body if near one")
     StarPos: list[float] = Field(default_factory=lambda: [0.0, 0.0, 0.0], description="Position in galactic coordinates [x, y, z]")
     Planet: Optional[str] = Field(default=None, description="Current planet body if near one")
@@ -56,6 +61,9 @@ class Location(Projection[LocationState]):
             self.state.StarPos = star_pos
             if "SystemAddress" in payload:
                 self.state.SystemAddress = payload.get("SystemAddress", 0)
+            self.state.SystemFaction = payload.get("SystemFaction")
+            self.state.Factions = payload.get("Factions")
+            self.state.Powers = payload.get("Powers")
             if station:
                 self.state.Station = station
                 self.state.Docked = docked
@@ -87,6 +95,9 @@ class Location(Projection[LocationState]):
             self.state.StarSystem = star_system
             self.state.StarPos = star_pos
             self.state.SystemAddress = cast(Optional[int], system_address)
+            self.state.SystemFaction = payload.get("SystemFaction")
+            self.state.Factions = payload.get("Factions")
+            self.state.Powers = payload.get("Powers")
 
             if body_type and body_type != "Null":
                 setattr(self.state, str(body_type), body)
@@ -101,6 +112,9 @@ class Location(Projection[LocationState]):
             self.state.StarSystem = star_system
             self.state.StarPos = star_pos
             self.state.SystemAddress = cast(Optional[int], system_address)
+            self.state.SystemFaction = payload.get("SystemFaction")
+            self.state.Factions = payload.get("Factions")
+            self.state.Powers = payload.get("Powers")
 
             if body_type and body_type != "Null":
                 setattr(self.state, str(body_type), body)
