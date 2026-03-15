@@ -1,5 +1,3 @@
-from typing import Optional
-
 from typing import Optional, cast
 
 from typing_extensions import override
@@ -10,6 +8,7 @@ from ..EventManager import Projection
 from ..EventModels import (
     ApproachBodyEvent,
     ApproachSettlementEvent,
+    CarrierJumpEvent,
     DockedEvent,
     FSDJumpEvent,
     LeaveBodyEvent,
@@ -80,6 +79,20 @@ class Location(Projection[LocationState]):
 
         if isinstance(event, GameEvent) and event.content.get("event") == "FSDJump":
             payload = cast(FSDJumpEvent, event.content)
+            star_system = payload.get("StarSystem", "Unknown")
+            system_address = payload.get("SystemAddress")
+            star_pos = payload.get("StarPos", [0, 0, 0])
+            body_type = payload.get("BodyType", "Null")
+            body = payload.get("Body", "Unknown")
+            self.state.StarSystem = star_system
+            self.state.StarPos = star_pos
+            self.state.SystemAddress = cast(Optional[int], system_address)
+
+            if body_type and body_type != "Null":
+                setattr(self.state, str(body_type), body)
+
+        if isinstance(event, GameEvent) and event.content.get("event") == "CarrierJump":
+            payload = cast(CarrierJumpEvent, event.content)
             star_system = payload.get("StarSystem", "Unknown")
             system_address = payload.get("SystemAddress")
             star_pos = payload.get("StarPos", [0, 0, 0])
