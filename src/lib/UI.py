@@ -1,5 +1,8 @@
 import datetime
+import datetime
 import json
+import sys
+import threading
 from typing import Any, Literal, TypedDict
 
 
@@ -8,7 +11,7 @@ class BaseMessage(TypedDict):
 
 class ConversationMessage(TypedDict):
     type: Literal['conversation']
-    kind: Literal['user', 'assistant', 'assistant_completed']
+    kind: Literal['user', 'assistant', 'assistant_speaking', 'assistant_completed']
     content: str
 
 class ConfigMessage(TypedDict):
@@ -32,23 +35,41 @@ class GenUIMessage(TypedDict):
     code: str
 
 # Convert the message object to a dictionary with proper handling of nested objects
-def serialize_object(obj) -> dict|list|str:
+def serialize_object(obj: Any) -> Any:
     if hasattr(obj, '__dict__'):
         return {k: serialize_object(v) for k, v in obj.__dict__.items()}
-    elif isinstance(obj, list):
+    if isinstance(obj, list):
         return [serialize_object(item) for item in obj]
-    elif isinstance(obj, dict):
+    if isinstance(obj, dict):
         return {k: serialize_object(v) for k, v in obj.items()}
-    elif isinstance(obj, (datetime.datetime, datetime.date)):
+    if isinstance(obj, (datetime.datetime, datetime.date)):
         return obj.isoformat()
+    return obj
+    
+_writer_lock = threading.Lock()
+
+
+def _write_line(payload: dict, stream: Any | None = None) -> None:
+    output = json.dumps(payload)
+    target = stream or sys.stdout
+    with _writer_lock:
+        target.write(output + "\n")
+        target.flush()
+
+
+def send_message(message: dict, stream: Any | None = None) -> None:
+    message_dict: dict[str, Any]
+    serialized = serialize_object(message)
+    if isinstance(serialized, dict):
+        message_dict = serialized
     else:
-        return obj
-    
-def send_message(message: dict):
-    message_dict = serialize_object(message)
-    
-    # Ensure timestamp is present
-    if 'timestamp' not in message_dict:
+        message_dict = {"type": "ui", "payload": serialized}
+
+    if isinstance(message_dict, dict) and 'timestamp' not in message_dict:
         message_dict['timestamp'] = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
-    
-    print(json.dumps(message_dict), flush=True)
+
+    _write_line(message_dict, stream=stream)
+
+
+def emit_message(message_type: str, stream: Any | None = None, **payload: Any) -> None:
+    send_message({"type": message_type, **payload}, stream=stream)

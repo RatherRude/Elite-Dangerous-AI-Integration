@@ -2,6 +2,15 @@
 
 COVAS:NEXT offers an extensive plugin API, which allows 3rd parties to extend the functionality of your assistant, integrating it with various other tools, or just adding additional features.
 
+# First Official Plugins
+
+| Plugin | Description | Releases |
+|--------|-------------|----------|
+| **Parakeet** | Free, local STT Plugin (Multilingual) | [Releases](https://github.com/COVAS-Labs/plugin-parakeet-stt/releases) |
+| **Supertonic** | Free, local TTS Plugin (Multilingual) | [Releases](https://github.com/COVAS-Labs/plugin-supertonic-tts/releases) |
+| **Gemma** | Free, local Embedding Plugin (Multilingual) | [Releases](https://github.com/COVAS-Labs/plugin-gemma-embedding/releases) |
+| **Elevenlabs** | Paid, Cloud STT&TTS Plugin (Multilingual) | [Releases](https://github.com/COVAS-Labs/plugin-elevenlabs/releases) |
+
 # Plugin installation
 All plugins are installed in the `plugins` folder, found here:  
 

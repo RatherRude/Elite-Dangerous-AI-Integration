@@ -11,6 +11,12 @@
       "type": "string",
       "description": "Catalog version used to refresh stored quest state when newer."
     },
+    "actors": {
+      "type": "array",
+      "description": "List of quest actors used by quest content.",
+      "default": [],
+      "items": { "$ref": "#/$defs/actor" }
+    },
     "quests": {
       "type": "array",
       "description": "List of quest definitions.",
@@ -19,6 +25,39 @@
     }
   },
   "$defs": {
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "name_color", "voice", "avatar_url", "prompt"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique actor identifier.",
+          "pattern": "^[A-Za-z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name for this actor."
+        },
+        "name_color": {
+          "type": "string",
+          "description": "Display color used for this actor's name in chat.",
+          "pattern": "^#[0-9A-Fa-f]{6}$"
+        },
+        "voice": {
+          "type": "string",
+          "description": "Voice identifier used by TTS."
+        },
+        "avatar_url": {
+          "type": "string",
+          "description": "Avatar URL (external URL or avatar://<avatarId>)."
+        },
+        "prompt": {
+          "type": "string",
+          "description": "Prompt/personality text associated with this actor."
+        }
+      }
+    },
     "quest": {
       "type": "object",
       "additionalProperties": false,
@@ -42,11 +81,19 @@
           "description": "Whether the quest starts active by default.",
           "default": false
         },
+        "initial_stage_id": {
+          "type": "string",
+          "description": "Stage id that should be used when the quest starts.",
+          "pattern": "^[A-Za-z0-9_\\-]+$"
+        },
         "stages": {
           "type": "array",
           "description": "Ordered or referenced quest stages.",
           "minItems": 1,
           "items": { "$ref": "#/$defs/stage" }
+        },
+        "fallback_stage": {
+          "$ref": "#/$defs/fallbackStage"
         }
       }
     },
@@ -76,6 +123,27 @@
         }
       }
     },
+    "fallbackStage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["description", "instructions"],
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "Short summary of the fallback stage."
+        },
+        "instructions": {
+          "type": "string",
+          "description": "Player-facing instructions for the fallback stage."
+        },
+        "plan": {
+          "type": "array",
+          "description": "Condition/action pairs evaluated for the fallback stage.",
+          "items": { "$ref": "#/$defs/planStep" },
+          "default": []
+        }
+      }
+    },
     "condition": {
       "type": "object",
       "additionalProperties": false,
@@ -84,7 +152,7 @@
         "source": {
           "type": "string",
           "description": "Where to read the value from.",
-          "enum": ["projection", "event"]
+          "enum": ["event"]
         },
         "path": {
           "type": "string",
@@ -103,61 +171,58 @@
     },
     "planAction": {
       "type": "object",
-      "additionalProperties": false,
       "required": ["action"],
       "properties": {
         "action": {
           "type": "string",
           "description": "Action to execute when step conditions are met.",
-          "enum": ["log", "advance_stage", "set_active"]
-        },
-        "message": {
-          "type": "string",
-          "description": "Debug log message for log actions."
-        },
-        "target_stage_id": {
-          "type": "string",
-          "description": "Stage id to advance to for advance_stage actions.",
-          "pattern": "^[A-Za-z0-9_\\-]+$"
-        },
-        "quest_id": {
-          "type": "string",
-          "description": "Quest id to activate/deactivate for set_active actions.",
-          "pattern": "^[A-Za-z0-9_\\-]+$"
-        },
-        "active": {
-          "type": "boolean",
-          "description": "Whether the quest should be active for set_active actions.",
-          "default": true
+          "enum": ["log", "advance_stage", "set_active", "play_sound", "npc_message"]
         }
       },
-      "allOf": [
+      "oneOf": [
         {
-          "if": {
-            "properties": { "action": { "const": "log" } },
-            "required": ["action"]
+          "additionalProperties": false,
+          "properties": {
+            "action": { "const": "log" },
+            "message": { "type": "string" }
           },
-          "then": {
-            "required": ["message"]
-          }
+          "required": ["action", "message"]
         },
         {
-          "if": {
-            "properties": { "action": { "const": "advance_stage" } },
-            "required": ["action"]
+          "additionalProperties": false,
+          "properties": {
+            "action": { "const": "advance_stage" },
+            "target_stage_id": { "type": "string", "pattern": "^[A-Za-z0-9_\\-]+$" }
           },
-          "then": {
-            "required": ["target_stage_id"]
-          }
+          "required": ["action", "target_stage_id"]
         },
         {
-          "if": {
-            "properties": { "action": { "const": "set_active" } },
-            "required": ["action"]
+          "additionalProperties": false,
+          "properties": {
+            "action": { "const": "set_active" },
+            "quest_id": { "type": "string", "pattern": "^[A-Za-z0-9_\\-]+$" },
+            "active": { "type": "boolean" }
           },
-          "then": {
-            "required": ["quest_id"]
-          }
+          "required": ["action", "quest_id"]
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "action": { "const": "play_sound" },
+            "file_name": { "type": "string" },
+            "transcription": { "type": "string" },
+            "actor_id": { "type": ["string", "null"], "pattern": "^[A-Za-z0-9_\\-]+$" }
+          },
+          "required": ["action", "file_name", "transcription"]
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "action": { "const": "npc_message" },
+            "actor_id": { "type": "string", "pattern": "^[A-Za-z0-9_\\-]+$" },
+            "transcription": { "type": "string" }
+          },
+          "required": ["action", "actor_id", "transcription"]
         }
       ]
     },

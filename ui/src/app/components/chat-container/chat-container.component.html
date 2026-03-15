@@ -1,7 +1,7 @@
 @for (msg of chat; track msg.index) {
   <div class="chat-entry" [ngClass]="getEventClass(msg.role, msg.message)">
     <span class="timestamp">{{ msg.timestamp | date:'HH:mm:ss' }}</span>
-    <span class="prefix" [style.color]="getLogColor(msg.role)">{{ msg.role }}</span>
+    <span class="prefix" [style.color]="msg.display_color || getLogColor(msg.role)">{{ msg.display_name || msg.role }}</span>
     <span class="message">{{ formatMessage(msg) }}</span>
   </div>
 }

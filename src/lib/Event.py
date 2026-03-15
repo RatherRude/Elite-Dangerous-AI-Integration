@@ -9,6 +9,7 @@ EventKind = Literal[
     'game',
     'user',
     'user_speaking',
+    'assistant_speaking',
     'assistant',
     'assistant_acting',
     'assistant_completed',
@@ -24,6 +25,7 @@ EventKind = Literal[
 ConversationEventKind = Literal[
     'user_speaking',
     'user',
+    'assistant_speaking',
     'assistant',
     'assistant_acting',
     'assistant_completed',

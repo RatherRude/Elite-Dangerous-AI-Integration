@@ -17,7 +17,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt-get install portaudio19-dev
+          sudo apt-get update -o Acquire::Retries=3
+          sudo apt-get install -y --no-install-recommends --fix-missing portaudio19-dev
           python -m pip install --upgrade pip setuptools
           python -m pip install --force-reinstall -r requirements.txt
           python -m pip install --force-reinstall numpy==2.2.2 opencv-python==4.10.0.84

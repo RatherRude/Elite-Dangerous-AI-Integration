@@ -56,7 +56,7 @@ class OpenAILLMModel(LLMModel):
         if self.model_name in ['gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-5.1']:
             kwargs["verbosity"] = "low"
                     
-        if self.model_name.startswith('gemini-3-'):
+        if self.model_name.startswith('gemini-3'):
             for m in messages:
                 if 'tool_calls' in m and m.get('tool_calls', None):
                     calls = m.get('tool_calls', [])

@@ -1185,7 +1185,8 @@ known_ships = [
     "Type-9 Heavy",
     "Viper MkIII",
     "Viper MkIV",
-    "Vulture"
+    "Vulture",
+    "Kestrel MkII",
 ]
 known_services = [
     "Apex Interstellar",

@@ -22,17 +22,33 @@ def test_statusparser_file_update(status_file_path):
     parser = StatusParser(str(status_file_path))
     time.sleep(0.1)  # Let the watch thread start
     
-    # Update file with new status
+    # Update file with new status: not landed
+    old_status = {
+        "Flags": 16777218,
+        "GuiFocus": 1
+    }
+
+    with open(os.path.join(status_file_path, "Status.json"), "w") as f:
+        json.dump(old_status, f)
+
+    # Wait for update
+    status_event = parser.status_queue.get(timeout=1)
+    assert status_event["event"] == "Status"
+    assert status_event["flags"]["LandingGearDown"] == False
+
+    # Update file with new status: landed
     new_status = {
         "Flags": 16777220,
         "GuiFocus": 1
     }
+
     with open(os.path.join(status_file_path, "Status.json"), "w") as f:
         json.dump(new_status, f)
-    
+
     # Wait for update
-    status_event = parser.status_queue.get(timeout=1)
+    status_event = parser.status_queue.get(timeout=10)
     assert status_event["event"] == "Status"
     assert status_event["flags"]["LandingGearDown"] == True
-    landinggear_event = parser.status_queue.get(timeout=1)
+
+    landinggear_event = parser.status_queue.get(timeout=10)
     assert landinggear_event["event"] == "LandingGearDown"

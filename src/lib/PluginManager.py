@@ -10,6 +10,7 @@ from lib.Config import Config
 
 from .PluginSettingDefinitions import PluginSettings, ModelProviderDefinition, ParagraphSetting, SettingsGrid, ErrorSetting
 from .Logger import log
+from .UI import emit_message
 
 from .PluginBase import PluginBase, PluginManifest
 from .Models import LLMModel, STTModel, TTSModel, EmbeddingModel
@@ -206,10 +207,14 @@ class PluginManager:
             self.plugin_settings_configs[guid] = error_settings
 
         # Broadcast settings configs to UI
-        print(json.dumps({"type": "plugin_settings_configs", "plugin_settings_configs": self.plugin_settings_configs, "has_plugin_settings": (len(self.plugin_settings_configs) > 0)})+'\n', flush=True)
+        emit_message(
+            "plugin_settings_configs",
+            plugin_settings_configs=self.plugin_settings_configs,
+            has_plugin_settings=(len(self.plugin_settings_configs) > 0),
+        )
         
         # Broadcast model providers to UI
-        print(json.dumps({"type": "plugin_model_providers", "providers": self.plugin_model_providers})+'\n', flush=True)
+        emit_message("plugin_model_providers", providers=self.plugin_model_providers)
 
     def on_settings_changed(self, new_config: Config):
         """
