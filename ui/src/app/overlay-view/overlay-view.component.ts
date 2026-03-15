@@ -1,4 +1,4 @@
-import { Component, OnDestroy, ElementRef, ViewChild, AfterViewInit } from "@angular/core";
+import { Component, OnDestroy, OnInit, ElementRef, ViewChild, AfterViewInit } from "@angular/core";
 import { TauriService } from "../services/tauri.service";
 import { Subscription } from "rxjs";
 import { CommonModule } from "@angular/common";
@@ -33,6 +33,8 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
 
   // Overlay display settings
   avatarPosition: 'left' | 'right' = 'right';
+  avatarScale: number = 1;
+  readonly avatarBaseWidth = 250;
   avatarShow: boolean = true;
   chatShow: boolean = true;
   private isInitialized: boolean = false;
@@ -103,14 +105,14 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     this.subscriptions.push(
       configService.config$.subscribe(config => {
         if (config) {
-          this.avatarPosition = config.overlay_position || 'right';
+          this.setAvatarDisplayFromPosition(config.overlay_position || 'right');
           this.updateAvatarShowStatus(config);
           this.updateChatShowStatus(config);
           this.applyAvatarBackground(); // Update avatar when position changes
           this.isInitialized = true;
         } else if (!this.isInitialized) {
           // Reset to defaults if no character and not yet initialized
-          this.avatarPosition = 'right';
+          this.setAvatarDisplayFromPosition('right');
           this.avatarShow = true;
           this.chatShow = true;
           this.applyAvatarBackground(); // Update avatar when resetting to defaults
@@ -180,6 +182,22 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     }
     if (config?.tts_provider === 'plugin:ec3eee66-8c4c-4ede-be36-b8612b14a5c0:edcopilot-dominant') {
       this.chatShow = false;
+    }
+  }
+
+  private setAvatarDisplayFromPosition(position: Config['overlay_position'] | string): void {
+    const [side, size = 'large'] = position.split("-");
+    this.avatarPosition = side === 'left' ? 'left' : 'right';
+    switch (size) {
+      case 'small':
+        this.avatarScale = 0.5;
+        break;
+      case 'medium':
+        this.avatarScale = 0.75;
+        break;
+      default:
+        this.avatarScale = 1;
+        break;
     }
   }
 
