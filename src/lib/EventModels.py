@@ -230,6 +230,7 @@ class FSDJumpEventFactionsItem(TypedDict):
     ActiveStates: NotRequired[list[FSDJumpEventFactionsItemActivestatesItem]]
     Allegiance: str
     SquadronFaction: NotRequired[bool]
+    OwnFaction: NotRequired[bool]
     Happiness_Localised: NotRequired[str]
     MyReputation: float
     Name: str
@@ -580,6 +581,7 @@ class LocationEventFactionsItem(TypedDict):
     ActiveStates: NotRequired[list[LocationEventFactionsItemActivestatesItem]]
     Allegiance: str
     SquadronFaction: NotRequired[bool]
+    OwnFaction: NotRequired[bool]
     Happiness_Localised: NotRequired[str]
     MyReputation: float
     Name: str

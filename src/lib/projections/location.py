@@ -16,6 +16,7 @@ from ..EventModels import (
     LocationEvent,
     LocationEventFactionsItem,
     LocationEventSystemfaction,
+    SquadronStartupEvent,
     SupercruiseEntryEvent,
     SupercruiseExitEvent,
     TouchdownEvent,
@@ -27,6 +28,7 @@ class LocationState(BaseModel):
     """Current location of the commander in the galaxy."""
     StarSystem: str = Field(default="Unknown", description="Current star system name")
     SystemAddress: Optional[int] = Field(default=None, description="Unique system address for the current star system")
+    SquadronName: str = Field(default="Unknown", description="Player squadron name")
     SystemFaction: Optional[LocationEventSystemfaction] = Field(default=None, description="Controlling faction for the current system")
     Factions: Optional[list[LocationEventFactionsItem]] = Field(default=None, description="Known factions present in the current system")
     Powers: Optional[list[str]] = Field(default=None, description="Powers present in the current system")
@@ -45,9 +47,45 @@ class LocationState(BaseModel):
 class Location(Projection[LocationState]):
     StateModel = LocationState
 
+    @staticmethod
+    def _normalize_name(value: str) -> str:
+        return value.strip().casefold()
+
+    def _annotate_factions(self, factions: Optional[list[LocationEventFactionsItem]]) -> Optional[list[LocationEventFactionsItem]]:
+        if factions is None:
+            return None
+
+        squadron_name = self._normalize_name(self.state.SquadronName)
+        has_known_squadron = squadron_name not in {"", "unknown"}
+        annotated: list[LocationEventFactionsItem] = []
+        for faction in factions:
+            faction_copy = dict(faction)
+            faction_name = faction_copy.get("Name", "")
+            is_own_faction = (
+                has_known_squadron
+                and isinstance(faction_name, str)
+                and self._normalize_name(faction_name) == squadron_name
+            )
+            faction_copy["OwnFaction"] = is_own_faction
+            annotated.append(cast(LocationEventFactionsItem, cast(object, faction_copy)))
+
+        return annotated
+
     @override
     def process(self, event: Event) -> None:
-        if isinstance(event, GameEvent) and event.content.get("event") == "Location":
+        if not isinstance(event, GameEvent):
+            return
+
+        event_name = event.content.get("event")
+
+        if event_name == "SquadronStartup":
+            payload = cast(SquadronStartupEvent, cast(object, event.content))
+            squadron_name = payload.get("SquadronName", "Unknown")
+            if isinstance(squadron_name, str):
+                self.state.SquadronName = squadron_name
+                self.state.Factions = self._annotate_factions(self.state.Factions)
+
+        if event_name == "Location":
             payload = cast(LocationEvent, event.content)
             star_system = payload.get("StarSystem", "Unknown")
             body_type = payload.get("BodyType", "Null")
@@ -62,7 +100,7 @@ class Location(Projection[LocationState]):
             if "SystemAddress" in payload:
                 self.state.SystemAddress = payload.get("SystemAddress", 0)
             self.state.SystemFaction = payload.get("SystemFaction")
-            self.state.Factions = payload.get("Factions")
+            self.state.Factions = self._annotate_factions(payload.get("Factions", []))
             self.state.Powers = payload.get("Powers")
             if station:
                 self.state.Station = station
@@ -70,12 +108,12 @@ class Location(Projection[LocationState]):
             if body_type and body_type != "Null":
                 setattr(self.state, str(body_type), body)
 
-        if isinstance(event, GameEvent) and event.content.get("event") == "SupercruiseEntry":
+        if event_name == "SupercruiseEntry":
             payload = cast(SupercruiseEntryEvent, event.content)
             star_system = payload.get("StarSystem", "Unknown")
             self.state.StarSystem = star_system
 
-        if isinstance(event, GameEvent) and event.content.get("event") == "SupercruiseExit":
+        if event_name == "SupercruiseExit":
             payload = cast(SupercruiseExitEvent, event.content)
             star_system = payload.get("StarSystem", "Unknown")
             body_type = payload.get("BodyType", "Null")
@@ -85,7 +123,7 @@ class Location(Projection[LocationState]):
             if body_type and body_type != "Null":
                 setattr(self.state, str(body_type), body)
 
-        if isinstance(event, GameEvent) and event.content.get("event") == "FSDJump":
+        if event_name == "FSDJump":
             payload = cast(FSDJumpEvent, event.content)
             star_system = payload.get("StarSystem", "Unknown")
             system_address = payload.get("SystemAddress")
@@ -96,13 +134,13 @@ class Location(Projection[LocationState]):
             self.state.StarPos = star_pos
             self.state.SystemAddress = cast(Optional[int], system_address)
             self.state.SystemFaction = payload.get("SystemFaction")
-            self.state.Factions = payload.get("Factions")
+            self.state.Factions = self._annotate_factions(payload.get("Factions", []))
             self.state.Powers = payload.get("Powers")
 
             if body_type and body_type != "Null":
                 setattr(self.state, str(body_type), body)
 
-        if isinstance(event, GameEvent) and event.content.get("event") == "CarrierJump":
+        if event_name == "CarrierJump":
             payload = cast(CarrierJumpEvent, event.content)
             star_system = payload.get("StarSystem", "Unknown")
             system_address = payload.get("SystemAddress")
@@ -113,41 +151,41 @@ class Location(Projection[LocationState]):
             self.state.StarPos = star_pos
             self.state.SystemAddress = cast(Optional[int], system_address)
             self.state.SystemFaction = payload.get("SystemFaction")
-            self.state.Factions = payload.get("Factions")
+            self.state.Factions = self._annotate_factions(payload.get("Factions", []))
             self.state.Powers = payload.get("Powers")
 
             if body_type and body_type != "Null":
                 setattr(self.state, str(body_type), body)
 
-        if isinstance(event, GameEvent) and event.content.get("event") == "Docked":
+        if event_name == "Docked":
             payload = cast(DockedEvent, event.content)
             self.state.Docked = True
             self.state.Station = payload.get("StationName", "Unknown")
 
-        if isinstance(event, GameEvent) and event.content.get("event") == "Undocked":
+        if event_name == "Undocked":
             payload = cast(UndockedEvent, event.content)
             self.state.Docked = None
 
-        if isinstance(event, GameEvent) and event.content.get("event") == "Touchdown":
+        if event_name == "Touchdown":
             payload = cast(TouchdownEvent, event.content)
             self.state.Landed = True
             self.state.NearestDestination = payload.get("NearestDestination", "Unknown")
 
-        if isinstance(event, GameEvent) and event.content.get("event") == "Liftoff":
+        if event_name == "Liftoff":
             payload = cast(LiftoffEvent, event.content)
             self.state.Landed = None
 
-        if isinstance(event, GameEvent) and event.content.get("event") == "ApproachSettlement":
+        if event_name == "ApproachSettlement":
             payload = cast(ApproachSettlementEvent, event.content)
             self.state.Station = cast(Optional[str], payload.get("Name", "Unknown"))
             self.state.Planet = cast(Optional[str], payload.get("BodyName", "Unknown"))
 
-        if isinstance(event, GameEvent) and event.content.get("event") == "ApproachBody":
+        if event_name == "ApproachBody":
             payload = cast(ApproachBodyEvent, event.content)
             self.state.Station = cast(Optional[str], payload.get("Name", "Unknown"))
             self.state.Planet = cast(Optional[str], payload.get("BodyName", "Unknown"))
 
-        if isinstance(event, GameEvent) and event.content.get("event") == "LeaveBody":
+        if event_name == "LeaveBody":
             payload = cast(LeaveBodyEvent, event.content)
             self.state.Station = None
             self.state.Planet = None
