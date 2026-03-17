@@ -45,6 +45,7 @@ class OpenAILLMModel(LLMModel):
     def __init__(self, base_url: str, api_key: str, model_name: str, temperature: float, reasoning_effort: Optional[str] = None, extra_body: Optional[dict] = None, extra_headers: Optional[dict] = None):
         super().__init__(model_name)
         self.client = OpenAI(base_url=base_url, api_key=api_key)
+        self.base_url = base_url
         self.temperature = temperature
         self.reasoning_effort = reasoning_effort
         self.extra_body = extra_body or {}
@@ -56,7 +57,7 @@ class OpenAILLMModel(LLMModel):
         if self.model_name in ['gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-5.1']:
             kwargs["verbosity"] = "low"
                     
-        if self.model_name.startswith('gemini-3'):
+        if 'google' in self.base_url or 'google' in self.model_name or 'gemini' in self.model_name:
             for m in messages:
                 if 'tool_calls' in m and m.get('tool_calls', None):
                     calls = m.get('tool_calls', [])
@@ -69,9 +70,11 @@ class OpenAILLMModel(LLMModel):
                                     calls[i] = calls[i].dict()
                             
                             if isinstance(calls[i], dict):
-                                calls[i]['extra_content'] = {"google": {
-                                    "thought_signature": "skip_thought_signature_validator"
-                                }}
+                                thought_sig = calls[i].get('extra_content',{}).get('google', {}).get('thought_signature')
+                                if not thought_sig:
+                                    calls[i]['extra_content'] = {"google": {
+                                        "thought_signature": "skip_thought_signature_validator"
+                                    }}
         
         params: dict[str, Any] = {
             "model": self.model_name,
