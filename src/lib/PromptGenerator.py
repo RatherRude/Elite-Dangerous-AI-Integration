@@ -2657,6 +2657,61 @@ class PromptGenerator:
         result: dict[str, object] = {"Total bodies": total_bodies}
         result["Noteworthy bodies"] = noteworthy or "None"
         return result
+
+    def format_local_factions(self, factions_data: object) -> object:
+        """Format local factions into a compact, descriptive structure."""
+        if not factions_data or isinstance(factions_data, str):
+            return factions_data or "No faction data available"
+        if not isinstance(factions_data, list):
+            return factions_data
+
+        formatted_factions = []
+        for faction in factions_data:
+            if not isinstance(faction, dict):
+                continue
+
+            name = faction.get("Name", "Unknown")
+            allegiance = faction.get("Allegiance")
+            government = faction.get("Government")
+            faction_state = faction.get("FactionState")
+            happiness = faction.get("Happiness_Localised")
+            influence = faction.get("Influence")
+            reputation = faction.get("MyReputation")
+            own_faction = bool(faction.get("OwnFaction") or faction.get("SquadronFaction"))
+
+            entry = {"Name": name}
+
+            government_parts = []
+            if allegiance and allegiance != "None":
+                government_parts.append(str(allegiance))
+            if government and government != "None":
+                government_parts.append(str(government))
+            if government_parts:
+                entry["Government"] = " ".join(government_parts)
+
+            influence_parts = []
+            if isinstance(influence, (int, float)):
+                influence_parts.append(f"{float(influence) * 100:.1f}%")
+            elif influence is not None:
+                influence_parts.append(str(influence))
+            if faction_state and faction_state != "None":
+                influence_parts.append(str(faction_state))
+            if happiness and happiness != "None":
+                influence_parts.append(str(happiness))
+            if influence_parts:
+                entry["Influence"] = ", ".join(influence_parts)
+
+            if isinstance(reputation, (int, float)):
+                reputation_text = str(int(reputation)) if float(reputation).is_integer() else str(reputation)
+            else:
+                reputation_text = str(reputation) if reputation is not None else "Unknown"
+            if own_faction:
+                reputation_text += ", Own faction"
+            entry["Reputation"] = reputation_text
+
+            formatted_factions.append(entry)
+
+        return formatted_factions or "No faction data available"
         
     def _create_standard_station_entry(self, station, raw_format=False):
         """Create a standardized station entry from either projection or raw API data"""
@@ -3140,6 +3195,8 @@ class PromptGenerator:
             system_info = None
             stations_info = None
             bodies_info = None
+            system_powers = location_info.pop('Powers', None)
+            system_factions = location_info.pop('Factions', None)
             
             # Direct lookup from system database instead of SystemInfo projection
             if system_name:
@@ -3167,12 +3224,16 @@ class PromptGenerator:
                 location_info["Altitude"] = f"{altitude}m"
 
             location_info = {
-                key: value for key, value in location_info.items() if value is not None and key not in ['SystemAddress', 'StarAddress', 'StarPos']
+                key: value for key, value in location_info.items() if value is not None and key not in ['SystemAddress', 'StarAddress', 'StarPos', 'Star', 'SquadronName']
             }
 
             status_entries.append(("Location", location_info))
             status_entries.append(("Local system", system_info))
             if not search_agent_context:
+                if system_powers:
+                    status_entries.append(("Powers in local system", system_powers))
+                if system_factions:
+                    status_entries.append(("Factions in local system", self.format_local_factions(system_factions)))
                 status_entries.append(("Stations in local system (in ls to primary star)", stations_info))
                 status_entries.append(("Bodies in local system", bodies_info))
 
