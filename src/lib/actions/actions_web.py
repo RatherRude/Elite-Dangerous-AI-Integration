@@ -1806,6 +1806,52 @@ def filter_empty_list_items(value: Any) -> Any:
         return value
     return [item for item in value if has_meaningful_filter_value(item)]
 
+def build_reference_property(obj: Any, projected_states: Any) -> dict[str, Any]:
+    reference_route = obj.get("reference_route")
+    if reference_route:
+        source = reference_route.get("source")
+        destination = reference_route.get("destination")
+        if not source or not destination:
+            raise Exception("reference_route must include both 'source' and 'destination'.")
+        return {
+            "reference_route": {
+                "source": source,
+                "destination": destination
+            }
+        }
+
+    location = get_state_dict(projected_states, "Location")
+    star_pos = location.get("StarPos", [0.0, 0.0, 0.0])
+
+    if obj.get("reference_system"):
+        reference_system = str(obj["reference_system"]).strip()
+        location_system = str(location.get("StarSystem", "")).strip()
+        if (
+            location_system
+            and reference_system.casefold() == location_system.casefold()
+            and isinstance(star_pos, list)
+            and len(star_pos) >= 3
+        ):
+            return {
+                "reference_coords": {
+                    "x": star_pos[0],
+                    "y": star_pos[1],
+                    "z": star_pos[2],
+                }
+            }
+        return {"reference_system": obj["reference_system"]}
+
+    if isinstance(star_pos, list) and len(star_pos) >= 3:
+        return {
+            "reference_coords": {
+                "x": star_pos[0],
+                "y": star_pos[1],
+                "z": star_pos[2],
+            }
+        }
+
+    return {"reference_system": location.get("StarSystem", "Sol")}
+
 # Prepare a request for the spansh station finder
 def prepare_station_request(obj, projected_states):# Helper function for fuzzy matching
     log('debug', 'Station Finder Request', obj)
@@ -1919,20 +1965,7 @@ def prepare_station_request(obj, projected_states):# Helper function for fuzzy m
         "size": size,
         "page": 0
     }
-
-    reference_route = obj.get("reference_route")
-    if reference_route:
-        source = reference_route.get("source")
-        destination = reference_route.get("destination")
-        if not source or not destination:
-            raise Exception("reference_route must include both 'source' and 'destination'.")
-        request_body["reference_route"] = {
-            "source": source,
-            "destination": destination
-        }
-    else:
-        location = get_state_dict(projected_states, 'Location')
-        request_body["reference_system"] = obj.get("reference_system", location.get("StarSystem", "Sol"))
+    request_body.update(build_reference_property(obj, projected_states))
 
     return request_body
 
@@ -2171,21 +2204,7 @@ def prepare_system_request(obj, projected_states):# Helper function for fuzzy ma
         "size": size,
         "page": 0
     }
-
-    reference_route = obj.get("reference_route")
-    if reference_route:
-        source = reference_route.get("source")
-        destination = reference_route.get("destination")
-        if not source or not destination:
-            raise Exception("reference_route must include both 'source' and 'destination'.")
-        request_body["reference_route"] = {
-            "source": source,
-            "destination": destination
-        }
-    else:
-        location = get_state_dict(projected_states, "Location")
-        request_body["reference_system"] = obj.get("reference_system",
-                                                   location.get("StarSystem", "Sol"))
+    request_body.update(build_reference_property(obj, projected_states))
 
     return request_body
 
@@ -2357,21 +2376,7 @@ def prepare_body_request(obj, projected_states):
         "size": size,
         "page": 0
     }
-
-    reference_route = obj.get("reference_route")
-    if reference_route:
-        source = reference_route.get("source")
-        destination = reference_route.get("destination")
-        if not source or not destination:
-            raise Exception("reference_route must include both 'source' and 'destination'.")
-        request_body["reference_route"] = {
-            "source": source,
-            "destination": destination
-        }
-    else:
-        location = get_state_dict(projected_states, 'Location')
-        request_body["reference_system"] = obj.get("reference_system",
-                                                   location.get("StarSystem", "Sol"))
+    request_body.update(build_reference_property(obj, projected_states))
 
     return request_body
 
