@@ -1790,6 +1790,22 @@ def ensure_result_size(obj):
         size = default_size
     return max(1, min(25, size))
 
+def has_meaningful_filter_value(value: Any) -> bool:
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return value.strip() != ""
+    if isinstance(value, dict):
+        return any(has_meaningful_filter_value(item) for item in value.values())
+    if isinstance(value, (list, tuple, set)):
+        return any(has_meaningful_filter_value(item) for item in value)
+    return True
+
+def filter_empty_list_items(value: Any) -> Any:
+    if not isinstance(value, list):
+        return value
+    return [item for item in value if has_meaningful_filter_value(item)]
+
 # Prepare a request for the spansh station finder
 def prepare_station_request(obj, projected_states):# Helper function for fuzzy matching
     log('debug', 'Station Finder Request', obj)
@@ -1799,7 +1815,7 @@ def prepare_station_request(obj, projected_states):# Helper function for fuzzy m
     if obj.get("include_player_fleetcarrier"):
         station_types.append("Drake-Class Carrier")
 
-    filters = {
+    filters: dict[str, Any] = {
         "type": {
             "value": station_types
         },
@@ -1813,13 +1829,16 @@ def prepare_station_request(obj, projected_states):# Helper function for fuzzy m
     requires_large_pad = ship_info.get('LandingPadSize') == 'L'
     if requires_large_pad:
         filters["has_large_pad"] = {"value": True}
-    if "material_trader" in obj and obj["material_trader"]:
-        filters["material_trader"] = {"value": obj["material_trader"]}
-    if "technology_broker" in obj and obj["technology_broker"]:
-        filters["technology_broker"] = {"value": obj["technology_broker"]}
-    if "commodities" in obj and obj["commodities"]:
+    material_trader = filter_empty_list_items(obj.get("material_trader"))
+    if has_meaningful_filter_value(material_trader):
+        filters["material_trader"] = {"value": material_trader}
+    technology_broker = filter_empty_list_items(obj.get("technology_broker"))
+    if has_meaningful_filter_value(technology_broker):
+        filters["technology_broker"] = {"value": technology_broker}
+    commodities = filter_empty_list_items(obj.get("commodities"))
+    if commodities:
         market_filters = []
-        for market_item in obj["commodities"]:
+        for market_item in commodities:
             # Find matching commodity name using fuzzy matching
             matching_commodity = find_best_match(market_item["name"], known_commodities)
             if not matching_commodity:
@@ -1847,9 +1866,9 @@ def prepare_station_request(obj, projected_states):# Helper function for fuzzy m
                 }
             market_filters.append(market_filter)
         filters["market"] = market_filters
-    if "modules" in obj:
-        modules_filter = {}
-        for module in obj["modules"]:
+    modules = filter_empty_list_items(obj.get("modules"))
+    if modules:
+        for module in modules:
             # Find matching module name using exact matching only
             module_name_lower = module["name"].lower()
             matching_module = next((m for m in known_modules if m.lower() == module_name_lower), None)
@@ -1857,25 +1876,27 @@ def prepare_station_request(obj, projected_states):# Helper function for fuzzy m
                 raise Exception(
                     f"Invalid module name: {module['name']}. {educated_guesses_message(module['name'], known_modules)}")
             module["name"] = matching_module
-        filters["modules"] = obj["modules"]
-    if "ships" in obj:
-        for ship in obj["ships"]:
+        filters["modules"] = modules
+    ships = filter_empty_list_items(obj.get("ships"))
+    if ships:
+        for ship in ships:
             # Find matching ship name using fuzzy matching
             matching_ship = find_best_match(ship["name"], known_ships)
             if not matching_ship:
                 raise Exception(
                     f"Invalid ship name: {ship['name']}. {educated_guesses_message(ship['name'], known_ships)}")
             ship["name"] = matching_ship
-        filters["ships"] = {"value": obj["ships"]}
-    if "services" in obj:
-        for service in obj["services"]:
+        filters["ships"] = {"value": ships}
+    services = filter_empty_list_items(obj.get("services"))
+    if services:
+        for service in services:
             # Find matching service name using fuzzy matching
             matching_service = find_best_match(service["name"], known_services)
             if not matching_service:
                 raise Exception(
                     f"Invalid service name: {service['name']}. {educated_guesses_message(service['name'], known_services)}")
             service["name"] = matching_service
-        filters["services"] = {"value": obj["services"]}
+        filters["services"] = {"value": services}
     if "name" in obj and obj["name"]:
         filters["name"] = {
             "value": obj["name"]
@@ -2025,7 +2046,7 @@ def prepare_system_request(obj, projected_states):# Helper function for fuzzy ma
     
     log('debug', 'System Finder Request', obj)
     size = ensure_result_size(obj)
-    filters = {
+    filters: dict[str, Any] = {
         "distance": {
             "min": "0",
             "max": str(obj.get("distance", 50000))
@@ -2033,9 +2054,10 @@ def prepare_system_request(obj, projected_states):# Helper function for fuzzy ma
     }
 
     # Add optional filters if they exist
-    if "allegiance" in obj and obj["allegiance"]:
+    allegiances = filter_empty_list_items(obj.get("allegiance"))
+    if allegiances:
         validated_allegiances = []
-        for allegiance in obj["allegiance"]:
+        for allegiance in allegiances:
             # Find matching allegiance using fuzzy matching
             matching_allegiance = find_best_match(allegiance, known_allegiances)
             if not matching_allegiance:
@@ -2044,9 +2066,10 @@ def prepare_system_request(obj, projected_states):# Helper function for fuzzy ma
             validated_allegiances.append(matching_allegiance)
         filters["allegiance"] = {"value": validated_allegiances}
 
-    if "state" in obj and obj["state"]:
+    states = filter_empty_list_items(obj.get("state"))
+    if states:
         validated_states = []
-        for state in obj["state"]:
+        for state in states:
             # Find matching state using fuzzy matching
             matching_state = find_best_match(state, known_states)
             if not matching_state:
@@ -2055,9 +2078,10 @@ def prepare_system_request(obj, projected_states):# Helper function for fuzzy ma
             validated_states.append(matching_state)
         filters["state"] = {"value": validated_states}
 
-    if "government" in obj and obj["government"]:
+    governments = filter_empty_list_items(obj.get("government"))
+    if governments:
         validated_governments = []
-        for government in obj["government"]:
+        for government in governments:
             # Find matching government using fuzzy matching
             matching_government = find_best_match(government, known_governments)
             if not matching_government:
@@ -2066,9 +2090,10 @@ def prepare_system_request(obj, projected_states):# Helper function for fuzzy ma
             validated_governments.append(matching_government)
         filters["government"] = {"value": validated_governments}
 
-    if "power" in obj and obj["power"]:
+    powers = filter_empty_list_items(obj.get("power"))
+    if powers:
         validated_powers = []
-        for power in obj["power"]:
+        for power in powers:
             # Find matching power using fuzzy matching
             matching_power = find_best_match(power, known_powers)
             if not matching_power:
@@ -2077,9 +2102,10 @@ def prepare_system_request(obj, projected_states):# Helper function for fuzzy ma
             validated_powers.append(matching_power)
         filters["controlling_power"] = {"value": validated_powers}
 
-    if "primary_economy" in obj and obj["primary_economy"]:
+    primary_economies = filter_empty_list_items(obj.get("primary_economy"))
+    if primary_economies:
         validated_economies = []
-        for economy in obj["primary_economy"]:
+        for economy in primary_economies:
             # Find matching economy using fuzzy matching
             matching_economy = find_best_match(economy, known_economies)
             if not matching_economy:
@@ -2088,9 +2114,10 @@ def prepare_system_request(obj, projected_states):# Helper function for fuzzy ma
             validated_economies.append(matching_economy)
         filters["primary_economy"] = {"value": validated_economies}
 
-    if "security" in obj and obj["security"]:
+    security_levels = filter_empty_list_items(obj.get("security"))
+    if security_levels:
         validated_security = []
-        for security_level in obj["security"]:
+        for security_level in security_levels:
             # Find matching security level using fuzzy matching
             matching_security = find_best_match(security_level, known_security_levels)
             if not matching_security:
@@ -2099,9 +2126,10 @@ def prepare_system_request(obj, projected_states):# Helper function for fuzzy ma
             validated_security.append(matching_security)
         filters["security"] = {"value": validated_security}
 
-    if "thargoid_war_state" in obj and obj["thargoid_war_state"]:
+    thargoid_war_states = filter_empty_list_items(obj.get("thargoid_war_state"))
+    if thargoid_war_states:
         validated_thargoid_states = []
-        for thargoid_war_state in obj["thargoid_war_state"]:
+        for thargoid_war_state in thargoid_war_states:
             # Find matching thargoid war state using fuzzy matching
             matching_state = find_best_match(thargoid_war_state, known_thargoid_war_states)
             if not matching_state:
@@ -2237,7 +2265,7 @@ def system_finder(obj, projected_states):
 
 def prepare_body_request(obj, projected_states):
     size = ensure_result_size(obj)
-    filters = {
+    filters: dict[str, Any] = {
         "distance": {
             "min": "0",
             "max": str(obj.get("distance", 50000))
@@ -2245,9 +2273,10 @@ def prepare_body_request(obj, projected_states):
     }
 
     # Add optional filters if they exist
-    if "subtype" in obj and obj["subtype"]:
+    subtypes = filter_empty_list_items(obj.get("subtype"))
+    if subtypes:
         validated_subtypes = []
-        for subtype in obj["subtype"]:
+        for subtype in subtypes:
             # Find matching subtype using fuzzy matching
             matching_subtype = find_best_match(subtype, known_subtypes)
             if not matching_subtype:
@@ -2256,9 +2285,10 @@ def prepare_body_request(obj, projected_states):
             validated_subtypes.append(matching_subtype)
         filters["subtype"] = {"value": validated_subtypes}
 
-    if "landmark_subtype" in obj and obj["landmark_subtype"]:
+    landmark_subtypes = filter_empty_list_items(obj.get("landmark_subtype"))
+    if landmark_subtypes:
         validated_landmarks = []
-        for landmark_subtype in obj["landmark_subtype"]:
+        for landmark_subtype in landmark_subtypes:
             # Find matching landmark subtype using fuzzy matching
             matching_landmark = find_best_match(landmark_subtype, known_landmarks)
             if not matching_landmark:
@@ -2300,9 +2330,10 @@ def prepare_body_request(obj, projected_states):
                 }
             ]
 
-    if "signals" in obj and obj["signals"]:
+    signals = filter_empty_list_items(obj.get("signals"))
+    if signals:
         signal_filters = []
-        for signal in obj["signals"]:
+        for signal in signals:
             signal_filters.append({
                 "comparison": "<=>",
                 "count": [
