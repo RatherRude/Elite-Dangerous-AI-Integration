@@ -1807,12 +1807,32 @@ def filter_empty_list_items(value: Any) -> Any:
     return [item for item in value if has_meaningful_filter_value(item)]
 
 def build_reference_property(obj: Any, projected_states: Any) -> dict[str, Any]:
+    location = get_state_dict(projected_states, "Location")
+    star_pos = location.get("StarPos", [0.0, 0.0, 0.0])
+    location_system = str(location.get("StarSystem", "")).strip()
+
     reference_route = obj.get("reference_route")
     if reference_route:
         source = reference_route.get("source")
         destination = reference_route.get("destination")
         if not source or not destination:
             raise Exception("reference_route must include both 'source' and 'destination'.")
+        source_name = str(source).strip()
+        destination_name = str(destination).strip()
+        if (
+            location_system
+            and source_name.casefold() == destination_name.casefold()
+            and source_name.casefold() == location_system.casefold()
+            and isinstance(star_pos, list)
+            and len(star_pos) >= 3
+        ):
+            return {
+                "reference_coords": {
+                    "x": star_pos[0],
+                    "y": star_pos[1],
+                    "z": star_pos[2],
+                }
+            }
         return {
             "reference_route": {
                 "source": source,
@@ -1820,12 +1840,8 @@ def build_reference_property(obj: Any, projected_states: Any) -> dict[str, Any]:
             }
         }
 
-    location = get_state_dict(projected_states, "Location")
-    star_pos = location.get("StarPos", [0.0, 0.0, 0.0])
-
     if obj.get("reference_system"):
         reference_system = str(obj["reference_system"]).strip()
-        location_system = str(location.get("StarSystem", "")).strip()
         if (
             location_system
             and reference_system.casefold() == location_system.casefold()
