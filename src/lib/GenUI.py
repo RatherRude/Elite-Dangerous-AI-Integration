@@ -37,6 +37,8 @@ CRITICAL RULES:
    - Call `read(component_name, offset?, limit?)` to inspect one component before editing.
    - Use `write(component_name, content)` to create or fully replace a component.
    - Use `edit(component_name, old_string, new_string, replace_all?)` for exact string replacements within one component.
+   - Use `clear_overlay_ui(component_names?)` to delete helper components. It can never delete `App`.
+   - If removing helper components changes what `App` renders, update `App` and then run `validate()`.
    - Use `get_projection_schema(projection_name)` when you need the detailed schema and current value for a specific projection.
    - Prefer small, targeted edits over broad rewrites.
    - After making changes, call `validate()` to run SSR validation.
@@ -137,6 +139,25 @@ GENUI_TOOLS = [
                     }
                 },
                 "required": ["component_name", "old_string", "new_string"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "clear_overlay_ui",
+            "description": "Delete one or more helper components from the editable UI collection. This tool never deletes App.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "component_names": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Optional helper component names to delete. If omitted, all helper components except App are deleted."
+                    }
+                }
             }
         }
     },
@@ -555,8 +576,10 @@ class GenUIAgent:
             {"role": "user", "content": (
                 f"Task: {instruction}\n\n"
                 f"{_build_component_catalog(working_components)}\n\n"
-                "Use read(), write(), edit(), and validate() to update the component collection. "
-                "Start by calling read(component_name='App').\n\n"
+                "Use read(), write(), edit(), clear_overlay_ui(), and validate() to update the component collection. "
+                "Start by calling read(component_name='App') unless the task is explicitly to remove helper components first. "
+                "clear_overlay_ui() only deletes helper components and will never delete App. "
+                "After deleting components, update App if it still references removed helpers, then run validate().\n\n"
                 f"{state_documentation}"
             )}
         ]
@@ -953,6 +976,64 @@ class GenUIAgent:
                     "component_name": component_name,
                     "file_path": _component_virtual_path(component_name),
                     "replaced_occurrences": replaced_occurrences,
+                }),
+                "validation": None,
+            }
+
+        if func_name == "clear_overlay_ui":
+            component_names = func_args.get("component_names")
+            if component_names is not None and (
+                not isinstance(component_names, list)
+                or not all(isinstance(component_name, str) for component_name in component_names)
+            ):
+                _log_genui("warn", "Component deletion rejected due to invalid component_names payload")
+                return {
+                    "components": current_components,
+                    "content": json.dumps({
+                        "success": False,
+                        "error": "component_names must be an array of strings when provided.",
+                    }),
+                    "validation": None,
+                }
+
+            requested_names = None if component_names is None else {
+                component_name.strip()
+                for component_name in component_names
+                if component_name.strip()
+            }
+            deleted_components: list[str] = []
+            skipped_components: list[str] = []
+            updated_components = dict(current_components)
+
+            if requested_names is None:
+                target_names = [component_name for component_name in current_components.keys() if component_name != "App"]
+            else:
+                target_names = sorted(requested_names)
+
+            for component_name in target_names:
+                if component_name == "App":
+                    skipped_components.append("App")
+                    continue
+                if component_name not in updated_components:
+                    skipped_components.append(component_name)
+                    continue
+                del updated_components[component_name]
+                deleted_components.append(component_name)
+
+            _log_genui(
+                "info",
+                "Deleted overlay helper components",
+                f"deleted_count={len(deleted_components)}",
+                f"skipped_count={len(skipped_components)}",
+            )
+            return {
+                "components": updated_components,
+                "content": json.dumps({
+                    "success": True,
+                    "deleted_components": deleted_components,
+                    "skipped_components": skipped_components,
+                    "remaining_components": sorted(updated_components.keys()),
+                    "message": "Requested helper components were deleted. App was preserved.",
                 }),
                 "validation": None,
             }

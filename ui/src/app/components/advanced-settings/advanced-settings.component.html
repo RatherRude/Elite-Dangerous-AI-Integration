@@ -578,6 +578,12 @@
             </mat-select>
         </mat-form-field>
         @if (config.tts_provider === "openai") {
+            <div class="generative-ui-warning">
+                <mat-icon>warning</mat-icon>
+                <span>Warning: OpenAI's TTS increases cost significantly. Consider free providers like Edge TTS or <a target="_blank" rel="noopener noreferrer" href="https://ratherrude.github.io/Elite-Dangerous-AI-Integration/plugins/">TTS plugins</a>.</span>
+            </div>
+        }
+        @if (config.tts_provider === "openai") {
             <mat-form-field>
                 <mat-label>TTS Model Name</mat-label>
                 <input matInput [(ngModel)]="config.tts_model_name"

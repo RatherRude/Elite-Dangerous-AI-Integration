@@ -2,17 +2,19 @@ from abc import ABC, abstractmethod
 from typing import Any, List, Optional, Generator, Iterable
 import io
 import base64
+import json
 import speech_recognition as sr
 import soundfile as sf
 import numpy as np
 import threading
 import traceback
 from time import sleep, time
+from uuid import uuid4
 import edge_tts
 import miniaudio
 from openai.types.audio.speech_create_params import SpeechCreateParams
 from openai import OpenAI, APIStatusError
-from openai.types.chat import ChatCompletion, ChatCompletionMessageToolCall
+from openai.types.chat import ChatCompletion, ChatCompletionMessageFunctionToolCall, ChatCompletionMessageToolCall
 from openai.types import CreateEmbeddingResponse
 from .Logger import log, ModelUsageStats
 
@@ -41,10 +43,18 @@ class EmbeddingModel(ABC):
     def create_embedding(self, input_text: str) -> tuple[str, List[float]]:
         pass
 
+def _model_dump_compatible(value: Any) -> Any:
+    if hasattr(value, "model_dump"):
+        return value.model_dump()
+    if hasattr(value, "dict"):
+        return value.dict()
+    return value
+
 class OpenAILLMModel(LLMModel):
     def __init__(self, base_url: str, api_key: str, model_name: str, temperature: float, reasoning_effort: Optional[str] = None, extra_body: Optional[dict] = None, extra_headers: Optional[dict] = None):
         super().__init__(model_name)
         self.client = OpenAI(base_url=base_url, api_key=api_key)
+        self.base_url = base_url
         self.temperature = temperature
         self.reasoning_effort = reasoning_effort
         self.extra_body = extra_body or {}
@@ -56,7 +66,7 @@ class OpenAILLMModel(LLMModel):
         if self.model_name in ['gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-5.1']:
             kwargs["verbosity"] = "low"
                     
-        if self.model_name.startswith('gemini-3'):
+        if 'google' in self.base_url or 'google' in self.model_name or 'gemini' in self.model_name:
             for m in messages:
                 if 'tool_calls' in m and m.get('tool_calls', None):
                     calls = m.get('tool_calls', [])
@@ -69,9 +79,11 @@ class OpenAILLMModel(LLMModel):
                                     calls[i] = calls[i].dict()
                             
                             if isinstance(calls[i], dict):
-                                calls[i]['extra_content'] = {"google": {
-                                    "thought_signature": "skip_thought_signature_validator"
-                                }}
+                                thought_sig = calls[i].get('extra_content',{}).get('google', {}).get('thought_signature')
+                                if not thought_sig:
+                                    calls[i]['extra_content'] = {"google": {
+                                        "thought_signature": "skip_thought_signature_validator"
+                                    }}
         
         params: dict[str, Any] = {
             "model": self.model_name,
@@ -147,6 +159,282 @@ class OpenAILLMModel(LLMModel):
 
         if response_text is None and response_actions is None:
              return (None, None, usage_metadata)
+
+        return (response_text, response_actions, usage_metadata)
+
+    def list_models(self) -> List[str]:
+        try:
+            models = self.client.models.list()
+            return [model.id for model in models]
+        except Exception as e:
+            raise e
+
+class OpenAIResponsesLLMModel(LLMModel):
+    def __init__(self, base_url: str, api_key: str, model_name: str, temperature: float, reasoning_effort: Optional[str] = None, extra_body: Optional[dict] = None, extra_headers: Optional[dict] = None):
+        super().__init__(model_name)
+        self.client = OpenAI(base_url=base_url, api_key=api_key)
+        self.base_url = base_url
+        self.temperature = temperature
+        self.reasoning_effort = reasoning_effort
+        self.extra_body = extra_body or {}
+        self.extra_headers = extra_headers or {}
+
+    def _has_message_content(self, content: Any) -> bool:
+        if content is None:
+            return False
+        if isinstance(content, str):
+            return content != ""
+        if isinstance(content, list):
+            return len(content) > 0
+        return True
+
+    def _stringify_content(self, content: Any) -> str:
+        if content is None:
+            return ""
+        if isinstance(content, str):
+            return content
+        try:
+            return json.dumps(content)
+        except TypeError:
+            return str(content)
+
+    def _convert_content_part(self, part: Any) -> dict[str, Any]:
+        part = _model_dump_compatible(part)
+        if not isinstance(part, dict):
+            return {"type": "input_text", "text": str(part)}
+
+        part_type = part.get("type")
+        if part_type in {"input_text", "input_image", "input_audio", "input_file"}:
+            return part
+
+        if part_type == "text":
+            return {
+                "type": "input_text",
+                "text": str(part.get("text", "")),
+            }
+
+        if part_type == "image_url":
+            image_value = part.get("image_url")
+            image_url: str | None = None
+            detail = "auto"
+            if isinstance(image_value, dict):
+                image_url = image_value.get("url")
+                detail = image_value.get("detail", detail)
+            elif isinstance(image_value, str):
+                image_url = image_value
+
+            if image_url:
+                return {
+                    "type": "input_image",
+                    "image_url": image_url,
+                    "detail": detail,
+                }
+
+        if part_type == "input_audio":
+            return part
+
+        return {
+            "type": "input_text",
+            "text": self._stringify_content(part),
+        }
+
+    def _convert_message_content(self, content: Any) -> str | list[dict[str, Any]]:
+        if isinstance(content, str):
+            return content
+        if isinstance(content, list):
+            return [self._convert_content_part(part) for part in content]
+        if isinstance(content, dict):
+            return [self._convert_content_part(content)]
+        return self._stringify_content(content)
+
+    def _convert_assistant_tool_calls(self, tool_calls: Any) -> list[dict[str, Any]]:
+        converted_calls: list[dict[str, Any]] = []
+        for tool_call in tool_calls or []:
+            tool_call = _model_dump_compatible(tool_call)
+            if not isinstance(tool_call, dict):
+                continue
+
+            function_data = _model_dump_compatible(tool_call.get("function"))
+            if not isinstance(function_data, dict):
+                continue
+
+            raw_call_id = tool_call.get("call_id") or tool_call.get("id") or f"call_{uuid4().hex}"
+            raw_response_item_id = tool_call.get("id")
+            converted_call = {
+                "type": "function_call",
+                "call_id": str(raw_call_id),
+                "name": str(function_data.get("name", "")),
+                "arguments": str(function_data.get("arguments") or "{}"),
+            }
+
+            # Chat-completions tool calls only provide a call ID like "call_xxx".
+            # Responses API item IDs are separate and typically start with "fc_".
+            if isinstance(raw_response_item_id, str) and raw_response_item_id.startswith("fc"):
+                converted_call["id"] = raw_response_item_id
+
+            converted_calls.append(converted_call)
+        return converted_calls
+
+    def _convert_tool_output_message(self, message: dict[str, Any]) -> dict[str, Any] | None:
+        call_id = message.get("tool_call_id") or message.get("call_id")
+        if not call_id:
+            return None
+
+        return {
+            "type": "function_call_output",
+            "call_id": str(call_id),
+            "output": self._stringify_content(message.get("content", "")),
+        }
+
+    def _convert_messages(self, messages: List[dict]) -> list[dict[str, Any]]:
+        converted_messages: list[dict[str, Any]] = []
+
+        for raw_message in messages:
+            message = _model_dump_compatible(raw_message)
+            if not isinstance(message, dict):
+                continue
+
+            role = message.get("role")
+            content = message.get("content")
+            tool_calls = message.get("tool_calls")
+
+            if role == "tool":
+                tool_output = self._convert_tool_output_message(message)
+                if tool_output:
+                    converted_messages.append(tool_output)
+                continue
+
+            if role in {"system", "developer", "user", "assistant"} and self._has_message_content(content):
+                converted_messages.append({
+                    "type": "message",
+                    "role": role,
+                    "content": self._convert_message_content(content),
+                })
+
+            if role == "assistant" and tool_calls:
+                converted_messages.extend(self._convert_assistant_tool_calls(tool_calls))
+
+        return converted_messages
+
+    def _convert_tools(self, tools: List[dict]) -> list[dict[str, Any]]:
+        converted_tools: list[dict[str, Any]] = []
+
+        for raw_tool in tools:
+            tool = _model_dump_compatible(raw_tool)
+            if not isinstance(tool, dict):
+                continue
+
+            if tool.get("type") == "function" and isinstance(tool.get("function"), dict):
+                function_data = _model_dump_compatible(tool["function"])
+                converted_tool = {
+                    "type": "function",
+                    "name": function_data.get("name"),
+                    "description": function_data.get("description"),
+                    "parameters": function_data.get("parameters"),
+                }
+                strict = function_data.get("strict")
+                if strict is not None:
+                    converted_tool["strict"] = strict
+                converted_tools.append({k: v for k, v in converted_tool.items() if v is not None})
+                continue
+
+            converted_tools.append(tool)
+
+        return converted_tools
+
+    def _convert_tool_choice(self, tool_choice: Any) -> Any:
+        tool_choice = _model_dump_compatible(tool_choice)
+        if isinstance(tool_choice, str):
+            return tool_choice
+
+        if isinstance(tool_choice, dict) and tool_choice.get("type") == "function":
+            function_data = _model_dump_compatible(tool_choice.get("function"))
+            if isinstance(function_data, dict):
+                return {
+                    "type": "function",
+                    "name": function_data.get("name"),
+                }
+
+        return tool_choice
+
+    def _extract_tool_calls(self, response: Any) -> list[ChatCompletionMessageFunctionToolCall] | None:
+        tool_calls: list[ChatCompletionMessageFunctionToolCall] = []
+
+        for output_item in getattr(response, "output", []) or []:
+            item = _model_dump_compatible(output_item)
+            if not isinstance(item, dict) or item.get("type") != "function_call":
+                continue
+
+            call_id = str(item.get("call_id") or item.get("id") or f"call_{uuid4().hex}")
+            tool_calls.append(ChatCompletionMessageFunctionToolCall.model_validate({
+                "type": "function",
+                "id": call_id,
+                "function": {
+                    "name": str(item.get("name", "")),
+                    "arguments": str(item.get("arguments") or "{}"),
+                },
+            }))
+
+        return tool_calls or None
+
+    def generate(self, messages: List[dict], tools: Optional[List[dict]] = None, tool_choice: Optional[Any] = None) -> tuple[str | None, List[Any] | None, ModelUsageStats]:
+        params: dict[str, Any] = {
+            "model": self.model_name,
+            "input": self._convert_messages(messages),
+            "temperature": self.temperature,
+        }
+
+        if self.model_name in ['gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-5.1']:
+            params["text"] = {"verbosity": "low"}
+
+        if tools:
+            params["tools"] = self._convert_tools(tools)
+            if tool_choice:
+                params["tool_choice"] = self._convert_tool_choice(tool_choice)
+
+        if self.reasoning_effort and self.reasoning_effort not in ["disabled", "default", "none", None, ""]:
+            params["reasoning"] = {"effort": self.reasoning_effort}
+
+        if self.extra_body:
+            params["extra_body"] = self.extra_body
+
+        if self.extra_headers:
+            params["extra_headers"] = self.extra_headers
+
+        try:
+            response = self.client.responses.create(**params)
+        except APIStatusError as e:
+            log("debug", "LLM error request:", e.request.method, e.request.url, e.request.headers, e.request.read().decode('utf-8', errors='replace'))
+            log("debug", "LLM error response:", e.response.status_code, e.response.headers, e.response.read().decode('utf-8', errors='replace'))
+
+            try:
+                error: dict = e.body[0] if hasattr(e, 'body') and e.body and isinstance(e.body, list) else e.body # pyright: ignore[reportAssignmentType]
+                message = error.get('error', {}).get('message', e.body if e.body else 'Unknown error')
+            except:
+                message = e.message
+
+            raise LLMError(f'LLM {e.response.reason_phrase}: {message}', e)
+        except Exception as e:
+            raise LLMError(f'LLM Error: {str(e)}', e)
+
+        if getattr(response, "error", None):
+            log("debug", "LLM response error:", response)
+            raise LLMError("LLM error: No valid response received")
+
+        usage_metadata = ModelUsageStats()
+        if hasattr(response, 'usage') and response.usage:
+            log("debug", "LLM response usage", response.usage)
+            usage_metadata.input_tokens = getattr(response.usage, "input_tokens", 0)
+            usage_metadata.output_tokens = getattr(response.usage, "output_tokens", 0)
+            usage_metadata.total_tokens = getattr(response.usage, "total_tokens", 0)
+            if hasattr(response.usage, "input_tokens_details") and response.usage.input_tokens_details:
+                usage_metadata.cached_tokens = getattr(response.usage.input_tokens_details, "cached_tokens", 0)
+
+        response_text = getattr(response, "output_text", None) or None
+        response_actions = self._extract_tool_calls(response)
+
+        if response_text is None and response_actions is None:
+            return (None, None, usage_metadata)
 
         return (response_text, response_actions, usage_metadata)
 
@@ -440,6 +728,17 @@ def create_llm_model(provider: str, config: dict, prefix: str = "llm") -> LLMMod
             
     extra_body = {}
     extra_headers = {}
+
+    if provider == "openai":
+        return OpenAIResponsesLLMModel(
+            base_url=base_url,
+            api_key=api_key,
+            model_name=model_name,
+            temperature=temperature,
+            reasoning_effort=reasoning_effort,
+            extra_body=extra_body,
+            extra_headers=extra_headers
+        )
 
     return OpenAILLMModel(
         base_url=base_url,

@@ -74,17 +74,43 @@ class GenUIManager:
             "code": code,
         })
     
-    def generate(self, instruction: str, projected_states: ProjectedStates) -> str:
+    def generate(self, instruction: str | None, projected_states: ProjectedStates, undo: bool = False) -> str:
         """
-        Generate or modify UI components based on user instructions.
+        Generate or modify UI components, or undo the latest saved version.
         
         Args:
             instruction: What UI to generate or modify
             projected_states: Current game state as Pydantic models
+            undo: If true, delete the newest saved version and restore the previous one
             
         Returns:
             Status message describing the result
         """
+        if undo:
+            if instruction:
+                return "Undo and instruction are mutually exclusive. Provide either undo=true or an instruction."
+
+            try:
+                history = self._store.get_history(self.STORE_KEY, limit=2)
+                if len(history) < 2:
+                    return "There is no previous overlay UI version to restore."
+
+                deleted = self._store.delete_latest(self.STORE_KEY)
+                if not deleted:
+                    return "Failed to delete the latest overlay UI version."
+
+                previous_entry = self._store.get_latest(self.STORE_KEY)
+                if previous_entry is None:
+                    return "Failed to load the previous overlay UI version after undo."
+
+                self.current_code = previous_entry.code
+                self._send_to_frontend(previous_entry.code)
+                log('info', f"GenUI: Undid latest UI version and restored version {previous_entry.version}")
+                return f"UI reverted to the previous saved version ({previous_entry.version})."
+            except Exception as e:
+                log('error', f"GenUI: Failed to undo latest UI version: {e}")
+                return f"Error undoing UI version: {str(e)}"
+
         if not self.llm_model:
             return "LLM model not configured for UI generation."
         
@@ -251,14 +277,7 @@ def _generate_ui_action(obj: Dict, projected_states: ProjectedStates) -> str:
     """Action wrapper for UI generation."""
     if _genui_manager is None:
         return "GenUI manager not initialized."
-    return _genui_manager.generate(obj.get('instruction', ''), projected_states)
-
-
-def _clear_ui_action(obj: Dict, projected_states: ProjectedStates) -> str:
-    """Action wrapper for clearing UI."""
-    if _genui_manager is None:
-        return "GenUI manager not initialized."
-    return _genui_manager.clear()
+    return _genui_manager.generate(obj.get('instruction'), projected_states, bool(obj.get('undo', False)))
 
 
 def register_genui_actions(
@@ -272,7 +291,7 @@ def register_genui_actions(
     Register GenUI actions with the ActionManager.
     
     This initializes the GenUI manager, loads any saved UI code from the database,
-    sends it to the frontend, and registers the generate/clear actions.
+    sends it to the frontend, and registers the top-level UI generation action.
     """
     global _genui_manager
     
@@ -283,35 +302,26 @@ def register_genui_actions(
     )
     _genui_manager.init()
     
-    # Main UI generation action
+    # Main UI generation action. Clear/reset requests route through the internal
+    # GenUI agent tools, while undo is handled here by rolling back the saved DB history.
     actionManager.registerAction(
         'generate_overlay_ui',
-        "Generate or modify the game overlay UI. Use this when the user wants to see specific information displayed on their screen, create custom HUD elements, or modify the current overlay display.",
+        "Generate, modify, reset, or undo the game overlay UI. Use an instruction to update the overlay, or set undo=true to delete the most recent saved version and restore the previous one. Undo and instruction are mutually exclusive.",
         {
             "type": "object",
             "properties": {
                 "instruction": {
                     "type": "string",
-                    "description": "Description of what UI to create or how to modify the current UI. Be specific about what information to display and where. Limit the input to the requested change only, no need to reiterate the full requirements. Examples: 'Move fuel and cargo in the top right', 'Create a mission tracker in the bottom left', 'Add a heat warning indicator'."
+                    "description": "Description of what UI to create, change, or reset. Be specific about what information to display and where. Limit the input to the requested change only, no need to reiterate the full requirements. Examples: 'Move fuel and cargo in the top right', 'Create a mission tracker in the bottom left', 'Add a heat warning indicator', 'Clear the overlay and reset it to default'. Mutually exclusive with undo."
                 },
+                "undo": {
+                    "type": "boolean",
+                    "description": "Set to true to undo the latest saved overlay UI version by deleting it from the database and loading the previous version. Mutually exclusive with instruction."
+                }
             },
-            "required": ["instruction"]
+            "additionalProperties": False
         },
         _generate_ui_action,
         'ui',
-        input_template=lambda i, s: f"Generating UI: {i.get('instruction', '')}",
-    )
-    
-    # Clear UI action
-    actionManager.registerAction(
-        'clear_overlay_ui',
-        "Clear and reset the game overlay UI to its default empty state. Use this when the user wants to remove all custom HUD elements, hide the overlay, or start fresh with a clean overlay.",
-        {
-            "type": "object",
-            "properties": {},
-            "required": []
-        },
-        _clear_ui_action,
-        'ui',
-        input_template=lambda i, s: "Clearing overlay UI",
+        input_template=lambda i, s: "Undoing latest overlay UI version" if i.get('undo', False) else f"Generating UI: {i.get('instruction', '')}",
     )
