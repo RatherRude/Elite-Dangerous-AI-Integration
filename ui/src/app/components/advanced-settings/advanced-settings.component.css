@@ -71,8 +71,11 @@ mat-panel-title mat-icon {
 }
 
 .generative-ui-warning {
+  display: flex;
+  gap: 0.35rem;
   align-items: center;
   color: #ff9800;
+  margin-bottom: 0.75rem;
 }
 
 .generative-ui-warning mat-icon {
