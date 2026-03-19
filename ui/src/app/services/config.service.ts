@@ -1,6 +1,7 @@
 import { Injectable } from "@angular/core";
 import { BehaviorSubject, filter, Observable } from "rxjs";
 import { BaseCommand, type BaseMessage, TauriService } from "./tauri.service";
+import { AvatarService } from "./avatar.service";
 import { ModelProviderDefinition, PluginModelProvidersMessage, PluginSettings, PluginSettingsMessage } from "./plugin-settings";
 import { ScreenInfo } from "../models/screen-info";
 
@@ -205,7 +206,12 @@ export class ConfigService {
     public plugin_model_providers$ = this.plugin_model_providers_subject
         .asObservable();
 
-    constructor(private tauriService: TauriService) {
+    private avatarIdbMigrationInProgress = false;
+
+    constructor(
+        private tauriService: TauriService,
+        private avatarService: AvatarService,
+    ) {
         // Subscribe to config messages from the TauriService
         this.tauriService.output$.pipe(
             filter((
@@ -231,6 +237,7 @@ export class ConfigService {
         ).subscribe((message: ConfigMessage | RunningConfigMessage | SystemInfoMessage | ModelValidationMessage | PluginSettingsMessage | PluginModelProvidersMessage | StartMessage | KeybindsMessages) => {
             if (message.type === "config") {
                 this.configSubject.next(message.config);
+                this.scheduleLegacyAvatarMigration(message.config);
             } else if (message.type === "running_config") {
                 this.configSubject.next(message.config);
             } else if (message.type === "system") {
@@ -262,6 +269,40 @@ export class ConfigService {
                 this.keybinds_subject.next(message);
             }
         });
+    }
+
+    /** IndexedDB avatar export runs in the renderer; see Config.py migrate config_version 13. */
+    private scheduleLegacyAvatarMigration(config: Config): void {
+        if (this.avatarIdbMigrationInProgress) {
+            return;
+        }
+        if (localStorage.getItem(AvatarService.LEGACY_AVATAR_MIGRATION_LS_KEY) === "1") {
+            return;
+        }
+        this.avatarIdbMigrationInProgress = true;
+        void this.runLegacyAvatarMigration(config).finally(() => {
+            this.avatarIdbMigrationInProgress = false;
+        });
+    }
+
+    private async runLegacyAvatarMigration(config: Config): Promise<void> {
+        try {
+            const outcome = await this.avatarService.migrateFromLegacyIndexedDb(
+                config.characters,
+            );
+            if (outcome.status === "skipped") {
+                return;
+            }
+            if (outcome.updatedCharacters) {
+                await this.changeConfig({
+                    characters: outcome.updatedCharacters as Config["characters"],
+                });
+            }
+            await this.avatarService.deleteLegacyAvatarIndexedDb();
+            localStorage.setItem(AvatarService.LEGACY_AVATAR_MIGRATION_LS_KEY, "1");
+        } catch (e) {
+            console.error("Legacy avatar IndexedDB migration failed:", e);
+        }
     }
 
     private async loadScreens(): Promise<void> {

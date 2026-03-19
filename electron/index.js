@@ -471,6 +471,7 @@ function createOverlayWindow(opts) {
   
   overlayWindow.loadURL(config.overlay);
   overlayWindow.setIgnoreMouseEvents(true);
+  // @todo Overlay DevTools must not ship enabled—comment out or gate on isDevelopment before release (see PR #247 review note).
   overlayWindow.webContents.openDevTools({ mode: 'detach' });
   
   if (opts.alwaysOnTop) {
