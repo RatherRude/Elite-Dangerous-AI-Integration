@@ -415,6 +415,17 @@
                 }
             }
         }
+        <label>
+            <mat-slide-toggle [(ngModel)]="config.overlay_show_hud"
+                              (ngModelChange)="onConfigChange({overlay_show_hud: $event})">
+                Allow Generative UI (HUD)
+            </mat-slide-toggle>
+            <span class="generative-ui-warning">
+                <mat-icon>warning</mat-icon>
+                Warning: Performing UI changes creates noticeable cost!
+            </span>
+        </label>
+
         </mat-expansion-panel>
 
         <mat-expansion-panel>
@@ -566,6 +577,12 @@
                 }
             </mat-select>
         </mat-form-field>
+        @if (config.tts_provider === "openai") {
+            <div class="generative-ui-warning">
+                <mat-icon>warning</mat-icon>
+                <span>Warning: OpenAI's TTS increases cost significantly. Consider free providers like Edge TTS or <a target="_blank" rel="noopener noreferrer" href="https://ratherrude.github.io/Elite-Dangerous-AI-Integration/plugins/">TTS plugins</a>.</span>
+            </div>
+        }
         @if (config.tts_provider === "openai") {
             <mat-form-field>
                 <mat-label>TTS Model Name</mat-label>
@@ -933,11 +950,12 @@
             <mat-expansion-panel-header>
                 <mat-panel-title>
                     <mat-icon>assignment</mat-icon>
-                    Quest Editor
+                    Quest Editor <span style="color: #f44336;">(experimental)</span>
                 </mat-panel-title>
             </mat-expansion-panel-header>
             <div class="quest-editor-section">
                 <p>Create and manage quests for you and your COVAS to share. Quests allow you to define custom, multi-stage objectives with conditions and actions that trigger based on game events. Use the quest editor to build complex quest chains to give yourself and your COVAS something to do.</p>
+                <p>Learn more about the quest editor: <a href="https://ratherrude.github.io/Elite-Dangerous-AI-Integration/advanced/Quests/" target="_blank" rel="noopener noreferrer">Documentation</a></p>
                 <div class="quest-editor-buttons">
                     <button mat-raised-button color="primary" (click)="openQuestEditor()">
                         <mat-icon>assignment</mat-icon>

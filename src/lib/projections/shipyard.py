@@ -23,6 +23,7 @@ class ShipyardShip(BaseModel):
 
 
 class ShipyardState(BaseModel):
+    """Ships available for purchase at the current station shipyard."""
     MarketID: int | None = None
     StationName: str | None = None
     StarSystem: str | None = None

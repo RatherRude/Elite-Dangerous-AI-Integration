@@ -42,6 +42,7 @@ class ShipLockerItem(BaseModel):
 
 
 class ShipLockerState(BaseModel):
+    """Ship locker inventory (consumables, components, data, items) at the current station."""
     Consumables: list[ShipLockerConsumable] | None = Field(default=None)
     Components: list[ShipLockerComponent] | None = Field(default=None)
     Data: list[ShipLockerData] | None = Field(default=None)

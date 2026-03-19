@@ -1283,7 +1283,8 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 
 2. System Finder (utilizes [Spansh API](https://spansh.co.uk/systems))
 
-    - `reference_system`: String (required)
+    - `reference_system`: String (required unless `reference_route` is used)
+    - `reference_route`: Object with `source` and `destination` strings (optional; search along a route instead of a single system)
     - `name`: String (optional)
     - `distance`: Number (optional, default: 50000)
     - `allegiance`: Array of strings (options: "Alliance", "Empire", "Federation", "Guardian", "Independent", "Pilots Federation", "Player Pilots", "Thargoid")
@@ -1294,12 +1295,15 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - `security`: Array of strings
     - `thargoid_war_state`: Array of strings
     - `population`: Object with `comparison` ("<" or ">") and `value` (Number)
+    - `sort_by`: String (optional; "distance" or "population". Default: distance)
+    - `size`: Integer (optional; number of results 1–25. Default: 3)
 
     Find a star system based on various filters.
 
 3. Station Finder (utilizes [Spansh API](https://spansh.co.uk/stations))
 
-    - `reference_system`: String (required)
+    - `reference_system`: String (required unless `reference_route` is used)
+    - `reference_route`: Object with `source` and `destination` strings (optional; search along a route instead of a single system)
     - `name`: String (optional)
     - `distance`: Number (optional, default: 50000)
     - `has_large_pad`: Boolean (optional)
@@ -1309,16 +1313,24 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - `commodities`: Array of objects with `name` (String), `amount` (Integer), `transaction` ("Buy" or "Sell")
     - `ships`: Array of objects with `name` (String)
     - `services`: Array of objects with `name` (String, options: "Black Market", "Interstellar Factors Contact")
+    - `sort_by`: String (optional; "distance" or "bestprice". Default: bestprice when commodities included)
+    - `include_player_fleetcarrier`: Boolean (optional; include Drake-Class Carrier / player-owned fleet carriers)
+    - `unfiltered_results`: Object (optional; set category to true to return all data for that category): `commodities`, `modules`, `ships` (each Boolean)
+    - `size`: Integer (optional; number of results 1–25. Default: 3)
 
     Find a station based on various filters.
 
 4. Body Finder (utilizes [Spansh API](https://spansh.co.uk/bodies))
 
-    - `reference_system`: String (required)
+    - `reference_system`: String (required unless `reference_route` is used)
+    - `reference_route`: Object with `source` and `destination` strings (optional; search along a route instead of a single system)
     - `name`: String (optional)
     - `distance`: Number (optional, default: 50000)
     - `subtype`: Array of strings
     - `landmark_subtype`: Array of strings
+    - `rings`: Object (optional) with `material` (String) and `hotspots` (Integer)
+    - `signals`: Array of strings (optional; options: "Biological", "Geological", "Human", "Guardian", "Thargoid" — filter for signals on body surface)
+    - `size`: Integer (optional; number of results 1–25. Default: 3)
 
     Find a celestial body based on various filters.
 
@@ -1336,6 +1348,14 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - open storage
     - open station tab
     </details>
+
+## Generative UI (HUD)
+
+The **Generative UI (HUD)** is an overlay that displays AI-generated Preact components visualizing your current game state (ship status, cargo, location, etc.). The Agent LLM can create and update these components in response to your requests, so you can have a custom HUD that shows exactly what you care about.
+
+- **Enable/disable:** In the app, go to **Settings → Advanced → Agent LLM Settings** and turn the **Generative UI (HUD)** toggle on or off.
+- **Behavior:** When enabled, the overlay appears (with the other overlay elements) and shows the current generated UI. You can ask the AI to change what is displayed (e.g. “show my fuel and jump range”) and it will generate or edit the overlay components accordingly.
+- **Technical note:** The overlay is built from a small set of editable Preact components (with a root `App` component) that receive game state via projections; the Agent LLM has tools to list, read, edit, and validate these components. Changes may take a while to complete.
 
 ## Miscellaneous Actions
 

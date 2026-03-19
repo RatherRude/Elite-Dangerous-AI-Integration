@@ -1,4 +1,4 @@
-from typing import Optional, cast
+from typing import Any, Optional, cast
 
 from typing_extensions import override
 from pydantic import BaseModel, Field
@@ -97,6 +97,49 @@ class NavInfo(Projection[NavInfoStateModel]):
 
         return sorted(materials), states
 
+    _HIGH_VALUE_LANDMARK_THRESHOLD = 9_000_000
+
+    def _get_bodies_with_high_value_landmarks(
+        self, system_name: str
+    ) -> list[dict[str, Any]]:
+        """Return bodies that have at least one landmark with value > threshold (e.g. 9M)."""
+        bodies = self.system_db.get_bodies(system_name)
+        if not isinstance(bodies, list):
+            return []
+        result: list[dict[str, Any]] = []
+        for body in bodies:
+            if not isinstance(body, dict):
+                continue
+            landmarks = body.get("landmarks")
+            if not isinstance(landmarks, list):
+                continue
+            total_value = 0
+            max_value = 0
+            has_high = False
+            for lm in landmarks:
+                if not isinstance(lm, dict):
+                    continue
+                v = lm.get("value")
+                if v is None:
+                    continue
+                try:
+                    val = int(v) if isinstance(v, (int, float)) else 0
+                except (TypeError, ValueError):
+                    continue
+                total_value += val
+                if val > max_value:
+                    max_value = val
+                if val > self._HIGH_VALUE_LANDMARK_THRESHOLD:
+                    has_high = True
+            if has_high:
+                body_name = body.get("name")
+                if isinstance(body_name, str):
+                    result.append({
+                        "bodyName": body_name,
+                        "value": max_value,
+                        "totalValue": total_value,
+                    })
+        return result
 
     @override
     def process(self, event: Event) -> list[ProjectedEvent]:
@@ -193,6 +236,20 @@ class NavInfo(Projection[NavInfoStateModel]):
                     "HGECandidateMaterials": hge_materials,
                     "HGEMatchedStates": sorted(matched_states),
                 }))
+
+            # Check system DB for bodies with high-value landmarks (> 9M)
+            star_system = payload.get("StarSystem")
+            if isinstance(star_system, str):
+                high_value_bodies = self._get_bodies_with_high_value_landmarks(star_system)
+                for item in high_value_bodies:
+                    projected_events.append(ProjectedEvent(content={
+                        "event": "HighValueLandmarksBody",
+                        "StarSystem": star_system,
+                        "SystemAddress": event.content.get("SystemAddress"),
+                        "BodyName": item["bodyName"],
+                        "Value": item["value"],
+                        "TotalValue": item["totalValue"],
+                    }))
 
         # Process FSDTarget
         if isinstance(event, GameEvent) and event.content.get("event") == "FSDTarget":

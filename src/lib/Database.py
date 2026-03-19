@@ -1031,3 +1031,19 @@ class CodeStore():
         ''', (key, limit))
         rows = cursor.fetchall()
         return [CodeEntry(code=r[0], commit_message=r[1], version=r[2], inserted_at=r[3]) for r in rows]
+
+    def delete_latest(self, key: str) -> bool:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(f'''
+            DELETE FROM {self.table_name}
+            WHERE id = (
+                SELECT id
+                FROM {self.table_name}
+                WHERE key = ?
+                ORDER BY id DESC
+                LIMIT 1
+            )
+        ''', (key,))
+        conn.commit()
+        return cursor.rowcount > 0

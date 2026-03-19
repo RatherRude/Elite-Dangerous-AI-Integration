@@ -855,14 +855,22 @@ class Assistant:
 
             if isinstance(event, StatusEvent) and event.status.get("event") in self.enabled_game_events:
                 if event.status.get("event") in ["InDanger", "OutOfDanger"]:
+                    ship_info = get_state_dict(states, "ShipInfo")
+                    location = get_state_dict(states, "Location")
+                    current_status = get_state_dict(states, "CurrentStatus")
+                    nav_info = get_state_dict(states, "NavInfo", {"NavRoute": []})
+                    flags = current_status.get("flags", {}) if isinstance(current_status, dict) else {}
+                    flags2 = current_status.get("flags2", {}) if isinstance(current_status, dict) else {}
+                    nav_route = nav_info.get("NavRoute", []) if isinstance(nav_info, dict) else []
+
                     if not character["react_to_danger_mining_var"]:
-                        if states.get('ShipInfo', {}).get('IsMiningShip', False) and states.get('Location', {}).get('PlanetaryRing', False):
+                        if ship_info.get("IsMiningShip", False) and location.get("PlanetaryRing", False):
                             continue
                     if not character["react_to_danger_onfoot_var"]:
-                        if states.get('CurrentStatus', {}).get('flags2').get('OnFoot'):
+                        if flags2 and flags2.get("OnFoot"):
                             continue
                     if not character["react_to_danger_supercruise_var"]:
-                        if states.get('CurrentStatus', {}).get('flags').get('Supercruise') and len(states.get('NavInfo', {"NavRoute": []}).get('NavRoute', [])):
+                        if flags.get("Supercruise") and len(nav_route):
                             continue
                 return True
 
