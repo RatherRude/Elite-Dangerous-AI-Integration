@@ -778,8 +778,8 @@ def migrate(data: dict) -> dict:
         if data.get('vision_provider') == 'google-ai-studio':
             data['vision_model_name'] = 'gemini-3.1-flash-lite-preview'
 
-    if data['config_version'] < 15:
-        data['config_version'] = 15
+    if data['config_version'] < 14:
+        data['config_version'] = 14
 
         if data.get('llm_provider') == 'openai' and data.get('llm_model_name') == 'gpt-4.1-mini':
             data['llm_model_name'] = 'gpt-5.4-nano'
