@@ -36,18 +36,12 @@ interface AvatarListItem {
   providedIn: 'root'
 })
 export class AvatarService {
-  private static readonly LEGACY_AVATAR_DB_NAME = 'avatarDB';
-  private static readonly LEGACY_AVATAR_DB_VERSION = 1;
-  private static readonly LEGACY_AVATAR_STORE = 'avatars';
-  /** Set when legacy avatarDB → disk export finished or skipped (no legacy DB). */
-  private static readonly LEGACY_AVATAR_MIGRATION_LS_KEY = 'cn_avatar_idb_to_disk_done';
-
-  static isLegacyIndexedDbAvatarMigrationDone(): boolean {
-    return localStorage.getItem(AvatarService.LEGACY_AVATAR_MIGRATION_LS_KEY) === '1';
+  static isIndexedDbAvatarMigrationDone(): boolean {
+    return localStorage.getItem('cn_avatar_idb_to_disk_done') === '1';
   }
 
-  static markLegacyIndexedDbAvatarMigrationDone(): void {
-    localStorage.setItem(AvatarService.LEGACY_AVATAR_MIGRATION_LS_KEY, '1');
+  static markIndexedDbAvatarMigrationDone(): void {
+    localStorage.setItem('cn_avatar_idb_to_disk_done', '1');
   }
 
   private readonly electronAPI = window.electronAPI;
@@ -55,7 +49,7 @@ export class AvatarService {
 
   /** Export avatarDB to disk; remap character.avatar from IndexedDB id to filename where needed. */
   async migrateFromLegacyIndexedDb(characters: unknown[]): Promise<LegacyAvatarMigrationOutcome> {
-    if (AvatarService.isLegacyIndexedDbAvatarMigrationDone()) {
+    if (AvatarService.isIndexedDbAvatarMigrationDone()) {
       return { status: 'skipped' };
     }
     if (!this.electronAPI?.invoke) {
@@ -64,14 +58,14 @@ export class AvatarService {
 
     const dbPresent = await this.legacyAvatarIndexedDbExists();
     if (!dbPresent) {
-      AvatarService.markLegacyIndexedDbAvatarMigrationDone();
+      AvatarService.markIndexedDbAvatarMigrationDone();
       return { status: 'skipped' };
     }
 
     const rows = await this.readLegacyIndexedDbAvatarRows();
     if (rows.length === 0) {
       await this.deleteLegacyAvatarIndexedDb();
-      AvatarService.markLegacyIndexedDbAvatarMigrationDone();
+      AvatarService.markIndexedDbAvatarMigrationDone();
       return { status: 'skipped' };
     }
 
@@ -106,7 +100,7 @@ export class AvatarService {
   /** Remove legacy DB after blobs are on disk and config has been saved (if needed). */
   async deleteLegacyAvatarIndexedDb(): Promise<void> {
     await new Promise<void>((resolve, reject) => {
-      const req = indexedDB.deleteDatabase(AvatarService.LEGACY_AVATAR_DB_NAME);
+      const req = indexedDB.deleteDatabase('avatarDB');
       req.onsuccess = () => resolve();
       req.onerror = () => reject(req.error ?? new Error('deleteDatabase failed'));
       req.onblocked = () => resolve();
@@ -117,7 +111,7 @@ export class AvatarService {
     try {
       if (indexedDB.databases) {
         const dbs = await indexedDB.databases();
-        return dbs.some((d) => d.name === AvatarService.LEGACY_AVATAR_DB_NAME);
+        return dbs.some((d) => d.name === 'avatarDB');
       }
     } catch {
       /* fall through */
@@ -127,20 +121,17 @@ export class AvatarService {
 
   private readLegacyIndexedDbAvatarRows(): Promise<LegacyIndexedDbAvatarRow[]> {
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open(
-        AvatarService.LEGACY_AVATAR_DB_NAME,
-        AvatarService.LEGACY_AVATAR_DB_VERSION,
-      );
+      const request = indexedDB.open('avatarDB', 1);
       request.onerror = () => resolve([]);
       request.onsuccess = () => {
         const db = request.result;
-        if (!db.objectStoreNames.contains(AvatarService.LEGACY_AVATAR_STORE)) {
+        if (!db.objectStoreNames.contains('avatars')) {
           db.close();
           resolve([]);
           return;
         }
-        const tx = db.transaction(AvatarService.LEGACY_AVATAR_STORE, 'readonly');
-        const store = tx.objectStore(AvatarService.LEGACY_AVATAR_STORE);
+        const tx = db.transaction('avatars', 'readonly');
+        const store = tx.objectStore('avatars');
         const allReq = store.getAll();
         allReq.onsuccess = () => {
           db.close();

@@ -276,7 +276,7 @@ export class ConfigService {
         if (this.avatarIdbMigrationInProgress) {
             return;
         }
-        if (AvatarService.isLegacyIndexedDbAvatarMigrationDone()) {
+        if (AvatarService.isIndexedDbAvatarMigrationDone()) {
             return;
         }
         this.avatarIdbMigrationInProgress = true;
@@ -299,7 +299,7 @@ export class ConfigService {
                 });
             }
             await this.avatarService.deleteLegacyAvatarIndexedDb();
-            AvatarService.markLegacyIndexedDbAvatarMigrationDone();
+            AvatarService.markIndexedDbAvatarMigrationDone();
         } catch (e) {
             console.error("Legacy avatar IndexedDB migration failed:", e);
         }
