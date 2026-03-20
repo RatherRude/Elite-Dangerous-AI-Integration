@@ -80,6 +80,8 @@ export class CharacterService {
     private currentAvatarUrl: string | null = null;
     private avatarUrlSubject = new BehaviorSubject<string | null>(null);
     public avatarUrl$ = this.avatarUrlSubject.asObservable();
+    private avatarMimeSubject = new BehaviorSubject<string | null>(null);
+    public avatarMime$ = this.avatarMimeSubject.asObservable();
 
     constructor(
         private tauriService: TauriService,
@@ -239,14 +241,17 @@ export class CharacterService {
             this.currentAvatarUrl = null;
             this.avatarUrlSubject.next(null);
             this.revokeAvatarUrl(previousAvatarUrl);
+            this.avatarMimeSubject.next(null);
             return;
         }
 
         if (character.avatar) {
             try {
-                const url = await this.avatarService.getAvatar(character.avatar);
+                const meta = await this.avatarService.getAvatarWithMime(character.avatar);
+                const url = meta?.url ?? null;
                 this.currentAvatarUrl = url;
                 this.avatarUrlSubject.next(url);
+                this.avatarMimeSubject.next(meta?.mimeType ?? null);
                 if (previousAvatarUrl !== url) {
                     this.revokeAvatarUrl(previousAvatarUrl);
                 }
@@ -255,11 +260,13 @@ export class CharacterService {
                 this.currentAvatarUrl = null;
                 this.avatarUrlSubject.next(null);
                 this.revokeAvatarUrl(previousAvatarUrl);
+                this.avatarMimeSubject.next(null);
             }
         } else {
             this.currentAvatarUrl = null;
             this.avatarUrlSubject.next(null);
             this.revokeAvatarUrl(previousAvatarUrl);
+            this.avatarMimeSubject.next(null);
         }
     }
 

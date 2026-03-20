@@ -56,11 +56,20 @@ export class AvatarService {
   }
 
   async getAvatar(reference: string): Promise<string | null> {
+    const meta = await this.getAvatarWithMime(reference);
+    return meta?.url ?? null;
+  }
+
+  /** Same as getAvatar but includes stored MIME (for overlay sprite vs single-image layout). */
+  async getAvatarWithMime(reference: string): Promise<{ url: string; mimeType: string } | null> {
     if (!reference) {
       return null;
     }
     if (this.isDirectUrl(reference)) {
-      return reference;
+      return {
+        url: reference,
+        mimeType: this.inferMimeType(reference),
+      };
     }
     if (!this.isAbsoluteFilePath(reference)) {
       return null;
@@ -69,8 +78,12 @@ export class AvatarService {
     if (!file) {
       return null;
     }
-    const blob = await this.base64ToBlob(file.dataBase64, file.mimeType || 'application/octet-stream');
-    return URL.createObjectURL(blob);
+    const mimeType = (file.mimeType || 'application/octet-stream').trim();
+    const blob = await this.base64ToBlob(file.dataBase64, mimeType);
+    return {
+      url: URL.createObjectURL(blob),
+      mimeType: blob.type || mimeType,
+    };
   }
 
   async getAllAvatars(): Promise<AvatarData[]> {
@@ -138,6 +151,32 @@ export class AvatarService {
       dataBase64: response.dataBase64,
       mimeType: typeof response.mimeType === 'string' ? response.mimeType : 'application/octet-stream',
     };
+  }
+
+  private inferMimeType(reference: string): string {
+    if (reference.startsWith('data:')) {
+      const match = /^data:([^;,]+)/i.exec(reference);
+      if (match?.[1]) {
+        return match[1];
+      }
+    }
+    const normalized = reference.split('?')[0].split('#')[0].toLowerCase();
+    if (normalized.endsWith('.svg')) {
+      return 'image/svg+xml';
+    }
+    if (normalized.endsWith('.png')) {
+      return 'image/png';
+    }
+    if (normalized.endsWith('.jpg') || normalized.endsWith('.jpeg')) {
+      return 'image/jpeg';
+    }
+    if (normalized.endsWith('.webp')) {
+      return 'image/webp';
+    }
+    if (normalized.endsWith('.gif')) {
+      return 'image/gif';
+    }
+    return 'application/octet-stream';
   }
 
   private async blobToBase64(blob: Blob): Promise<string> {
