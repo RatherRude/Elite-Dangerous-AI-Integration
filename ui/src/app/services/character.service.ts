@@ -80,6 +80,8 @@ export class CharacterService {
     private currentAvatarUrl: string | null = null;
     private avatarUrlSubject = new BehaviorSubject<string | null>(null);
     public avatarUrl$ = this.avatarUrlSubject.asObservable();
+    private avatarMimeSubject = new BehaviorSubject<string | null>(null);
+    public avatarMime$ = this.avatarMimeSubject.asObservable();
 
     constructor(
         private tauriService: TauriService,
@@ -237,22 +239,26 @@ export class CharacterService {
         if (!character) {
             this.currentAvatarUrl = null;
             this.avatarUrlSubject.next(null);
+            this.avatarMimeSubject.next(null);
             return;
         }
 
         if (character.avatar) {
             try {
-                const url = await this.avatarService.getAvatar(character.avatar);
-                this.currentAvatarUrl = url;
-                this.avatarUrlSubject.next(url);
+                const meta = await this.avatarService.getAvatarWithMime(character.avatar);
+                this.currentAvatarUrl = meta?.url ?? null;
+                this.avatarUrlSubject.next(meta?.url ?? null);
+                this.avatarMimeSubject.next(meta?.mimeType ?? null);
             } catch (error) {
                 console.error('Error loading character avatar:', error);
                 this.currentAvatarUrl = null;
                 this.avatarUrlSubject.next(null);
+                this.avatarMimeSubject.next(null);
             }
         } else {
             this.currentAvatarUrl = null;
             this.avatarUrlSubject.next(null);
+            this.avatarMimeSubject.next(null);
         }
     }
 

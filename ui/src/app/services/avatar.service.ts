@@ -181,12 +181,22 @@ export class AvatarService {
   }
 
   async getAvatar(id: string): Promise<string | null> {
+    const meta = await this.getAvatarWithMime(id);
+    return meta?.url ?? null;
+  }
+
+  /** Same as getAvatar but includes stored MIME (for overlay sprite vs single-image layout). */
+  async getAvatarWithMime(id: string): Promise<{ url: string; mimeType: string } | null> {
     const payload = await this.readAvatarPayload(id);
     if (!payload) {
       return null;
     }
-    const blob = this.base64ToBlob(payload.dataBase64, payload.mimeType);
-    return URL.createObjectURL(blob);
+    const mimeType = (payload.mimeType || this.fallbackMimeType).trim();
+    const blob = this.base64ToBlob(payload.dataBase64, mimeType);
+    return {
+      url: URL.createObjectURL(blob),
+      mimeType: blob.type || mimeType,
+    };
   }
 
   async getAllAvatars(): Promise<AvatarData[]> {
