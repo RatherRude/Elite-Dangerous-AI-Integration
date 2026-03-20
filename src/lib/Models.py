@@ -384,7 +384,7 @@ class OpenAIResponsesLLMModel(LLMModel):
             "temperature": self.temperature,
         }
 
-        if self.model_name in ['gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-5.1']:
+        if self.model_name in ['gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-5.4-mini', 'gpt-5.4-nano', 'gpt-5.4', 'gpt-5.1']:
             params["text"] = {"verbosity": "low"}
 
         if tools:

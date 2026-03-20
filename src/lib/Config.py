@@ -778,6 +778,21 @@ def migrate(data: dict) -> dict:
         if data.get('vision_provider') == 'google-ai-studio':
             data['vision_model_name'] = 'gemini-3.1-flash-lite-preview'
 
+    if data['config_version'] < 15:
+        data['config_version'] = 15
+
+        if data.get('llm_provider') == 'openai' and data.get('llm_model_name') == 'gpt-4.1-mini':
+            data['llm_model_name'] = 'gpt-5.4-nano'
+        if data.get('agent_llm_provider') == 'openai' and data.get('agent_llm_model_name') in ['gpt-4.1-mini', 'gpt-5.4-nano']:
+            data['agent_llm_model_name'] = 'gpt-5.4-mini'
+        if data.get('vision_provider') == 'openai' and data.get('vision_model_name') == 'gpt-4.1-mini':
+            data['vision_model_name'] = 'gpt-5.4-nano'
+
+        if data.get('llm_provider') == 'openai' and data.get('llm_model_name') == 'gpt-5.4-nano':
+            data['llm_reasoning_effort'] = 'none'
+        if data.get('agent_llm_provider') == 'openai' and data.get('agent_llm_model_name') == 'gpt-5.4-mini':
+            data['agent_llm_reasoning_effort'] = 'low'
+
     return data
 
 
@@ -905,21 +920,21 @@ def load_config() -> Config:
         'input_device_name': get_default_input_device_name(),
         'output_device_name': get_default_output_device_name(),
         'llm_provider': "openai",
-        'llm_model_name': "gpt-4.1-mini",
-        'llm_reasoning_effort': 'default',
+        'llm_model_name': "gpt-5.4-nano",
+        'llm_reasoning_effort': 'none',
         'llm_endpoint': "https://api.openai.com/v1",
         'llm_api_key': "",
         'llm_temperature': 1.0,
         'agent_llm_provider': "openai",
-        'agent_llm_model_name': "gpt-4.1-mini",
-        'agent_llm_reasoning_effort': 'default',
+        'agent_llm_model_name': "gpt-5.4-mini",
+        'agent_llm_reasoning_effort': 'low',
         'agent_llm_endpoint': "https://api.openai.com/v1",
         'agent_llm_api_key': "",
         'agent_llm_temperature': 1.0,
         'agent_llm_max_tries': 7,
         'ptt_key': '',
         'vision_provider': "none",
-        'vision_model_name': "gpt-4.1-mini",
+        'vision_model_name': "gpt-5.4-nano",
         'vision_endpoint': "https://api.openai.com/v1",
         'vision_api_key': "",
         'stt_provider': "openai",
@@ -1160,14 +1175,6 @@ def check_and_upgrade_model(config: Config) -> ModelValidationResult:
         
         [current_model, gpt41mini, gpt4oMini, gpt35turbo] = available_models
         
-        if not current_model and not gpt41mini and not gpt4oMini and not gpt35turbo:
-            return {
-                'skipped': False,
-                'success': False,
-                'config': None,
-                'message': f'Your model provider doesn\'t serve any model to you. Please check your configuration.'
-            }
-        
         if llm_model_name == 'gpt-4.1-mini' and not current_model and gpt4oMini:
             updated_config['llm_model_name'] = 'gpt-4o-mini'
             return {
@@ -1345,10 +1352,10 @@ def update_config(config: Config, data: dict) -> Config:
     if data.get("llm_provider"):
         if data["llm_provider"] == "openai":
             data["llm_endpoint"] = "https://api.openai.com/v1"
-            data["llm_model_name"] = "gpt-4.1-mini"
+            data["llm_model_name"] = "gpt-5.4-nano"
             data["llm_api_key"] = ""
             data["tools_var"] = True
-            data["llm_reasoning_effort"] = 'default'
+            data["llm_reasoning_effort"] = 'none'
 
         elif data["llm_provider"] == "openrouter":
             data["llm_endpoint"] = "https://openrouter.ai/api/v1/"
@@ -1381,9 +1388,9 @@ def update_config(config: Config, data: dict) -> Config:
     if data.get("agent_llm_provider"):
         if data["agent_llm_provider"] == "openai":
             data["agent_llm_endpoint"] = "https://api.openai.com/v1"
-            data["agent_llm_model_name"] = "gpt-4.1-mini"
+            data["agent_llm_model_name"] = "gpt-5.4-mini"
             data["agent_llm_api_key"] = ""
-            data["agent_llm_reasoning_effort"] = 'default'
+            data["agent_llm_reasoning_effort"] = 'low'
 
         elif data["agent_llm_provider"] == "openrouter":
             data["agent_llm_endpoint"] = "https://openrouter.ai/api/v1/"
@@ -1421,7 +1428,7 @@ def update_config(config: Config, data: dict) -> Config:
     if data.get("vision_provider"):
         if data["vision_provider"] == "openai":
             data["vision_endpoint"] = "https://api.openai.com/v1"
-            data["vision_model_name"] = "gpt-4.1-mini"
+            data["vision_model_name"] = "gpt-5.4-nano"
             data["vision_api_key"] = ""
             data["vision_var"] = True
 
