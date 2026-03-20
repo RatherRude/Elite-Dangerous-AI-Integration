@@ -2,13 +2,39 @@ import { Injectable } from "@angular/core";
 import { BaseMessage, TauriService } from "./tauri.service";
 import {BehaviorSubject} from "rxjs";
 import {ChatMessage, ChatService} from "./chat.service";
-import {EventService} from "./event.service";
+import {EventMessage, EventService} from "./event.service";
 import {CharacterService} from "./character.service";
 
 @Injectable({
     providedIn: "root",
 })
 export class PngTuberService {
+    private transitionAction(
+        current: "idle" | "listening" | "thinking" | "speaking" | "acting",
+        message: EventMessage,
+    ): "idle" | "listening" | "thinking" | "speaking" | "acting" {
+        switch (message.event.kind) {
+            case "user_speaking":
+                return "listening";
+            case "user":
+                return "thinking";
+            case "assistant":
+            case "assistant_speaking":
+                return "speaking";
+            case "assistant_acting":
+                return "acting";
+            case "assistant_completed":
+                return current === "listening" ? "listening" : "idle";
+            case "quest":
+                if (["play_sound", "npc_message"].includes(message.event.content?.action ?? "")) {
+                    return "speaking";
+                }
+                return current;
+            default:
+                return current;
+        }
+    }
+
     private runModeSubject = new BehaviorSubject<
         "starting" | "configuring" | "running"
     >(
@@ -45,31 +71,13 @@ export class PngTuberService {
         );
         this.eventService.events$.subscribe(
             (messages)=> {
-                const message = messages.at(-1)!;
-                if (message.event.kind === 'user') {
-                    this.actionSubject.next('thinking');
+                const message = messages.at(-1);
+                if (!message) {
+                    return;
                 }
-                if (message.event.kind === 'user_speaking') {
-                    this.actionSubject.next('listening');
-                }
-                if (message.event.kind === 'assistant') {
-                    this.actionSubject.next('speaking');
-                }
-                if (message.event.kind === 'assistant_speaking') {
-                    this.actionSubject.next('speaking');
-                }
-                if (message.event.kind === 'assistant_completed') {
-                    this.actionSubject.next('idle');
-                }
-                if (message.event.kind === 'assistant_acting') {
-                    this.actionSubject.next('acting');
-                }
-                if (
-                    message.event.kind === 'quest' &&
-                    ['play_sound', 'npc_message'].includes((message.event as any).content?.action)
-                ) {
-                    this.actionSubject.next('speaking');
-                }
+
+                const current = this.actionSubject.getValue();
+                this.actionSubject.next(this.transitionAction(current, message));
             }
         )
         this.chatService.chatHistory$.subscribe((chat)=>{
