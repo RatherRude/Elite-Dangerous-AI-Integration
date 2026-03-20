@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 
-/** Outcome of one-time IndexedDB → disk avatar migration (config_version 13). */
+/** One-time IndexedDB → disk avatar migration result. */
 export type LegacyAvatarMigrationOutcome =
   | { status: 'skipped' }
   | { status: 'migrated'; updatedCharacters: unknown[] | null };
@@ -39,18 +39,23 @@ export class AvatarService {
   private static readonly LEGACY_AVATAR_DB_NAME = 'avatarDB';
   private static readonly LEGACY_AVATAR_DB_VERSION = 1;
   private static readonly LEGACY_AVATAR_STORE = 'avatars';
-  /** Must match Config.py config_version 13 migration; avoids re-running after success or when no legacy DB. */
-  static readonly LEGACY_AVATAR_MIGRATION_LS_KEY = 'cn_avatar_idb_migration_v13';
+  /** Set when legacy avatarDB → disk export finished or skipped (no legacy DB). */
+  private static readonly LEGACY_AVATAR_MIGRATION_LS_KEY = 'cn_avatar_idb_to_disk_done';
+
+  static isLegacyIndexedDbAvatarMigrationDone(): boolean {
+    return localStorage.getItem(AvatarService.LEGACY_AVATAR_MIGRATION_LS_KEY) === '1';
+  }
+
+  static markLegacyIndexedDbAvatarMigrationDone(): void {
+    localStorage.setItem(AvatarService.LEGACY_AVATAR_MIGRATION_LS_KEY, '1');
+  }
 
   private readonly electronAPI = window.electronAPI;
   private readonly fallbackMimeType = 'application/octet-stream';
 
-  /**
-   * Reads legacy avatarDB, writes each avatar to disk (original fileName when possible),
-   * and returns updated characters when any character.avatar matched an IndexedDB id.
-   */
+  /** Export avatarDB to disk; remap character.avatar from IndexedDB id to filename where needed. */
   async migrateFromLegacyIndexedDb(characters: unknown[]): Promise<LegacyAvatarMigrationOutcome> {
-    if (localStorage.getItem(AvatarService.LEGACY_AVATAR_MIGRATION_LS_KEY) === '1') {
+    if (AvatarService.isLegacyIndexedDbAvatarMigrationDone()) {
       return { status: 'skipped' };
     }
     if (!this.electronAPI?.invoke) {
@@ -59,14 +64,14 @@ export class AvatarService {
 
     const dbPresent = await this.legacyAvatarIndexedDbExists();
     if (!dbPresent) {
-      localStorage.setItem(AvatarService.LEGACY_AVATAR_MIGRATION_LS_KEY, '1');
+      AvatarService.markLegacyIndexedDbAvatarMigrationDone();
       return { status: 'skipped' };
     }
 
     const rows = await this.readLegacyIndexedDbAvatarRows();
     if (rows.length === 0) {
       await this.deleteLegacyAvatarIndexedDb();
-      localStorage.setItem(AvatarService.LEGACY_AVATAR_MIGRATION_LS_KEY, '1');
+      AvatarService.markLegacyIndexedDbAvatarMigrationDone();
       return { status: 'skipped' };
     }
 

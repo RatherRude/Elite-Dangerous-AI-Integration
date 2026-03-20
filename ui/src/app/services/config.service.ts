@@ -271,12 +271,12 @@ export class ConfigService {
         });
     }
 
-    /** IndexedDB avatar export runs in the renderer; see Config.py migrate config_version 13. */
+    /** One-time IndexedDB → disk avatar export. */
     private scheduleLegacyAvatarMigration(config: Config): void {
         if (this.avatarIdbMigrationInProgress) {
             return;
         }
-        if (localStorage.getItem(AvatarService.LEGACY_AVATAR_MIGRATION_LS_KEY) === "1") {
+        if (AvatarService.isLegacyIndexedDbAvatarMigrationDone()) {
             return;
         }
         this.avatarIdbMigrationInProgress = true;
@@ -299,7 +299,7 @@ export class ConfigService {
                 });
             }
             await this.avatarService.deleteLegacyAvatarIndexedDb();
-            localStorage.setItem(AvatarService.LEGACY_AVATAR_MIGRATION_LS_KEY, "1");
+            AvatarService.markLegacyIndexedDbAvatarMigrationDone();
         } catch (e) {
             console.error("Legacy avatar IndexedDB migration failed:", e);
         }
