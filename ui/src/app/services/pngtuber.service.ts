@@ -18,7 +18,6 @@ export class PngTuberService {
                 return "listening";
             case "user":
                 return "thinking";
-            case "assistant":
             case "assistant_speaking":
                 return "speaking";
             case "assistant_acting":
