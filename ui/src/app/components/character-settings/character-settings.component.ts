@@ -1203,12 +1203,12 @@ export class CharacterSettingsComponent {
         const dialogRef = this.dialog.open(AvatarCatalogDialogComponent, {
             width: '850px',
             maxWidth: '95vw',
-            data: { currentAvatarId: this.activeCharacter?.avatar }
+            data: { currentAvatarPath: this.activeCharacter?.avatar }
         });
 
         dialogRef.afterClosed().subscribe((result: AvatarCatalogResult) => {
             if (result !== undefined && this.activeCharacter) {
-                this.setCharacterProperty('avatar', result.avatarId);
+                this.setCharacterProperty('avatar', result.avatarPath);
                 // The character service will automatically reload the avatar
             }
         });

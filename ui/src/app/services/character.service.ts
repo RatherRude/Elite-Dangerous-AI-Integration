@@ -31,7 +31,7 @@ export interface Character {
     tts_voice: string;
     tts_speed: string;
     tts_prompt: string;
-    avatar?: string; // IndexedDB key for the avatar image
+    avatar?: string; // Absolute file path for the avatar image
 
     
 
@@ -234,9 +234,11 @@ export class CharacterService {
 
     private async loadCharacterAvatar(): Promise<void> {
         const character = this.characterSubject.getValue();
+        const previousAvatarUrl = this.currentAvatarUrl;
         if (!character) {
             this.currentAvatarUrl = null;
             this.avatarUrlSubject.next(null);
+            this.revokeAvatarUrl(previousAvatarUrl);
             return;
         }
 
@@ -245,18 +247,29 @@ export class CharacterService {
                 const url = await this.avatarService.getAvatar(character.avatar);
                 this.currentAvatarUrl = url;
                 this.avatarUrlSubject.next(url);
+                if (previousAvatarUrl !== url) {
+                    this.revokeAvatarUrl(previousAvatarUrl);
+                }
             } catch (error) {
                 console.error('Error loading character avatar:', error);
                 this.currentAvatarUrl = null;
                 this.avatarUrlSubject.next(null);
+                this.revokeAvatarUrl(previousAvatarUrl);
             }
         } else {
             this.currentAvatarUrl = null;
             this.avatarUrlSubject.next(null);
+            this.revokeAvatarUrl(previousAvatarUrl);
         }
     }
 
     public getAvatarUrl(): string {
         return this.currentAvatarUrl || 'assets/cn_avatar_default.png';
+    }
+
+    private revokeAvatarUrl(url: string | null): void {
+        if (url && this.avatarService.isObjectUrl(url)) {
+            URL.revokeObjectURL(url);
+        }
     }
 }

@@ -10,6 +10,7 @@ export interface ChatMessage extends BaseMessage {
     actor_id?: string;
     actor_name?: string;
     avatar_id?: string;
+    avatar_url?: string;
     display_name?: string;
     display_color?: string;
 }

@@ -1,192 +1,159 @@
 import { Injectable } from '@angular/core';
 
 export interface AvatarData {
-  id: string;
-  imageBlob: Blob;
-  uploadTime: Date;
+  path: string;
   fileName: string;
+  uploadTime: Date;
+  mimeType?: string;
+  size?: number;
+}
+
+interface StoredAvatarFile {
+  path: string;
+  fileName: string;
+  mimeType?: string;
+  createdAt?: string;
+  modifiedAt?: string;
+  size?: number;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class AvatarService {
-  private dbName = 'avatarDB';
-  private dbVersion = 1;
-  private storeName = 'avatars';
-  private db: IDBDatabase | null = null;
-
-  constructor() {
-    this.initDB();
+  public isAbsoluteFilePath(reference: string | null | undefined): boolean {
+    if (!reference) {
+      return false;
+    }
+    return reference.startsWith('/') || /^[A-Za-z]:[\\/]/.test(reference) || reference.startsWith('\\\\');
   }
 
-  private async initDB(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open(this.dbName, this.dbVersion);
+  public isDirectUrl(reference: string | null | undefined): boolean {
+    if (!reference) {
+      return false;
+    }
+    return /^(https?:|data:|blob:|file:)/i.test(reference);
+  }
 
-      request.onerror = () => {
-        reject(request.error);
-      };
-
-      request.onsuccess = () => {
-        this.db = request.result;
-        resolve();
-      };
-
-      request.onupgradeneeded = (event) => {
-        const db = (event.target as IDBOpenDBRequest).result;
-        if (!db.objectStoreNames.contains(this.storeName)) {
-          const store = db.createObjectStore(this.storeName, { keyPath: 'id' });
-          store.createIndex('uploadTime', 'uploadTime', { unique: false });
-        }
-      };
-    });
+  public isObjectUrl(url: string | null | undefined): boolean {
+    return typeof url === 'string' && url.startsWith('blob:');
   }
 
   async uploadAvatar(file: File): Promise<string> {
-    await this.ensureDBReady();
-    
-    const id = this.generateAvatarId();
-    const avatarData: AvatarData = {
-      id,
-      imageBlob: file,
-      uploadTime: new Date(),
-      fileName: file.name
-    };
-
-    return new Promise((resolve, reject) => {
-      if (!this.db) {
-        reject(new Error('Database not initialized'));
-        return;
-      }
-
-      const transaction = this.db.transaction([this.storeName], 'readwrite');
-      const store = transaction.objectStore(this.storeName);
-      const request = store.add(avatarData);
-
-      request.onsuccess = () => {
-        resolve(id);
-      };
-
-      request.onerror = () => {
-        reject(request.error);
-      };
-    });
+    return this.writeAvatarBlob(file, file.name, file.type || undefined);
   }
 
-  async getAvatar(id: string): Promise<string | null> {
-    await this.ensureDBReady();
+  async writeAvatarBlob(blob: Blob, fileName: string, mimeType?: string): Promise<string> {
+    const electronAPI = this.getElectronAPI();
+    const dataBase64 = await this.blobToBase64(blob);
+    const response = await (electronAPI.userAssets?.writeFile
+      ? electronAPI.userAssets.writeFile({ fileName, mimeType, dataBase64 })
+      : electronAPI.invoke('write_user_asset_file', { fileName, mimeType, dataBase64 }));
+    if (!response?.path || typeof response.path !== 'string') {
+      throw new Error('Avatar write failed: invalid response');
+    }
+    return response.path;
+  }
 
-    return new Promise((resolve, reject) => {
-      if (!this.db) {
-        reject(new Error('Database not initialized'));
-        return;
-      }
-
-      const transaction = this.db.transaction([this.storeName], 'readonly');
-      const store = transaction.objectStore(this.storeName);
-      const request = store.get(id);
-
-      request.onsuccess = () => {
-        const result = request.result as AvatarData;
-        if (result) {
-          const url = URL.createObjectURL(result.imageBlob);
-          resolve(url);
-        } else {
-          resolve(null);
-        }
-      };
-
-      request.onerror = () => {
-        reject(request.error);
-      };
-    });
+  async getAvatar(reference: string): Promise<string | null> {
+    if (!reference) {
+      return null;
+    }
+    if (this.isDirectUrl(reference)) {
+      return reference;
+    }
+    if (!this.isAbsoluteFilePath(reference)) {
+      return null;
+    }
+    const file = await this.readAvatarFile(reference);
+    if (!file) {
+      return null;
+    }
+    const blob = await this.base64ToBlob(file.dataBase64, file.mimeType || 'application/octet-stream');
+    return URL.createObjectURL(blob);
   }
 
   async getAllAvatars(): Promise<AvatarData[]> {
-    await this.ensureDBReady();
-
-    return new Promise((resolve, reject) => {
-      if (!this.db) {
-        reject(new Error('Database not initialized'));
-        return;
-      }
-
-      const transaction = this.db.transaction([this.storeName], 'readonly');
-      const store = transaction.objectStore(this.storeName);
-      const request = store.getAll();
-
-      request.onsuccess = () => {
-        const avatars = request.result as AvatarData[];
-        // Sort by upload time, newest first
-        avatars.sort((a, b) => b.uploadTime.getTime() - a.uploadTime.getTime());
-        resolve(avatars);
-      };
-
-      request.onerror = () => {
-        reject(request.error);
-      };
-    });
-  }
-
-  async deleteAvatar(id: string): Promise<void> {
-    await this.ensureDBReady();
-
-    return new Promise((resolve, reject) => {
-      if (!this.db) {
-        reject(new Error('Database not initialized'));
-        return;
-      }
-
-      const transaction = this.db.transaction([this.storeName], 'readwrite');
-      const store = transaction.objectStore(this.storeName);
-      const request = store.delete(id);
-
-      request.onsuccess = () => {
-        resolve();
-      };
-
-      request.onerror = () => {
-        reject(request.error);
-      };
-    });
-  }
-
-  async getAvatarBlob(id: string): Promise<Blob | null> {
-    await this.ensureDBReady();
-
-    return new Promise((resolve, reject) => {
-      if (!this.db) {
-        reject(new Error('Database not initialized'));
-        return;
-      }
-
-      const transaction = this.db.transaction([this.storeName], 'readonly');
-      const store = transaction.objectStore(this.storeName);
-      const request = store.get(id);
-
-      request.onsuccess = () => {
-        const result = request.result as AvatarData;
-        if (result) {
-          resolve(result.imageBlob);
-        } else {
-          resolve(null);
-        }
-      };
-
-      request.onerror = () => {
-        reject(request.error);
-      };
-    });
-  }
-
-  private async ensureDBReady(): Promise<void> {
-    if (!this.db) {
-      await this.initDB();
+    const electronAPI = this.getElectronAPI();
+    const response = await (electronAPI.userAssets?.listFiles
+      ? electronAPI.userAssets.listFiles()
+      : electronAPI.invoke('list_user_asset_files'));
+    if (!Array.isArray(response)) {
+      throw new Error('Avatar list failed: invalid response');
     }
+    return response.map((entry: StoredAvatarFile) => ({
+      path: entry.path,
+      fileName: entry.fileName,
+      uploadTime: new Date(entry.createdAt || entry.modifiedAt || Date.now()),
+      mimeType: entry.mimeType,
+      size: entry.size,
+    }));
   }
 
-  private generateAvatarId(): string {
-    return 'avatar_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  async deleteAvatar(reference: string): Promise<void> {
+    if (!reference || !this.isAbsoluteFilePath(reference)) {
+      return;
+    }
+    const electronAPI = this.getElectronAPI();
+    await (electronAPI.userAssets?.deleteFile
+      ? electronAPI.userAssets.deleteFile({ path: reference })
+      : electronAPI.invoke('delete_user_asset_file', { path: reference }));
   }
-} 
+
+  async getAvatarBlob(reference: string): Promise<Blob | null> {
+    if (!reference) {
+      return null;
+    }
+    if (this.isDirectUrl(reference)) {
+      const response = await fetch(reference);
+      return response.blob();
+    }
+    if (!this.isAbsoluteFilePath(reference)) {
+      return null;
+    }
+    const file = await this.readAvatarFile(reference);
+    if (!file) {
+      return null;
+    }
+    return this.base64ToBlob(file.dataBase64, file.mimeType || 'application/octet-stream');
+  }
+
+  private getElectronAPI() {
+    const electronAPI = window.electronAPI;
+    if (!electronAPI) {
+      throw new Error('Electron API not available');
+    }
+    return electronAPI;
+  }
+
+  private async readAvatarFile(filePath: string): Promise<{ dataBase64: string; mimeType: string } | null> {
+    const electronAPI = this.getElectronAPI();
+    const response = await (electronAPI.userAssets?.readFile
+      ? electronAPI.userAssets.readFile({ path: filePath })
+      : electronAPI.invoke('read_user_asset_file', { path: filePath }));
+    if (!response?.dataBase64 || typeof response.dataBase64 !== 'string') {
+      return null;
+    }
+    return {
+      dataBase64: response.dataBase64,
+      mimeType: typeof response.mimeType === 'string' ? response.mimeType : 'application/octet-stream',
+    };
+  }
+
+  private async blobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        resolve(result.split(',')[1] || '');
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  private async base64ToBlob(base64: string, mimeType: string): Promise<Blob> {
+    const response = await fetch(`data:${mimeType};base64,${base64}`);
+    return response.blob();
+  }
+}

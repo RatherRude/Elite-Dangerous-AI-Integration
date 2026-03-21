@@ -85,7 +85,7 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
           return;
         }
         if (msg.role === "npc_message") {
-          void this.setScriptedAvatar(msg.avatar_id);
+          void this.setScriptedAvatar(msg.avatar_url);
         }
       }),
     );
@@ -152,7 +152,7 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     this.subscriptions.forEach(sub => sub.unsubscribe());
     
     // Clean up avatar URL
-    if (this.currentAvatarUrl) {
+    if (this.currentAvatarUrl && this.avatarService.isObjectUrl(this.currentAvatarUrl)) {
       URL.revokeObjectURL(this.currentAvatarUrl);
     }
   }
@@ -219,19 +219,19 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     }, 10); // Slightly longer timeout to handle *ngIf rendering
   }
 
-  private async setScriptedAvatar(avatarId?: string): Promise<void> {
-    if (!avatarId) {
+  private async setScriptedAvatar(avatarPath?: string): Promise<void> {
+    if (!avatarPath) {
       this.clearScriptedAvatar();
       return;
     }
-    if (this.scriptedAvatarId === avatarId && this.scriptedAvatarUrl) {
+    if (this.scriptedAvatarId === avatarPath && this.scriptedAvatarUrl) {
       return;
     }
     const requestSeq = ++this.scriptedAvatarRequestSeq;
     try {
-      const avatarUrl = await this.avatarService.getAvatar(avatarId);
+      const avatarUrl = await this.avatarService.getAvatar(avatarPath);
       if (requestSeq !== this.scriptedAvatarRequestSeq) {
-        if (avatarUrl) {
+        if (avatarUrl && this.avatarService.isObjectUrl(avatarUrl)) {
           URL.revokeObjectURL(avatarUrl);
         }
         return;
@@ -240,10 +240,10 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
         this.clearScriptedAvatar();
         return;
       }
-      if (this.scriptedAvatarUrl && this.scriptedAvatarUrl !== avatarUrl) {
+      if (this.scriptedAvatarUrl && this.scriptedAvatarUrl !== avatarUrl && this.avatarService.isObjectUrl(this.scriptedAvatarUrl)) {
         URL.revokeObjectURL(this.scriptedAvatarUrl);
       }
-      this.scriptedAvatarId = avatarId;
+      this.scriptedAvatarId = avatarPath;
       this.scriptedAvatarUrl = avatarUrl;
       this.currentAvatarUrl = avatarUrl;
       this.applyAvatarBackground();
@@ -256,10 +256,10 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
   private clearScriptedAvatar(): void {
     this.scriptedAvatarRequestSeq += 1;
     this.scriptedAvatarId = null;
-    if (this.scriptedAvatarUrl) {
+    if (this.scriptedAvatarUrl && this.avatarService.isObjectUrl(this.scriptedAvatarUrl)) {
       URL.revokeObjectURL(this.scriptedAvatarUrl);
-      this.scriptedAvatarUrl = null;
     }
+    this.scriptedAvatarUrl = null;
     this.currentAvatarUrl = this.baseAvatarUrl;
     this.applyAvatarBackground();
   }
