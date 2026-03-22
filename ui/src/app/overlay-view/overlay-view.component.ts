@@ -20,12 +20,14 @@ import { EventService } from "../services/event.service";
 })
 export class OverlayViewComponent implements OnDestroy, AfterViewInit {
   @ViewChild('pngtuberElement', { static: false }) pngtuberElement?: ElementRef<HTMLDivElement>;
+  @ViewChild('svgTuberElement', { static: false }) svgTuberElement?: ElementRef<HTMLDivElement>;
+  private readonly svgStateClasses = ['listening', 'speaking', 'thinking', 'acting'];
 
   action = 'idle'
   runMode = 'configuring'
   chat: ChatMessage[] = []
 
-  /** Injected SVG markup; state classes live on `.overlay-svg-tuber` (see cn_avatar.svg). */
+  /** Injected SVG markup; state classes are mirrored onto the root `<svg>` when present. */
   sanitizedSvg: SafeHtml | null = null;
 
   private currentAvatarUrl: string | null = null;
@@ -67,6 +69,7 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     this.subscriptions.push(
       pngTuberService.action$.subscribe((action)=>{
         this.action = action
+        this.applySvgStateClass();
       })
     );
     
@@ -148,6 +151,7 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
   
   ngAfterViewInit() {
     this.refreshAvatarDisplay();
+    this.applySvgStateClass();
     this.tauriService.send_command({
       type: "init_overlay",
       timestamp: new Date().toISOString(),
@@ -274,8 +278,9 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
       ) {
         return;
       }
-      const safe = this.stripScriptsFromSvg(this.stripSvgRootClass(text));
+      const safe = this.stripScriptsFromSvg(this.syncSvgRootClass(text, this.svgAnimationClass));
       this.sanitizedSvg = this.sanitizer.bypassSecurityTrustHtml(safe);
+      setTimeout(() => this.applySvgStateClass());
     } catch (err) {
       console.error("Overlay: failed to load SVG avatar", err);
       if (seq === this.svgFetchSeq) {
@@ -284,18 +289,37 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     }
   }
 
-  private stripSvgRootClass(svg: string): string {
+  private syncSvgRootClass(svg: string, stateClass: string): string {
     return svg.replace(/<svg\b([^>]*)>/i, (_m, attrs: string) => {
-      const next = attrs
-        .replace(/\sclass\s*=\s*"[^"]*"/gi, "")
-        .replace(/\sclass\s*=\s*'[^']*'/gi, "")
-        .trim();
-      return next ? `<svg ${next}>` : "<svg>";
+      const classMatch = attrs.match(/\sclass\s*=\s*(["'])(.*?)\1/i);
+      const preservedClasses = classMatch?.[2]
+        .split(/\s+/)
+        .filter(Boolean)
+        .filter((className) => !this.svgStateClasses.includes(className)) ?? [];
+      const nextAttrs = attrs.replace(/\sclass\s*=\s*(["']).*?\1/i, "").trim();
+      const nextClasses = [...preservedClasses, stateClass];
+      const classAttr = ` class="${nextClasses.join(" ")}"`;
+      return nextAttrs ? `<svg ${nextAttrs}${classAttr}>` : `<svg${classAttr}>`;
     });
   }
 
   private stripScriptsFromSvg(svg: string): string {
     return svg.replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "");
+  }
+
+  private applySvgStateClass(): void {
+    const root = this.svgTuberElement?.nativeElement;
+    if (!root || !this.avatarUsesInlineSvg) {
+      return;
+    }
+
+    const svg = root.querySelector('svg');
+    if (!svg) {
+      return;
+    }
+
+    svg.classList.remove(...this.svgStateClasses);
+    svg.classList.add(this.svgAnimationClass);
   }
 
   private async setScriptedAvatar(avatarRef?: string): Promise<void> {
