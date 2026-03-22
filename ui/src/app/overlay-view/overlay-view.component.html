@@ -12,6 +12,7 @@
         @if (avatarShow) {
           @if (avatarUsesInlineSvg) {
             <div class="overlay-svg-tuber"
+                 #svgTuberElement
                  [ngClass]="svgAnimationClass"
                  [style.width.px]="avatarBaseWidth * avatarScale"
                  [innerHTML]="sanitizedSvg"></div>
