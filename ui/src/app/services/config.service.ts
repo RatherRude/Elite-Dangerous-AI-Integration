@@ -159,6 +159,7 @@ export interface Config {
     overlay_show_avatar: boolean;
     overlay_show_hud: boolean;
     overlay_show_chat: boolean;
+    show_usage_stats: boolean;
     overlay_position: "left" | "right" | "left-medium" | "left-small" | "right-medium" | "right-small";
     overlay_screen_id: number;
 

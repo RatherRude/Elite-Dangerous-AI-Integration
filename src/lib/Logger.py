@@ -4,7 +4,6 @@ from typing import Any, Literal, cast
 import io
 import datetime
 import logging
-import json
 import atexit
 from functools import wraps
 from dataclasses import dataclass
@@ -25,7 +24,7 @@ from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.exporter.otlp.proto.http._log_exporter import OTLPLogExporter
 from opentelemetry.instrumentation.openai import OpenAIInstrumentor
 
-from .UI import emit_message
+from .UI import emit_message, send_message
 
 
 def configure_stdio() -> None:
@@ -309,19 +308,43 @@ class ModelUsageStats:
     output_tokens: int = 0
     total_tokens: int = 0
     cached_tokens: int = 0
+    reasoning_tokens: int | None = None
+    provider: str | None = None
+    model_name: str | None = None
 
 
 def log_llm_usage(
-    context: str, model_usage: ModelUsageStats, prompt_usage: PromptUsageStats
+    context: str,
+    model_usage: ModelUsageStats,
+    prompt_usage: PromptUsageStats,
+    llm_model: Any | None = None,
 ) -> None:
+    timestamp = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    provider = getattr(llm_model, "provider_name", None) or model_usage.provider
+    model_name = getattr(llm_model, "model_name", None) or model_usage.model_name
+    model_usage_data = vars(model_usage).copy()
+    if provider is not None:
+        model_usage_data["provider"] = provider
+    if model_name is not None:
+        model_usage_data["model_name"] = model_name
+    prompt_usage_data = vars(prompt_usage).copy()
+    prompt_usage_data["total_prompt_chars"] = prompt_usage.compute_total()
+
     message = {
         "type": "llm_usage",
-        "timestamp": datetime.datetime.now(datetime.UTC).strftime(
-            "%Y-%m-%dT%H:%M:%S.%fZ"
-        ),
+        "timestamp": timestamp,
         "context": context,
-        "model_usage": vars(model_usage),
-        "prompt_usage": vars(prompt_usage),
+        "provider": provider,
+        "model_name": model_name,
+        "model_usage": model_usage_data,
+        "prompt_usage": prompt_usage_data,
     }
 
-    print(json.dumps(message) + "\n", flush=True)
+    try:
+        from .Database import ModelUsageStore
+
+        ModelUsageStore().insert(timestamp=timestamp, usage_kind="llm", payload=message)
+    except Exception as exc:
+        log("error", "Failed to persist model usage:", exc)
+
+    send_message(message)

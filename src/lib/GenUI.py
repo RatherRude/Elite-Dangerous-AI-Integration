@@ -543,7 +543,7 @@ class GenUIAgent:
         )
 
         prompt_usage = PromptUsageStats(genui_chars=sum(len(str(m.get('content', ''))) for m in messages if isinstance(m.get('content'), str)))
-        log_llm_usage("genui", model_usage=model_usage, prompt_usage=prompt_usage)
+        log_llm_usage("genui", model_usage=model_usage, prompt_usage=prompt_usage, llm_model=self.llm_model)
         return response, tools
 
     @observe()

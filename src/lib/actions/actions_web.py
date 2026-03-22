@@ -306,7 +306,7 @@ def web_search_agent(
             # Prompt usage: count assistant + tool loop prompt content as web_search context.
             try:
                 prompt_usage = PromptUsageStats(web_search_chars=sum(len(str(m.get('content', ''))) for m in messages if isinstance(m.get('content'), str)))
-                log_llm_usage("web_search", model_usage=model_usage, prompt_usage=prompt_usage)
+                log_llm_usage("web_search", model_usage=model_usage, prompt_usage=prompt_usage, llm_model=llm_model)
             except Exception:
                 pass
 
@@ -389,7 +389,7 @@ def get_galnet_news(obj, projected_states):
 
             try:
                 prompt_usage = PromptUsageStats(web_search_chars=len(str(articles)) + len(str(obj.get('query', ''))))
-                log_llm_usage("galnet", model_usage=model_usage, prompt_usage=prompt_usage)
+                log_llm_usage("galnet", model_usage=model_usage, prompt_usage=prompt_usage, llm_model=llm_model)
             except Exception:
                 pass
 
