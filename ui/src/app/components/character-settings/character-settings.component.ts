@@ -78,10 +78,13 @@ export class CharacterSettingsComponent {
     config: ConfigWithCharacters | null = null;
     configSubscription: Subscription;
     characterSubscription: Subscription;
+    private avatarMimeSubscription: Subscription;
     activeCharacter: Character | null = null;
     selectedCharacterIndex: number | null = null;
     editMode = false;
     initializing: boolean = true;
+    /** Primary MIME from CharacterService (blob avatars); null when no file or unknown. */
+    private avatarMimePrimary: string | null = null;
     private localCharacterCopy: Character | null = null;
     isApplyingChange: boolean = false;
     voiceInstructionSupportedModels: string[] = this.characterService.voiceInstructionSupportedModels;
@@ -539,13 +542,37 @@ export class CharacterSettingsComponent {
             (character) => {
                 this.activeCharacter = character;
             }
-        )
+        );
+        this.avatarMimeSubscription = this.characterService.avatarMime$.subscribe(
+            (mime) => {
+                this.avatarMimePrimary = mime;
+            },
+        );
     }
     ngOnDestroy() {
         // Unsubscribe from the config observable to prevent memory leaks
         if (this.configSubscription) {
             this.configSubscription.unsubscribe();
         }
+        if (this.characterSubscription) {
+            this.characterSubscription.unsubscribe();
+        }
+        if (this.avatarMimeSubscription) {
+            this.avatarMimeSubscription.unsubscribe();
+        }
+    }
+
+    /** PNG/WebP sprite sheet preview uses 200% + clip; SVG is one graphic. */
+    get avatarPreviewUsesSpriteSheet(): boolean {
+        if (!this.activeCharacter?.avatar) {
+            return true;
+        }
+        const mime = this.avatarMimePrimary;
+        if (!mime) {
+            return true;
+        }
+        const primary = mime.trim().toLowerCase().split(";")[0]?.trim() ?? "";
+        return primary !== "image/svg+xml";
     }
 
     // Modify applySettingsFromPreset to work with the new approach
@@ -1203,12 +1230,12 @@ export class CharacterSettingsComponent {
         const dialogRef = this.dialog.open(AvatarCatalogDialogComponent, {
             width: '850px',
             maxWidth: '95vw',
-            data: { currentAvatarId: this.activeCharacter?.avatar }
+            data: { currentAvatarPath: this.activeCharacter?.avatar }
         });
 
         dialogRef.afterClosed().subscribe((result: AvatarCatalogResult) => {
             if (result !== undefined && this.activeCharacter) {
-                this.setCharacterProperty('avatar', result.avatarId);
+                this.setCharacterProperty('avatar', result.avatarPath);
                 // The character service will automatically reload the avatar
             }
         });
