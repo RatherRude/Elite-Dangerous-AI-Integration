@@ -11,7 +11,7 @@ import sys
 ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
-from src.lib.Database import EventStore, KeyValueStore, VectorStore, set_connection_for_testing
+from src.lib.Database import EventStore, KeyValueStore, ModelUsageStore, VectorStore, set_connection_for_testing
 import sqlite_vec
 
 # Test event classes
@@ -48,6 +48,7 @@ def mock_connection(db_path: str, monkeypatch: pytest.MonkeyPatch) -> Generator[
     cursor.execute("DROP TABLE IF EXISTS test_vectors_vec_v1")
     cursor.execute("DROP TABLE IF EXISTS test_vectors_vec_meta_v1")
     cursor.execute("DROP TABLE IF EXISTS test_vectors_vec_keywords_v1")
+    cursor.execute("DROP TABLE IF EXISTS test_model_usage_v1")
     conn.commit()
     
     # Ensure our tests use this specific connection
@@ -72,6 +73,11 @@ def kv_store(mock_connection: sqlite3.Connection) -> KeyValueStore:
 def vector_store(mock_connection: sqlite3.Connection) -> VectorStore:
     _ = mock_connection
     return VectorStore("test_vectors")
+
+@pytest.fixture
+def model_usage_store(mock_connection: sqlite3.Connection) -> ModelUsageStore:
+    _ = mock_connection
+    return ModelUsageStore("test_model_usage")
 
 # EventStore Tests
 def test_event_store_init(event_store: EventStore, mock_connection: sqlite3.Connection) -> None:
@@ -237,3 +243,37 @@ def test_vector_store_vector_and_keyword_search(vector_store: VectorStore, mock_
     assert first["keyword_score"] > 0
     # Second result should at least retain vector similarity, keyword may be missing
     assert second["vector_score"] is not None
+
+def test_model_usage_store_time_window_history(model_usage_store: ModelUsageStore) -> None:
+    model_usage_store.delete_all()
+
+    model_usage_store.insert(
+        timestamp="2026-03-20T09:00:00.000000Z",
+        usage_kind="llm",
+        payload={"context": "assistant", "model_usage": {"total_tokens": 11}},
+    )
+    model_usage_store.insert(
+        timestamp="2026-03-20T10:00:00.000000Z",
+        usage_kind="llm",
+        payload={"context": "genui", "model_usage": {"total_tokens": 22}},
+    )
+    model_usage_store.insert(
+        timestamp="2026-03-20T11:00:00.000000Z",
+        usage_kind="tts",
+        payload={"context": "speech", "model_usage": {"total_tokens": 33}},
+    )
+
+    rows, total = model_usage_store.get_history(
+        usage_kind="llm",
+        start_time="2026-03-20T09:30:00.000000Z",
+        end_time="2026-03-20T10:30:00.000000Z",
+        limit=10,
+        offset=0,
+    )
+
+    assert total == 1
+    assert len(rows) == 1
+    assert rows[0]["usage_kind"] == "llm"
+    assert rows[0]["timestamp"] == "2026-03-20T10:00:00.000000Z"
+    assert rows[0]["payload"]["context"] == "genui"
+    assert rows[0]["payload"]["model_usage"]["total_tokens"] == 22

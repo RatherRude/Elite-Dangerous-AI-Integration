@@ -63,6 +63,15 @@ export interface GetQuestsMessage extends BaseCommand {
     type: "get_quests";
 }
 
+export interface GetModelUsageHistoryMessage extends BaseCommand {
+    type: "get_model_usage_history";
+    usage_kind?: string;
+    from?: string;
+    to?: string;
+    limit?: number;
+    offset?: number;
+}
+
 export interface SystemEventsMessage extends BaseMessage {
     type: "system_events";
     system_address: number | string | null;
@@ -71,6 +80,11 @@ export interface SystemEventsMessage extends BaseMessage {
 
 export interface QuestsMessage extends BaseMessage {
     type: "quests";
+    data: any;
+}
+
+export interface ModelUsageHistoryMessage extends BaseMessage {
+    type: "model_usage_history";
     data: any;
 }
 

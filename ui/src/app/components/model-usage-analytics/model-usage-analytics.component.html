@@ -1,0 +1,316 @@
+<div class="usage-shell">
+  <section class="usage-hero">
+    <div class="hero-copy">
+      <p class="eyebrow">Model Usage</p>
+      <h2>Usage Observatory</h2>
+      <p class="hero-text">
+        Review the last seven days of LLM activity, compare use-cases, and split token spend from prompt footprint.
+      </p>
+    </div>
+
+    <div class="hero-actions">
+      @if (lastUpdated) {
+        <span class="last-updated">Updated {{ lastUpdated | date:'medium' }}</span>
+      }
+      <button mat-stroked-button type="button" (click)="refreshData()" [disabled]="isLoading">
+        <mat-icon>refresh</mat-icon>
+        Refresh
+      </button>
+    </div>
+  </section>
+
+  <mat-card class="filters-card">
+    <div class="filter-toolbar">
+      <mat-button-toggle-group
+        [ngModel]="selectedPreset"
+        (ngModelChange)="onPresetChange($event)"
+        [disabled]="isLoading"
+        class="preset-group">
+        @for (preset of presets; track preset) {
+          <mat-button-toggle [value]="preset">{{ formatPresetLabel(preset) }}</mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+
+      <button mat-button type="button" class="reset-button" (click)="resetFilters()" [disabled]="isLoading">
+        Reset
+      </button>
+    </div>
+
+    @if (selectedPreset === 'custom') {
+      <div class="custom-range-row">
+        <mat-form-field appearance="outline">
+          <mat-label>From</mat-label>
+          <input matInput [matDatepicker]="fromPicker" [(ngModel)]="customFromDate" [disabled]="isLoading">
+          <mat-datepicker-toggle matIconSuffix [for]="$any(fromPicker)"></mat-datepicker-toggle>
+          <mat-datepicker #fromPicker></mat-datepicker>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>To</mat-label>
+          <input matInput [matDatepicker]="toPicker" [(ngModel)]="customToDate" [disabled]="isLoading">
+          <mat-datepicker-toggle matIconSuffix [for]="$any(toPicker)"></mat-datepicker-toggle>
+          <mat-datepicker #toPicker></mat-datepicker>
+        </mat-form-field>
+
+        <button mat-raised-button color="primary" type="button" (click)="applyCustomRange()" [disabled]="!canApplyCustomRange || isLoading">
+          Apply Range
+        </button>
+      </div>
+    }
+
+    <div class="filter-grid">
+      <mat-form-field appearance="outline">
+        <mat-label>Provider</mat-label>
+        <mat-select [(ngModel)]="selectedProvider" (ngModelChange)="onProviderChange()">
+          <mat-option value="all">All providers</mat-option>
+          @for (provider of availableProviders; track provider) {
+            <mat-option [value]="provider">{{ provider }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Model</mat-label>
+        <mat-select [(ngModel)]="selectedModel" (ngModelChange)="onModelChange()">
+          <mat-option value="all">All models</mat-option>
+          @for (model of availableModels; track model) {
+            <mat-option [value]="model">{{ model }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Use Case</mat-label>
+        <mat-select [(ngModel)]="selectedContext" (ngModelChange)="onContextChange()">
+          <mat-option value="all">All use cases</mat-option>
+          @for (context of availableContexts; track context) {
+            <mat-option [value]="context">{{ formatContextLabel(context) }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+  </mat-card>
+
+  @if (isLoading) {
+    <div class="usage-state loading-state">
+      <mat-spinner diameter="42"></mat-spinner>
+      <p>Loading persisted usage history...</p>
+    </div>
+  } @else if (errorMessage) {
+    <mat-card class="usage-state error-state">
+      <div>
+        <p class="state-title">Unable to load usage history</p>
+        <p class="state-text">{{ errorMessage }}</p>
+      </div>
+      <button mat-raised-button color="primary" type="button" (click)="refreshData()">Try Again</button>
+    </mat-card>
+  } @else if (filteredRows.length === 0) {
+    <mat-card class="usage-state empty-state">
+      <p class="state-title">No matching usage rows</p>
+      <p class="state-text">Try widening the time window or clearing the provider, model, or use-case filters.</p>
+    </mat-card>
+  } @else {
+    <section class="summary-grid">
+      @for (card of summaryCards; track card.label) {
+        <mat-card class="summary-card" [class]="'tone-' + card.tone">
+          <p class="summary-label">{{ card.label }}</p>
+          <p class="summary-value">{{ card.value }}</p>
+          <p class="summary-detail">{{ card.detail }}</p>
+        </mat-card>
+      }
+    </section>
+
+    <section class="analytics-grid">
+      <mat-card class="analytics-card wide-card">
+        <div class="card-header">
+          <div>
+            <p class="card-kicker">Token Timeline</p>
+            <h3>Input vs output over time</h3>
+          </div>
+          <div class="card-legend">
+            <span class="legend-pill legend-input">Input</span>
+            <span class="legend-pill legend-output">Output</span>
+          </div>
+        </div>
+
+        <div class="timeline-chart token-chart">
+          @for (bar of tokenTimelineBars; track bar.label) {
+            <div class="timeline-slot">
+              <div class="timeline-stack" [attr.title]="bar.displayLabel + ': ' + (bar.totalTokens | number) + ' tokens'">
+                <div class="segment segment-output" [style.height.%]="bar.outputHeightPct"></div>
+                <div class="segment segment-input" [style.height.%]="bar.inputHeightPct"></div>
+              </div>
+              <span class="timeline-total">{{ bar.totalTokens | number }}</span>
+              @if (bar.showLabel) {
+                <span class="timeline-label">{{ bar.displayLabel }}</span>
+              } @else {
+                <span class="timeline-label ghost">.</span>
+              }
+            </div>
+          }
+        </div>
+      </mat-card>
+
+      <mat-card class="analytics-card wide-card">
+        <div class="card-header">
+          <div>
+            <p class="card-kicker">Prompt Footprint</p>
+            <h3>Prompt composition over time</h3>
+          </div>
+          <div class="card-legend">
+            <span class="legend-pill legend-system">System</span>
+            <span class="legend-pill legend-memory">Memory</span>
+            <span class="legend-pill legend-status">Status</span>
+            <span class="legend-pill legend-conversation">Conversation</span>
+            <span class="legend-pill legend-web-search">Web Search</span>
+            <span class="legend-pill legend-genui">GenUI</span>
+          </div>
+        </div>
+
+        <div class="timeline-chart char-chart">
+          @for (bar of characterTimelineBars; track bar.label) {
+            <div class="timeline-slot">
+              <div class="timeline-stack" [attr.title]="bar.displayLabel">
+                @for (segment of bar.charSegments; track segment.cssClass) {
+                  <div class="segment" [class]="'segment ' + segment.cssClass" [style.height.%]="segment.heightPct"></div>
+                }
+              </div>
+              @if (bar.showLabel) {
+                <span class="timeline-label">{{ bar.displayLabel }}</span>
+              } @else {
+                <span class="timeline-label ghost">.</span>
+              }
+            </div>
+          }
+        </div>
+      </mat-card>
+
+      <mat-card class="analytics-card">
+        <div class="card-header compact">
+          <div>
+            <p class="card-kicker">Use Case</p>
+            <h3>Token load by use-case</h3>
+          </div>
+        </div>
+
+        <div class="bar-list">
+          @for (bar of useCaseTokenBars; track bar.label) {
+            <div class="bar-row">
+              <div class="bar-copy">
+                <span class="bar-label">{{ bar.label }}</span>
+                <span class="bar-subtitle">{{ bar.subtitle }}</span>
+              </div>
+              <div class="bar-track">
+                <div class="bar-fill" [class]="'tone-' + bar.tone" [style.width.%]="bar.widthPct"></div>
+              </div>
+              <span class="bar-value">{{ bar.valueLabel }}</span>
+            </div>
+          }
+        </div>
+      </mat-card>
+
+      <mat-card class="analytics-card">
+        <div class="card-header compact">
+          <div>
+            <p class="card-kicker">Character Breakdown</p>
+            <h3>Prompt composition by character type</h3>
+          </div>
+        </div>
+
+        <div class="bar-list">
+          @for (bar of characterTypeBars; track bar.label) {
+            <div class="bar-row">
+              <div class="bar-copy">
+                <span class="bar-label">{{ bar.label }}</span>
+                <span class="bar-subtitle">{{ bar.subtitle }}</span>
+              </div>
+              <div class="bar-track">
+                <div class="bar-fill" [class]="'tone-' + bar.tone" [style.width.%]="bar.widthPct"></div>
+              </div>
+              <span class="bar-value">{{ bar.valueLabel }}</span>
+            </div>
+          }
+        </div>
+      </mat-card>
+
+      <mat-card class="analytics-card">
+        <div class="card-header compact">
+          <div>
+            <p class="card-kicker">Providers</p>
+            <h3>Token share by provider</h3>
+          </div>
+        </div>
+
+        <div class="bar-list">
+          @for (bar of providerBars; track bar.label) {
+            <div class="bar-row">
+              <div class="bar-copy">
+                <span class="bar-label">{{ bar.label }}</span>
+                <span class="bar-subtitle">{{ bar.subtitle }}</span>
+              </div>
+              <div class="bar-track">
+                <div class="bar-fill" [class]="'tone-' + bar.tone" [style.width.%]="bar.widthPct"></div>
+              </div>
+              <span class="bar-value">{{ bar.valueLabel }}</span>
+            </div>
+          }
+        </div>
+      </mat-card>
+
+      <mat-card class="analytics-card">
+        <div class="card-header compact">
+          <div>
+            <p class="card-kicker">Models</p>
+            <h3>Token share by model</h3>
+          </div>
+        </div>
+
+        <div class="bar-list">
+          @for (bar of modelBars; track bar.label) {
+            <div class="bar-row">
+              <div class="bar-copy">
+                <span class="bar-label">{{ bar.label }}</span>
+                <span class="bar-subtitle">{{ bar.subtitle }}</span>
+              </div>
+              <div class="bar-track">
+                <div class="bar-fill" [class]="'tone-' + bar.tone" [style.width.%]="bar.widthPct"></div>
+              </div>
+              <span class="bar-value">{{ bar.valueLabel }}</span>
+            </div>
+          }
+        </div>
+      </mat-card>
+    </section>
+
+    <mat-card class="recent-card">
+      <div class="card-header">
+        <div>
+          <p class="card-kicker">Recent Calls</p>
+          <h3>Latest persisted usage rows</h3>
+        </div>
+        <span class="recent-count">{{ recentRows.length }} shown</span>
+      </div>
+
+      <div class="recent-list">
+        @for (row of recentRows; track row.id) {
+          <div class="recent-row">
+            <div class="recent-main">
+              <span class="recent-context">{{ formatContextLabel(row.context) }}</span>
+              <span class="recent-model">{{ row.provider }} / {{ row.modelName }}</span>
+            </div>
+
+            <div class="recent-metrics">
+              <span class="metric-pill token-pill">{{ row.tokenUsage.totalTokens | number }} tok</span>
+              <span class="metric-pill char-pill">{{ row.promptUsage.totalChars | number }} chars</span>
+              @if (row.tokenUsage.reasoningTokens > 0) {
+                <span class="metric-pill reasoning-pill">{{ row.tokenUsage.reasoningTokens | number }} reasoning</span>
+              }
+            </div>
+
+            <span class="recent-time">{{ row.timestamp | date:'medium' }}</span>
+          </div>
+        }
+      </div>
+    </mat-card>
+  }
+</div>

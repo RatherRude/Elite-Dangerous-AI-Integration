@@ -96,6 +96,18 @@
         </div>
     </mat-tab>
 
+    <mat-tab>
+        <ng-template mat-tab-label>
+            <mat-icon class="tab-icon">insights</mat-icon>
+            Usage
+        </ng-template>
+        <div class="tab-content usage-tab-content">
+            @if (config) {
+                <app-model-usage-analytics></app-model-usage-analytics>
+            }
+        </div>
+    </mat-tab>
+
     @if (has_plugin_settings) {
         <mat-tab>
             <ng-template mat-tab-label>
