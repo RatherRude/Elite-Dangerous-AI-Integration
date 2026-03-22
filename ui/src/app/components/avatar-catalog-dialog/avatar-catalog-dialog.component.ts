@@ -9,11 +9,11 @@ import { AvatarService, AvatarData } from '../../services/avatar.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 export interface AvatarCatalogDialogData {
-  currentAvatarPath?: string;
+  currentAvatarId?: string;
 }
 
 export interface AvatarCatalogResult {
-  avatarPath: string;
+  avatarId: string;
 }
 
 @Component({
@@ -48,19 +48,13 @@ export class AvatarCatalogDialogComponent implements OnInit {
 
   async loadAvatars() {
     try {
-      this.avatarUrls.forEach((url) => {
-        if (this.avatarService.isObjectUrl(url)) {
-          URL.revokeObjectURL(url);
-        }
-      });
-      this.avatarUrls.clear();
       this.avatars = await this.avatarService.getAllAvatars();
       
       // Generate URLs for all avatars
       for (const avatar of this.avatars) {
-        const url = await this.avatarService.getAvatar(avatar.path);
+        const url = await this.avatarService.getAvatar(avatar.id);
         if (url) {
-          this.avatarUrls.set(avatar.path, url);
+          this.avatarUrls.set(avatar.id, url);
         }
       }
     } catch (error) {
@@ -102,7 +96,7 @@ export class AvatarCatalogDialogComponent implements OnInit {
 
     this.uploading = true;
     try {
-      await this.avatarService.uploadAvatar(file);
+      const avatarId = await this.avatarService.uploadAvatar(file);
       this.snackBar.open('Avatar uploaded successfully', 'Dismiss', { duration: 3000 });
       await this.loadAvatars(); // Refresh the list
     } catch (error) {
@@ -131,31 +125,31 @@ export class AvatarCatalogDialogComponent implements OnInit {
     });
   }
 
-  selectAvatar(avatarPath: string) {
-    this.dialogRef.close({ avatarPath } as AvatarCatalogResult);
+  selectAvatar(avatarId: string) {
+    this.dialogRef.close({ avatarId } as AvatarCatalogResult);
   }
 
   setToDefault() {
     // Return empty string to indicate default avatar should be used
-    this.dialogRef.close({ avatarPath: '' } as AvatarCatalogResult);
+    this.dialogRef.close({ avatarId: '' } as AvatarCatalogResult);
   }
 
   isCurrentlyDefault(): boolean {
     // Current avatar is default if it's empty, null, or undefined
-    return !this.data.currentAvatarPath;
+    return !this.data.currentAvatarId;
   }
 
-  async deleteAvatar(avatarPath: string) {
+  async deleteAvatar(avatarId: string) {
     try {
-      await this.avatarService.deleteAvatar(avatarPath);
+      await this.avatarService.deleteAvatar(avatarId);
       this.snackBar.open('Avatar deleted', 'Dismiss', { duration: 3000 });
       
       // Clean up URL
-      const url = this.avatarUrls.get(avatarPath);
-      if (url && this.avatarService.isObjectUrl(url)) {
+      const url = this.avatarUrls.get(avatarId);
+      if (url) {
         URL.revokeObjectURL(url);
+        this.avatarUrls.delete(avatarId);
       }
-      this.avatarUrls.delete(avatarPath);
       
       await this.loadAvatars(); // Refresh the list
     } catch (error) {
@@ -164,8 +158,8 @@ export class AvatarCatalogDialogComponent implements OnInit {
     }
   }
 
-  getAvatarUrl(avatarPath: string): string | null {
-    return this.avatarUrls.get(avatarPath) || null;
+  getAvatarUrl(avatarId: string): string | null {
+    return this.avatarUrls.get(avatarId) || null;
   }
 
   formatUploadTime(uploadTime: Date): string {
@@ -178,11 +172,7 @@ export class AvatarCatalogDialogComponent implements OnInit {
 
   ngOnDestroy() {
     // Clean up all object URLs
-    this.avatarUrls.forEach((url) => {
-      if (this.avatarService.isObjectUrl(url)) {
-        URL.revokeObjectURL(url);
-      }
-    });
+    this.avatarUrls.forEach(url => URL.revokeObjectURL(url));
     this.avatarUrls.clear();
   }
 } 

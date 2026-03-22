@@ -1,13 +1,13 @@
 import { Injectable } from '@angular/core';
 import { ConfigService, Config } from './config.service';
-import { AvatarService } from './avatar.service';
+import { AvatarService, AvatarData } from './avatar.service';
 
 export interface BackupData {
   version: number;
   timestamp: string;
   config: Config;
   avatars: Array<{
-    path?: string;
+    id: string;
     imageData: string; // base64 encoded
     uploadTime: string;
     fileName: string;
@@ -36,23 +36,19 @@ export class ConfigBackupService {
         throw new Error('No configuration available to export');
       }
 
-      // Get all avatars from filesystem-backed avatar storage
+      // Get all avatars from IndexedDB
       const avatars = await this.avatarService.getAllAvatars();
 
       // Convert avatar blobs to base64
       const avatarsData = await Promise.all(
         avatars.map(async (avatar) => {
-          const blob = await this.avatarService.getAvatarBlob(avatar.path);
-          if (!blob) {
-            throw new Error(`Unable to read avatar file for backup: ${avatar.path}`);
-          }
-          const base64 = await this.blobToBase64(blob);
+          const base64 = await this.blobToBase64(avatar.imageBlob);
           return {
-            path: avatar.path,
+            id: avatar.id,
             imageData: base64,
             uploadTime: avatar.uploadTime.toISOString(),
             fileName: avatar.fileName,
-            mimeType: blob.type || avatar.mimeType || 'application/octet-stream'
+            mimeType: avatar.imageBlob.type
           };
         })
       );
@@ -98,43 +94,41 @@ export class ConfigBackupService {
         throw new Error('Invalid backup file format');
       }
 
-      // Import avatars first and remap stored references to new local file paths.
+      // Import avatars first
       let importedAvatars = 0;
-      const avatarPathMap = new Map<string, string>();
+      let skippedAvatars = 0;
       
       for (const avatarData of backupData.avatars) {
         try {
           // Convert base64 back to Blob
           const blob = await this.base64ToBlob(avatarData.imageData, avatarData.mimeType);
-          const newPath = await this.avatarService.writeAvatarBlob(
-            blob,
-            avatarData.fileName,
-            avatarData.mimeType,
-          );
-          if (avatarData.path) {
-            avatarPathMap.set(avatarData.path, newPath);
+          
+          // Create File object from blob
+          const file = new File([blob], avatarData.fileName, { type: avatarData.mimeType });
+          
+          // Try to check if avatar already exists
+          const existingAvatar = await this.avatarService.getAvatar(avatarData.id);
+          
+          if (existingAvatar) {
+            // Avatar already exists, skip it
+            skippedAvatars++;
+            console.log(`Avatar ${avatarData.id} already exists, skipping...`);
+          } else {
+            // Import avatar with original ID by directly adding to IndexedDB
+            await this.importAvatarWithId(avatarData.id, blob, avatarData.fileName, new Date(avatarData.uploadTime));
+            importedAvatars++;
           }
-          importedAvatars++;
         } catch (error) {
-          console.error(`Error importing avatar ${avatarData.path || avatarData.fileName}:`, error);
+          console.error(`Error importing avatar ${avatarData.id}:`, error);
           // Continue with other avatars even if one fails
         }
       }
 
       // Import configuration
-      const importedConfig: Config = JSON.parse(JSON.stringify(backupData.config));
-      if (Array.isArray(importedConfig.characters)) {
-        importedConfig.characters = importedConfig.characters.map((character: any) => {
-          if (!character || typeof character !== 'object' || typeof character.avatar !== 'string') {
-            return character;
-          }
-          const mappedPath = avatarPathMap.get(character.avatar);
-          return mappedPath ? { ...character, avatar: mappedPath } : character;
-        });
-      }
-      await this.configService.changeConfig(importedConfig);
+      await this.configService.changeConfig(backupData.config);
 
-      const message = `Successfully imported configuration with ${importedAvatars} avatar(s)`;
+      const message = `Successfully imported configuration with ${importedAvatars} avatar(s)` + 
+                     (skippedAvatars > 0 ? ` (${skippedAvatars} avatar(s) skipped - already exist)` : '');
       
       return {
         success: true,
@@ -147,6 +141,60 @@ export class ConfigBackupService {
         message: error instanceof Error ? error.message : 'Unknown error occurred'
       };
     }
+  }
+
+  /**
+   * Import avatar directly with specific ID (bypasses the normal upload flow)
+   */
+  private async importAvatarWithId(id: string, imageBlob: Blob, fileName: string, uploadTime: Date): Promise<void> {
+    const dbName = 'avatarDB';
+    const dbVersion = 1;
+    const storeName = 'avatars';
+
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(dbName, dbVersion);
+
+      request.onerror = () => {
+        reject(request.error);
+      };
+
+      request.onsuccess = () => {
+        const db = request.result;
+        const transaction = db.transaction([storeName], 'readwrite');
+        const store = transaction.objectStore(storeName);
+
+        const avatarData: AvatarData = {
+          id,
+          imageBlob,
+          uploadTime,
+          fileName
+        };
+
+        const addRequest = store.add(avatarData);
+
+        addRequest.onsuccess = () => {
+          resolve();
+        };
+
+        addRequest.onerror = () => {
+          // If error is due to duplicate key, ignore it
+          if (addRequest.error?.name === 'ConstraintError') {
+            console.log(`Avatar ${id} already exists, skipping...`);
+            resolve();
+          } else {
+            reject(addRequest.error);
+          }
+        };
+      };
+
+      request.onupgradeneeded = (event) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+        if (!db.objectStoreNames.contains(storeName)) {
+          const store = db.createObjectStore(storeName, { keyPath: 'id' });
+          store.createIndex('uploadTime', 'uploadTime', { unique: false });
+        }
+      };
+    });
   }
 
   /**
@@ -200,3 +248,5 @@ export class ConfigBackupService {
     URL.revokeObjectURL(url);
   }
 }
+
+

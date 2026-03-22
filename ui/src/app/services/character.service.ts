@@ -31,7 +31,7 @@ export interface Character {
     tts_voice: string;
     tts_speed: string;
     tts_prompt: string;
-    avatar?: string; // Absolute file path for the avatar image
+    avatar?: string; // IndexedDB key for the avatar image
 
     
 
@@ -80,8 +80,6 @@ export class CharacterService {
     private currentAvatarUrl: string | null = null;
     private avatarUrlSubject = new BehaviorSubject<string | null>(null);
     public avatarUrl$ = this.avatarUrlSubject.asObservable();
-    private avatarMimeSubject = new BehaviorSubject<string | null>(null);
-    public avatarMime$ = this.avatarMimeSubject.asObservable();
 
     constructor(
         private tauriService: TauriService,
@@ -236,47 +234,29 @@ export class CharacterService {
 
     private async loadCharacterAvatar(): Promise<void> {
         const character = this.characterSubject.getValue();
-        const previousAvatarUrl = this.currentAvatarUrl;
         if (!character) {
             this.currentAvatarUrl = null;
             this.avatarUrlSubject.next(null);
-            this.revokeAvatarUrl(previousAvatarUrl);
-            this.avatarMimeSubject.next(null);
             return;
         }
 
         if (character.avatar) {
             try {
-                const meta = await this.avatarService.getAvatarWithMime(character.avatar);
-                const url = meta?.url ?? null;
+                const url = await this.avatarService.getAvatar(character.avatar);
                 this.currentAvatarUrl = url;
                 this.avatarUrlSubject.next(url);
-                this.avatarMimeSubject.next(meta?.mimeType ?? null);
-                if (previousAvatarUrl !== url) {
-                    this.revokeAvatarUrl(previousAvatarUrl);
-                }
             } catch (error) {
                 console.error('Error loading character avatar:', error);
                 this.currentAvatarUrl = null;
                 this.avatarUrlSubject.next(null);
-                this.revokeAvatarUrl(previousAvatarUrl);
-                this.avatarMimeSubject.next(null);
             }
         } else {
             this.currentAvatarUrl = null;
             this.avatarUrlSubject.next(null);
-            this.revokeAvatarUrl(previousAvatarUrl);
-            this.avatarMimeSubject.next(null);
         }
     }
 
     public getAvatarUrl(): string {
         return this.currentAvatarUrl || 'assets/cn_avatar_default.png';
-    }
-
-    private revokeAvatarUrl(url: string | null): void {
-        if (url && this.avatarService.isObjectUrl(url)) {
-            URL.revokeObjectURL(url);
-        }
     }
 }

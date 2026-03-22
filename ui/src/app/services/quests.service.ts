@@ -182,14 +182,6 @@ export class QuestsService {
         this.tauriService.send_command(command);
     }
 
-    public getCurrentCatalog(): QuestCatalog | null {
-        return this.catalogSubject.getValue();
-    }
-
-    public getCurrentCatalogPath(): string | null {
-        return this.catalogPathSubject.getValue();
-    }
-
     public async importQuestAudioFile(
         catalogPath: string | null,
     ): Promise<QuestAudioImportResult> {

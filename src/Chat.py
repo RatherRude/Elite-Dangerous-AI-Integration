@@ -851,6 +851,10 @@ class Chat:
         avatar_url = payload.get("avatar_url")
         if not isinstance(avatar_url, str) or not avatar_url:
             avatar_url = None
+        avatar_id = None
+        if avatar_url and avatar_url.startswith("avatar://"):
+            extracted_id = avatar_url[len("avatar://") :]
+            avatar_id = extracted_id if extracted_id else None
 
         audio_file_path: Path | None = None
         if action == "play_sound":
@@ -874,7 +878,7 @@ class Chat:
                     actor_id=actor_id if isinstance(actor_id, str) else None,
                     actor_name=actor_name if isinstance(actor_name, str) else None,
                     display_color=actor_name_color if isinstance(actor_name_color, str) else None,
-                    avatar_url=avatar_url if isinstance(avatar_url, str) else None,
+                    avatar_id=avatar_id if isinstance(avatar_id, str) else None,
                     display_name=actor_name if isinstance(actor_name, str) and actor_name else "NPC",
                 )
             self.event_manager.add_assistant_speaking()
