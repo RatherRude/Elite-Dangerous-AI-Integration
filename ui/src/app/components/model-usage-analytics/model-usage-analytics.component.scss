@@ -139,7 +139,7 @@
 
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 14px;
 }
 
@@ -240,13 +240,44 @@
   font-weight: 600;
 }
 
-.legend-input,
+.legend-cached-input,
 .token-pill {
+  background: rgba(161, 161, 170, 0.16);
+  color: #d7d7dd;
+}
+
+.metric-cached-input {
+  background: rgba(161, 161, 170, 0.16);
+  color: #d7d7dd;
+}
+
+.legend-live-input {
   background: rgba(88, 166, 255, 0.14);
   color: #9ed0ff;
 }
 
-.legend-output {
+.metric-live-input {
+  background: rgba(88, 166, 255, 0.14);
+  color: #9ed0ff;
+}
+
+.legend-thinking-output {
+  background: rgba(167, 139, 250, 0.16);
+  color: #cab9ff;
+}
+
+.metric-thinking-output,
+.reasoning-pill {
+  background: rgba(167, 139, 250, 0.16);
+  color: #cab9ff;
+}
+
+.legend-visible-output {
+  background: rgba(255, 179, 77, 0.16);
+  color: #ffcb7f;
+}
+
+.metric-visible-output {
   background: rgba(255, 179, 77, 0.16);
   color: #ffcb7f;
 }
@@ -287,11 +318,6 @@
   color: #f8a8d0;
 }
 
-.reasoning-pill {
-  background: rgba(167, 139, 250, 0.14);
-  color: #cab9ff;
-}
-
 .timeline-chart {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(34px, 1fr));
@@ -324,19 +350,23 @@
 
 .segment {
   width: 100%;
-  border-radius: 10px;
+  border-radius: 3px;
 }
 
-.segment-input {
+.segment-cached-input {
+  background: linear-gradient(180deg, rgba(212, 212, 216, 0.96), rgba(113, 113, 122, 0.92));
+}
+
+.segment-live-input {
   background: linear-gradient(180deg, rgba(108, 188, 255, 0.98), rgba(62, 127, 222, 0.96));
 }
 
-.segment-output {
-  background: linear-gradient(180deg, rgba(255, 198, 124, 0.98), rgba(255, 159, 67, 0.96));
+.segment-thinking-output {
+  background: linear-gradient(180deg, rgba(196, 181, 253, 0.98), rgba(139, 92, 246, 0.94));
 }
 
-.segment-chars {
-  background: linear-gradient(180deg, rgba(102, 234, 197, 0.98), rgba(31, 184, 142, 0.94));
+.segment-visible-output {
+  background: linear-gradient(180deg, rgba(255, 198, 124, 0.98), rgba(255, 159, 67, 0.96));
 }
 
 .segment-system {
@@ -416,7 +446,7 @@
 
 .bar-fill {
   height: 100%;
-  border-radius: inherit;
+  border-radius: 4px;
 }
 
 .bar-fill.tone-amber {

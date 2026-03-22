@@ -48,6 +48,8 @@ export interface TokenUsageBreakdown {
     totalTokens: number;
     cachedTokens: number;
     reasoningTokens: number;
+    liveInputTokens: number;
+    visibleOutputTokens: number;
 }
 
 export interface ModelUsageRecord {
@@ -201,6 +203,23 @@ export class ModelUsageService implements OnDestroy {
         });
     }
 
+    private buildTokenUsage(modelUsage: Record<string, unknown>): TokenUsageBreakdown {
+        const inputTokens = this.toNumber(modelUsage["input_tokens"]);
+        const outputTokens = this.toNumber(modelUsage["output_tokens"]);
+        const cachedTokens = this.toNumber(modelUsage["cached_tokens"]);
+        const reasoningTokens = this.toNumber(modelUsage["reasoning_tokens"]);
+
+        return {
+            inputTokens,
+            outputTokens,
+            totalTokens: this.toNumber(modelUsage["total_tokens"]),
+            cachedTokens,
+            reasoningTokens,
+            liveInputTokens: Math.max(inputTokens - cachedTokens, 0),
+            visibleOutputTokens: outputTokens,
+        };
+    }
+
     private normalizeRow(row: PersistedModelUsageRow): ModelUsageRecord {
         const payload = this.asObject(row.payload);
         const modelUsage = this.asObject(payload["model_usage"]);
@@ -244,13 +263,7 @@ export class ModelUsageService implements OnDestroy {
                 payload["model_name"] ?? modelUsage["model_name"],
                 "unknown",
             ),
-            tokenUsage: {
-                inputTokens: this.toNumber(modelUsage["input_tokens"]),
-                outputTokens: this.toNumber(modelUsage["output_tokens"]),
-                totalTokens: this.toNumber(modelUsage["total_tokens"]),
-                cachedTokens: this.toNumber(modelUsage["cached_tokens"]),
-                reasoningTokens: this.toNumber(modelUsage["reasoning_tokens"]),
-            },
+            tokenUsage: this.buildTokenUsage(modelUsage),
             promptUsage: normalizedPromptUsage,
             raw: payload,
         };

@@ -62,6 +62,33 @@ def _get_reasoning_tokens(usage: Any) -> int | None:
         if reasoning_tokens is not None:
             return int(reasoning_tokens)
 
+    prompt_tokens = getattr(usage, "prompt_tokens", None)
+    completion_tokens = getattr(usage, "completion_tokens", None)
+    total_tokens = getattr(usage, "total_tokens", None)
+    if (
+        prompt_tokens is not None
+        and completion_tokens is not None
+        and total_tokens is not None
+    ):
+        fallback_reasoning_tokens = (
+            int(total_tokens) - int(prompt_tokens) - int(completion_tokens)
+        )
+        if fallback_reasoning_tokens >= 0:
+            return fallback_reasoning_tokens
+
+    input_tokens = getattr(usage, "input_tokens", None)
+    output_tokens = getattr(usage, "output_tokens", None)
+    if (
+        input_tokens is not None
+        and output_tokens is not None
+        and total_tokens is not None
+    ):
+        fallback_reasoning_tokens = (
+            int(total_tokens) - int(input_tokens) - int(output_tokens)
+        )
+        if fallback_reasoning_tokens >= 0:
+            return fallback_reasoning_tokens
+
     return None
 
 class OpenAILLMModel(LLMModel):

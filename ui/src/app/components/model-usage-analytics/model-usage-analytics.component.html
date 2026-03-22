@@ -125,11 +125,13 @@
         <div class="card-header">
           <div>
             <p class="card-kicker">Token Timeline</p>
-            <h3>Input vs output over time</h3>
+            <h3>Token composition over time</h3>
           </div>
           <div class="card-legend">
-            <span class="legend-pill legend-input">Input</span>
-            <span class="legend-pill legend-output">Output</span>
+            <span class="legend-pill legend-cached-input">Cached Input</span>
+            <span class="legend-pill legend-live-input">Input</span>
+            <span class="legend-pill legend-thinking-output">Thinking</span>
+            <span class="legend-pill legend-visible-output">Output</span>
           </div>
         </div>
 
@@ -137,8 +139,9 @@
           @for (bar of tokenTimelineBars; track bar.label) {
             <div class="timeline-slot">
               <div class="timeline-stack" [attr.title]="bar.displayLabel + ': ' + (bar.totalTokens | number) + ' tokens'">
-                <div class="segment segment-output" [style.height.%]="bar.outputHeightPct"></div>
-                <div class="segment segment-input" [style.height.%]="bar.inputHeightPct"></div>
+                @for (segment of bar.tokenSegments; track segment.cssClass) {
+                  <div class="segment" [class]="'segment ' + segment.cssClass" [style.height.%]="segment.heightPct" [attr.title]="formatTimelineSegmentTitle(bar, segment, 'tokens')"></div>
+                }
               </div>
               <span class="timeline-total">{{ bar.totalTokens | number }}</span>
               @if (bar.showLabel) {
@@ -172,7 +175,7 @@
             <div class="timeline-slot">
               <div class="timeline-stack" [attr.title]="bar.displayLabel">
                 @for (segment of bar.charSegments; track segment.cssClass) {
-                  <div class="segment" [class]="'segment ' + segment.cssClass" [style.height.%]="segment.heightPct"></div>
+                  <div class="segment" [class]="'segment ' + segment.cssClass" [style.height.%]="segment.heightPct" [attr.title]="formatTimelineSegmentTitle(bar, segment, 'chars')"></div>
                 }
               </div>
               @if (bar.showLabel) {
@@ -201,7 +204,7 @@
                 <span class="bar-subtitle">{{ bar.subtitle }}</span>
               </div>
               <div class="bar-track">
-                <div class="bar-fill" [class]="'tone-' + bar.tone" [style.width.%]="bar.widthPct"></div>
+                <div class="bar-fill" [class]="'tone-' + bar.tone" [style.width.%]="bar.widthPct" [attr.title]="formatBreakdownBarTitle(bar)"></div>
               </div>
               <span class="bar-value">{{ bar.valueLabel }}</span>
             </div>
@@ -225,7 +228,7 @@
                 <span class="bar-subtitle">{{ bar.subtitle }}</span>
               </div>
               <div class="bar-track">
-                <div class="bar-fill" [class]="'tone-' + bar.tone" [style.width.%]="bar.widthPct"></div>
+                <div class="bar-fill" [class]="'tone-' + bar.tone" [style.width.%]="bar.widthPct" [attr.title]="formatBreakdownBarTitle(bar)"></div>
               </div>
               <span class="bar-value">{{ bar.valueLabel }}</span>
             </div>
@@ -249,7 +252,7 @@
                 <span class="bar-subtitle">{{ bar.subtitle }}</span>
               </div>
               <div class="bar-track">
-                <div class="bar-fill" [class]="'tone-' + bar.tone" [style.width.%]="bar.widthPct"></div>
+                <div class="bar-fill" [class]="'tone-' + bar.tone" [style.width.%]="bar.widthPct" [attr.title]="formatBreakdownBarTitle(bar)"></div>
               </div>
               <span class="bar-value">{{ bar.valueLabel }}</span>
             </div>
@@ -273,7 +276,7 @@
                 <span class="bar-subtitle">{{ bar.subtitle }}</span>
               </div>
               <div class="bar-track">
-                <div class="bar-fill" [class]="'tone-' + bar.tone" [style.width.%]="bar.widthPct"></div>
+                <div class="bar-fill" [class]="'tone-' + bar.tone" [style.width.%]="bar.widthPct" [attr.title]="formatBreakdownBarTitle(bar)"></div>
               </div>
               <span class="bar-value">{{ bar.valueLabel }}</span>
             </div>
@@ -300,11 +303,11 @@
             </div>
 
             <div class="recent-metrics">
-              <span class="metric-pill token-pill">{{ row.tokenUsage.totalTokens | number }} tok</span>
+              <span class="metric-pill metric-cached-input">{{ row.tokenUsage.cachedTokens | number }} cached</span>
+              <span class="metric-pill metric-live-input">{{ row.tokenUsage.liveInputTokens | number }} in</span>
+              <span class="metric-pill metric-thinking-output">{{ row.tokenUsage.reasoningTokens | number }} thinking</span>
+              <span class="metric-pill metric-visible-output">{{ row.tokenUsage.visibleOutputTokens | number }} output</span>
               <span class="metric-pill char-pill">{{ row.promptUsage.totalChars | number }} chars</span>
-              @if (row.tokenUsage.reasoningTokens > 0) {
-                <span class="metric-pill reasoning-pill">{{ row.tokenUsage.reasoningTokens | number }} reasoning</span>
-              }
             </div>
 
             <span class="recent-time">{{ row.timestamp | date:'medium' }}</span>

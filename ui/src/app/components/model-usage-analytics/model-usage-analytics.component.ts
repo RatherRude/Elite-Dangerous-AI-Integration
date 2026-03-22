@@ -36,26 +36,31 @@ interface BreakdownBar {
     tone: "amber" | "blue" | "mint" | "rose" | "violet" | "slate";
 }
 
+interface TimelineSegment {
+    cssClass: string;
+    heightPct: number;
+    label: string;
+    value: number;
+}
+
 interface TimelineBar {
     label: string;
     displayLabel: string;
     showLabel: boolean;
-    inputHeightPct: number;
-    outputHeightPct: number;
     totalTokens: number;
-    charSegments: Array<{
-        cssClass: string;
-        heightPct: number;
-        label: string;
-    }>;
+    totalChars: number;
+    tokenSegments: TimelineSegment[];
+    charSegments: TimelineSegment[];
 }
 
 interface TimelineBucket {
     bucketStartMs: number;
     label: string;
     displayLabel: string;
-    inputTokens: number;
-    outputTokens: number;
+    cachedInputTokens: number;
+    liveInputTokens: number;
+    thinkingOutputTokens: number;
+    visibleOutputTokens: number;
     totalTokens: number;
     totalChars: number;
     systemChars: number;
@@ -212,6 +217,19 @@ export class ModelUsageAnalyticsComponent implements OnInit {
         return labels[preset];
     }
 
+    public formatTimelineSegmentTitle(
+        bar: TimelineBar,
+        segment: TimelineSegment,
+        metric: "tokens" | "chars",
+    ): string {
+        const unit = metric === "tokens" ? "tokens" : "chars";
+        return `${bar.displayLabel}\n${segment.label}: ${this.formatFullNumber(segment.value)} ${unit}`;
+    }
+
+    public formatBreakdownBarTitle(bar: BreakdownBar): string {
+        return `${bar.label}\n${bar.valueLabel}\n${bar.subtitle}`;
+    }
+
     public get canApplyCustomRange(): boolean {
         if (!this.customFromDate || !this.customToDate) {
             return false;
@@ -352,16 +370,20 @@ export class ModelUsageAnalyticsComponent implements OnInit {
             (sum, row) => sum + row.tokenUsage.totalTokens,
             0,
         );
-        const inputTokens = rows.reduce(
-            (sum, row) => sum + row.tokenUsage.inputTokens,
+        const cachedInputTokens = rows.reduce(
+            (sum, row) => sum + row.tokenUsage.cachedTokens,
             0,
         );
-        const outputTokens = rows.reduce(
-            (sum, row) => sum + row.tokenUsage.outputTokens,
+        const liveInputTokens = rows.reduce(
+            (sum, row) => sum + row.tokenUsage.liveInputTokens,
             0,
         );
-        const reasoningTokens = rows.reduce(
+        const thinkingOutputTokens = rows.reduce(
             (sum, row) => sum + row.tokenUsage.reasoningTokens,
+            0,
+        );
+        const visibleOutputTokens = rows.reduce(
+            (sum, row) => sum + row.tokenUsage.visibleOutputTokens,
             0,
         );
         const promptChars = rows.reduce(
@@ -382,19 +404,31 @@ export class ModelUsageAnalyticsComponent implements OnInit {
             {
                 label: "Total Tokens",
                 value: this.formatCompactNumber(totalTokens),
-                detail: `${this.formatCompactNumber(inputTokens)} in / ${this.formatCompactNumber(outputTokens)} out`,
+                detail: `${this.formatCompactNumber(cachedInputTokens)} cached + ${this.formatCompactNumber(liveInputTokens)} input`,
                 tone: "blue",
             },
             {
-                label: "Reasoning Tokens",
-                value: this.formatCompactNumber(reasoningTokens),
-                detail: `${this.formatPercent(reasoningTokens, totalTokens)} of total token spend`,
+                label: "Cached Input",
+                value: this.formatCompactNumber(cachedInputTokens),
+                detail: `${this.formatPercent(cachedInputTokens, totalTokens)} of total tokens`,
+                tone: "slate",
+            },
+            {
+                label: "Input",
+                value: this.formatCompactNumber(liveInputTokens),
+                detail: `${this.formatPercent(liveInputTokens, totalTokens)} of total tokens`,
+                tone: "amber",
+            },
+            {
+                label: "Thinking Output",
+                value: this.formatCompactNumber(thinkingOutputTokens),
+                detail: `${this.formatPercent(thinkingOutputTokens, totalTokens)} of total tokens`,
                 tone: "violet",
             },
             {
-                label: "Prompt Chars",
-                value: this.formatCompactNumber(promptChars),
-                detail: `${this.formatCompactNumber(promptChars / Math.max(rows.length, 1))} avg chars per call`,
+                label: "Output",
+                value: this.formatCompactNumber(visibleOutputTokens),
+                detail: `${this.formatPercent(visibleOutputTokens, totalTokens)} of total tokens`,
                 tone: "mint",
             },
             {
@@ -406,10 +440,10 @@ export class ModelUsageAnalyticsComponent implements OnInit {
                 tone: "rose",
             },
             {
-                label: "Selected Window",
-                value: this.formatPresetLabel(this.selectedPreset),
-                detail: `${this.formatCompactNumber(this.filteredRows.length)} filtered calls`,
-                tone: "slate",
+                label: "Prompt Chars",
+                value: this.formatCompactNumber(promptChars),
+                detail: `${this.formatCompactNumber(promptChars / Math.max(rows.length, 1))} avg chars per call`,
+                tone: "rose",
             },
         ];
     }
@@ -430,9 +464,34 @@ export class ModelUsageAnalyticsComponent implements OnInit {
                 label: bucket.label,
                 displayLabel: bucket.displayLabel,
                 showLabel: this.shouldShowTimelineLabel(index, buckets.length),
-                inputHeightPct: (bucket.inputTokens / maxTokens) * 100,
-                outputHeightPct: (bucket.outputTokens / maxTokens) * 100,
                 totalTokens: bucket.totalTokens,
+                totalChars: bucket.totalChars,
+                tokenSegments: [
+                    {
+                        cssClass: "segment-cached-input",
+                        heightPct: (bucket.cachedInputTokens / maxTokens) * 100,
+                        label: "Cached Input",
+                        value: bucket.cachedInputTokens,
+                    },
+                    {
+                        cssClass: "segment-live-input",
+                        heightPct: (bucket.liveInputTokens / maxTokens) * 100,
+                        label: "Input",
+                        value: bucket.liveInputTokens,
+                    },
+                    {
+                        cssClass: "segment-thinking-output",
+                        heightPct: (bucket.thinkingOutputTokens / maxTokens) * 100,
+                        label: "Thinking",
+                        value: bucket.thinkingOutputTokens,
+                    },
+                    {
+                        cssClass: "segment-visible-output",
+                        heightPct: (bucket.visibleOutputTokens / maxTokens) * 100,
+                        label: "Output",
+                        value: bucket.visibleOutputTokens,
+                    },
+                ].filter((segment) => segment.heightPct > 0),
                 charSegments: [],
             }));
         }
@@ -443,39 +502,45 @@ export class ModelUsageAnalyticsComponent implements OnInit {
             label: bucket.label,
             displayLabel: bucket.displayLabel,
             showLabel: this.shouldShowTimelineLabel(index, buckets.length),
-            inputHeightPct: 0,
-            outputHeightPct: 0,
             totalTokens: bucket.totalTokens,
+            totalChars: bucket.totalChars,
+            tokenSegments: [],
             charSegments: [
                 {
                     cssClass: "segment-system",
                     heightPct: (bucket.systemChars / maxChars) * 100,
                     label: "System",
+                    value: bucket.systemChars,
                 },
                 {
                     cssClass: "segment-memory",
                     heightPct: (bucket.memoryChars / maxChars) * 100,
                     label: "Memory",
+                    value: bucket.memoryChars,
                 },
                 {
                     cssClass: "segment-status",
                     heightPct: (bucket.statusChars / maxChars) * 100,
                     label: "Status",
+                    value: bucket.statusChars,
                 },
                 {
                     cssClass: "segment-conversation",
                     heightPct: (bucket.conversationChars / maxChars) * 100,
                     label: "Conversation",
+                    value: bucket.conversationChars,
                 },
                 {
                     cssClass: "segment-web-search",
                     heightPct: (bucket.webSearchChars / maxChars) * 100,
                     label: "Web Search",
+                    value: bucket.webSearchChars,
                 },
                 {
                     cssClass: "segment-genui",
                     heightPct: (bucket.genuiChars / maxChars) * 100,
                     label: "GenUI",
+                    value: bucket.genuiChars,
                 },
             ].filter((segment) => segment.heightPct > 0),
         }));
@@ -506,8 +571,10 @@ export class ModelUsageAnalyticsComponent implements OnInit {
                 continue;
             }
 
-            bucket.inputTokens += row.tokenUsage.inputTokens;
-            bucket.outputTokens += row.tokenUsage.outputTokens;
+            bucket.cachedInputTokens += row.tokenUsage.cachedTokens;
+            bucket.liveInputTokens += row.tokenUsage.liveInputTokens;
+            bucket.thinkingOutputTokens += row.tokenUsage.reasoningTokens;
+            bucket.visibleOutputTokens += row.tokenUsage.visibleOutputTokens;
             bucket.totalTokens += row.tokenUsage.totalTokens;
             bucket.totalChars += row.promptUsage.totalChars;
             bucket.systemChars += row.promptUsage.systemChars;
@@ -596,8 +663,10 @@ export class ModelUsageAnalyticsComponent implements OnInit {
             bucketStartMs,
             label: new Date(bucketStartMs).toISOString(),
             displayLabel: this.formatBucketLabel(bucketStartMs, granularity),
-            inputTokens: 0,
-            outputTokens: 0,
+            cachedInputTokens: 0,
+            liveInputTokens: 0,
+            thinkingOutputTokens: 0,
+            visibleOutputTokens: 0,
             totalTokens: 0,
             totalChars: 0,
             systemChars: 0,
@@ -685,7 +754,7 @@ export class ModelUsageAnalyticsComponent implements OnInit {
                     label: entry.label,
                     value: entry.value,
                     valueLabel: `${Math.round(percentage)}%`,
-                    subtitle: "share of prompt footprint",
+                    subtitle: "share of total prompt chars",
                     widthPct: percentage,
                     tone: this.pickTone(index),
                 };
@@ -849,6 +918,10 @@ export class ModelUsageAnalyticsComponent implements OnInit {
             notation: value >= 1000 ? "compact" : "standard",
             maximumFractionDigits: value >= 1000 ? 1 : 0,
         }).format(Math.round(value));
+    }
+
+    private formatFullNumber(value: number): string {
+        return new Intl.NumberFormat().format(Math.round(value));
     }
 
     private formatPercent(value: number, total: number): string {

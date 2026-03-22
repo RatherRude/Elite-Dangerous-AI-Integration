@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from src.lib.Logger import ModelUsageStats, PromptUsageStats, log_llm_usage
 from src.lib.Database import ModelUsageStore, set_connection_for_testing
-from src.lib.Models import OpenAIResponsesLLMModel
+from src.lib.Models import OpenAIResponsesLLMModel, _get_reasoning_tokens
 
 
 @pytest.fixture
@@ -115,3 +115,27 @@ def test_openai_responses_model_usage_captures_reasoning_tokens(
     assert usage.reasoning_tokens == 4
     assert usage.provider == "openai"
     assert usage.model_name == "gpt-5"
+
+
+def test_get_reasoning_tokens_falls_back_to_usage_totals() -> None:
+    usage = SimpleNamespace(
+        prompt_tokens=100,
+        completion_tokens=40,
+        total_tokens=155,
+        completion_tokens_details=None,
+        output_tokens_details=None,
+    )
+
+    assert _get_reasoning_tokens(usage) == 15
+
+
+def test_get_reasoning_tokens_falls_back_to_response_usage_totals() -> None:
+    usage = SimpleNamespace(
+        input_tokens=1276,
+        output_tokens=55,
+        total_tokens=1437,
+        completion_tokens_details=None,
+        output_tokens_details=None,
+    )
+
+    assert _get_reasoning_tokens(usage) == 106
