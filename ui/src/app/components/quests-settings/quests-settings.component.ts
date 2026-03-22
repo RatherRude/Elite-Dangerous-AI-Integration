@@ -173,11 +173,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
         this.stageGraphSubscriptions.forEach((subscription) =>
             subscription.unsubscribe(),
         );
-        this.actorAvatarPreviewUrls.forEach((url) => {
-            if (this.avatarService.isObjectUrl(url)) {
-                URL.revokeObjectURL(url);
-            }
-        });
+        this.actorAvatarPreviewUrls.forEach((url) => URL.revokeObjectURL(url));
         this.actorAvatarPreviewUrls.clear();
         if (this.network) {
             this.network.destroy();
@@ -1068,13 +1064,13 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
         const dialogRef = this.dialog.open(AvatarCatalogDialogComponent, {
             width: "850px",
             maxWidth: "95vw",
-            data: { currentAvatarPath: actor.avatar_url },
+            data: { currentAvatarId: this.extractAvatarCatalogId(actor.avatar_url) },
         });
         dialogRef.afterClosed().subscribe((result: AvatarCatalogResult | undefined) => {
             if (!result) {
                 return;
             }
-            actor.avatar_url = result.avatarPath || "";
+            actor.avatar_url = result.avatarId ? `avatar://${result.avatarId}` : "";
             void this.updateActorAvatarPreview(actor);
         });
     }
@@ -1083,19 +1079,28 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
         if (!actor.avatar_url) {
             return "";
         }
-        if (!this.avatarService.isAbsoluteFilePath(actor.avatar_url)) {
+        const avatarId = this.extractAvatarCatalogId(actor.avatar_url);
+        if (!avatarId) {
             return actor.avatar_url;
         }
         return this.actorAvatarPreviewUrls.get(actor) ?? "";
+    }
+
+    private extractAvatarCatalogId(avatarUrl: string | null | undefined): string | null {
+        if (!avatarUrl) {
+            return null;
+        }
+        if (!avatarUrl.startsWith("avatar://")) {
+            return null;
+        }
+        return avatarUrl.slice("avatar://".length) || null;
     }
 
     private async syncActorAvatarPreviews(actors: QuestActor[]): Promise<void> {
         const actorSet = new Set(actors);
         for (const [actor, existingUrl] of this.actorAvatarPreviewUrls.entries()) {
             if (!actorSet.has(actor)) {
-                if (this.avatarService.isObjectUrl(existingUrl)) {
-                    URL.revokeObjectURL(existingUrl);
-                }
+                URL.revokeObjectURL(existingUrl);
                 this.actorAvatarPreviewUrls.delete(actor);
             }
         }
@@ -1115,45 +1120,30 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
 
     private async updateActorAvatarPreview(actor: QuestActor): Promise<void> {
         const existingUrl = this.actorAvatarPreviewUrls.get(actor);
-        const avatarPath = actor.avatar_url;
-        if (!avatarPath) {
+        const avatarId = this.extractAvatarCatalogId(actor.avatar_url);
+        if (!avatarId) {
             if (existingUrl) {
-                if (this.avatarService.isObjectUrl(existingUrl)) {
-                    URL.revokeObjectURL(existingUrl);
-                }
-                this.actorAvatarPreviewUrls.delete(actor);
-            }
-            return;
-        }
-        if (!this.avatarService.isAbsoluteFilePath(avatarPath)) {
-            if (existingUrl) {
-                if (this.avatarService.isObjectUrl(existingUrl)) {
-                    URL.revokeObjectURL(existingUrl);
-                }
+                URL.revokeObjectURL(existingUrl);
                 this.actorAvatarPreviewUrls.delete(actor);
             }
             return;
         }
         try {
-            const avatarUrl = await this.avatarService.getAvatar(avatarPath);
+            const avatarUrl = await this.avatarService.getAvatar(avatarId);
             if (!avatarUrl) {
                 if (existingUrl) {
-                    if (this.avatarService.isObjectUrl(existingUrl)) {
-                        URL.revokeObjectURL(existingUrl);
-                    }
+                    URL.revokeObjectURL(existingUrl);
                     this.actorAvatarPreviewUrls.delete(actor);
                 }
                 return;
             }
-            if (existingUrl && existingUrl !== avatarUrl && this.avatarService.isObjectUrl(existingUrl)) {
+            if (existingUrl && existingUrl !== avatarUrl) {
                 URL.revokeObjectURL(existingUrl);
             }
             this.actorAvatarPreviewUrls.set(actor, avatarUrl);
         } catch (error) {
             if (existingUrl) {
-                if (this.avatarService.isObjectUrl(existingUrl)) {
-                    URL.revokeObjectURL(existingUrl);
-                }
+                URL.revokeObjectURL(existingUrl);
                 this.actorAvatarPreviewUrls.delete(actor);
             }
             this.snackBar.open("Failed to load actor avatar", "Dismiss", {
