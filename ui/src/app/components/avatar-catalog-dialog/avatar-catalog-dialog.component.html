@@ -64,17 +64,17 @@
           <p>No avatars uploaded yet. Upload one to get started!</p>
         </div>
       } @else {
-        @for (avatar of avatars; track avatar.id) {
-          <mat-card class="avatar-card" [class.selected]="avatar.id === data.currentAvatarId">
+        @for (avatar of avatars; track avatar.path) {
+          <mat-card class="avatar-card" [class.selected]="avatar.path === data.currentAvatarPath">
             <mat-card-content>
-              <div class="avatar-image-container" (click)="selectAvatar(avatar.id)">
+              <div class="avatar-image-container" (click)="selectAvatar(avatar.path)">
                 <img 
-                  [src]="getAvatarUrl(avatar.id)" 
+                  [src]="getAvatarUrl(avatar.path)" 
                   [alt]="avatar.fileName"
                   class="avatar-image">
                 
                 <div class="avatar-overlay">
-                  @if (avatar.id === data.currentAvatarId) {
+                  @if (avatar.path === data.currentAvatarPath) {
                     <div class="selected-indicator">
                       <mat-icon>check_circle</mat-icon>
                       <span>Selected</span>
@@ -86,14 +86,14 @@
                     </div>
                   }
                   
-                  <button 
-                    mat-icon-button 
-                    class="delete-button"
-                    color="warn"
-                    (click)="deleteAvatar(avatar.id); $event.stopPropagation()"
-                    matTooltip="Delete avatar">
-                    <mat-icon>delete</mat-icon>
-                  </button>
+                    <button 
+                     mat-icon-button 
+                     class="delete-button"
+                     color="warn"
+                     (click)="deleteAvatar(avatar.path); $event.stopPropagation()"
+                     matTooltip="Delete avatar">
+                     <mat-icon>delete</mat-icon>
+                   </button>
                 </div>
               </div>
               

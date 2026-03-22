@@ -1,6 +1,7 @@
-import { Component, OnDestroy, OnInit, ElementRef, ViewChild, AfterViewInit } from "@angular/core";
+import { Component, OnDestroy, ElementRef, ViewChild, AfterViewInit } from "@angular/core";
+import { DomSanitizer, SafeHtml } from "@angular/platform-browser";
 import { TauriService } from "../services/tauri.service";
-import { Subscription } from "rxjs";
+import { Subscription, combineLatest } from "rxjs";
 import { CommonModule } from "@angular/common";
 import {PngTuberService} from "../services/pngtuber.service";
 import {ChatMessage, ChatService} from "../services/chat.service";
@@ -18,17 +19,23 @@ import { EventService } from "../services/event.service";
   styleUrl: "./overlay-view.component.css",
 })
 export class OverlayViewComponent implements OnDestroy, AfterViewInit {
-  @ViewChild('pngtuberElement', { static: false }) pngtuberElement!: ElementRef<HTMLDivElement>;
-  
+  @ViewChild('pngtuberElement', { static: false }) pngtuberElement?: ElementRef<HTMLDivElement>;
+
   action = 'idle'
   runMode = 'configuring'
   chat: ChatMessage[] = []
-  
+
+  /** Injected SVG markup; state classes live on `.overlay-svg-tuber` (see cn_avatar.svg). */
+  sanitizedSvg: SafeHtml | null = null;
+
   private currentAvatarUrl: string | null = null;
   private baseAvatarUrl: string | null = null;
+  private baseAvatarMime: string | null = null;
   private scriptedAvatarUrl: string | null = null;
+  private scriptedAvatarMime: string | null = null;
   private scriptedAvatarId: string | null = null;
   private scriptedAvatarRequestSeq = 0;
+  private svgFetchSeq = 0;
   private subscriptions: Subscription[] = [];
 
   // Overlay display settings
@@ -47,6 +54,7 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     private characterService: CharacterService,
     private configService: ConfigService,
     private eventService: EventService,
+    private sanitizer: DomSanitizer,
   ) {
     // Subscribe to run mode changes
     this.subscriptions.push(
@@ -69,15 +77,18 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
       })
     );
     
-    // Subscribe to avatar URL changes from character service
+    // Keep URL + MIME in sync (PNG sprite vs inline SVG)
     this.subscriptions.push(
-      characterService.avatarUrl$.subscribe(avatarUrl => {
-        this.baseAvatarUrl = avatarUrl;
-        if (!this.scriptedAvatarUrl) {
-          this.currentAvatarUrl = avatarUrl;
-        }
-        this.applyAvatarBackground();
-      })
+      combineLatest([characterService.avatarUrl$, characterService.avatarMime$]).subscribe(
+        ([avatarUrl, mime]) => {
+          this.baseAvatarUrl = avatarUrl;
+          this.baseAvatarMime = mime;
+          if (!this.scriptedAvatarUrl) {
+            this.currentAvatarUrl = avatarUrl;
+          }
+          this.refreshAvatarDisplay();
+        },
+      ),
     );
     this.subscriptions.push(
       chatService.chatMessage$.subscribe((msg) => {
@@ -85,7 +96,7 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
           return;
         }
         if (msg.role === "npc_message") {
-          void this.setScriptedAvatar(msg.avatar_id);
+          void this.setScriptedAvatar(msg.avatar_id ?? msg.avatar_url);
         }
       }),
     );
@@ -108,14 +119,14 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
           this.setAvatarDisplayFromPosition(config.overlay_position || 'right');
           this.updateAvatarShowStatus(config);
           this.updateChatShowStatus(config);
-          this.applyAvatarBackground(); // Update avatar when position changes
+          this.refreshAvatarDisplay();
           this.isInitialized = true;
         } else if (!this.isInitialized) {
           // Reset to defaults if no character and not yet initialized
           this.setAvatarDisplayFromPosition('right');
           this.avatarShow = true;
           this.chatShow = true;
-          this.applyAvatarBackground(); // Update avatar when resetting to defaults
+          this.refreshAvatarDisplay();
         }
       })
     );
@@ -136,10 +147,7 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
   }
   
   ngAfterViewInit() {
-    // Apply avatar background if we have one
-    if (this.currentAvatarUrl) {
-      this.applyAvatarBackground();
-    }
+    this.refreshAvatarDisplay();
     this.tauriService.send_command({
       type: "init_overlay",
       timestamp: new Date().toISOString(),
@@ -152,7 +160,7 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     this.subscriptions.forEach(sub => sub.unsubscribe());
     
     // Clean up avatar URL
-    if (this.currentAvatarUrl) {
+    if (this.currentAvatarUrl && this.avatarService.isObjectUrl(this.currentAvatarUrl)) {
       URL.revokeObjectURL(this.currentAvatarUrl);
     }
   }
@@ -185,6 +193,27 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     }
   }
 
+  /** SVG avatars are embedded so internal style state selectors (e.g. `.listening .eye-base`) apply. */
+  get avatarUsesInlineSvg(): boolean {
+    return this.effectiveAvatarMimePrimary() === "image/svg+xml";
+  }
+
+  /** SVG defines listening | speaking | thinking | acting — map idle to listening. */
+  get svgAnimationClass(): string {
+    return this.action === "idle" ? "listening" : this.action;
+  }
+
+  private effectiveAvatarMimePrimary(): string | null {
+    if (!this.currentAvatarUrl) {
+      return null;
+    }
+    const mime = this.scriptedAvatarUrl ? this.scriptedAvatarMime : this.baseAvatarMime;
+    if (!mime) {
+      return null;
+    }
+    return mime.trim().toLowerCase().split(";")[0]?.trim() ?? null;
+  }
+
   private setAvatarDisplayFromPosition(position: Config['overlay_position'] | string): void {
     const [side, size = 'large'] = position.split("-");
     this.avatarPosition = side === 'left' ? 'left' : 'right';
@@ -201,52 +230,107 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     }
   }
 
-  private applyAvatarBackground() {
-    // Wait for next tick to ensure view is rendered, with longer timeout for *ngIf changes
+  private refreshAvatarDisplay(): void {
     setTimeout(() => {
-      // Only apply if avatar should be shown and element exists
-      if (this.avatarShow && this.pngtuberElement?.nativeElement) {
-        if (this.currentAvatarUrl) {
-          this.pngtuberElement.nativeElement.style.backgroundImage = `url('${this.currentAvatarUrl}')`;
-        } else {
-          // Use flipped default avatar when overlay position is left
-          const defaultAvatar = this.avatarPosition === 'left' 
-            ? 'assets/cn_avatar_default_flipped.png' 
-            : 'assets/cn_avatar_default.png';
-          this.pngtuberElement.nativeElement.style.backgroundImage = `url('${defaultAvatar}')`;
-        }
+      if (!this.avatarShow) {
+        return;
       }
-    }, 10); // Slightly longer timeout to handle *ngIf rendering
+      const url = this.currentAvatarUrl;
+      if (this.avatarUsesInlineSvg && url) {
+        void this.loadInlineSvg(url);
+        return;
+      }
+      this.svgFetchSeq += 1;
+      this.sanitizedSvg = null;
+      this.applyPngTuberBackground();
+    }, 10);
   }
 
-  private async setScriptedAvatar(avatarId?: string): Promise<void> {
-    if (!avatarId) {
+  private applyPngTuberBackground(): void {
+    const el = this.pngtuberElement?.nativeElement;
+    if (!this.avatarShow || !el) {
+      return;
+    }
+    if (this.currentAvatarUrl) {
+      el.style.backgroundImage = `url('${this.currentAvatarUrl}')`;
+    } else {
+      const defaultAvatar =
+        this.avatarPosition === "left"
+          ? "assets/cn_avatar_default_flipped.png"
+          : "assets/cn_avatar_default.png";
+      el.style.backgroundImage = `url('${defaultAvatar}')`;
+    }
+  }
+
+  private async loadInlineSvg(url: string): Promise<void> {
+    const seq = ++this.svgFetchSeq;
+    try {
+      const res = await fetch(url);
+      const text = await res.text();
+      if (
+        seq !== this.svgFetchSeq ||
+        url !== this.currentAvatarUrl ||
+        this.effectiveAvatarMimePrimary() !== "image/svg+xml"
+      ) {
+        return;
+      }
+      const safe = this.stripScriptsFromSvg(this.stripSvgRootClass(text));
+      this.sanitizedSvg = this.sanitizer.bypassSecurityTrustHtml(safe);
+    } catch (err) {
+      console.error("Overlay: failed to load SVG avatar", err);
+      if (seq === this.svgFetchSeq) {
+        this.sanitizedSvg = null;
+      }
+    }
+  }
+
+  private stripSvgRootClass(svg: string): string {
+    return svg.replace(/<svg\b([^>]*)>/i, (_m, attrs: string) => {
+      const next = attrs
+        .replace(/\sclass\s*=\s*"[^"]*"/gi, "")
+        .replace(/\sclass\s*=\s*'[^']*'/gi, "")
+        .trim();
+      return next ? `<svg ${next}>` : "<svg>";
+    });
+  }
+
+  private stripScriptsFromSvg(svg: string): string {
+    return svg.replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "");
+  }
+
+  private async setScriptedAvatar(avatarRef?: string): Promise<void> {
+    if (!avatarRef) {
       this.clearScriptedAvatar();
       return;
     }
-    if (this.scriptedAvatarId === avatarId && this.scriptedAvatarUrl) {
+    if (this.scriptedAvatarId === avatarRef && this.scriptedAvatarUrl) {
       return;
     }
     const requestSeq = ++this.scriptedAvatarRequestSeq;
     try {
-      const avatarUrl = await this.avatarService.getAvatar(avatarId);
+      const meta = await this.avatarService.getAvatarWithMime(avatarRef);
       if (requestSeq !== this.scriptedAvatarRequestSeq) {
-        if (avatarUrl) {
-          URL.revokeObjectURL(avatarUrl);
+        if (meta?.url && this.avatarService.isObjectUrl(meta.url)) {
+          URL.revokeObjectURL(meta.url);
         }
         return;
       }
-      if (!avatarUrl) {
+      if (!meta?.url) {
         this.clearScriptedAvatar();
         return;
       }
-      if (this.scriptedAvatarUrl && this.scriptedAvatarUrl !== avatarUrl) {
+      if (
+        this.scriptedAvatarUrl &&
+        this.scriptedAvatarUrl !== meta.url &&
+        this.avatarService.isObjectUrl(this.scriptedAvatarUrl)
+      ) {
         URL.revokeObjectURL(this.scriptedAvatarUrl);
       }
-      this.scriptedAvatarId = avatarId;
-      this.scriptedAvatarUrl = avatarUrl;
-      this.currentAvatarUrl = avatarUrl;
-      this.applyAvatarBackground();
+      this.scriptedAvatarId = avatarRef;
+      this.scriptedAvatarUrl = meta.url;
+      this.scriptedAvatarMime = meta.mimeType;
+      this.currentAvatarUrl = meta.url;
+      this.refreshAvatarDisplay();
     } catch (error) {
       console.error("Error loading scripted dialog avatar:", error);
       this.clearScriptedAvatar();
@@ -256,12 +340,13 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
   private clearScriptedAvatar(): void {
     this.scriptedAvatarRequestSeq += 1;
     this.scriptedAvatarId = null;
-    if (this.scriptedAvatarUrl) {
+    this.scriptedAvatarMime = null;
+    if (this.scriptedAvatarUrl && this.avatarService.isObjectUrl(this.scriptedAvatarUrl)) {
       URL.revokeObjectURL(this.scriptedAvatarUrl);
-      this.scriptedAvatarUrl = null;
     }
+    this.scriptedAvatarUrl = null;
     this.currentAvatarUrl = this.baseAvatarUrl;
-    this.applyAvatarBackground();
+    this.refreshAvatarDisplay();
   }
 
   public getLogColor(role: string): string {

@@ -111,12 +111,36 @@
   &.idle {
     background-position: 0% 0%;
   }
-  
+}
 
+/* Inline SVG: state classes on this wrapper drive selectors inside the SVG (e.g. .listening .eye-base) */
+.overlay-svg-tuber {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 250px;
+  margin: 0 auto;
+  aspect-ratio: 1;
+  grid-area: pngtuber;
+  transform: none;
+  opacity: 1;
+  visibility: visible;
+  will-change: opacity;
+  transition:
+    opacity 0.12s linear 0.1s,
+    visibility 0s linear 0s;
+}
+
+.overlay-svg-tuber ::ng-deep svg {
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+  display: block;
 }
 
 /* Hide avatar immediately while the character slides out to avoid edge peeking */
-.overlay-character.idle .overlay-pngtuber {
+.overlay-character.idle .overlay-pngtuber,
+.overlay-character.idle .overlay-svg-tuber {
   opacity: 0;
   visibility: hidden;
   transition:
