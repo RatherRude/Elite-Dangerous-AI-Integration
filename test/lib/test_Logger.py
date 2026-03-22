@@ -51,7 +51,14 @@ def test_log_llm_usage_includes_provider_model_and_reasoning_tokens(
 
     log_llm_usage("assistant", usage, PromptUsageStats(system_chars=20))
 
-    message = json.loads(capsys.readouterr().out.strip())
+    output_lines = [
+        line for line in capsys.readouterr().out.splitlines() if line.strip()
+    ]
+    message = next(
+        json.loads(line)
+        for line in reversed(output_lines)
+        if json.loads(line).get("type") == "llm_usage"
+    )
     assert message["type"] == "llm_usage"
     assert message["provider"] == "openai"
     assert message["model_name"] == "gpt-5"
