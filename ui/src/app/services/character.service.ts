@@ -9,6 +9,55 @@ export interface ConfigWithCharacters extends Config {
     active_character_index: number;
 }
 
+export interface CharacterTTSDistortionConfig {
+    enabled?: boolean;
+    drive?: number;
+    clip?: number;
+    mode?: "tanh" | "hard";
+}
+
+export interface CharacterTTSFilterConfig {
+    enabled?: boolean;
+    cutoff?: number;
+}
+
+export interface CharacterTTSChorusConfig {
+    enabled?: boolean;
+    delay_ms?: number;
+    depth_ms?: number;
+    rate_hz?: number;
+    mix?: number;
+}
+
+export interface CharacterTTSGlitchConfig {
+    enabled?: boolean;
+    probability?: number;
+    repeat_min?: number;
+    repeat_max?: number;
+    min_seconds?: number;
+    max_seconds?: number;
+}
+
+export interface CharacterTTSEffectsConfig {
+    distortion?: CharacterTTSDistortionConfig;
+    lowpass?: CharacterTTSFilterConfig;
+    highpass?: CharacterTTSFilterConfig;
+    chorus?: CharacterTTSChorusConfig;
+    glitch?: CharacterTTSGlitchConfig;
+}
+
+export interface CharacterTTSPostprocessingConfig {
+    volume?: number;
+    effects?: CharacterTTSEffectsConfig;
+}
+
+export interface CharacterTTSSettings {
+    voice: string;
+    speed: string;
+    voice_instruction?: string;
+    postprocessing: CharacterTTSPostprocessingConfig;
+}
+
 export interface Character {
     name: string;
     character: string;
@@ -26,9 +75,7 @@ export interface Character {
     personality_knowledge_pop_culture: boolean;
     personality_knowledge_scifi: boolean;
     personality_knowledge_history: boolean;
-    tts_voice: string;
-    tts_speed: string;
-    tts_prompt: string;
+    tts: CharacterTTSSettings;
     avatar?: string; // IndexedDB key for the avatar image
 
     
@@ -128,6 +175,20 @@ export class CharacterService {
             this.activeCharacterIndex ?? 0,
             character,
         );
+    }
+
+    public async setCharacterTTSProperty<T extends keyof CharacterTTSSettings>(
+        propName: T,
+        value: CharacterTTSSettings[T],
+    ): Promise<void> {
+        const character = this.characterSubject.getValue();
+        if (!character) return;
+        character.tts = {
+            ...character.tts,
+            [propName]: value,
+        };
+        this.characterSubject.next(character);
+        await this.updateCharacter(this.activeCharacterIndex ?? 0, character);
     }
 
     public getCharacterEventProperty<T extends keyof Character["game_events"]>(

@@ -80,13 +80,13 @@ export class AdvancedSettingsComponent {
     }
 
     updateTTSVoice(voice: string) {
-        this.characterService.setCharacterProperty("tts_voice", voice);
+        this.characterService.setCharacterTTSProperty("voice", voice);
     }
     updateTTSSpeed(speed: string) {
-        this.characterService.setCharacterProperty("tts_speed", speed);
+        this.characterService.setCharacterTTSProperty("speed", speed);
     }
     updateTTSPrompt(prompt: string) {
-        this.characterService.setCharacterProperty("tts_prompt", prompt);
+        this.characterService.setCharacterTTSProperty("voice_instruction", prompt);
     }
 
     parseFloat(value: string): number {

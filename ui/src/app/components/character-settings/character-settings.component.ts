@@ -35,7 +35,7 @@ import { TooltipDirective } from "./tooltip.directive.js";
 import { MatDivider } from "@angular/material/divider";
 import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
-import { CharacterService, ConfigWithCharacters, Character } from "../../services/character.service";
+import { CharacterService, ConfigWithCharacters, Character, CharacterTTSSettings } from "../../services/character.service";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { CharacterPresets } from "./character-presets";
 
@@ -666,6 +666,13 @@ export class CharacterSettingsComponent {
         return this.characterService.setCharacterProperty(propName, value);
     }
 
+    public async setCharacterTTSProperty<T extends keyof CharacterTTSSettings>(
+        propName: T,
+        value: CharacterTTSSettings[T],
+    ): Promise<void> {
+        return this.characterService.setCharacterTTSProperty(propName, value);
+    }
+
     public async setCharacterPropertyAndUpdatePrompt<T extends keyof Character>(
         propName: T,
         value: Character[T],
@@ -964,12 +971,12 @@ export class CharacterSettingsComponent {
         if (value === "show-all-voices") {
             this.openEdgeTtsVoicesDialog();
         } else {
-            this.setCharacterProperty("tts_voice", value);
+            this.setCharacterTTSProperty("voice", value);
         }
     }
 
     openEdgeTtsVoicesDialog() {
-        const currentVoice = this.activeCharacter?.tts_voice ?? "en-US-AvaMultilingualNeural";
+        const currentVoice = this.activeCharacter?.tts.voice ?? "en-US-AvaMultilingualNeural";
 
         const dialogRef = this.dialog.open(EdgeTtsVoicesDialogComponent, {
             width: "800px",
@@ -981,7 +988,7 @@ export class CharacterSettingsComponent {
 
         dialogRef.afterClosed().subscribe((result) => {
             if (result) {
-                this.setCharacterProperty("tts_voice", result);
+                this.setCharacterTTSProperty("voice", result);
             }
         });
     }

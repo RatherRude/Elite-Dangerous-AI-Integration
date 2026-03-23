@@ -75,8 +75,8 @@ def mock_miniaudio(monkeypatch):
 
 def test_openai_tts_playback(mock_pyaudio, mock_openai):
     """Test OpenAI TTS playback"""
-    tts =  TTS(mock_openai, provider="openai", model="tts-1", voice="nova", speed=1)
-    tts.say("Hello world")
+    tts = TTS(mock_openai, provider="openai", model="tts-1")
+    tts.say("Hello world", {"voice": "nova", "speed": 1})
     
     while not mock_openai.audio.speech.with_streaming_response.create.called:
         sleep(0.1)
@@ -89,8 +89,8 @@ def test_openai_tts_playback(mock_pyaudio, mock_openai):
 
 def test_openai_tts_playback_with_voice_instructions(mock_pyaudio, mock_openai):
     """Test OpenAI TTS playback"""
-    tts = TTS(mock_openai, provider="openai", model="gpt-4o-mini-tts", voice="nova", voice_instructions="Speak normally...")
-    tts.say("Hello world")
+    tts = TTS(mock_openai, provider="openai", model="gpt-4o-mini-tts")
+    tts.say("Hello world", {"voice": "nova", "voice_instruction": "Speak normally..."})
 
     while not mock_openai.audio.speech.with_streaming_response.create.called:
         sleep(0.1)
@@ -102,8 +102,8 @@ def test_openai_tts_playback_with_voice_instructions(mock_pyaudio, mock_openai):
 
 def test_edge_tts_playback(mock_pyaudio, mock_miniaudio, mock_openai):
     """Test Edge-TTS playback"""
-    tts =  TTS(None, provider="edge-tts", model="edge-tts", voice="en-US-AvaMultilingualNeural", speed=1)
-    tts.say("Hello world")
+    tts = TTS(None, provider="edge-tts", model="edge-tts")
+    tts.say("Hello world", {"voice": "en-US-AvaMultilingualNeural", "speed": 1})
     
     while not mock_pyaudio['stream'].write.call_count >= 2:
         sleep(0.1)

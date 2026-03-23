@@ -321,6 +321,168 @@ game_events = {
 }
 
 
+TTSProvider = Literal['openai', 'edge-tts', 'custom', 'none', 'local-ai-server']
+
+
+class CharacterTTSDistortionConfig(TypedDict, total=False):
+    enabled: bool
+    drive: float
+    clip: float
+    mode: Literal['tanh', 'hard']
+
+
+class CharacterTTSFilterConfig(TypedDict, total=False):
+    enabled: bool
+    cutoff: float
+
+
+class CharacterTTSChorusConfig(TypedDict, total=False):
+    enabled: bool
+    delay_ms: float
+    depth_ms: float
+    rate_hz: float
+    mix: float
+
+
+class CharacterTTSGlitchConfig(TypedDict, total=False):
+    enabled: bool
+    probability: float
+    repeat_min: int
+    repeat_max: int
+    min_seconds: float
+    max_seconds: float
+
+
+class CharacterTTSEffectsConfig(TypedDict, total=False):
+    distortion: CharacterTTSDistortionConfig
+    lowpass: CharacterTTSFilterConfig
+    highpass: CharacterTTSFilterConfig
+    chorus: CharacterTTSChorusConfig
+    glitch: CharacterTTSGlitchConfig
+
+
+class CharacterTTSPostprocessingConfig(TypedDict, total=False):
+    volume: float
+    effects: CharacterTTSEffectsConfig
+
+
+class CharacterTTSSettings(TypedDict, total=False):
+    voice: str
+    speed: str | float
+    voice_instruction: str
+    postprocessing: CharacterTTSPostprocessingConfig
+
+
+def get_default_character_tts_voice(tts_provider: TTSProvider | str) -> str:
+    if tts_provider == 'edge-tts':
+        return 'en-US-AvaMultilingualNeural'
+    if tts_provider == 'none':
+        return ''
+    return 'nova'
+
+
+def get_default_character_tts_postprocessing() -> CharacterTTSPostprocessingConfig:
+    return {
+        "volume": 1.0,
+        "effects": {
+            "chorus": {
+                "enabled": False,
+                "delay_ms": 25.0,
+                "depth_ms": 12.0,
+                "rate_hz": 0.25,
+                "mix": 0.5,
+            },
+            "distortion": {
+                "enabled": False,
+                "drive": 2.0,
+                "clip": 0.20,
+                "mode": 'tanh',
+            },
+            "lowpass": {
+                "enabled": False,
+                "cutoff": 5000.0,
+            },
+            "highpass": {
+                "enabled": False,
+                "cutoff": 120.0,
+            },
+            "glitch": {
+                "enabled": False,
+                "probability": 0.04,
+                "repeat_min": 2,
+                "repeat_max": 4,
+                "min_seconds": 0.05,
+                "max_seconds": 0.20,
+            },
+        },
+    }
+
+
+def get_default_character_tts_settings(tts_provider: TTSProvider | str) -> CharacterTTSSettings:
+    return {
+        "voice": get_default_character_tts_voice(tts_provider),
+        "speed": '1.2',
+        "voice_instruction": '',
+        "postprocessing": get_default_character_tts_postprocessing(),
+    }
+
+
+def normalize_character_tts_settings(character: dict[str, Any], tts_provider: TTSProvider | str) -> CharacterTTSSettings:
+    defaults = get_default_character_tts_settings(tts_provider)
+    raw_tts = character.get('tts')
+
+    raw_voice = character.get('tts_voice', defaults['voice'])
+    raw_speed = character.get('tts_speed', defaults['speed'])
+    raw_voice_instruction = character.get('tts_prompt', defaults.get('voice_instruction', ''))
+    raw_postprocessing: dict[str, Any] = {}
+
+    if isinstance(raw_tts, dict):
+        raw_voice = raw_tts.get('voice', raw_voice)
+        raw_speed = raw_tts.get('speed', raw_speed)
+        raw_voice_instruction = raw_tts.get('voice_instruction', raw_voice_instruction)
+        postprocessing = raw_tts.get('postprocessing', {})
+        if isinstance(postprocessing, dict):
+            raw_postprocessing = cast(dict[str, Any], postprocessing)
+
+    voice = raw_voice if isinstance(raw_voice, str) else defaults['voice']
+    if voice == 'en-GB-SoniaNeural':
+        voice = 'en-US-AvaMultilingualNeural'
+
+    if isinstance(raw_speed, str):
+        speed: str | float = raw_speed
+    elif isinstance(raw_speed, (int, float)):
+        speed = float(raw_speed)
+    else:
+        speed = defaults['speed']
+
+    voice_instruction = raw_voice_instruction if isinstance(raw_voice_instruction, str) else defaults.get('voice_instruction', '')
+
+    postprocessing = cast(
+        CharacterTTSPostprocessingConfig,
+        merge_config_data(
+            cast(dict[str, Any], defaults['postprocessing']),
+            raw_postprocessing,
+        ),
+    )
+
+    return {
+        "voice": voice,
+        "speed": speed,
+        "voice_instruction": voice_instruction,
+        "postprocessing": postprocessing,
+    }
+
+
+def with_tts_provider_defaults(characters: list['Character'], tts_provider: TTSProvider | str) -> list['Character']:
+    default_voice = get_default_character_tts_voice(tts_provider)
+    updated_characters: list[Character] = []
+    for character in characters:
+        normalized_tts = normalize_character_tts_settings(cast(dict[str, Any], character), tts_provider)
+        normalized_tts['voice'] = default_voice
+        updated_characters.append(cast(Character, {**character, 'tts': normalized_tts}))
+    return updated_characters
+
+
 class Character(TypedDict, total=False):
     name: str
     character: str
@@ -338,9 +500,7 @@ class Character(TypedDict, total=False):
     personality_knowledge_pop_culture: bool
     personality_knowledge_scifi: bool
     personality_knowledge_history: bool
-    tts_voice: str
-    tts_speed: str
-    tts_prompt: str
+    tts: CharacterTTSSettings
     avatar: str  # IndexedDB key for the avatar image
     game_events: dict[str, bool]
     event_reaction_enabled_var: bool
@@ -377,7 +537,7 @@ class Config(TypedDict):
     stt_language: str
     stt_custom_prompt: str
     stt_required_word: str
-    tts_provider: Literal['openai', 'edge-tts', 'custom', 'none', 'local-ai-server']
+    tts_provider: TTSProvider
     tts_model_name: str
     tts_api_key: str
     tts_endpoint: str
@@ -566,6 +726,26 @@ def migrate(data: dict) -> dict:
         if 'llm_model_name' in data and data['llm_model_name'] == 'gemini-2.5-flash-preview-04-17':
             data['llm_model_name'] = 'gemini-2.5-flash'
 
+    if data['config_version'] < 4:
+        data['config_version'] = 4
+
+        if 'characters' in data:
+            tts_provider = data.get('tts_provider', 'edge-tts')
+            legacy_character_tts = {
+                'tts_voice': data.get('tts_voice'),
+                'tts_speed': data.get('tts_speed'),
+                'tts_prompt': data.get('tts_prompt'),
+            }
+            for character in data['characters']:
+                character['tts'] = normalize_character_tts_settings({**legacy_character_tts, **character}, tts_provider)
+                character.pop('tts_voice', None)
+                character.pop('tts_speed', None)
+                character.pop('tts_prompt', None)
+
+        data.pop('tts_voice', None)
+        data.pop('tts_speed', None)
+        data.pop('tts_prompt', None)
+
 
     return data
 
@@ -645,9 +825,7 @@ def getDefaultCharacter(config: Config) -> Character:
         "personality_knowledge_pop_culture": False,
         "personality_knowledge_scifi": False,
         "personality_knowledge_history": False,
-        "tts_voice": 'en-US-AvaMultilingualNeural' if config.get('tts_provider') == 'edge-tts' else 'nova',
-        "tts_speed": '1.2',
-        "tts_prompt": '',
+        "tts": get_default_character_tts_settings(config.get('tts_provider', 'edge-tts')),
         "avatar": '',  # No avatar by default
         "game_events": game_events,
         "event_reaction_enabled_var": True,
@@ -664,7 +842,7 @@ def getDefaultCharacter(config: Config) -> Character:
 
 def load_config() -> Config:
     defaults: Config = {
-        'config_version': 1,
+        'config_version': 4,
         'commander_name': "",
         'characters': [],
         'active_character_index': 0,  # -1 means using the default legacy character
@@ -674,7 +852,6 @@ def load_config() -> Config:
         'ptt_var': 'voice_activation',
         'ptt_inverted_var': False,
         'mute_during_response_var': False,
-        'event_reaction_enabled_var': True,
         'game_actions_var': True,
         'web_search_actions_var': True,
         'ui_actions_var': True,
@@ -1034,6 +1211,10 @@ def update_character(config: Config, data: UpdateCharacterRequest) -> Config:
     if data.get('operation') == "add":
         # Add a new character
         if "character" in data and data["character"]:
+            data["character"]["tts"] = normalize_character_tts_settings(cast(dict[str, Any], data["character"]), config.get('tts_provider', 'edge-tts'))
+            data["character"].pop('tts_voice', None)
+            data["character"].pop('tts_speed', None)
+            data["character"].pop('tts_prompt', None)
             config["characters"] = config.get("characters", [])
             config["characters"].append(data["character"])
             print(f"Added new character: {data['character'].get('name')}")
@@ -1050,6 +1231,10 @@ def update_character(config: Config, data: UpdateCharacterRequest) -> Config:
     elif data.get('operation') == "update":
         # Update an existing character
         if data.get("index") is not None and "character" in data and data["character"]:
+            data["character"]["tts"] = normalize_character_tts_settings(cast(dict[str, Any], data["character"]), config.get('tts_provider', 'edge-tts'))
+            data["character"].pop('tts_voice', None)
+            data["character"].pop('tts_speed', None)
+            data["character"].pop('tts_prompt', None)
             index = int(data["index"])
             if 0 <= index < len(config.get("characters", [])):
                 config["characters"][index] = data["character"]
@@ -1194,40 +1379,38 @@ def update_config(config: Config, data: dict) -> Config:
             data["stt_api_key"] = ""
 
     if data.get("tts_provider"):
+        target_characters = cast(List[Character], data.get("characters", config["characters"]))
         if data["tts_provider"] == "openai":
             data["tts_endpoint"] = "https://api.openai.com/v1"
             data["tts_model_name"] = "gpt-4o-mini-tts"
-            for character in config["characters"]:
-                character["tts_voice"] = "nova"
+            target_characters = with_tts_provider_defaults(target_characters, data["tts_provider"])
             data["tts_api_key"] = ""
 
         if data["tts_provider"] == "local-ai-server":
             data["tts_endpoint"] = "http://localhost:8080"
             data["tts_model_name"] = "tts-1"
-            for character in config["characters"]:
-                character["tts_voice"] = "nova"
+            target_characters = with_tts_provider_defaults(target_characters, data["tts_provider"])
             data["tts_api_key"] = ""
 
         if data["tts_provider"] == "edge-tts":
             data["tts_endpoint"] = ""
             data["tts_model_name"] = ""
-            for character in config["characters"]:
-                character["tts_voice"] = "en-US-AvaMultilingualNeural"
+            target_characters = with_tts_provider_defaults(target_characters, data["tts_provider"])
             data["tts_api_key"] = ""
 
         if data["tts_provider"] == "custom":
             data["tts_endpoint"] = "https://api.openai.com/v1"
             data["tts_model_name"] = "gpt-4o-mini-tts"
-            for character in config["characters"]:
-                character["tts_voice"] = "nova"
+            target_characters = with_tts_provider_defaults(target_characters, data["tts_provider"])
             data["tts_api_key"] = ""
 
         if data["tts_provider"] == "none":
             data["tts_endpoint"] = ""
             data["tts_model_name"] = ""
-            for character in config["characters"]:
-                character["tts_voice"] = ""
+            target_characters = with_tts_provider_defaults(target_characters, data["tts_provider"])
             data["tts_api_key"] = ""
+
+        data["characters"] = target_characters
 
     # Now merge and save as before
     new_config = cast(Config, {**config, **data})

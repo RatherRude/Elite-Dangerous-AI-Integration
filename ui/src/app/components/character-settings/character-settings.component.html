@@ -10,7 +10,7 @@
                         <mat-select [(value)]="selectedCharacterIndex" (selectionChange)="onCharacterSelect($event.value)" [disabled]="editMode">
                             <mat-divider *ngIf="config.characters && config.characters.length > 0"></mat-divider>
                             <mat-option *ngFor="let character of config.characters; let i = index" [value]="i">
-                                {{ character.name }} ({{ character.tts_voice }})
+                                {{ character.name }} ({{ character.tts.voice }})
                                 <span class="char-details">
                                     {{ character.personality_preset | slice:0:1 | uppercase }}{{ character.personality_preset | slice:1 }} -
                                     {{ countActiveEvents(character) }} active events
@@ -160,8 +160,8 @@
                                     <mat-form-field>
                                         <mat-label>Voice</mat-label>
                                         @if (config.tts_provider === 'openai') {
-                                            <mat-select [ngModel]="activeCharacter.tts_voice"
-                                                    (ngModelChange)="setCharacterProperty('tts_voice', $event)">
+                                            <mat-select [ngModel]="activeCharacter.tts.voice"
+                                                    (ngModelChange)="setCharacterTTSProperty('voice', $event)">
                                                 <mat-option value="alloy">Alloy - Neutral, versatile voice</mat-option>
                                                 <mat-option value="ash">Ash - New voice</mat-option>
                                                 <mat-option value="ballad">Ballad - New voice</mat-option>
@@ -174,11 +174,11 @@
                                                 <mat-option value="shimmer">Shimmer - Clear, warm voice</mat-option>
                                             </mat-select>
                                         } @else if (config.tts_provider === 'edge-tts') {
-                                            <mat-select [ngModel]="activeCharacter.tts_voice"
+                                            <mat-select [ngModel]="activeCharacter.tts.voice"
                                                     (selectionChange)="onVoiceSelectionChange($event.value)">
-                                                @if (isCustomVoice(activeCharacter.tts_voice)) {
-                                                    <mat-option [value]="activeCharacter.tts_voice" style="font-style: italic">
-                                                        {{ getVoiceDisplayName(activeCharacter.tts_voice) }}
+                                                @if (isCustomVoice(activeCharacter.tts.voice)) {
+                                                    <mat-option [value]="activeCharacter.tts.voice" style="font-style: italic">
+                                                        {{ getVoiceDisplayName(activeCharacter.tts.voice) }}
                                                     </mat-option>
                                                     <mat-divider class="custom-voice-divider"></mat-divider>
                                                 }
@@ -209,8 +209,8 @@
                                                 <mat-option value="show-all-voices">Show All Voices...</mat-option>
                                             </mat-select>
                                         } @else {
-                                            <input matInput [ngModel]="activeCharacter.tts_voice"
-                                                (ngModelChange)="setCharacterProperty('tts_voice', $event)">
+                                            <input matInput [ngModel]="activeCharacter.tts.voice"
+                                                (ngModelChange)="setCharacterTTSProperty('voice', $event)">
                                         }
                                     </mat-form-field>
                                 </div>
@@ -219,8 +219,8 @@
                                     <div class="trait-select">
                                         <mat-form-field>
                                             <mat-label>Speed</mat-label>
-                                            <input matInput [ngModel]="activeCharacter.tts_speed"
-                                                    (ngModelChange)="setCharacterProperty('tts_speed', $event)">
+                                            <input matInput [ngModel]="activeCharacter.tts.speed"
+                                                    (ngModelChange)="setCharacterTTSProperty('speed', $event)">
                                         </mat-form-field>
                                     </div>
                                 }
@@ -256,8 +256,8 @@
                             Warning: This will increase the cost of each query!</mat-hint>
                         <mat-form-field>
                             <mat-label>Voice Tone Instructions</mat-label>
-                            <textarea matInput [ngModel]="activeCharacter.tts_prompt"
-                                    (ngModelChange)="setCharacterProperty('tts_prompt', $event)"></textarea>
+                            <textarea matInput [ngModel]="activeCharacter.tts.voice_instruction"
+                                    (ngModelChange)="setCharacterTTSProperty('voice_instruction', $event)"></textarea>
 
                         </mat-form-field>
                     </div>

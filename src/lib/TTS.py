@@ -19,49 +19,18 @@ import pyaudio
 import strip_markdown
 from num2words import num2words
 
+from .Config import CharacterTTSSettings, CharacterTTSPostprocessingConfig as AudioPostprocessing, CharacterTTSEffectsConfig as EffectsConfig, CharacterTTSFilterConfig as FilterConfig, CharacterTTSDistortionConfig as DistortionConfig, CharacterTTSChorusConfig as ChorusConfig, CharacterTTSGlitchConfig as GlitchConfig, get_default_character_tts_settings, normalize_character_tts_settings
 from .Logger import log, show_chat_message
-
-# TypedDicts for effect configurations
-class DistortionConfig(TypedDict, total=False):
-    enabled: bool
-    drive: float
-    clip: float
-    mode: Literal['tanh', 'hard']
-
-class FilterConfig(TypedDict, total=False):
-    enabled: bool
-    cutoff: float
-
-class ChorusConfig(TypedDict, total=False):
-    enabled: bool
-    delay_ms: float
-    depth_ms: float
-    rate_hz: float
-    mix: float
-
-class GlitchConfig(TypedDict, total=False):
-    enabled: bool
-    probability: float
-    repeat_min: int  # legacy support (repeat previous chunk N times)
-    repeat_max: int  # legacy support
-    min_seconds: float  # new: min glitch segment duration (0.01s - 0.5s)
-    max_seconds: float  # new: max glitch segment duration (0.01s - 0.5s)
-
-class EffectsConfig(TypedDict, total=False):
-    distortion: DistortionConfig
-    lowpass: FilterConfig
-    highpass: FilterConfig
-    chorus: ChorusConfig
-    glitch: GlitchConfig
-
-class AudioPostprocessing(TypedDict, total=False):
-    """Configuration for audio post-processing with type-safe effect configs."""
-    volume: float
-    effects: EffectsConfig
 
 class AudioChunk(TypedDict):
     type: Literal['audio']
     data: bytes
+
+
+@dataclass
+class SpeechRequest:
+    text: str
+    settings: CharacterTTSSettings
 
 @dataclass
 class LowpassState:
@@ -106,34 +75,20 @@ class Mp3Stream(miniaudio.StreamableSource):
 
 @final
 class TTS:
-    def __init__(self, openai_client: openai.OpenAI | None = None, provider: Literal['openai', 'edge-tts', 'custom', 'none', 'local-ai-server'] | str ='openai', voice: str = "nova", voice_instructions: str = "", model: str ='tts-1',  speed: str | float = 1, output_device: str | None = None, postprocess_config: AudioPostprocessing | None = None):
+    def __init__(self, openai_client: openai.OpenAI | None = None, provider: Literal['openai', 'edge-tts', 'custom', 'none', 'local-ai-server'] | str ='openai', model: str ='tts-1', output_device: str | None = None):
         self.openai_client = openai_client
         self.provider = provider
         self.model = model
-        self.voice = voice
-        self.voice_instructions = voice_instructions
-        self.speed = speed
+        self.default_settings = get_default_character_tts_settings(provider)
         self.p = pyaudio.PyAudio()
         self.output_device = output_device
-        self.read_queue: queue.Queue[str] = queue.Queue()
+        self.read_queue: queue.Queue[SpeechRequest] = queue.Queue()
         self.is_aborted = False
         self._is_playing = False
         self.prebuffer_size = 4
         self.output_format = pyaudio.paInt16
         self.frames_per_buffer = 1024
         self.sample_size = self.p.get_sample_size(self.output_format)
-        self.postprocess_config: AudioPostprocessing = postprocess_config if postprocess_config else AudioPostprocessing(
-            volume=1.0, effects=EffectsConfig(
-                chorus= ChorusConfig(enabled=True, delay_ms=25.0, depth_ms=12.0, rate_hz=0.25, mix=0.5),
-                distortion=DistortionConfig(enabled=True, drive=2.0, clip=0.20, mode='tanh'),
-                lowpass=FilterConfig(enabled=False, cutoff=5000.0),
-                highpass=FilterConfig(enabled=False, cutoff=120.0),
-                glitch=GlitchConfig(
-                    enabled=True, probability=0.04, 
-                    repeat_min=2, repeat_max=4,
-                    min_seconds=0.05, max_seconds=0.20
-                )  # updated defaults
-            ))
         self._lp_state = LowpassState()
         self._hp_state = HighpassState()
         self._chorus_state = ChorusState(buffer=np.zeros(int(24000 * 0.1), dtype=np.float32))
@@ -178,7 +133,9 @@ class TTS:
             while not self.is_aborted:
                 if not self.read_queue.empty():
                     self._is_playing = True
-                    text = self.read_queue.get()
+                    request = self.read_queue.get()
+                    text = request.text
+                    settings = request.settings
                     # Fix numberformatting for different providers
                     text = re.sub(r"\d+(,\d{3})*(\.\d+)?", self._number_to_text, text)
                     text = strip_markdown.strip_markdown(text)
@@ -189,8 +146,8 @@ class TTS:
                         first_chunk = True
                         underflow_count = 0
                         empty_buffer_available = stream.get_write_available()
-                        raw_gen = self._stream_audio(text)
-                        processed_gen = self._postprocess_audio(raw_gen, self.postprocess_config)
+                        raw_gen = self._stream_audio(text, settings)
+                        processed_gen = self._postprocess_audio(raw_gen, settings.get('postprocessing', self.default_settings['postprocessing']))
                         for chunk in processed_gen:
                             if not end_time:
                                 end_time = time()
@@ -216,7 +173,7 @@ class TTS:
                             log('debug', 'tts underflow detected, total', underflow_count, 'increasing prebuffer size to', self.prebuffer_size)
                             
                     except Exception as e:
-                        self.read_queue.put(text)
+                        self.read_queue.put(request)
                         raise e
 
                 self._is_playing = False
@@ -225,16 +182,19 @@ class TTS:
             self._is_playing = False
             stream.stop_stream()
 
-    def _stream_audio(self, text: str) -> Generator[bytes, None, None]:
+    def _stream_audio(self, text: str, settings: CharacterTTSSettings) -> Generator[bytes, None, None]:
+        voice = settings.get('voice', self.default_settings['voice'])
+        voice_instruction = settings.get('voice_instruction', self.default_settings.get('voice_instruction', ''))
+        speed = settings.get('speed', self.default_settings['speed'])
         if self.provider == 'none':
             word_count = len(text.split())
-            words_per_minute = 150 * float(self.speed)
+            words_per_minute = 150 * float(speed)
             audio_duration = word_count / words_per_minute * 60
             for _ in range(int(audio_duration * 24_000 / 1024)):
                 yield b"\x00" * 1024
         elif self.provider == "edge-tts":
-            rate = f"+{int((float(self.speed) - 1) * 100)}%" if float(self.speed) > 1 else f"-{int((1 - float(self.speed)) * 100)}%"
-            response = edge_tts.Communicate(text, voice=self.voice, rate=rate)
+            rate = f"+{int((float(speed) - 1) * 100)}%" if float(speed) > 1 else f"-{int((1 - float(speed)) * 100)}%"
+            response = edge_tts.Communicate(text, voice=voice, rate=rate)
             pcm_stream = miniaudio.stream_any(
                 source=Mp3Stream(cast(Iterator[AudioChunk], response.stream_sync()), self.prebuffer_size),
                 source_format=miniaudio.FileFormat.MP3,
@@ -249,11 +209,11 @@ class TTS:
             try:
                 with self.openai_client.audio.speech.with_streaming_response.create(
                         model=self.model,
-                        voice=self.voice,
+                        voice=voice,
                         input=text,
                         response_format="pcm",
-                        instructions=self.voice_instructions,
-                        speed=float(self.speed)
+                        instructions=voice_instruction,
+                        speed=float(speed)
                 ) as response:
                     for chunk in response.iter_bytes(1024):
                         yield chunk
@@ -431,16 +391,18 @@ class TTS:
     def set_postprocess_config(self, new_conf: dict[str, object]):
         if not isinstance(new_conf, dict):
             return
+        postprocessing = self.default_settings.setdefault('postprocessing', cast(AudioPostprocessing, {}))
         if 'volume' in new_conf:
             try:
-                self.postprocess_config['volume'] = float(cast(Any, new_conf['volume']))  # type: ignore[assignment]
+                postprocessing['volume'] = float(cast(Any, new_conf['volume']))  # type: ignore[assignment]
             except Exception:
                 pass
         if 'effects' in new_conf and isinstance(new_conf['effects'], dict):
-            self.postprocess_config.setdefault('effects', cast(EffectsConfig, {})).update(cast(EffectsConfig, new_conf['effects']))  # type: ignore[arg-type]
+            postprocessing.setdefault('effects', cast(EffectsConfig, {})).update(cast(EffectsConfig, new_conf['effects']))  # type: ignore[arg-type]
 
-    def say(self, text: str):
-        self.read_queue.put(text)
+    def say(self, text: str, settings: CharacterTTSSettings | None = None):
+        effective_settings = normalize_character_tts_settings({"tts": settings or self.default_settings}, self.provider)
+        self.read_queue.put(SpeechRequest(text=text, settings=effective_settings))
 
     def abort(self):
         while not self.read_queue.empty():
@@ -460,9 +422,9 @@ class TTS:
 
 
 if __name__ == "__main__":
-    openai_audio = openai.OpenAI(base_url="http://localhost:8080/v1", api_key='x')
+    openai_audio = openai.OpenAI()
 
-    tts = TTS(openai_audio, provider="openai", model="tts-1", voice="nova", voice_instructions="", speed=1, output_device="Speakers", postprocess_config={"volume": 0.9})
+    tts = TTS(openai_audio, provider="openai", model="tts-1", output_device="Speakers")
 
 
     text = """The missile knows where it is at all times. It knows this because it knows where it isn't. By subtracting where it is from where it isn't, or where it isn't from where it is (whichever is greater), it obtains a difference, or deviation. The guidance subsystem uses deviations to generate corrective commands to drive the missile from a position where it is to a position where it isn't, and arriving at a position where it wasn't, it now is. Consequently, the position where it is, is now the position that it wasn't, and it follows that the position that it was, is now the position that it isn't.
@@ -474,7 +436,7 @@ The missile guidance computer scenario works as follows. Because a variation has
             sleep(2)
             continue
         print(line)
-        tts.say(line.strip())
+        tts.say(line.strip(), {"voice": "nova", "speed": 1, "voice_instruction": "", "postprocessing": {"volume": 0.9}})
         while tts.get_is_playing():
             sleep(0.1)
 

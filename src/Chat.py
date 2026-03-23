@@ -44,8 +44,6 @@ class Chat:
             self.config["api_key"] = '-'
         self.character = self.config['characters'][self.config['active_character_index']]
 
-        self.voice_instructions = self.character["tts_prompt"]
-
         self.backstory = self.character["character"].replace("{commander_name}", self.config['commander_name'])
 
         self.enabled_game_events: list[str] = []
@@ -98,7 +96,7 @@ class Chat:
             )
             
         tts_provider = 'none' if self.config["edcopilot"] and self.config["edcopilot_dominant"] else self.config["tts_provider"]
-        self.tts = TTS(openai_client=self.ttsClient, provider=tts_provider, model=self.config["tts_model_name"], voice=self.character["tts_voice"], voice_instructions=self.character["tts_prompt"], speed=self.character["tts_speed"], output_device=self.config["output_device_name"])
+        self.tts = TTS(openai_client=self.ttsClient, provider=tts_provider, model=self.config["tts_model_name"], output_device=self.config["output_device_name"])
         self.stt = STT(openai_client=self.sttClient, provider=self.config["stt_provider"], input_device_name=self.config["input_device_name"], model=self.config["stt_model_name"], language=self.config["stt_language"], custom_prompt=self.config["stt_custom_prompt"], required_word=self.config["stt_required_word"])
 
         log("debug", "Initializing SystemDatabase...")
@@ -201,8 +199,8 @@ class Chat:
         show_chat_message('info', f"Mic Mode: {self.config['ptt_var']}")
         show_chat_message('info', f"Using Function Calling: {self.config['tools_var']}")
         show_chat_message('info', f"Current model: {self.config['llm_model_name']}")
-        show_chat_message('info', f"Current TTS voice: {self.character['tts_voice']}")
-        show_chat_message('info', f"Current TTS Speed: {self.character['tts_speed']}")
+        show_chat_message('info', f"Current TTS voice: {self.character['tts']['voice']}")
+        show_chat_message('info', f"Current TTS Speed: {self.character['tts']['speed']}")
         show_chat_message('info', "Current backstory: " + self.backstory)
 
         # TTS Setup

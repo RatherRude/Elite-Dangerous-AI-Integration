@@ -30,6 +30,9 @@ class Assistant:
         self.reply_pending = False
         self.pending: list[Event] = []
         self.registered_should_reply_handlers: list[Callable[[Event, dict[str, Any]], bool | None]] = []
+
+    def _get_active_character_tts_settings(self):
+        return self.config['characters'][self.config['active_character_index']]['tts']
     
     def on_event(self, event: Event, projected_states: dict[str, Any]):
         self.pending.append(event)
@@ -38,11 +41,12 @@ class Assistant:
     def execute_actions(self, actions: list[dict[str, Any]], projected_states: dict[str, dict]):
         action_descriptions: list[str | None] = []
         action_results: list[Any] = []
+        tts_settings = self._get_active_character_tts_settings()
         for action in actions:
             action_input_desc = self.action_manager.getActionDesc(action, projected_states)
             action_descriptions.append(action_input_desc)
             if action_input_desc:
-                self.tts.say(action_input_desc)
+                self.tts.say(action_input_desc, tts_settings)
             action_result = self.action_manager.runAction(action, projected_states)
             action_results.append(action_result)
 
@@ -196,7 +200,7 @@ class Assistant:
                     response_actions = None
 
             if response_text and not response_actions:
-                self.tts.say(response_text)
+                self.tts.say(response_text, self._get_active_character_tts_settings())
                 self.event_manager.add_conversation_event('assistant', completion.choices[0].message.content)
                 self.copilot.output_covas(response_text, reasons)
                 self.tts.wait_for_completion()
