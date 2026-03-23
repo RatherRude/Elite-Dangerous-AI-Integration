@@ -11,6 +11,48 @@ export interface ConfigWithCharacters extends Config {
 
 export type EventReactionState = "on" | "off" | "hidden";
 
+export interface CharacterTTSDistortionConfig {
+    enabled?: boolean;
+    drive?: number;
+    clip?: number;
+    mode?: "tanh" | "hard";
+}
+
+export interface CharacterTTSFilterConfig {
+    enabled?: boolean;
+    cutoff?: number;
+}
+
+export interface CharacterTTSChorusConfig {
+    enabled?: boolean;
+    delay_ms?: number;
+    depth_ms?: number;
+    rate_hz?: number;
+    mix?: number;
+}
+
+export interface CharacterTTSGlitchConfig {
+    enabled?: boolean;
+    probability?: number;
+    repeat_min?: number;
+    repeat_max?: number;
+    min_seconds?: number;
+    max_seconds?: number;
+}
+
+export interface CharacterTTSEffectsConfig {
+    distortion?: CharacterTTSDistortionConfig;
+    lowpass?: CharacterTTSFilterConfig;
+    highpass?: CharacterTTSFilterConfig;
+    chorus?: CharacterTTSChorusConfig;
+    glitch?: CharacterTTSGlitchConfig;
+}
+
+export interface CharacterTTSPostprocessingConfig {
+    volume?: number;
+    effects?: CharacterTTSEffectsConfig;
+}
+
 export interface Character {
     name: string;
     character: string;
@@ -31,6 +73,7 @@ export interface Character {
     tts_voice: string;
     tts_speed: string;
     tts_prompt: string;
+    tts_postprocessing?: CharacterTTSPostprocessingConfig;
     avatar?: string; // Absolute file path for the avatar image
 
     

@@ -362,6 +362,206 @@ def to_event_reactions(source: dict[str, bool], hidden: list[str] | None = None)
 default_event_reactions = to_event_reactions(game_events, ["Idle"])
 
 
+class CharacterTTSDistortionConfig(TypedDict, total=False):
+    enabled: bool
+    drive: float
+    clip: float
+    mode: Literal['tanh', 'hard']
+
+
+class CharacterTTSFilterConfig(TypedDict, total=False):
+    enabled: bool
+    cutoff: float
+
+
+class CharacterTTSChorusConfig(TypedDict, total=False):
+    enabled: bool
+    delay_ms: float
+    depth_ms: float
+    rate_hz: float
+    mix: float
+
+
+class CharacterTTSGlitchConfig(TypedDict, total=False):
+    enabled: bool
+    probability: float
+    repeat_min: int
+    repeat_max: int
+    min_seconds: float
+    max_seconds: float
+
+
+class CharacterTTSEffectsConfig(TypedDict, total=False):
+    distortion: CharacterTTSDistortionConfig
+    lowpass: CharacterTTSFilterConfig
+    highpass: CharacterTTSFilterConfig
+    chorus: CharacterTTSChorusConfig
+    glitch: CharacterTTSGlitchConfig
+
+
+class CharacterTTSPostprocessingConfig(TypedDict, total=False):
+    volume: float
+    effects: CharacterTTSEffectsConfig
+
+
+class CharacterTTSSettings(TypedDict, total=False):
+    voice: str
+    speed: str | float
+    voice_instruction: str
+    postprocessing: CharacterTTSPostprocessingConfig
+
+
+def get_default_character_tts_postprocessing() -> CharacterTTSPostprocessingConfig:
+    return {
+        "volume": 1.0,
+        "effects": {
+            "chorus": {
+                "enabled": False,
+                "delay_ms": 25.0,
+                "depth_ms": 12.0,
+                "rate_hz": 0.25,
+                "mix": 0.5,
+            },
+            "distortion": {
+                "enabled": False,
+                "drive": 2.0,
+                "clip": 0.20,
+                "mode": 'tanh',
+            },
+            "lowpass": {
+                "enabled": False,
+                "cutoff": 5000.0,
+            },
+            "highpass": {
+                "enabled": False,
+                "cutoff": 120.0,
+            },
+            "glitch": {
+                "enabled": False,
+                "probability": 0.04,
+                "repeat_min": 2,
+                "repeat_max": 4,
+                "min_seconds": 0.05,
+                "max_seconds": 0.20,
+            },
+        },
+    }
+
+
+def _map_character_tts_distortion(raw: object) -> CharacterTTSDistortionConfig:
+    distortion: CharacterTTSDistortionConfig = {
+        "enabled": False,
+        "drive": 2.0,
+        "clip": 0.20,
+        "mode": 'tanh',
+    }
+    if not isinstance(raw, dict):
+        return distortion
+
+    if isinstance(raw.get('enabled'), bool):
+        distortion['enabled'] = raw['enabled']
+    if isinstance(raw.get('drive'), (int, float)):
+        distortion['drive'] = float(raw['drive'])
+    if isinstance(raw.get('clip'), (int, float)):
+        distortion['clip'] = float(raw['clip'])
+    if raw.get('mode') in ('tanh', 'hard'):
+        distortion['mode'] = raw['mode']
+    return distortion
+
+
+def _map_character_tts_filter(raw: object, cutoff: float) -> CharacterTTSFilterConfig:
+    filter_config: CharacterTTSFilterConfig = {
+        "enabled": False,
+        "cutoff": cutoff,
+    }
+    if not isinstance(raw, dict):
+        return filter_config
+
+    if isinstance(raw.get('enabled'), bool):
+        filter_config['enabled'] = raw['enabled']
+    if isinstance(raw.get('cutoff'), (int, float)):
+        filter_config['cutoff'] = float(raw['cutoff'])
+    return filter_config
+
+
+def _map_character_tts_chorus(raw: object) -> CharacterTTSChorusConfig:
+    chorus: CharacterTTSChorusConfig = {
+        "enabled": False,
+        "delay_ms": 25.0,
+        "depth_ms": 12.0,
+        "rate_hz": 0.25,
+        "mix": 0.5,
+    }
+    if not isinstance(raw, dict):
+        return chorus
+
+    if isinstance(raw.get('enabled'), bool):
+        chorus['enabled'] = raw['enabled']
+    if isinstance(raw.get('delay_ms'), (int, float)):
+        chorus['delay_ms'] = float(raw['delay_ms'])
+    if isinstance(raw.get('depth_ms'), (int, float)):
+        chorus['depth_ms'] = float(raw['depth_ms'])
+    if isinstance(raw.get('rate_hz'), (int, float)):
+        chorus['rate_hz'] = float(raw['rate_hz'])
+    if isinstance(raw.get('mix'), (int, float)):
+        chorus['mix'] = float(raw['mix'])
+    return chorus
+
+
+def _map_character_tts_glitch(raw: object) -> CharacterTTSGlitchConfig:
+    glitch: CharacterTTSGlitchConfig = {
+        "enabled": False,
+        "probability": 0.04,
+        "repeat_min": 2,
+        "repeat_max": 4,
+        "min_seconds": 0.05,
+        "max_seconds": 0.20,
+    }
+    if not isinstance(raw, dict):
+        return glitch
+
+    if isinstance(raw.get('enabled'), bool):
+        glitch['enabled'] = raw['enabled']
+    if isinstance(raw.get('probability'), (int, float)):
+        glitch['probability'] = float(raw['probability'])
+    if isinstance(raw.get('repeat_min'), int):
+        glitch['repeat_min'] = raw['repeat_min']
+    if isinstance(raw.get('repeat_max'), int):
+        glitch['repeat_max'] = raw['repeat_max']
+    if isinstance(raw.get('min_seconds'), (int, float)):
+        glitch['min_seconds'] = float(raw['min_seconds'])
+    if isinstance(raw.get('max_seconds'), (int, float)):
+        glitch['max_seconds'] = float(raw['max_seconds'])
+    return glitch
+
+
+def _map_character_tts_effects(raw: object) -> CharacterTTSEffectsConfig:
+    if not isinstance(raw, dict):
+        raw = {}
+
+    return {
+        "distortion": _map_character_tts_distortion(raw.get('distortion')),
+        "lowpass": _map_character_tts_filter(raw.get('lowpass'), 5000.0),
+        "highpass": _map_character_tts_filter(raw.get('highpass'), 120.0),
+        "chorus": _map_character_tts_chorus(raw.get('chorus')),
+        "glitch": _map_character_tts_glitch(raw.get('glitch')),
+    }
+
+
+def map_character_tts_postprocessing(raw: object) -> CharacterTTSPostprocessingConfig:
+    postprocessing: CharacterTTSPostprocessingConfig = {
+        "volume": 1.0,
+        "effects": _map_character_tts_effects(None),
+    }
+    if not isinstance(raw, dict):
+        return postprocessing
+
+    if isinstance(raw.get('volume'), (int, float)):
+        postprocessing['volume'] = float(raw['volume'])
+    postprocessing['effects'] = _map_character_tts_effects(raw.get('effects'))
+    return postprocessing
+
+
 class WeaponType(TypedDict):
     name: str
     fire_group: int
@@ -393,6 +593,7 @@ class Character(TypedDict, total=False):
     tts_voice: str
     tts_speed: str
     tts_prompt: str
+    tts_postprocessing: CharacterTTSPostprocessingConfig
     avatar: str  # Absolute file path for the avatar image
     event_reactions: dict[str, str]
     event_reaction_enabled_var: bool
@@ -786,6 +987,14 @@ def migrate(data: dict) -> dict:
             data['agent_llm_reasoning_effort'] = 'low'
         if data.get('vision_provider') == 'openai' and data.get('vision_model_name') == 'gpt-4.1-mini':
             data['vision_model_name'] = 'gpt-5.4-nano'
+            
+    if data['config_version'] < 15:
+        data['config_version'] = 15
+        
+        # Set default TTSPostprocessing for each character
+        for character in data.get('characters', []):
+            if 'tts_postprocessing' not in character:
+                character['tts_postprocessing'] = get_default_character_tts_postprocessing()
 
     return data
 
@@ -868,6 +1077,7 @@ def getDefaultCharacter(config: Config) -> Character:
         "tts_voice": 'en-US-AvaMultilingualNeural' if config.get('tts_provider') == 'edge-tts' else 'nova',
         "tts_speed": '1.2',
         "tts_prompt": '',
+        "tts_postprocessing": get_default_character_tts_postprocessing(),
         "avatar": '',  # No avatar by default
         "event_reactions": default_event_reactions,
         "event_reaction_enabled_var": True,
@@ -884,7 +1094,7 @@ def getDefaultCharacter(config: Config) -> Character:
 
 def load_config() -> Config:
     defaults: Config = {
-        'config_version': 1,
+        'config_version': 15,
         'commander_name': "",
         'characters': [],
         'active_character_index': 0,  # -1 means using the default legacy character
@@ -894,7 +1104,6 @@ def load_config() -> Config:
         'ptt_var': 'voice_activation',
         'ptt_inverted_var': False,
         'mute_during_response_var': False,
-        'event_reaction_enabled_var': True,
         'game_actions_var': True,
         'web_search_actions_var': True,
         'ui_actions_var': True,

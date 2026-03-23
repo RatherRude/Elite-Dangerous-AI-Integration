@@ -25,6 +25,7 @@ def mock_pyaudio(monkeypatch):
         'name': 'TestDevice',
         'index': 1
     }
+    mock_audio.get_sample_size.return_value = 2
     mock_audio.open.return_value = mock_stream
     
     monkeypatch.setattr('pyaudio.PyAudio', lambda: mock_audio)
@@ -123,3 +124,57 @@ def test_edge_tts_playback(mock_pyaudio, mock_miniaudio, mock_openai):
     
     assert mock_model.synthesize.call_count == 1
     assert mock_pyaudio['stream'].write.call_count == 2
+
+
+def test_postprocess_audio_applies_volume_and_distortion(mock_pyaudio):
+    """Test TTS postprocessing reshapes synthesized audio"""
+    tts = TTS(
+        None,
+        postprocessing_config={
+            "volume": 0.5,
+            "effects": {
+                "distortion": {
+                    "enabled": True,
+                    "drive": 3.0,
+                    "clip": 0.25,
+                    "mode": "hard",
+                },
+            },
+        },
+    )
+
+    source = np.array([20000, -20000, 4000, -4000], dtype=np.int16)
+    processed_chunks = list(tts._postprocess_audio(iter([source.tobytes()]), tts.postprocessing_config))
+    processed = np.frombuffer(processed_chunks[0], dtype=np.int16)
+
+    assert processed.dtype == np.int16
+    assert processed.shape == source.shape
+    assert not np.array_equal(processed, source)
+    assert np.max(np.abs(processed)) <= np.iinfo(np.int16).max
+
+
+def test_postprocess_audio_glitch_repeats_previous_chunk(mock_pyaudio, monkeypatch):
+    """Test glitch effect replays recent synthesized audio"""
+    monkeypatch.setattr("src.lib.TTS.random.random", lambda: 0.0)
+    monkeypatch.setattr("src.lib.TTS.random.randint", lambda _a, _b: 2)
+
+    tts = TTS(None)
+    config = {
+        "volume": 1.0,
+        "effects": {
+            "glitch": {
+                "enabled": True,
+                "probability": 1.0,
+                "repeat_min": 2,
+                "repeat_max": 2,
+            },
+        },
+    }
+    first = np.array([1000, -1000], dtype=np.int16).tobytes()
+    second = np.array([2000, -2000], dtype=np.int16).tobytes()
+
+    processed_chunks = list(tts._postprocess_audio(iter([first, second]), config))
+
+    assert len(processed_chunks) == 4
+    assert processed_chunks[2] == first
+    assert processed_chunks[3] == first

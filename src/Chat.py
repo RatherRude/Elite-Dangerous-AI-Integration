@@ -266,6 +266,7 @@ class Chat:
             tts_model=self.ttsModel,
             voice=self.character["tts_voice"],
             speed=float(self.character["tts_speed"]),
+            postprocessing_config=self.character.get("tts_postprocessing"),
             output_device=self.config["output_device_name"],
         )
         self.stt = STT(
