@@ -40,12 +40,19 @@ export interface CharacterTTSGlitchConfig {
     max_seconds?: number;
 }
 
+export interface CharacterTTSTimePitchConfig {
+    enabled?: boolean;
+    pitch_shift_semitones?: number;
+    time_stretch?: number;
+}
+
 export interface CharacterTTSEffectsConfig {
     distortion?: CharacterTTSDistortionConfig;
     lowpass?: CharacterTTSFilterConfig;
     highpass?: CharacterTTSFilterConfig;
     chorus?: CharacterTTSChorusConfig;
     glitch?: CharacterTTSGlitchConfig;
+    time_pitch?: CharacterTTSTimePitchConfig;
 }
 
 export interface CharacterTTSPostprocessingConfig {

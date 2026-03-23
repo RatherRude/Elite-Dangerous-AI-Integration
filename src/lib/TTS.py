@@ -6,13 +6,17 @@ import threading
 import traceback
 from collections import deque
 from dataclasses import dataclass
+from io import BytesIO
 from pathlib import Path
 from time import sleep, time
 from typing import Any, Callable, Generator, Optional, final
+import wave
 
+from audiostretchy.stretch import AudioStretch
 import miniaudio
 import numpy as np
 import pyaudio
+import samplerate
 import strip_markdown
 from numpy.typing import NDArray
 from num2words import num2words
@@ -22,6 +26,7 @@ from .Config import (
     CharacterTTSDistortionConfig,
     CharacterTTSGlitchConfig,
     CharacterTTSPostprocessingConfig,
+    CharacterTTSTimePitchConfig,
     get_default_character_tts_postprocessing,
     map_character_tts_postprocessing,
 )
@@ -311,6 +316,197 @@ class TTS:
         else:
             return match.group()
 
+    def _apply_time_pitch_effect(
+        self,
+        gen: Generator[bytes, None, None],
+        effect_config: CharacterTTSTimePitchConfig,
+        sample_rate: int,
+    ) -> Generator[bytes, None, None]:
+        if not effect_config.get('enabled'):
+            yield from gen
+            return
+
+        raw_chunks = [chunk for chunk in gen if chunk]
+        if not raw_chunks:
+            return
+
+        audio_parts = [
+            np.frombuffer(chunk, dtype=np.int16).astype(np.float32) / 32768.0
+            for chunk in raw_chunks
+        ]
+        audio_array = np.concatenate(audio_parts)
+        try:
+            processed_audio = self._transform_time_pitch_audio(
+                audio_array,
+                effect_config,
+                sample_rate,
+            )
+        except Exception as error:
+            log('warn', 'time_pitch effect failed, using original audio', error)
+            yield from raw_chunks
+            return
+
+        processed_audio = np.clip(processed_audio, -1.0, 1.0)
+        processed_bytes = (processed_audio * 32767.0).astype(np.int16).tobytes()
+        chunk_size = len(raw_chunks[0])
+
+        for start in range(0, len(processed_bytes), chunk_size):
+            yield processed_bytes[start:start + chunk_size]
+
+    def _transform_time_pitch_audio(
+        self,
+        audio_array: NDArray[np.float32],
+        effect_config: CharacterTTSTimePitchConfig,
+        sample_rate: int,
+    ) -> NDArray[np.float32]:
+        if audio_array.size == 0:
+            return audio_array
+
+        time_stretch = float(effect_config.get('time_stretch', 1.0))
+        if time_stretch <= 0:
+            time_stretch = 1.0
+
+        pitch_shift_semitones = float(effect_config.get('pitch_shift_semitones', 0.0))
+        pitch_ratio = 2.0 ** (pitch_shift_semitones / 12.0)
+
+        if math.isclose(time_stretch, 1.0, rel_tol=1e-6, abs_tol=1e-6) and math.isclose(
+            pitch_ratio,
+            1.0,
+            rel_tol=1e-6,
+            abs_tol=1e-6,
+        ):
+            return audio_array
+
+        transformed = audio_array.astype(np.float32, copy=False)
+        if not math.isclose(pitch_ratio, 1.0, rel_tol=1e-6, abs_tol=1e-6):
+            transformed = self._resample_audio(transformed, pitch_ratio)
+
+        stretch_factor = time_stretch * pitch_ratio
+        if not math.isclose(stretch_factor, 1.0, rel_tol=1e-6, abs_tol=1e-6):
+            transformed = self._time_stretch_audio(transformed, stretch_factor, sample_rate)
+
+        target_length = max(1, int(round(audio_array.shape[0] * time_stretch)))
+        if transformed.shape[0] != target_length:
+            transformed = self._resample_to_length(transformed, target_length)
+
+        return transformed.astype(np.float32, copy=False)
+
+    def _resample_audio(
+        self,
+        audio_array: NDArray[np.float32],
+        rate: float,
+    ) -> NDArray[np.float32]:
+        if audio_array.size == 0 or rate <= 0:
+            return audio_array
+
+        target_length = max(1, int(round(audio_array.shape[0] / rate)))
+        return self._resample_to_length(audio_array, target_length)
+
+    def _resample_to_length(
+        self,
+        audio_array: NDArray[np.float32],
+        target_length: int,
+    ) -> NDArray[np.float32]:
+        if target_length <= 0:
+            return np.zeros(0, dtype=np.float32)
+        if audio_array.size == 0:
+            return np.zeros(target_length, dtype=np.float32)
+        if audio_array.shape[0] == target_length:
+            return audio_array.astype(np.float32, copy=True)
+        if audio_array.shape[0] == 1:
+            return np.full(target_length, float(audio_array[0]), dtype=np.float32)
+
+        try:
+            resampled = samplerate.resample(
+                audio_array.astype(np.float32, copy=False),
+                target_length / audio_array.shape[0],
+                'sinc_best',
+            ).astype(np.float32, copy=False)
+            return self._fit_resampled_audio_length(resampled, target_length)
+        except Exception as error:
+            log('warn', 'Falling back to NumPy resampling for time_pitch', error)
+
+        return self._resample_to_length_numpy(audio_array, target_length)
+
+    def _fit_resampled_audio_length(
+        self,
+        audio_array: NDArray[np.float32],
+        target_length: int,
+    ) -> NDArray[np.float32]:
+        if audio_array.shape[0] == target_length:
+            return audio_array.astype(np.float32, copy=False)
+        if abs(audio_array.shape[0] - target_length) <= 8:
+            if audio_array.shape[0] > target_length:
+                return audio_array[:target_length].astype(np.float32, copy=False)
+            return np.pad(audio_array, (0, target_length - audio_array.shape[0])).astype(np.float32, copy=False)
+        return self._resample_to_length_numpy(audio_array, target_length)
+
+    def _resample_to_length_numpy(
+        self,
+        audio_array: NDArray[np.float32],
+        target_length: int,
+    ) -> NDArray[np.float32]:
+        source_positions = np.arange(audio_array.shape[0], dtype=np.float64)
+        target_positions = np.linspace(0, audio_array.shape[0] - 1, num=target_length, dtype=np.float64)
+        return np.interp(target_positions, source_positions, audio_array).astype(np.float32)
+
+    def _time_stretch_audio(
+        self,
+        audio_array: NDArray[np.float32],
+        stretch_factor: float,
+        sample_rate: int,
+    ) -> NDArray[np.float32]:
+        if audio_array.size == 0 or stretch_factor <= 0:
+            return audio_array
+
+        clipped = np.clip(audio_array, -1.0, 1.0)
+        pcm_audio = (clipped * 32767.0).astype(np.int16)
+        wav_buffer = BytesIO()
+        with wave.open(wav_buffer, 'wb') as wav_file:
+            wav_file.setnchannels(1)
+            wav_file.setsampwidth(2)
+            wav_file.setframerate(sample_rate)
+            wav_file.writeframes(pcm_audio.tobytes())
+
+        wav_buffer.seek(0)
+        stretcher = AudioStretch()
+        stretcher.open(file=wav_buffer, format='wav')
+        stretcher.stretch(
+            ratio=stretch_factor,
+            double_range=stretch_factor < 0.5 or stretch_factor > 2.0,
+            normal_detection=True,
+        )
+
+        stretched_audio = np.asarray(stretcher.samples, dtype=np.int16)
+        expected_length = max(1, int(round(audio_array.shape[0] * stretch_factor)))
+        stretched_audio = self._trim_time_stretch_padding(stretched_audio, expected_length)
+        return stretched_audio.astype(np.float32) / 32768.0
+
+    def _trim_time_stretch_padding(
+        self,
+        audio_array: NDArray[np.int16],
+        expected_length: int,
+    ) -> NDArray[np.int16]:
+        if audio_array.size == 0:
+            return audio_array
+
+        peak = int(np.max(np.abs(audio_array)))
+        if peak <= 0:
+            return audio_array
+
+        threshold = max(4, int(peak * 0.002))
+        non_silent = np.flatnonzero(np.abs(audio_array) > threshold)
+        if non_silent.size == 0:
+            return audio_array
+
+        padding_margin = min(512, max(64, expected_length // 32))
+        trimmed_end = min(audio_array.shape[0], int(non_silent[-1]) + 1 + padding_margin)
+        trimmed_audio = audio_array[:trimmed_end]
+
+        if abs(trimmed_audio.shape[0] - expected_length) < abs(audio_array.shape[0] - expected_length):
+            return trimmed_audio
+        return audio_array
+
     def _postprocess_audio(
         self,
         gen: Generator[bytes, None, None],
@@ -318,6 +514,10 @@ class TTS:
     ) -> Generator[bytes, None, None]:
         sample_rate = 24_000
         effects = config.get('effects', {})
+
+        time_pitch_config = effects.get('time_pitch', {})
+        if isinstance(time_pitch_config, dict):
+            gen = self._apply_time_pitch_effect(gen, time_pitch_config, sample_rate)
 
         def one_pole_lowpass(x: NDArray[np.float32], cutoff: float) -> NDArray[np.float32]:
             if cutoff <= 0 or cutoff >= sample_rate / 2:
@@ -564,5 +764,16 @@ class TTS:
 
 
 if __name__ == "__main__":
-    # Mocking for test
-    pass
+    model = OpenAITTSModel(base_url='https://api.openai.com/v1', model_name="tts-1", api_key='sk-')
+    tts = TTS(model, "nova", speed=1.0, postprocessing_config=None, output_device="pulse")
+    tts.say("Hello, this is a test of the text to speech system.", postprocessing={
+        "volume": 1.0,
+        "effects": {
+            "time_pitch": {
+                "enabled": True,
+                "pitch_shift_semitones": 0.0,
+                "time_stretch": 0.5
+            }
+        }
+    })
+    tts.wait_for_completion()

@@ -7,6 +7,13 @@ from src.lib.TTS import TTS
 from src.lib.Models import OpenAITTSModel, EdgeTTSModel
 import numpy as np
 
+
+def dominant_frequency(samples: np.ndarray, sample_rate: int = 24_000) -> float:
+    window = np.hanning(samples.shape[0])
+    spectrum = np.fft.rfft(samples * window)
+    frequencies = np.fft.rfftfreq(samples.shape[0], d=1.0 / sample_rate)
+    return float(frequencies[int(np.argmax(np.abs(spectrum)))])
+
 @pytest.fixture
 def mock_pyaudio(monkeypatch):
     """Mock PyAudio functionality"""
@@ -178,3 +185,66 @@ def test_postprocess_audio_glitch_repeats_previous_chunk(mock_pyaudio, monkeypat
     assert len(processed_chunks) == 4
     assert processed_chunks[2] == first
     assert processed_chunks[3] == first
+
+
+def test_time_pitch_effect_stretches_audio_without_changing_pitch(mock_pyaudio):
+    """Test time stretch preserves dominant pitch while changing duration"""
+    tts = TTS(None)
+    sample_rate = 24_000
+    time_axis = np.arange(sample_rate, dtype=np.float32) / sample_rate
+    source = (0.4 * np.sin(2 * np.pi * 440.0 * time_axis)).astype(np.float32)
+
+    processed = tts._transform_time_pitch_audio(
+        source,
+        {
+            "enabled": True,
+            "pitch_shift_semitones": 0.0,
+            "time_stretch": 1.5,
+        },
+        sample_rate,
+    )
+
+    assert abs(processed.shape[0] - int(round(source.shape[0] * 1.5))) <= 8
+    assert dominant_frequency(processed, sample_rate) == pytest.approx(440.0, abs=20.0)
+
+
+def test_time_pitch_effect_shifts_pitch_without_changing_duration(mock_pyaudio):
+    """Test pitch shift changes dominant pitch while preserving duration"""
+    tts = TTS(None)
+    sample_rate = 24_000
+    time_axis = np.arange(sample_rate, dtype=np.float32) / sample_rate
+    source = (0.4 * np.sin(2 * np.pi * 440.0 * time_axis)).astype(np.float32)
+
+    processed = tts._transform_time_pitch_audio(
+        source,
+        {
+            "enabled": True,
+            "pitch_shift_semitones": 12.0,
+            "time_stretch": 1.0,
+        },
+        sample_rate,
+    )
+
+    assert abs(processed.shape[0] - source.shape[0]) <= 8
+    assert dominant_frequency(processed, sample_rate) == pytest.approx(880.0, abs=35.0)
+
+
+def test_time_pitch_effect_combines_independent_pitch_and_time(mock_pyaudio):
+    """Test combined time-pitch keeps requested duration and pitch targets"""
+    tts = TTS(None)
+    sample_rate = 24_000
+    time_axis = np.arange(sample_rate, dtype=np.float32) / sample_rate
+    source = (0.4 * np.sin(2 * np.pi * 440.0 * time_axis)).astype(np.float32)
+
+    processed = tts._transform_time_pitch_audio(
+        source,
+        {
+            "enabled": True,
+            "pitch_shift_semitones": 12.0,
+            "time_stretch": 1.5,
+        },
+        sample_rate,
+    )
+
+    assert abs(processed.shape[0] - int(round(source.shape[0] * 1.5))) <= 8
+    assert dominant_frequency(processed, sample_rate) == pytest.approx(880.0, abs=35.0)

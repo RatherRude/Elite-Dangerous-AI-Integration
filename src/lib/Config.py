@@ -391,12 +391,19 @@ class CharacterTTSGlitchConfig(TypedDict, total=False):
     max_seconds: float
 
 
+class CharacterTTSTimePitchConfig(TypedDict, total=False):
+    enabled: bool
+    pitch_shift_semitones: float
+    time_stretch: float
+
+
 class CharacterTTSEffectsConfig(TypedDict, total=False):
     distortion: CharacterTTSDistortionConfig
     lowpass: CharacterTTSFilterConfig
     highpass: CharacterTTSFilterConfig
     chorus: CharacterTTSChorusConfig
     glitch: CharacterTTSGlitchConfig
+    time_pitch: CharacterTTSTimePitchConfig
 
 
 class CharacterTTSPostprocessingConfig(TypedDict, total=False):
@@ -443,6 +450,11 @@ def get_default_character_tts_postprocessing() -> CharacterTTSPostprocessingConf
                 "repeat_max": 4,
                 "min_seconds": 0.05,
                 "max_seconds": 0.20,
+            },
+            "time_pitch": {
+                "enabled": False,
+                "pitch_shift_semitones": 0.0,
+                "time_stretch": 1.0,
             },
         },
     }
@@ -535,6 +547,24 @@ def _map_character_tts_glitch(raw: object) -> CharacterTTSGlitchConfig:
     return glitch
 
 
+def _map_character_tts_time_pitch(raw: object) -> CharacterTTSTimePitchConfig:
+    time_pitch: CharacterTTSTimePitchConfig = {
+        "enabled": False,
+        "pitch_shift_semitones": 0.0,
+        "time_stretch": 1.0,
+    }
+    if not isinstance(raw, dict):
+        return time_pitch
+
+    if isinstance(raw.get('enabled'), bool):
+        time_pitch['enabled'] = raw['enabled']
+    if isinstance(raw.get('pitch_shift_semitones'), (int, float)):
+        time_pitch['pitch_shift_semitones'] = float(raw['pitch_shift_semitones'])
+    if isinstance(raw.get('time_stretch'), (int, float)):
+        time_pitch['time_stretch'] = float(raw['time_stretch'])
+    return time_pitch
+
+
 def _map_character_tts_effects(raw: object) -> CharacterTTSEffectsConfig:
     if not isinstance(raw, dict):
         raw = {}
@@ -545,6 +575,7 @@ def _map_character_tts_effects(raw: object) -> CharacterTTSEffectsConfig:
         "highpass": _map_character_tts_filter(raw.get('highpass'), 120.0),
         "chorus": _map_character_tts_chorus(raw.get('chorus')),
         "glitch": _map_character_tts_glitch(raw.get('glitch')),
+        "time_pitch": _map_character_tts_time_pitch(raw.get('time_pitch')),
     }
 
 
