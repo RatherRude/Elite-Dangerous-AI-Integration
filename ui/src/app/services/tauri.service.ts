@@ -16,6 +16,12 @@ declare global {
             onStderr: (callback: (value: any) => void) => Promise<void> | void;
             onWindowClose: (callback: (event: Event) => void) => void;
             confirmWindowClose: () => Promise<void>;
+            userAssets?: {
+                writeFile?: (opts: any) => Promise<any>;
+                readFile?: (opts: any) => Promise<any>;
+                listFiles?: () => Promise<any>;
+                deleteFile?: (opts: any) => Promise<any>;
+            };
         };
     }
 }

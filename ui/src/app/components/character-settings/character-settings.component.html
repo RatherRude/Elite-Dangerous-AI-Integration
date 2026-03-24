@@ -20,9 +20,10 @@
                     @if (!editMode) {
                         <div class="character-display" [class.with-traits]="!isCustomPreset()">
                             <div class="character-avatar-preview">
-                                <img [src]="getAvatarUrl()" 
+                                <img [src]="getAvatarUrl()"
                                      [alt]="activeCharacter.name + ' avatar'"
-                                     class="avatar-preview-image">
+                                     class="avatar-preview-image"
+                                     [class.avatar-preview-image--single]="!avatarPreviewUsesSpriteSheet">
                             </div>
                             <div class="character-content">
                                 <span class="trait-label">{{activeCharacter.name}}:</span>
