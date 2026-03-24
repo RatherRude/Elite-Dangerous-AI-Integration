@@ -161,6 +161,71 @@ def test_postprocess_audio_applies_volume_and_distortion(mock_pyaudio):
     assert np.max(np.abs(processed)) <= np.iinfo(np.int16).max
 
 
+def test_postprocess_audio_reverb_adds_tail(mock_pyaudio):
+    """Test reverb adds an audible tail beyond the source chunk"""
+    tts = TTS(None)
+    source = np.zeros(1024, dtype=np.int16)
+    source[0] = 16000
+
+    processed_chunks = list(tts._postprocess_audio(
+        iter([source.tobytes()]),
+        {
+            "volume": 1.0,
+            "effects": {
+                "reverb": {
+                    "enabled": True,
+                    "mix": 1.0,
+                    "tail": 0.12,
+                },
+            },
+        },
+    ))
+
+    assert len(processed_chunks) > 1
+    tail_chunk = np.frombuffer(processed_chunks[1], dtype=np.int16)
+    assert np.max(np.abs(tail_chunk)) > 0
+
+
+def test_reverb_tail_highpass_reduces_low_end_over_time(mock_pyaudio):
+    """Test tail highpass keeps reducing sustained low energy over time"""
+    tts = TTS(None)
+    constant_signal = np.full(2048, 0.5, dtype=np.float32)
+
+    first = tts._apply_reverb_tail_highpass(constant_signal, 24_000)
+    second = tts._apply_reverb_tail_highpass(constant_signal, 24_000)
+
+    assert abs(float(first[-1])) < abs(float(first[128]))
+    assert abs(float(second[-1])) < 0.01
+
+
+def test_reverb_tail_highpass_preserves_more_highs_than_lows(mock_pyaudio):
+    """Test continuous tail highpass reduces lows more than highs"""
+    tts = TTS(None)
+    sample_rate = 24_000
+    time_axis = np.arange(4096, dtype=np.float32) / sample_rate
+    tail = (
+        0.45 * np.sin(2 * np.pi * 160.0 * time_axis)
+        + 0.20 * np.sin(2 * np.pi * 3200.0 * time_axis)
+    ).astype(np.float32)
+    shaped = tts._apply_reverb_tail_highpass(tail, sample_rate)
+
+    def band_rms(samples: np.ndarray, min_hz: float, max_hz: float) -> float:
+        spectrum = np.fft.rfft(samples)
+        frequencies = np.fft.rfftfreq(samples.shape[0], d=1.0 / sample_rate)
+        band = spectrum * ((frequencies >= min_hz) & (frequencies <= max_hz))
+        filtered = np.fft.irfft(band, n=samples.shape[0])
+        return float(np.sqrt(np.mean(filtered * filtered)))
+
+    original_low = band_rms(tail, 60.0, 400.0)
+    original_high = band_rms(tail, 1800.0, 5000.0)
+    shaped_low = band_rms(shaped, 60.0, 400.0)
+    shaped_high = band_rms(shaped, 1800.0, 5000.0)
+
+    assert shaped_low < original_low * 0.75
+    assert shaped_high > original_high * 0.85
+    assert shaped_high / max(shaped_low, 1e-6) > original_high / max(original_low, 1e-6)
+
+
 def test_postprocess_audio_glitch_repeats_previous_chunk(mock_pyaudio, monkeypatch):
     """Test glitch effect replays recent synthesized audio"""
     monkeypatch.setattr("src.lib.TTS.random.random", lambda: 0.0)
@@ -249,6 +314,22 @@ def test_glitch_config_maps_detune_ranges():
 
     assert config["effects"]["glitch"]["detune_base"] == pytest.approx(2.5)
     assert config["effects"]["glitch"]["detune_peak"] == pytest.approx(9.5)
+
+
+def test_reverb_config_maps_mix_and_tail():
+    """Test reverb config keeps mix and tail settings"""
+    config = map_character_tts_postprocessing({
+        "effects": {
+            "reverb": {
+                "enabled": True,
+                "mix": 0.35,
+                "tail": 0.42,
+            },
+        },
+    })
+
+    assert config["effects"]["reverb"]["mix"] == pytest.approx(0.35)
+    assert config["effects"]["reverb"]["tail"] == pytest.approx(0.42)
 
 
 def test_time_pitch_effect_stretches_audio_without_changing_pitch(mock_pyaudio):

@@ -26,6 +26,7 @@ from .Config import (
     CharacterTTSDistortionConfig,
     CharacterTTSGlitchConfig,
     CharacterTTSPostprocessingConfig,
+    CharacterTTSReverbConfig,
     CharacterTTSTimePitchConfig,
     get_default_character_tts_postprocessing,
     map_character_tts_postprocessing,
@@ -53,12 +54,26 @@ class ChorusState:
 
 
 @dataclass
+class ReverbState:
+    impulse_response: NDArray[np.float32]
+    overlap: NDArray[np.float32]
+    ir_fft: NDArray[np.complex128] | None = None
+    fft_size: int = 0
+    chunk_length: int = 0
+    mix: float = 0.0
+    tail: float = 0.0
+    hp_y_prev: float = 0.0
+    hp_x_prev: float = 0.0
+
+
+@dataclass
 class GlitchState:
     history: deque[bytes]
 
 
 GLITCH_BASE_DETUNE_SEMITONES = 4.0
 GLITCH_BURST_DETUNE_SEMITONES = 12.0
+REVERB_TAIL_HIGHPASS_HZ = 160.0
 
 
 @final
@@ -90,6 +105,10 @@ class TTS:
         self._lp_state = LowpassState()
         self._hp_state = HighpassState()
         self._chorus_state = ChorusState(buffer=np.zeros(int(24_000 * 0.1), dtype=np.float32))
+        self._reverb_state = ReverbState(
+            impulse_response=np.zeros(0, dtype=np.float32),
+            overlap=np.zeros(0, dtype=np.float32),
+        )
         self._glitch_state = GlitchState(history=deque(maxlen=64))
 
         thread = threading.Thread(target=self._playback_thread)
@@ -263,6 +282,10 @@ class TTS:
         self._lp_state = LowpassState()
         self._hp_state = HighpassState()
         self._chorus_state = ChorusState(buffer=np.zeros(int(24_000 * 0.1), dtype=np.float32))
+        self._reverb_state = ReverbState(
+            impulse_response=np.zeros(0, dtype=np.float32),
+            overlap=np.zeros(0, dtype=np.float32),
+        )
         self._glitch_state = GlitchState(history=deque(maxlen=64))
 
 
@@ -582,6 +605,168 @@ class TTS:
             return trimmed_audio
         return audio_array
 
+    def _build_reverb_impulse_response(
+        self,
+        sample_rate: int,
+        tail_seconds: float,
+    ) -> NDArray[np.float32]:
+        tail_seconds = min(1.5, max(0.02, tail_seconds))
+        tail_samples = max(1, int(round(tail_seconds * sample_rate)))
+        impulse_response = np.zeros(tail_samples, dtype=np.float32)
+
+        for delay_seconds, amplitude in (
+            (0.012, 0.52),
+            (0.021, 0.36),
+            (0.034, 0.24),
+            (0.055, 0.16),
+        ):
+            delay_samples = int(round(delay_seconds * sample_rate))
+            if delay_samples < tail_samples:
+                impulse_response[delay_samples] += amplitude
+
+        late_start = min(tail_samples - 1, int(round(0.008 * sample_rate)))
+        if late_start < tail_samples:
+            late_time = np.arange(tail_samples - late_start, dtype=np.float32) / sample_rate
+            rng = np.random.default_rng(17)
+            late_noise = rng.standard_normal(late_time.shape[0]).astype(np.float32)
+            late_noise -= np.convolve(
+                np.pad(late_noise, (32, 32), mode='reflect'),
+                np.ones(65, dtype=np.float32) / 65.0,
+                mode='valid',
+            ).astype(np.float32, copy=False)
+            late_noise_peak = float(np.max(np.abs(late_noise)))
+            if late_noise_peak > 0.0:
+                late_noise /= late_noise_peak
+
+            low_tail = np.exp(-9.5 * late_time / max(tail_seconds, 0.02)) * (
+                0.018 * np.sin(2.0 * math.pi * 11.0 * late_time + 0.2)
+                + 0.012 * np.sin(2.0 * math.pi * 17.0 * late_time + 0.9)
+            )
+            airy_tail = np.exp(-2.2 * late_time / max(tail_seconds, 0.02)) * 0.16 * late_noise
+            impulse_response[late_start:] += (low_tail + airy_tail).astype(np.float32, copy=False)
+
+        peak = float(np.max(np.abs(impulse_response)))
+        if peak > 0.0:
+            impulse_response /= peak / 0.6
+        return impulse_response
+
+    def _ensure_reverb_state(
+        self,
+        chunk_length: int,
+        mix: float,
+        tail_seconds: float,
+        sample_rate: int,
+    ) -> None:
+        state = self._reverb_state
+        if (
+            state.chunk_length == chunk_length
+            and math.isclose(state.mix, mix, rel_tol=1e-6, abs_tol=1e-6)
+            and math.isclose(state.tail, tail_seconds, rel_tol=1e-6, abs_tol=1e-6)
+            and state.ir_fft is not None
+            and state.impulse_response.size > 0
+        ):
+            return
+
+        impulse_response = self._build_reverb_impulse_response(sample_rate, tail_seconds)
+        fft_size = 1 << int(math.ceil(math.log2(chunk_length + impulse_response.shape[0] - 1)))
+        padded_ir = np.pad(impulse_response, (0, fft_size - impulse_response.shape[0]))
+        self._reverb_state = ReverbState(
+            impulse_response=impulse_response,
+            overlap=np.zeros(max(0, impulse_response.shape[0] - 1), dtype=np.float32),
+            ir_fft=np.fft.rfft(padded_ir).astype(np.complex128, copy=False),
+            fft_size=fft_size,
+            chunk_length=chunk_length,
+            mix=mix,
+            tail=tail_seconds,
+        )
+
+    def _apply_reverb_chunk(
+        self,
+        audio_array: NDArray[np.float32],
+        effect_config: CharacterTTSReverbConfig,
+        sample_rate: int,
+    ) -> NDArray[np.float32]:
+        if not effect_config.get('enabled'):
+            return audio_array
+
+        mix = min(1.0, max(0.0, float(effect_config.get('mix', 0.20))))
+        tail_seconds = min(1.5, max(0.02, float(effect_config.get('tail', 0.18))))
+        if mix <= 0.0 or audio_array.size == 0:
+            return audio_array
+
+        self._ensure_reverb_state(audio_array.shape[0], mix, tail_seconds, sample_rate)
+        state = self._reverb_state
+        if state.ir_fft is None:
+            return audio_array
+
+        padded_audio = np.pad(audio_array, (0, state.fft_size - audio_array.shape[0]))
+        convolved = np.fft.irfft(
+            np.fft.rfft(padded_audio) * state.ir_fft,
+            state.fft_size,
+        )[:audio_array.shape[0] + state.impulse_response.shape[0] - 1].astype(np.float32, copy=False)
+
+        wet = convolved[:audio_array.shape[0]].copy()
+        overlap = state.overlap
+        if overlap.size > 0:
+            overlap_prefix = min(audio_array.shape[0], overlap.shape[0])
+            wet[:overlap_prefix] += self._apply_reverb_tail_highpass(
+                overlap[:overlap_prefix].copy(),
+                sample_rate,
+            )
+
+        new_overlap = convolved[audio_array.shape[0]:].copy()
+        if overlap.shape[0] > audio_array.shape[0]:
+            spill = overlap[audio_array.shape[0]:]
+            new_overlap[:spill.shape[0]] += spill
+        state.overlap = new_overlap.astype(np.float32, copy=False)
+        return ((1.0 - mix) * audio_array + mix * wet).astype(np.float32, copy=False)
+
+    def _apply_reverb_tail_highpass(
+        self,
+        audio_array: NDArray[np.float32],
+        sample_rate: int,
+    ) -> NDArray[np.float32]:
+        if audio_array.size == 0:
+            return audio_array
+
+        rc = 1.0 / (2.0 * math.pi * REVERB_TAIL_HIGHPASS_HZ)
+        dt = 1.0 / sample_rate
+        alpha = rc / (rc + dt)
+        state = self._reverb_state
+        y_prev = state.hp_y_prev
+        x_prev = state.hp_x_prev
+        out = np.empty_like(audio_array)
+
+        for i in range(audio_array.shape[0]):
+            sample = float(audio_array[i])
+            y_prev = alpha * (y_prev + sample - x_prev)
+            out[i] = y_prev
+            x_prev = sample
+
+        state.hp_y_prev = y_prev
+        state.hp_x_prev = x_prev
+        return out
+
+    def _flush_reverb_tail(self) -> list[NDArray[np.float32]]:
+        state = self._reverb_state
+        if state.overlap.size == 0 or state.chunk_length <= 0 or state.mix <= 0.0:
+            return []
+
+        tail_signal = state.overlap * state.mix
+        chunks: list[NDArray[np.float32]] = []
+        threshold = 1.0 / 32768.0
+        for start in range(0, tail_signal.shape[0], state.chunk_length):
+            chunk = tail_signal[start:start + state.chunk_length].astype(np.float32, copy=False)
+            chunk = self._apply_reverb_tail_highpass(chunk, 24_000)
+            if chunk.shape[0] < state.chunk_length:
+                chunk = np.pad(chunk, (0, state.chunk_length - chunk.shape[0]))
+            if np.max(np.abs(chunk)) <= threshold:
+                continue
+            chunks.append(chunk.astype(np.float32, copy=False))
+
+        state.overlap = np.zeros(0, dtype=np.float32)
+        return chunks
+
     def _postprocess_audio(
         self,
         gen: Generator[bytes, None, None],
@@ -798,6 +983,10 @@ class TTS:
             if isinstance(chorus_config, dict):
                 audio_array = apply_chorus(audio_array, chorus_config)
 
+            reverb_config = effects.get('reverb', {})
+            if isinstance(reverb_config, dict):
+                audio_array = self._apply_reverb_chunk(audio_array, reverb_config, sample_rate)
+
             audio_array = np.clip(audio_array, -1.0, 1.0)
             processed_chunk = (audio_array * 32768).astype(np.int16).tobytes()
 
@@ -820,6 +1009,29 @@ class TTS:
             if isinstance(glitch_config, dict):
                 for extra in apply_glitch(processed_chunk, glitch_config):
                     yield extra
+
+        if glitch_enabled:
+            yield from flush_base_glitch_chunks()
+
+        for reverb_tail_chunk in self._flush_reverb_tail():
+            reverb_tail_chunk = np.clip(reverb_tail_chunk, -1.0, 1.0)
+            processed_chunk = (reverb_tail_chunk * 32768).astype(np.int16).tobytes()
+
+            if glitch_enabled:
+                if base_glitch_detune_bytes_remaining <= 0:
+                    yield from flush_base_glitch_chunks()
+                    base_glitch_detune = self._get_random_glitch_detune(glitch_detune_base)
+                    base_glitch_detune_bytes_remaining = self._get_glitch_pitch_hold_bytes(
+                        glitch_config,
+                        sample_rate,
+                    )
+                base_glitch_chunks.append(processed_chunk)
+                base_glitch_detune_bytes_remaining -= len(processed_chunk)
+                if base_glitch_detune_bytes_remaining <= 0:
+                    yield from flush_base_glitch_chunks()
+                continue
+
+            yield processed_chunk
 
         if glitch_enabled:
             yield from flush_base_glitch_chunks()
@@ -906,8 +1118,10 @@ if __name__ == "__main__":
                 "pitch_shift_semitones": -4.0,
                 "time_stretch": 1
             },
-            "glitch": {
+            "reverb": {
                 "enabled": True,
+                "tail": 0.2,
+                "mix": 0.2
             }
         }
     })

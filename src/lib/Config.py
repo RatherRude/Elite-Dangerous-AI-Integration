@@ -382,6 +382,12 @@ class CharacterTTSChorusConfig(TypedDict, total=False):
     mix: float
 
 
+class CharacterTTSReverbConfig(TypedDict, total=False):
+    enabled: bool
+    mix: float
+    tail: float
+
+
 class CharacterTTSGlitchConfig(TypedDict, total=False):
     enabled: bool
     probability: float
@@ -404,6 +410,7 @@ class CharacterTTSEffectsConfig(TypedDict, total=False):
     lowpass: CharacterTTSFilterConfig
     highpass: CharacterTTSFilterConfig
     chorus: CharacterTTSChorusConfig
+    reverb: CharacterTTSReverbConfig
     glitch: CharacterTTSGlitchConfig
     time_pitch: CharacterTTSTimePitchConfig
 
@@ -430,6 +437,11 @@ def get_default_character_tts_postprocessing() -> CharacterTTSPostprocessingConf
                 "depth_ms": 12.0,
                 "rate_hz": 0.25,
                 "mix": 0.5,
+            },
+            "reverb": {
+                "enabled": False,
+                "mix": 0.20,
+                "tail": 0.18,
             },
             "distortion": {
                 "enabled": False,
@@ -524,6 +536,24 @@ def _map_character_tts_chorus(raw: object) -> CharacterTTSChorusConfig:
     return chorus
 
 
+def _map_character_tts_reverb(raw: object) -> CharacterTTSReverbConfig:
+    reverb: CharacterTTSReverbConfig = {
+        "enabled": False,
+        "mix": 0.20,
+        "tail": 0.18,
+    }
+    if not isinstance(raw, dict):
+        return reverb
+
+    if isinstance(raw.get('enabled'), bool):
+        reverb['enabled'] = raw['enabled']
+    if isinstance(raw.get('mix'), (int, float)):
+        reverb['mix'] = float(raw['mix'])
+    if isinstance(raw.get('tail'), (int, float)):
+        reverb['tail'] = float(raw['tail'])
+    return reverb
+
+
 def _map_character_tts_glitch(raw: object) -> CharacterTTSGlitchConfig:
     glitch: CharacterTTSGlitchConfig = {
         "enabled": False,
@@ -584,6 +614,7 @@ def _map_character_tts_effects(raw: object) -> CharacterTTSEffectsConfig:
         "lowpass": _map_character_tts_filter(raw.get('lowpass'), 5000.0),
         "highpass": _map_character_tts_filter(raw.get('highpass'), 120.0),
         "chorus": _map_character_tts_chorus(raw.get('chorus')),
+        "reverb": _map_character_tts_reverb(raw.get('reverb')),
         "glitch": _map_character_tts_glitch(raw.get('glitch')),
         "time_pitch": _map_character_tts_time_pitch(raw.get('time_pitch')),
     }

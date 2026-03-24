@@ -31,6 +31,12 @@ export interface CharacterTTSChorusConfig {
     mix?: number;
 }
 
+export interface CharacterTTSReverbConfig {
+    enabled?: boolean;
+    mix?: number;
+    tail?: number;
+}
+
 export interface CharacterTTSGlitchConfig {
     enabled?: boolean;
     probability?: number;
@@ -53,6 +59,7 @@ export interface CharacterTTSEffectsConfig {
     lowpass?: CharacterTTSFilterConfig;
     highpass?: CharacterTTSFilterConfig;
     chorus?: CharacterTTSChorusConfig;
+    reverb?: CharacterTTSReverbConfig;
     glitch?: CharacterTTSGlitchConfig;
     time_pitch?: CharacterTTSTimePitchConfig;
 }
