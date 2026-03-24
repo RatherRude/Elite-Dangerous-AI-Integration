@@ -186,6 +186,39 @@ def test_postprocess_audio_reverb_adds_tail(mock_pyaudio):
     assert np.max(np.abs(tail_chunk)) > 0
 
 
+def test_postprocess_audio_chorus_is_chunk_consistent(mock_pyaudio):
+    """Test chorus block processing stays consistent across chunk boundaries"""
+    sample_rate = 24_000
+    time_axis = np.arange(2048, dtype=np.float32) / sample_rate
+    source = (0.35 * np.sin(2 * np.pi * 440.0 * time_axis)).astype(np.float32)
+    source_pcm = (source * 32767.0).astype(np.int16)
+    config = {
+        "volume": 1.0,
+        "effects": {
+            "chorus": {
+                "enabled": True,
+                "delay_ms": 18.0,
+                "depth_ms": 6.0,
+                "rate_hz": 0.6,
+                "mix": 0.45,
+            },
+        },
+    }
+
+    whole_tts = TTS(None)
+    split_tts = TTS(None)
+    whole = b"".join(whole_tts._postprocess_audio(iter([source_pcm.tobytes()]), config))
+    split = b"".join(split_tts._postprocess_audio(
+        iter([source_pcm[:1024].tobytes(), source_pcm[1024:].tobytes()]),
+        config,
+    ))
+
+    whole_audio = np.frombuffer(whole, dtype=np.int16).astype(np.float32)
+    split_audio = np.frombuffer(split, dtype=np.int16).astype(np.float32)
+    assert whole_audio.shape == split_audio.shape
+    assert np.max(np.abs(whole_audio - split_audio)) <= 2.0
+
+
 def test_reverb_tail_highpass_reduces_low_end_over_time(mock_pyaudio):
     """Test tail highpass keeps reducing sustained low energy over time"""
     tts = TTS(None)

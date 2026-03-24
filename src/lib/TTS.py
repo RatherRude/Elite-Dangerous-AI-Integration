@@ -49,7 +49,6 @@ class HighpassState:
 @dataclass
 class ChorusState:
     buffer: NDArray[np.float32]
-    index: int = 0
     phase: float = 0.0
 
 
@@ -605,6 +604,60 @@ class TTS:
             return trimmed_audio
         return audio_array
 
+    def _apply_one_pole_recursive(
+        self,
+        audio_array: NDArray[np.float32],
+        a: float,
+        b: float,
+        y_prev: float,
+    ) -> tuple[NDArray[np.float32], float]:
+        if audio_array.size == 0:
+            return audio_array, y_prev
+
+        indices = np.arange(audio_array.shape[0], dtype=np.float64)
+        decay = np.power(float(a), indices)
+        weighted_input = audio_array.astype(np.float64, copy=False) / decay
+        accumulated = np.cumsum(weighted_input, dtype=np.float64)
+        output = decay * (a * y_prev + b * accumulated)
+        output = output.astype(np.float32, copy=False)
+        return output, float(output[-1])
+
+    def _apply_one_pole_lowpass_state(
+        self,
+        audio_array: NDArray[np.float32],
+        sample_rate: int,
+        cutoff: float,
+        y_prev: float,
+    ) -> tuple[NDArray[np.float32], float]:
+        if cutoff <= 0 or cutoff >= sample_rate / 2 or audio_array.size == 0:
+            return audio_array, y_prev
+
+        rc = 1.0 / (2.0 * math.pi * cutoff)
+        dt = 1.0 / sample_rate
+        alpha = dt / (rc + dt)
+        return self._apply_one_pole_recursive(audio_array, 1.0 - alpha, alpha, y_prev)
+
+    def _apply_one_pole_highpass_state(
+        self,
+        audio_array: NDArray[np.float32],
+        sample_rate: int,
+        cutoff: float,
+        y_prev: float,
+        x_prev: float,
+    ) -> tuple[NDArray[np.float32], float, float]:
+        if cutoff <= 0 or cutoff >= sample_rate / 2 or audio_array.size == 0:
+            return audio_array, y_prev, x_prev
+
+        rc = 1.0 / (2.0 * math.pi * cutoff)
+        dt = 1.0 / sample_rate
+        alpha = rc / (rc + dt)
+        delta = np.empty_like(audio_array)
+        delta[0] = audio_array[0] - x_prev
+        if audio_array.shape[0] > 1:
+            delta[1:] = np.diff(audio_array)
+        output, y_last = self._apply_one_pole_recursive(delta, alpha, alpha, y_prev)
+        return output, y_last, float(audio_array[-1])
+
     def _build_reverb_impulse_response(
         self,
         sample_rate: int,
@@ -729,23 +782,15 @@ class TTS:
         if audio_array.size == 0:
             return audio_array
 
-        rc = 1.0 / (2.0 * math.pi * REVERB_TAIL_HIGHPASS_HZ)
-        dt = 1.0 / sample_rate
-        alpha = rc / (rc + dt)
         state = self._reverb_state
-        y_prev = state.hp_y_prev
-        x_prev = state.hp_x_prev
-        out = np.empty_like(audio_array)
-
-        for i in range(audio_array.shape[0]):
-            sample = float(audio_array[i])
-            y_prev = alpha * (y_prev + sample - x_prev)
-            out[i] = y_prev
-            x_prev = sample
-
-        state.hp_y_prev = y_prev
-        state.hp_x_prev = x_prev
-        return out
+        output, state.hp_y_prev, state.hp_x_prev = self._apply_one_pole_highpass_state(
+            audio_array,
+            sample_rate,
+            REVERB_TAIL_HIGHPASS_HZ,
+            state.hp_y_prev,
+            state.hp_x_prev,
+        )
+        return output
 
     def _flush_reverb_tail(self) -> list[NDArray[np.float32]]:
         state = self._reverb_state
@@ -787,36 +832,22 @@ class TTS:
             gen = self._apply_time_pitch_effect(gen, time_pitch_config, sample_rate)
 
         def one_pole_lowpass(x: NDArray[np.float32], cutoff: float) -> NDArray[np.float32]:
-            if cutoff <= 0 or cutoff >= sample_rate / 2:
-                return x
-            rc = 1.0 / (2 * math.pi * cutoff)
-            dt = 1.0 / sample_rate
-            alpha = dt / (rc + dt)
-            y_prev = self._lp_state.y_prev
-            out = np.empty_like(x)
-            for i in range(x.shape[0]):
-                sample = float(x[i])
-                y_prev = y_prev + alpha * (sample - y_prev)
-                out[i] = y_prev
-            self._lp_state.y_prev = y_prev
+            out, self._lp_state.y_prev = self._apply_one_pole_lowpass_state(
+                x,
+                sample_rate,
+                cutoff,
+                self._lp_state.y_prev,
+            )
             return out
 
         def one_pole_highpass(x: NDArray[np.float32], cutoff: float) -> NDArray[np.float32]:
-            if cutoff <= 0 or cutoff >= sample_rate / 2:
-                return x
-            rc = 1.0 / (2 * math.pi * cutoff)
-            dt = 1.0 / sample_rate
-            alpha = rc / (rc + dt)
-            y_prev = self._hp_state.y_prev
-            x_prev = self._hp_state.x_prev
-            out = np.empty_like(x)
-            for i in range(x.shape[0]):
-                sample = float(x[i])
-                y_prev = alpha * (y_prev + sample - x_prev)
-                out[i] = y_prev
-                x_prev = sample
-            self._hp_state.y_prev = y_prev
-            self._hp_state.x_prev = x_prev
+            out, self._hp_state.y_prev, self._hp_state.x_prev = self._apply_one_pole_highpass_state(
+                x,
+                sample_rate,
+                cutoff,
+                self._hp_state.y_prev,
+                self._hp_state.x_prev,
+            )
             return out
 
         def apply_distortion(
@@ -849,38 +880,35 @@ class TTS:
             rate_hz = float(effect_config.get('rate_hz', 0.25))
             mix = float(effect_config.get('mix', 0.5))
             max_delay_ms = delay_ms + depth_ms + 5.0
-            needed = int(sample_rate * max_delay_ms / 1000.0) + x.shape[0] + 4
-            if self._chorus_state.buffer.shape[0] < needed:
-                self._chorus_state.buffer = np.zeros(needed, dtype=np.float32)
-                self._chorus_state.index = 0
+            history_length = int(math.ceil(sample_rate * max_delay_ms / 1000.0)) + 4
+            if self._chorus_state.buffer.shape[0] != history_length:
+                resized_history = np.zeros(history_length, dtype=np.float32)
+                history = self._chorus_state.buffer
+                copy_length = min(history_length, history.shape[0])
+                if copy_length > 0:
+                    resized_history[-copy_length:] = history[-copy_length:]
+                self._chorus_state.buffer = resized_history
 
-            buffer = self._chorus_state.buffer
-            buffer_index = self._chorus_state.index
+            history = self._chorus_state.buffer
             phase = self._chorus_state.phase
-            out = np.empty_like(x)
+            sample_indices = np.arange(x.shape[0], dtype=np.float64)
+            phase_steps = np.mod(phase + sample_indices * (rate_hz / sample_rate), 1.0)
+            current_delay_ms = delay_ms + np.sin(2.0 * math.pi * phase_steps) * depth_ms
+            delay_samples = sample_rate * current_delay_ms / 1000.0
 
-            for i in range(x.shape[0]):
-                sample = float(x[i])
-                mod = math.sin(2 * math.pi * phase)
-                current_delay_ms = delay_ms + mod * depth_ms
-                delay_samples = sample_rate * current_delay_ms / 1000.0
-                read_pos = buffer_index - delay_samples
-                while read_pos < 0:
-                    read_pos += buffer.shape[0]
-                index_0 = int(read_pos) % buffer.shape[0]
-                index_1 = (index_0 + 1) % buffer.shape[0]
-                fraction = read_pos - math.floor(read_pos)
-                delayed = (1 - fraction) * buffer[index_0] + fraction * buffer[index_1]
-                buffer[buffer_index % buffer.shape[0]] = sample
-                out[i] = (1 - mix) * sample + mix * delayed
-                buffer_index = (buffer_index + 1) % buffer.shape[0]
-                phase += rate_hz / sample_rate
-                if phase >= 1.0:
-                    phase -= 1.0
+            source = np.concatenate((history, x.astype(np.float32, copy=False)))
+            read_positions = history.shape[0] + sample_indices - delay_samples
+            read_positions = np.clip(read_positions, 0.0, source.shape[0] - 2.0)
+            index_0 = np.floor(read_positions).astype(np.int32)
+            fraction = read_positions - index_0
+            delayed = (
+                (1.0 - fraction) * source[index_0]
+                + fraction * source[index_0 + 1]
+            ).astype(np.float32, copy=False)
 
-            self._chorus_state.index = buffer_index
-            self._chorus_state.phase = phase
-            return out
+            self._chorus_state.buffer = source[-history_length:].astype(np.float32, copy=False)
+            self._chorus_state.phase = float(np.mod(phase + x.shape[0] * (rate_hz / sample_rate), 1.0))
+            return ((1.0 - mix) * x + mix * delayed).astype(np.float32, copy=False)
 
         def apply_glitch(
             processed_chunk: bytes,
