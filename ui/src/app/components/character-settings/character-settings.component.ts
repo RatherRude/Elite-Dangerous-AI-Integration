@@ -3,11 +3,9 @@ import { CommonModule } from "@angular/common";
 import {
     MatFormField,
     MatFormFieldModule,
-    MatHint,
     MatLabel,
 } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
-import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatOptgroup, MatOption, MatSelect } from "@angular/material/select";
 import { Subscription } from "rxjs";
 import {
@@ -63,10 +61,8 @@ interface PromptSettings {
         MatFormField,
         MatLabel,
         MatIcon,
-        MatSlideToggle,
         MatSelect,
         MatOption,
-        MatHint,
         MatDivider,
         MatOptgroup,
         MatTooltipModule,
@@ -82,6 +78,7 @@ export class CharacterSettingsComponent {
     activeCharacter: Character | null = null;
     selectedCharacterIndex: number | null = null;
     editMode = false;
+    showVoiceMoreSettings = false;
     initializing: boolean = true;
     /** Primary MIME from CharacterService (blob avatars); null when no file or unknown. */
     private avatarMimePrimary: string | null = null;
@@ -1019,6 +1016,7 @@ export class CharacterSettingsComponent {
                     this.config.characters[this.selectedCharacterIndex],
                 ),
             );
+            this.showVoiceMoreSettings = false;
             this.editMode = true;
         } else {
             // If already in edit mode, exit with confirmation for unsaved changes
@@ -1046,6 +1044,7 @@ export class CharacterSettingsComponent {
         // actually its all saved already, all we need it to clear the local backup
 
         this.localCharacterCopy = null;
+        this.showVoiceMoreSettings = false;
         this.editMode = false;
     }
 
@@ -1070,6 +1069,7 @@ export class CharacterSettingsComponent {
         this.localCharacterCopy = null;
 
         // Always exit edit mode
+        this.showVoiceMoreSettings = false;
         this.editMode = false;
     }
 

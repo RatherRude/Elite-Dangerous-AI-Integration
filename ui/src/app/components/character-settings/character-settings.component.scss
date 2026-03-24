@@ -199,6 +199,16 @@ ul {
     margin: 0 0 8px;
   }
 
+.character-prompt-field {
+  width: 100%;
+}
+
+.character-prompt-actions-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
 .character-display.with-traits {
   display: flex;
 
@@ -289,6 +299,10 @@ ul {
     // Add extra space for traits when they're shown
     min-height: 120px;
   }
+}
+
+.character-display.character-prompt-section {
+  overflow: visible;
 }
 
 .avatar-edit-section {
@@ -386,6 +400,58 @@ ul {
 .character-voice-container {
   display: flex;
   gap: 8px;
+  align-items: top;
+}
+
+.voice-settings-toggle {
+  display: flex;
+  align-items: flex-start;
+  padding-top: 8px;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    min-height: 40px;
+    padding: 0 14px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.92);
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      transform 0.2s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    &:focus-visible {
+      outline: 2px solid rgba(255, 255, 255, 0.35);
+      outline-offset: 2px;
+    }
+
+    mat-icon {
+      margin: 0;
+      opacity: 0.85;
+    }
+  }
+}
+
+.voice-more-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.voice-settings-hint {
+  margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.5;
 }
 
 // Mute category button styling

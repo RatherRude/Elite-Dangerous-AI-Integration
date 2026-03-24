@@ -153,7 +153,7 @@
                             <div class="character-voice-container">
                                 <div class="trait-select">
                                     <!-- Voice selection -->
-                                    <mat-form-field>
+                                    <mat-form-field appearance="outline">
                                         <mat-label>Voice</mat-label>
                                         @if (config.tts_provider === 'openai') {
                                             <mat-select [ngModel]="activeCharacter.tts_voice"
@@ -210,16 +210,14 @@
                                         }
                                     </mat-form-field>
                                 </div>
-                                <!-- Voice speed -->
-                                @if (!voiceInstructionSupportedModels.includes(config.tts_model_name)) {
-                                    <div class="trait-select">
-                                        <mat-form-field>
-                                            <mat-label>Speed</mat-label>
-                                            <input matInput [ngModel]="activeCharacter.tts_speed"
-                                                    (ngModelChange)="setCharacterProperty('tts_speed', $event)">
-                                        </mat-form-field>
-                                    </div>
-                                }
+                                <div class="voice-settings-toggle">
+                                    <button mat-button
+                                            type="button"
+                                            (click)="showVoiceMoreSettings = !showVoiceMoreSettings">
+                                        Voice settings
+                                        <mat-icon>{{ showVoiceMoreSettings ? 'expand_less' : 'expand_more' }}</mat-icon>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -245,20 +243,37 @@
                     </div>
                 </div>
 
-                <!-- TTS Prompt -->
-                @if (voiceInstructionSupportedModels.includes(config.tts_model_name)) {
-                    <div class="trait-select">
-                        <mat-hint><b>Voice instructions</b><br>Enter a detailed description of how you want your voice to sound.<br>You can include things such as: accent, emotional range, tone, impressions and speed.<br>
-                            Warning: This will increase the cost of each query!</mat-hint>
-                        <mat-form-field>
-                            <mat-label>Voice Tone Instructions</mat-label>
-                            <textarea matInput [ngModel]="activeCharacter.tts_prompt"
-                                    (ngModelChange)="setCharacterProperty('tts_prompt', $event)"></textarea>
-
-                        </mat-form-field>
+                @if (showVoiceMoreSettings) {
+                    <div class="voice-more-settings">
+                        @if (!voiceInstructionSupportedModels.includes(config.tts_model_name)) {
+                            <div class="trait-container">
+                                <div class="trait-select">
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Speed</mat-label>
+                                        <input matInput [ngModel]="activeCharacter.tts_speed"
+                                                (ngModelChange)="setCharacterProperty('tts_speed', $event)">
+                                    </mat-form-field>
+                                </div>
+                            </div>
+                        }
+                        @if (voiceInstructionSupportedModels.includes(config.tts_model_name)) {
+                            <div class="trait-select">
+                                <div class="voice-settings-hint">
+                                    <b>Voice instructions</b><br>
+                                    Enter a detailed description of how you want your voice to sound.<br>
+                                    You can include accent, emotional range, tone, impressions, and speed.<br>
+                                    Warning: This will increase the cost of each query!
+                                </div>
+                                <mat-form-field appearance="outline">
+                                    <mat-label>Voice Tone Instructions</mat-label>
+                                    <textarea matInput [ngModel]="activeCharacter.tts_prompt"
+                                            (ngModelChange)="setCharacterProperty('tts_prompt', $event)"></textarea>
+                                </mat-form-field>
+                            </div>
+                        }
                     </div>
                 }
-                
+
                 <!-- Character settings when preset is not custom -->
                 @if (activeCharacter.personality_preset !== 'custom') {
                     <div class="personality-settings">
@@ -414,12 +429,11 @@
                 }
                 
                 <!-- Character Prompt Display - Always Visible -->
-                <div class="character-display">
-                    <div class="character-prompt-header">
-                        <h4>Character Prompt</h4>
-                        @if (activeCharacter.personality_preset !== 'custom') {
+                <div class="character-display character-prompt-section">
+                    @if (activeCharacter.personality_preset !== 'custom') {
+                        <div class="character-prompt-actions-row">
                             <div class="character-prompt-actions">
-                                    <button mat-raised-button
+                                <button mat-raised-button
                                         color="warn"
                                         (click)="enableCustomCharacterEditor()"
                                         [matTooltip]="'Switch to custom mode to write your own character prompt. Warning: This action cannot be undone'"
@@ -435,18 +449,25 @@
                                     <mat-icon>casino</mat-icon> Randomize
                                 </button>
                             </div>
-                        }
-                    </div>
+                        </div>
+                    }
                     
                     @if (activeCharacter.personality_preset === 'custom') {
-                        <mat-form-field>
+                        <mat-form-field appearance="outline" class="character-prompt-field">
+                            <mat-label>Character Prompt</mat-label>
                             <textarea matInput [ngModel]="activeCharacter.character"
                                     [ngModelOptions]="{updateOn: 'blur'}"
                                     (ngModelChange)="setCharacterProperty('character', $event)"
                                     rows="10"></textarea>
                         </mat-form-field>
                     } @else {
-                        <div class="character-content">{{activeCharacter.character}}</div>
+                        <mat-form-field appearance="outline" class="character-prompt-field">
+                            <mat-label>Character Prompt</mat-label>
+                            <textarea matInput
+                                    [value]="activeCharacter.character"
+                                    readonly
+                                    rows="10"></textarea>
+                        </mat-form-field>
                     }
                 </div>
             </div>
