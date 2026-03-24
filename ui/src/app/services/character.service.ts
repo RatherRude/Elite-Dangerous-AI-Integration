@@ -38,6 +38,8 @@ export interface CharacterTTSGlitchConfig {
     repeat_max?: number;
     min_seconds?: number;
     max_seconds?: number;
+    detune_base?: number;
+    detune_peak?: number;
 }
 
 export interface CharacterTTSTimePitchConfig {

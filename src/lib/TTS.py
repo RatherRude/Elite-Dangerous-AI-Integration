@@ -57,6 +57,10 @@ class GlitchState:
     history: deque[bytes]
 
 
+GLITCH_BASE_DETUNE_SEMITONES = 4.0
+GLITCH_BURST_DETUNE_SEMITONES = 12.0
+
+
 @final
 class TTS:
     def __init__(
@@ -353,6 +357,77 @@ class TTS:
         for start in range(0, len(processed_bytes), chunk_size):
             yield processed_bytes[start:start + chunk_size]
 
+    def _pitch_shift_chunk(
+        self,
+        chunk: bytes,
+        pitch_shift_semitones: float,
+        sample_rate: int,
+    ) -> bytes:
+        if not chunk or math.isclose(pitch_shift_semitones, 0.0, abs_tol=1e-6):
+            return chunk
+
+        audio_array = np.frombuffer(chunk, dtype=np.int16).astype(np.float32) / 32768.0
+        transformed = self._transform_time_pitch_audio(
+            audio_array,
+            {
+                'enabled': True,
+                'pitch_shift_semitones': pitch_shift_semitones,
+                'time_stretch': 1.0,
+            },
+            sample_rate,
+        )
+        transformed = np.clip(transformed, -1.0, 1.0)
+        return (transformed * 32768.0).astype(np.int16).tobytes()
+
+    def _split_processed_bytes(
+        self,
+        processed_bytes: bytes,
+        chunk_lengths: list[int],
+    ) -> list[bytes]:
+        expected_length = sum(chunk_lengths)
+        if len(processed_bytes) != expected_length:
+            if len(processed_bytes) > expected_length:
+                processed_bytes = processed_bytes[:expected_length]
+            else:
+                processed_bytes = processed_bytes + (b'\x00' * (expected_length - len(processed_bytes)))
+
+        chunks: list[bytes] = []
+        offset = 0
+        for chunk_length in chunk_lengths:
+            chunks.append(processed_bytes[offset:offset + chunk_length])
+            offset += chunk_length
+        return chunks
+
+    def _pitch_shift_chunk_group(
+        self,
+        chunks: list[bytes],
+        pitch_shift_semitones: float,
+        sample_rate: int,
+    ) -> list[bytes]:
+        if not chunks:
+            return []
+        if math.isclose(pitch_shift_semitones, 0.0, abs_tol=1e-6):
+            return list(chunks)
+
+        combined = b''.join(chunks)
+        shifted = self._pitch_shift_chunk(combined, pitch_shift_semitones, sample_rate)
+        return self._split_processed_bytes(shifted, [len(chunk) for chunk in chunks])
+
+    def _get_random_glitch_detune(self, semitone_range: float) -> float:
+        return random.uniform(-abs(semitone_range), abs(semitone_range))
+
+    def _get_glitch_pitch_hold_bytes(
+        self,
+        effect_config: CharacterTTSGlitchConfig,
+        sample_rate: int,
+    ) -> int:
+        min_seconds = max(0.01, min(0.5, float(effect_config.get('min_seconds', 0.05))))
+        max_seconds = max(0.01, min(0.5, float(effect_config.get('max_seconds', 0.20))))
+        if max_seconds < min_seconds:
+            max_seconds = min_seconds
+        duration = random.uniform(min_seconds, max_seconds)
+        return max(2, int(duration * sample_rate) * 2)
+
     def _transform_time_pitch_audio(
         self,
         audio_array: NDArray[np.float32],
@@ -514,6 +589,13 @@ class TTS:
     ) -> Generator[bytes, None, None]:
         sample_rate = 24_000
         effects = config.get('effects', {})
+        glitch_config = effects.get('glitch', {})
+        glitch_enabled = isinstance(glitch_config, dict) and bool(glitch_config.get('enabled'))
+        glitch_detune_base = float(glitch_config.get('detune_base', GLITCH_BASE_DETUNE_SEMITONES)) if isinstance(glitch_config, dict) else GLITCH_BASE_DETUNE_SEMITONES
+        glitch_detune_peak = float(glitch_config.get('detune_peak', GLITCH_BURST_DETUNE_SEMITONES)) if isinstance(glitch_config, dict) else GLITCH_BURST_DETUNE_SEMITONES
+        base_glitch_detune = 0.0
+        base_glitch_detune_bytes_remaining = 0
+        base_glitch_chunks: list[bytes] = []
 
         time_pitch_config = effects.get('time_pitch', {})
         if isinstance(time_pitch_config, dict):
@@ -642,7 +724,14 @@ class TTS:
                 bytes_needed = max(2, int(duration * sample_rate) * 2)
                 combined = b''.join(history)
                 if len(combined) >= bytes_needed:
-                    extras.append(combined[-bytes_needed:])
+                    extra_detune = self._get_random_glitch_detune(glitch_detune_peak)
+                    extras.append(
+                        self._pitch_shift_chunk(
+                            combined[-bytes_needed:],
+                            extra_detune,
+                            sample_rate,
+                        )
+                    )
             else:
                 repeat_min = int(effect_config.get('repeat_min', 2))
                 repeat_max = int(effect_config.get('repeat_max', 4))
@@ -650,10 +739,35 @@ class TTS:
                     repeat_max = repeat_min
                 repeats = max(1, random.randint(repeat_min, repeat_max))
                 last_chunk = history[-1]
-                extras.extend(last_chunk for _ in range(repeats))
+                extra_detune = self._get_random_glitch_detune(glitch_detune_peak)
+                extras.append(
+                    self._pitch_shift_chunk(
+                        last_chunk * repeats,
+                        extra_detune,
+                        sample_rate,
+                    )
+                )
 
             history.append(processed_chunk)
             return extras
+
+        def flush_base_glitch_chunks() -> Generator[bytes, None, None]:
+            nonlocal base_glitch_chunks
+            if not base_glitch_chunks:
+                return
+
+            shifted_chunks = self._pitch_shift_chunk_group(
+                base_glitch_chunks,
+                base_glitch_detune,
+                sample_rate,
+            )
+            base_glitch_chunks = []
+
+            for shifted_chunk in shifted_chunks:
+                yield shifted_chunk
+                if isinstance(glitch_config, dict):
+                    for extra in apply_glitch(shifted_chunk, glitch_config):
+                        yield extra
 
         for chunk in gen:
             if not chunk:
@@ -686,12 +800,29 @@ class TTS:
 
             audio_array = np.clip(audio_array, -1.0, 1.0)
             processed_chunk = (audio_array * 32768).astype(np.int16).tobytes()
+
+            if glitch_enabled:
+                if base_glitch_detune_bytes_remaining <= 0:
+                    yield from flush_base_glitch_chunks()
+                    base_glitch_detune = self._get_random_glitch_detune(glitch_detune_base)
+                    base_glitch_detune_bytes_remaining = self._get_glitch_pitch_hold_bytes(
+                        glitch_config,
+                        sample_rate,
+                    )
+                base_glitch_chunks.append(processed_chunk)
+                base_glitch_detune_bytes_remaining -= len(processed_chunk)
+                if base_glitch_detune_bytes_remaining <= 0:
+                    yield from flush_base_glitch_chunks()
+                continue
+
             yield processed_chunk
 
-            glitch_config = effects.get('glitch', {})
             if isinstance(glitch_config, dict):
                 for extra in apply_glitch(processed_chunk, glitch_config):
                     yield extra
+
+        if glitch_enabled:
+            yield from flush_base_glitch_chunks()
 
     def say(
         self,
@@ -764,15 +895,19 @@ class TTS:
 
 
 if __name__ == "__main__":
-    model = OpenAITTSModel(base_url='https://api.openai.com/v1', model_name="tts-1", api_key='sk-')
+    import os
+    model = OpenAITTSModel(base_url='https://api.openai.com/v1', model_name="tts-1", api_key=os.environ.get('OPENAI_API_KEY'))
     tts = TTS(model, "nova", speed=1.0, postprocessing_config=None, output_device="pulse")
     tts.say("Hello, this is a test of the text to speech system.", postprocessing={
         "volume": 1.0,
         "effects": {
             "time_pitch": {
                 "enabled": True,
-                "pitch_shift_semitones": 0.0,
-                "time_stretch": 0.5
+                "pitch_shift_semitones": -4.0,
+                "time_stretch": 1
+            },
+            "glitch": {
+                "enabled": True,
             }
         }
     })

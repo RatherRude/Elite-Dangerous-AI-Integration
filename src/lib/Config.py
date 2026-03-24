@@ -389,6 +389,8 @@ class CharacterTTSGlitchConfig(TypedDict, total=False):
     repeat_max: int
     min_seconds: float
     max_seconds: float
+    detune_base: float
+    detune_peak: float
 
 
 class CharacterTTSTimePitchConfig(TypedDict, total=False):
@@ -450,6 +452,8 @@ def get_default_character_tts_postprocessing() -> CharacterTTSPostprocessingConf
                 "repeat_max": 4,
                 "min_seconds": 0.05,
                 "max_seconds": 0.20,
+                "detune_base": 4.0,
+                "detune_peak": 12.0,
             },
             "time_pitch": {
                 "enabled": False,
@@ -528,6 +532,8 @@ def _map_character_tts_glitch(raw: object) -> CharacterTTSGlitchConfig:
         "repeat_max": 4,
         "min_seconds": 0.05,
         "max_seconds": 0.20,
+        "detune_base": 4.0,
+        "detune_peak": 12.0,
     }
     if not isinstance(raw, dict):
         return glitch
@@ -544,6 +550,10 @@ def _map_character_tts_glitch(raw: object) -> CharacterTTSGlitchConfig:
         glitch['min_seconds'] = float(raw['min_seconds'])
     if isinstance(raw.get('max_seconds'), (int, float)):
         glitch['max_seconds'] = float(raw['max_seconds'])
+    if isinstance(raw.get('detune_base'), (int, float)):
+        glitch['detune_base'] = float(raw['detune_base'])
+    if isinstance(raw.get('detune_peak'), (int, float)):
+        glitch['detune_peak'] = float(raw['detune_peak'])
     return glitch
 
 

@@ -3,6 +3,7 @@ from httpx import Response
 import pytest
 from unittest.mock import MagicMock
 from time import sleep
+from src.lib.Config import map_character_tts_postprocessing
 from src.lib.TTS import TTS
 from src.lib.Models import OpenAITTSModel, EdgeTTSModel
 import numpy as np
@@ -164,6 +165,7 @@ def test_postprocess_audio_glitch_repeats_previous_chunk(mock_pyaudio, monkeypat
     """Test glitch effect replays recent synthesized audio"""
     monkeypatch.setattr("src.lib.TTS.random.random", lambda: 0.0)
     monkeypatch.setattr("src.lib.TTS.random.randint", lambda _a, _b: 2)
+    monkeypatch.setattr("src.lib.TTS.random.uniform", lambda _a, _b: 0.0)
 
     tts = TTS(None)
     config = {
@@ -182,9 +184,71 @@ def test_postprocess_audio_glitch_repeats_previous_chunk(mock_pyaudio, monkeypat
 
     processed_chunks = list(tts._postprocess_audio(iter([first, second]), config))
 
-    assert len(processed_chunks) == 4
-    assert processed_chunks[2] == first
-    assert processed_chunks[3] == first
+    assert len(processed_chunks) == 3
+    assert processed_chunks[2] == first + first
+
+
+def test_glitch_effect_applies_base_and_burst_detune(mock_pyaudio, monkeypatch):
+    """Test glitch effect adds subtle base detune and stronger glitch detune"""
+    monkeypatch.setattr("src.lib.TTS.random.random", lambda: 0.0)
+    monkeypatch.setattr("src.lib.TTS.random.randint", lambda _a, _b: 2)
+
+    tts = TTS(None)
+    pitch_shift_calls: list[float] = []
+    shifted_lengths: list[int] = []
+    detune_ranges: list[float] = []
+
+    def fake_transform(audio_array, effect_config, _sample_rate):
+        pitch_shift_calls.append(float(effect_config["pitch_shift_semitones"]))
+        shifted_lengths.append(int(audio_array.shape[0]))
+        return audio_array
+
+    def fake_random_detune(semitone_range: float) -> float:
+        detune_ranges.append(semitone_range)
+        return 1.5 if semitone_range < 10 else -9.0
+
+    monkeypatch.setattr(tts, "_transform_time_pitch_audio", fake_transform)
+    monkeypatch.setattr(tts, "_get_random_glitch_detune", fake_random_detune)
+    monkeypatch.setattr(tts, "_get_glitch_pitch_hold_bytes", lambda _config, _sample_rate: 32)
+
+    config = {
+        "volume": 1.0,
+        "effects": {
+            "glitch": {
+                "enabled": True,
+                "probability": 1.0,
+                "repeat_min": 2,
+                "repeat_max": 2,
+                "detune_base": 3.0,
+                "detune_peak": 7.0,
+            },
+        },
+    }
+    first = np.array([1000, -1000], dtype=np.int16).tobytes()
+    second = np.array([2000, -2000], dtype=np.int16).tobytes()
+
+    processed_chunks = list(tts._postprocess_audio(iter([first, second]), config))
+
+    assert len(processed_chunks) == 3
+    assert detune_ranges == [3.0, 7.0]
+    assert pitch_shift_calls == pytest.approx([1.5, 1.5])
+    assert shifted_lengths == [4, 4]
+
+
+def test_glitch_config_maps_detune_ranges():
+    """Test glitch config keeps detune range settings"""
+    config = map_character_tts_postprocessing({
+        "effects": {
+            "glitch": {
+                "enabled": True,
+                "detune_base": 2.5,
+                "detune_peak": 9.5,
+            },
+        },
+    })
+
+    assert config["effects"]["glitch"]["detune_base"] == pytest.approx(2.5)
+    assert config["effects"]["glitch"]["detune_peak"] == pytest.approx(9.5)
 
 
 def test_time_pitch_effect_stretches_audio_without_changing_pitch(mock_pyaudio):
