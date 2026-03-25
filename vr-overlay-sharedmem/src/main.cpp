@@ -14,10 +14,11 @@ struct SharedMemoryHeader {
     uint32_t height;
     uint32_t frameNumber;
     bool ready;
-    float posX;        // ADD THESE
+    float posX;
     float posY;
     float posZ;
     float overlayWidth;
+    float curvature;  // ADD THIS - 0.0 = flat, higher = more curved
 };
 
 const char* SHARED_MEMORY_NAME = "CovasVROverlaySharedMemory";  // Remove "Global\\"
@@ -267,6 +268,7 @@ private:
     };
     vr::VROverlay()->SetOverlayTransformAbsolute(m_overlay, vr::TrackingUniverseStanding, &transform);
     vr::VROverlay()->SetOverlayWidthInMeters(m_overlay, header->overlayWidth);
+    vr::VROverlay()->SetOverlayCurvature(m_overlay, header->curvature);  // ADD THIS
     
     // Create or recreate texture if size changed
     if (!m_texture || header->width != m_textureWidth || header->height != m_textureHeight) {

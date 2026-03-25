@@ -143,7 +143,7 @@ class VROverlayService {
   #frameNumber = 0;
   
   constructor() {
-    const SHARED_MEMORY_SIZE = 32 + (3840 * 2160 * 4); // Header + max texture
+    const SHARED_MEMORY_SIZE = 36 + (3840 * 2160 * 4); // Header + max texture
     try {
       this.#sharedMemory = new SharedMemory('CovasVROverlaySharedMemory', SHARED_MEMORY_SIZE);
       logger.info('[VR] Shared memory initialized');
@@ -239,7 +239,7 @@ class VROverlayService {
     
     
     // Write header with position data
-    const headerBuffer = Buffer.alloc(32); // Increased from 16 to 32
+    const headerBuffer = Buffer.alloc(36); // Increased from 16 to 32
     headerBuffer.writeUInt32LE(size.width, 0);
     headerBuffer.writeUInt32LE(size.height, 4);
     headerBuffer.writeUInt32LE(this.#frameNumber++, 8);
@@ -257,9 +257,10 @@ class VROverlayService {
     headerBuffer.writeFloatLE(posY, 20);
     headerBuffer.writeFloatLE(posZ, 24);
     headerBuffer.writeFloatLE(width, 28);
+    headerBuffer.writeFloatLE(vrConfig.vr_curvature ?? 0.0, 32);  // curvature
 
     this.#sharedMemory.write(headerBuffer, 0);
-    this.#sharedMemory.write(buffer, 32);
+    this.#sharedMemory.write(buffer, 36);
 
   // Log every 60 frames
     if (this.#frameNumber % 3000 === 0) {

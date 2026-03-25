@@ -167,6 +167,7 @@ export interface Config {
     vr_position_y?: number;
     vr_position_z?: number;
     vr_width?: number;
+    vr_curvature?: number;  // ADD THIS
 
     enable_remote_tracing?: boolean;
 

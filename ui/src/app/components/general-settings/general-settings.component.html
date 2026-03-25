@@ -139,37 +139,43 @@
                     (ngModelChange)="onVRToggle($event)">
                     Enable VR Overlay
                 </mat-slide-toggle>
+                
+                @if (config.vr_overlay_enabled) {
+                    <div class="vr-slider">
+                        <label>VR Position X: {{config.vr_position_x?.toFixed(1) || '0.0'}}</label>
+                        <input type="range" min="-2.0" max="2.0" step="0.1"
+                            [value]="config.vr_position_x"
+                            (change)="onSliderChange($event, 'vr_position_x')">
+                    </div>
 
-            @if (config.vr_overlay_enabled) {
-                <div class="vr-slider">
-                    <label>VR Position X: {{config.vr_position_x?.toFixed(1) || '0.0'}}</label>
-                    <input type="range" min="-2.0" max="2.0" step="0.1"
-                        [(ngModel)]="config.vr_position_x"
-                        (ngModelChange)="onConfigChange({vr_position_x: +$event})">
-                </div>
+                    <div class="vr-slider">
+                        <label>VR Position Y: {{config.vr_position_y?.toFixed(1) || '1.5'}}</label>
+                        <input type="range" min="0.0" max="3.0" step="0.1"
+                            [value]="config.vr_position_y"
+                            (change)="onSliderChange($event, 'vr_position_y')">
+                    </div>
 
-                <div class="vr-slider">
-                    <label>VR Position Y: {{config.vr_position_y?.toFixed(1) || '1.5'}}</label>
-                    <input type="range" min="0.0" max="3.0" step="0.1"
-                        [(ngModel)]="config.vr_position_y"
-                        (ngModelChange)="onConfigChange({vr_position_y: +$event})">
-                </div>
+                    <div class="vr-slider">
+                        <label>VR Position Z: {{config.vr_position_z?.toFixed(1) || '-2.0'}}</label>
+                        <input type="range" min="-3.0" max="0.0" step="0.1"
+                            [value]="config.vr_position_z"
+                            (change)="onSliderChange($event, 'vr_position_z')">
+                    </div>
 
-                <div class="vr-slider">
-                    <label>VR Position Z: {{config.vr_position_z?.toFixed(1) || '-2.0'}}</label>
-                    <input type="range" min="-3.0" max="0.0" step="0.1"
-                        [(ngModel)]="config.vr_position_z"
-                        (ngModelChange)="onConfigChange({vr_position_z: +$event})">
-                </div>
+                    <div class="vr-slider">
+                        <label>VR Width: {{config.vr_width?.toFixed(1) || '1.5'}} meters</label>
+                        <input type="range" min="0.5" max="3.0" step="0.1"
+                            [value]="config.vr_width"
+                            (change)="onSliderChange($event, 'vr_width')">
+                    </div>
 
-                <div class="vr-slider">
-                    <label>VR Width: {{config.vr_width?.toFixed(1) || '1.5'}} meters</label>
-                    <input type="range" min="0.5" max="3.0" step="0.1"
-                        [(ngModel)]="config.vr_width"
-                        (ngModelChange)="onConfigChange({vr_width: +$event})">
-                </div>
-            }
-
+                    <div class="vr-slider">
+                        <label>VR Curvature: {{config.vr_curvature?.toFixed(2) || '0.00'}}</label>
+                        <input type="range" min="0.0" max="0.5" step="0.05"
+                            [value]="config.vr_curvature"
+                            (change)="onSliderChange($event, 'vr_curvature')">
+                    </div>
+                }
 
             </div>
         </div>
