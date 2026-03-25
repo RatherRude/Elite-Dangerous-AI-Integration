@@ -21,7 +21,7 @@ struct SharedMemoryHeader {
 };
 
 const char* SHARED_MEMORY_NAME = "CovasVROverlaySharedMemory";  // Remove "Global\\"
-const size_t MAX_TEXTURE_SIZE = 1920 * 1080 * 4; // 1080p RGBA
+const size_t MAX_TEXTURE_SIZE = 3840 * 2160 * 4; // 4K RGBA
 const size_t SHARED_MEMORY_SIZE = sizeof(SharedMemoryHeader) + MAX_TEXTURE_SIZE;
 
 class VROverlayApp {

@@ -50,7 +50,15 @@
       {
         "from": "dist/Chat",
         "to": "Chat"
-      }
+      },
+      {
+      "from": "vr-companion",
+      "to": "vr-companion"
+      },
+	  {
+      "from": "shared-memory-addon",
+      "to": "shared-memory-addon"
+	  }
     ],
     "files": [
       {

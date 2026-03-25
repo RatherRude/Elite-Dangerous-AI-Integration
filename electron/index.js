@@ -6,7 +6,10 @@ const fs = require('node:fs');
 const fsPromises = require('node:fs/promises');
 const contextMenu = require('electron-context-menu');
 const pino = require('pino')
-const { SharedMemory } = require('../shared-memory-addon');
+const SharedMemory = app.isPackaged
+
+  ? require(path.join(process.resourcesPath, 'shared-memory-addon', 'build', 'Release', 'shared_memory.node')).SharedMemory
+  : require('../shared-memory-addon').SharedMemory;
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 const isLinux = process.platform === 'linux';
@@ -140,7 +143,7 @@ class VROverlayService {
   #frameNumber = 0;
   
   constructor() {
-    const SHARED_MEMORY_SIZE = 32 + (1920 * 1080 * 4); // Header + max texture
+    const SHARED_MEMORY_SIZE = 32 + (3840 * 2160 * 4); // Header + max texture
     try {
       this.#sharedMemory = new SharedMemory('CovasVROverlaySharedMemory', SHARED_MEMORY_SIZE);
       logger.info('[VR] Shared memory initialized');
@@ -200,16 +203,14 @@ class VROverlayService {
     this.stopCapture();
     this.#overlayWindow = null;
   }
- updateConfig(config) {
+  
+  updateConfig(config) {
   this.#config = config;
-    logger.info('[VR] Config updated:', {
-      vr_overlay_enabled: config.vr_overlay_enabled,
-      vr_position_x: config.vr_position_x,
-      vr_position_y: config.vr_position_y,
-      vr_position_z: config.vr_position_z,
-      vr_width: config.vr_width
-    });
+  // Only log if VR is enabled and config actually changed
+  if (config.vr_overlay_enabled) {
+    logger.debug('[VR] Config updated'); // Changed to debug level, no details
   }
+}
   startCapture() {
     if (this.#isCapturing || !this.#overlayWindow) return;
     
@@ -261,12 +262,12 @@ class VROverlayService {
     this.#sharedMemory.write(buffer, 32);
 
   // Log every 60 frames
-    if (this.#frameNumber % 60 === 0) {
+    if (this.#frameNumber % 3000 === 0) {
       logger.info(`[VR] Frame ${this.#frameNumber} captured: ${size.width}x${size.height}, pos=(${posX}, ${posY}, ${posZ}), width=${width}`);
     }
     
     // Capture next frame (60fps)
-    setTimeout(() => this.captureFrame(), 16);
+    setTimeout(() => this.captureFrame(), 33);
   } catch (error) {
     logger.error('[VR] Frame capture error:', error.message || error.toString());
     // Log full error details
