@@ -271,6 +271,97 @@
                                 </mat-form-field>
                             </div>
                         }
+                        <div class="voice-effects-section">
+                            <div class="voice-effects-title">Voice effects</div>
+                            <div class="trait-container">
+                                <div class="trait-select">
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Comms Filter</mat-label>
+                                        <mat-select [ngModel]="getSelectedLowHighPassPreset()"
+                                                (ngModelChange)="applyLowHighPassPreset($event)">
+                                            @if (getSelectedLowHighPassPreset() === "custom") {
+                                                <mat-option value="custom" disabled>Custom</mat-option>
+                                            }
+                                            @for (preset of lowHighPassPresets; track preset.id) {
+                                                <mat-option [value]="preset.id">{{ preset.label }}</mat-option>
+                                            }
+                                        </mat-select>
+                                    </mat-form-field>
+                                </div>
+                                <div class="trait-select">
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Distortion</mat-label>
+                                        <mat-select [ngModel]="getSelectedVoiceEffectPreset('distortion')"
+                                                (ngModelChange)="applyVoiceEffectPreset('distortion', $event)">
+                                            @if (getSelectedVoiceEffectPreset("distortion") === "custom") {
+                                                <mat-option value="custom" disabled>Custom</mat-option>
+                                            }
+                                            @for (preset of distortionPresets; track preset.id) {
+                                                <mat-option [value]="preset.id">{{ preset.label }}</mat-option>
+                                            }
+                                        </mat-select>
+                                    </mat-form-field>
+                                </div>
+                                <div class="trait-select">
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Chorus</mat-label>
+                                        <mat-select [ngModel]="getSelectedVoiceEffectPreset('chorus')"
+                                                (ngModelChange)="applyVoiceEffectPreset('chorus', $event)">
+                                            @if (getSelectedVoiceEffectPreset("chorus") === "custom") {
+                                                <mat-option value="custom" disabled>Custom</mat-option>
+                                            }
+                                            @for (preset of chorusPresets; track preset.id) {
+                                                <mat-option [value]="preset.id">{{ preset.label }}</mat-option>
+                                            }
+                                        </mat-select>
+                                    </mat-form-field>
+                                </div>
+                            </div>
+                            <div class="trait-container">
+                                <div class="trait-select">
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Glitch</mat-label>
+                                        <mat-select [ngModel]="getSelectedVoiceEffectPreset('glitch')"
+                                                (ngModelChange)="applyVoiceEffectPreset('glitch', $event)">
+                                            @if (getSelectedVoiceEffectPreset("glitch") === "custom") {
+                                                <mat-option value="custom" disabled>Custom</mat-option>
+                                            }
+                                            @for (preset of glitchPresets; track preset.id) {
+                                                <mat-option [value]="preset.id">{{ preset.label }}</mat-option>
+                                            }
+                                        </mat-select>
+                                    </mat-form-field>
+                                </div>
+                                <div class="trait-select">
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Reverb</mat-label>
+                                        <mat-select [ngModel]="getSelectedVoiceEffectPreset('reverb')"
+                                                (ngModelChange)="applyVoiceEffectPreset('reverb', $event)">
+                                            @if (getSelectedVoiceEffectPreset("reverb") === "custom") {
+                                                <mat-option value="custom" disabled>Custom</mat-option>
+                                            }
+                                            @for (preset of reverbPresets; track preset.id) {
+                                                <mat-option [value]="preset.id">{{ preset.label }}</mat-option>
+                                            }
+                                        </mat-select>
+                                    </mat-form-field>
+                                </div>
+                                <div class="trait-select">
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Time / Pitch</mat-label>
+                                        <mat-select [ngModel]="getSelectedVoiceEffectPreset('time_pitch')"
+                                                (ngModelChange)="applyVoiceEffectPreset('time_pitch', $event)">
+                                            @if (getSelectedVoiceEffectPreset("time_pitch") === "custom") {
+                                                <mat-option value="custom" disabled>Custom</mat-option>
+                                            }
+                                            @for (preset of timePitchPresets; track preset.id) {
+                                                <mat-option [value]="preset.id">{{ preset.label }}</mat-option>
+                                            }
+                                        </mat-select>
+                                    </mat-form-field>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 }
 

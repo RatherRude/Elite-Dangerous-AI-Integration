@@ -400,7 +400,7 @@ ul {
 .character-voice-container {
   display: flex;
   gap: 8px;
-  align-items: top;
+  align-items: flex-start;
 }
 
 .voice-settings-toggle {
@@ -446,6 +446,20 @@ ul {
   flex-direction: column;
   gap: 12px;
   margin-bottom: 16px;
+}
+
+.voice-effects-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.voice-effects-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
 }
 
 .voice-settings-hint {
