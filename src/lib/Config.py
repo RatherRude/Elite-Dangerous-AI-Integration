@@ -488,6 +488,7 @@ class Config(TypedDict):
     vr_position_z: float = -2.0
     vr_width: float = 1.5
     vr_curvature: float = 0.0,  # ADD THIS
+    vr_rotation_pitch: float = 0.0  # ADD THIS
     enable_remote_tracing: bool
 
     plugin_settings: dict[str, Any]
@@ -970,7 +971,8 @@ def load_config() -> Config:
         "vr_position_y": 1.5,
         "vr_position_z": -2.0,
         "vr_width": 1.5,
-        "vr_curvature": 0.0,  # ADD THIS       
+        "vr_curvature": 0.0,  # ADD THIS   
+        "vr_rotation_pitch": 0.0,  # ADD THIS    
         "enable_remote_tracing": False,
         
         "plugin_settings": {},

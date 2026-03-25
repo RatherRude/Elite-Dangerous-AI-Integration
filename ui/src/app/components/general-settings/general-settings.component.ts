@@ -165,16 +165,8 @@ export class GeneralSettingsComponent implements OnDestroy {
     }
 }
 
-    async onVRToggle(enabled: boolean) {  // ← ADD THIS METHOD HERE
-        await this.onConfigChange({ vr_overlay_enabled: enabled });
-        
-        // Start or stop VR overlay process
-        if (enabled) {
-            await window.electronAPI.invoke('start_vr_overlay');
-        } 
-        else {
-            await window.electronAPI.invoke('stop_vr_overlay');
-        }
+    async onVRToggle(enabled: boolean) {
+        await this.onConfigChange({ vr_overlay_enabled: enabled });       
     }   
     
     onSliderChange(event: Event, field: string) {

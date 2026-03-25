@@ -19,6 +19,7 @@ struct SharedMemoryHeader {
     float posZ;
     float overlayWidth;
     float curvature;  // ADD THIS - 0.0 = flat, higher = more curved
+    float rotationPitch; // ADD THIS - rotation around X axis (tilt top toward/away)
 };
 
 const char* SHARED_MEMORY_NAME = "CovasVROverlaySharedMemory";  // Remove "Global\\"
@@ -260,15 +261,21 @@ private:
         return;
     }
     
-    // Update position if it changed
+    // Update position and rotation
+    // Build rotation matrix for pitch (rotation around X axis)
+    float pitch = header->rotationPitch;
+    float cosPitch = cos(pitch);
+    float sinPitch = sin(pitch);
+
     vr::HmdMatrix34_t transform = {
-        1.0f, 0.0f, 0.0f, header->posX,
-        0.0f, 1.0f, 0.0f, header->posY,
-        0.0f, 0.0f, 1.0f, header->posZ
+        1.0f,      0.0f,       0.0f,       header->posX,
+        0.0f,      cosPitch,   -sinPitch,  header->posY,
+        0.0f,      sinPitch,   cosPitch,   header->posZ
     };
+    
     vr::VROverlay()->SetOverlayTransformAbsolute(m_overlay, vr::TrackingUniverseStanding, &transform);
     vr::VROverlay()->SetOverlayWidthInMeters(m_overlay, header->overlayWidth);
-    vr::VROverlay()->SetOverlayCurvature(m_overlay, header->curvature);  // ADD THIS
+    vr::VROverlay()->SetOverlayCurvature(m_overlay, header->curvature);
     
     // Create or recreate texture if size changed
     if (!m_texture || header->width != m_textureWidth || header->height != m_textureHeight) {
