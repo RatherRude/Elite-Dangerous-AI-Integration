@@ -154,6 +154,9 @@ class VROverlayService {
   
   startVRProcess() {
     if (this.#vrProcess) {
+       if (!this.#config?.vr_overlay_enabled) {
+         return;
+      }
       logger.warn('[VR] VR process already running');
       return;
     }
