@@ -161,6 +161,12 @@ export interface Config {
     overlay_show_chat: boolean;
     overlay_position: "left" | "right" | "left-medium" | "left-small" | "right-medium" | "right-small";
     overlay_screen_id: number;
+    // VR Overlay settings
+    vr_overlay_enabled?: boolean;
+    vr_position_x?: number;
+    vr_position_y?: number;
+    vr_position_z?: number;
+    vr_width?: number;
 
     enable_remote_tracing?: boolean;
 

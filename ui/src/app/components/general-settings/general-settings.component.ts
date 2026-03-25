@@ -151,17 +151,29 @@ export class GeneralSettingsComponent implements OnDestroy {
     }
 
     async onConfigChange(partialConfig: Partial<Config>) {
-        if (this.config) {
-            console.log("Sending config update to backend:", partialConfig);
+    if (this.config) {
+        console.log("Sending config update to backend:", partialConfig);
 
-            try {
-                await this.configService.changeConfig(partialConfig);
-            } catch (error) {
-                console.error("Error updating config:", error);
-                this.snackBar.open("Error updating configuration", "OK", {
-                    duration: 5000,
-                });
-            }
+        try {
+            await this.configService.changeConfig(partialConfig);
+        } catch (error) {
+            console.error("Error updating config:", error);
+            this.snackBar.open("Error updating configuration", "OK", {
+                duration: 5000,
+            });
         }
     }
+}
+
+    async onVRToggle(enabled: boolean) {  // ← ADD THIS METHOD HERE
+        await this.onConfigChange({ vr_overlay_enabled: enabled });
+    
+        // Start or stop VR overlay process
+        if (enabled) {
+            await window.electronAPI.invoke('start_vr_overlay');
+        } 
+        else {
+            await window.electronAPI.invoke('stop_vr_overlay');
+        }
+    }   
 }

@@ -6,6 +6,7 @@ const fs = require('node:fs');
 const fsPromises = require('node:fs/promises');
 const contextMenu = require('electron-context-menu');
 const pino = require('pino')
+const { SharedMemory } = require('../shared-memory-addon');
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 const isLinux = process.platform === 'linux';
@@ -130,7 +131,152 @@ protocol.registerSchemesAsPrivileged([
     }
   }
 ]);
+class VROverlayService {
+  #config = null;
+  #vrProcess = null;
+  #sharedMemory = null;
+  #overlayWindow = null;
+  #isCapturing = false;
+  #frameNumber = 0;
+  
+  constructor() {
+    const SHARED_MEMORY_SIZE = 32 + (1920 * 1080 * 4); // Header + max texture
+    try {
+      this.#sharedMemory = new SharedMemory('CovasVROverlaySharedMemory', SHARED_MEMORY_SIZE);
+      logger.info('[VR] Shared memory initialized');
+    } catch (error) {
+      logger.error('[VR] Failed to initialize shared memory:', error);
+    }
+  }
+  
+  startVRProcess() {
+    if (this.#vrProcess) {
+      logger.warn('[VR] VR process already running');
+      return;
+    }
+    
+    const vrExePath = path.join(__dirname, '../vr-companion/CovasVROverlay.exe');
+    
+    if (!fs.existsSync(vrExePath)) {
+      logger.error('[VR] VR overlay executable not found:', vrExePath);
+      return;
+    }
+    
+    logger.info('[VR] Starting VR overlay process');
+    this.#vrProcess = spawn(vrExePath, [], {
+      stdio: 'pipe',
+      cwd: path.join(__dirname, '../vr-companion')
+    });
+    
+    this.#vrProcess.stdout.on('data', (data) => {
+      logger.info('[VR]', data.toString().trim());
+    });
+    
+    this.#vrProcess.stderr.on('data', (data) => {
+      logger.error('[VR]', data.toString().trim());
+    });
+    
+    this.#vrProcess.on('close', (code) => {
+      logger.info('[VR] VR process exited with code:', code);
+      this.#vrProcess = null;
+    });
+  }
+  
+  stopVRProcess() {
+    if (this.#vrProcess) {
+      logger.info('[VR] Stopping VR process');
+      this.#vrProcess.kill();
+      this.#vrProcess = null;
+    }
+    this.stopCapture();
+  }
+  
+  attachOverlayWindow(overlayWindow) {
+    this.#overlayWindow = overlayWindow;
+    this.startCapture();
+  }
+  
+  detachOverlayWindow() {
+    this.stopCapture();
+    this.#overlayWindow = null;
+  }
+ updateConfig(config) {
+  this.#config = config;
+    logger.info('[VR] Config updated:', {
+      vr_overlay_enabled: config.vr_overlay_enabled,
+      vr_position_x: config.vr_position_x,
+      vr_position_y: config.vr_position_y,
+      vr_position_z: config.vr_position_z,
+      vr_width: config.vr_width
+    });
+  }
+  startCapture() {
+    if (this.#isCapturing || !this.#overlayWindow) return;
+    
+    this.#isCapturing = true;
+    logger.info('[VR] Starting frame capture');
+    
+    this.captureFrame();
+  }
+  
+  stopCapture() {
+    this.#isCapturing = false;
+    logger.info('[VR] Stopping frame capture');
+  }
+  
+  async captureFrame() {
+  if (!this.#isCapturing || !this.#overlayWindow || this.#overlayWindow.isDestroyed()) {
+    this.#isCapturing = false;
+    return;
+  }
+  
+  try {
+    const image = await this.#overlayWindow.webContents.capturePage();
+    const size = image.getSize();
+    const buffer = image.toBitmap();
+    const config = this.#config || {};
+    
+    
+    // Write header with position data
+    const headerBuffer = Buffer.alloc(32); // Increased from 16 to 32
+    headerBuffer.writeUInt32LE(size.width, 0);
+    headerBuffer.writeUInt32LE(size.height, 4);
+    headerBuffer.writeUInt32LE(this.#frameNumber++, 8);
+    headerBuffer.writeUInt32LE(1, 12); // ready
 
+
+  // Get position from config or use defaults
+    const vrConfig = this.#config || {};
+    const posX = vrConfig.vr_position_x ?? 0.0;
+    const posY = vrConfig.vr_position_y ?? 1.5;
+    const posZ = vrConfig.vr_position_z ?? -2.0;
+    const width = vrConfig.vr_width ?? 1.5;
+
+    headerBuffer.writeFloatLE(posX, 16);
+    headerBuffer.writeFloatLE(posY, 20);
+    headerBuffer.writeFloatLE(posZ, 24);
+    headerBuffer.writeFloatLE(width, 28);
+
+    this.#sharedMemory.write(headerBuffer, 0);
+    this.#sharedMemory.write(buffer, 32);
+
+  // Log every 60 frames
+    if (this.#frameNumber % 60 === 0) {
+      logger.info(`[VR] Frame ${this.#frameNumber} captured: ${size.width}x${size.height}, pos=(${posX}, ${posY}, ${posZ}), width=${width}`);
+    }
+    
+    // Capture next frame (60fps)
+    setTimeout(() => this.captureFrame(), 16);
+  } catch (error) {
+    logger.error('[VR] Frame capture error:', error.message || error.toString());
+    // Log full error details
+    if (error.stack) {
+      logger.error('[VR] Stack:', error.stack);
+    }
+    setTimeout(() => this.captureFrame(), 100);
+  }
+}
+}
 class BackendService {
   #currentProcess = null;
   #windows = [];
@@ -192,6 +338,19 @@ class BackendService {
           } else {
             logger.info('[stdout]', "[config redacted]");
           }
+          
+          // Parse and update VR config
+          try {
+            const parsed = JSON.parse(line);
+            if (parsed.type === 'config' || parsed.type === 'running_config') {
+              if (vrService && parsed.config) {
+                vrService.updateConfig(parsed.config);
+              }
+            }
+          } catch (e) {
+            // Not JSON, ignore
+          }
+          
           for (const window of this.#windows) {
             window.webContents.send('stdout', { payload: line });
           }
@@ -355,6 +514,8 @@ function createOverlayWindow(opts) {
 
   return overlayWindow;
 }
+let vrService = null;
+
 app.whenReady().then(async ()=>{
 
   protocol.handle('app', (request) => {
@@ -369,8 +530,21 @@ app.whenReady().then(async ()=>{
   })
 
   const backend = new BackendService();
+  vrService = new VROverlayService(); 
   const mainWindow = createMainWindow();
   let floatingOverlay = null;
+
+  ipcMain.handle('start_vr_overlay', () => {
+    if (vrService) {
+      vrService.startVRProcess();
+    }
+  });
+  
+  ipcMain.handle('stop_vr_overlay', () => {
+    if (vrService) {
+      vrService.stopVRProcess();
+    }
+  });
   ipcMain.handle('send_json_line', (...args)=>backend.sendJsonLine(...args));
   ipcMain.handle('start_process', (...args)=>{
     // Close existing overlay on process start (handles reload scenarios)
@@ -386,19 +560,28 @@ app.whenReady().then(async ()=>{
     if (floatingOverlay) {
       // Always destroy existing overlay to apply new settings
       backend.detachWindow(floatingOverlay);
+      if (vrService) {
+      vrService.detachOverlayWindow();
+      }
       floatingOverlay.close();
       floatingOverlay = null;
     }
     floatingOverlay = createOverlayWindow(opts);
     backend.attachWindow(floatingOverlay);
+    vrService.startVRProcess();
+    vrService.attachOverlayWindow(floatingOverlay);
     floatingOverlay.on('closed', () => {
       backend.detachWindow(floatingOverlay);
+      vrService.detachOverlayWindow();
       floatingOverlay = null;
     });
   });
   ipcMain.handle('destroy_floating_overlay', async (event) => {
     if (floatingOverlay) {
       backend.detachWindow(floatingOverlay);
+      if (vrService) {
+        vrService.detachOverlayWindow();
+      }
       floatingOverlay.close();
       floatingOverlay = null;
     }

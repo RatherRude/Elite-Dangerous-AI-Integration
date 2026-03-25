@@ -130,5 +130,48 @@
                 </mat-form-field>
             </div>
         </div>
+        <div class="vr-settings">
+            <h2>VR Overlay</h2>
+            <p>Enable VR overlay to display COVAS directly in your VR headset. The overlay window will still appear on your monitor for streaming.</p>
+            <div class="vr-controls">
+                <mat-slide-toggle
+                    [(ngModel)]="config.vr_overlay_enabled"
+                    (ngModelChange)="onVRToggle($event)">
+                    Enable VR Overlay
+                </mat-slide-toggle>
+
+               @if (config.vr_overlay_enabled) {
+                    <div class="vr-slider">
+                        <label>VR Position X: {{config.vr_position_x?.toFixed(1) || '0.0'}}</label>
+                        <input type="range" min="-2.0" max="2.0" step="0.1"
+                            [(ngModel)]="config.vr_position_x"
+                            (ngModelChange)="onConfigChange({vr_position_x: $event.target.value})">
+                    </div>
+
+                    <div class="vr-slider">
+                        <label>VR Position Y: {{config.vr_position_y?.toFixed(1) || '1.5'}}</label>
+                        <input type="range" min="0.0" max="3.0" step="0.1"
+                            [(ngModel)]="config.vr_position_y"
+                            (ngModelChange)="onConfigChange({vr_position_y: $event.target.value})">
+                    </div>
+
+                    <div class="vr-slider">
+                        <label>VR Position Z: {{config.vr_position_z?.toFixed(1) || '-2.0'}}</label>
+                        <input type="range" min="-3.0" max="0.0" step="0.1"
+                            [(ngModel)]="config.vr_position_z"
+                            (ngModelChange)="onConfigChange({vr_position_z: $event.target.value})">
+                    </div>
+
+                    <div class="vr-slider">
+                        <label>VR Width: {{config.vr_width?.toFixed(1) || '1.5'}} meters</label>
+                        <input type="range" min="0.5" max="3.0" step="0.1"
+                            [(ngModel)]="config.vr_width"
+                            (ngModelChange)="onConfigChange({vr_width: $event.target.value})">
+                    </div>
+                }
+
+
+            </div>
+        </div>
     }
 </div>

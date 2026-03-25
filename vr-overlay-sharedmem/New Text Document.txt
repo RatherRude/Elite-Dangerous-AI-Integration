@@ -1,0 +1,94 @@
+// Simple Node.js test that writes to shared memory
+const ref = require('ref-napi');
+const ffi = require('ffi-napi');
+
+const SHARED_MEMORY_NAME = 'Global\\CovasVROverlaySharedMemory';
+const MAX_TEXTURE_SIZE = 1920 * 1080 * 4;
+const HEADER_SIZE = 16; // width, height, frameNumber, ready (all uint32)
+const SHARED_MEMORY_SIZE = HEADER_SIZE + MAX_TEXTURE_SIZE;
+
+const kernel32 = ffi.Library('kernel32', {
+    'OpenFileMappingA': ['pointer', ['uint32', 'int', 'string']],
+    'MapViewOfFile': ['pointer', ['pointer', 'uint32', 'uint32', 'uint32', 'uint32']],
+    'UnmapViewOfFile': ['int', ['pointer']],
+    'CloseHandle': ['int', ['pointer']]
+});
+
+const FILE_MAP_ALL_ACCESS = 0xF001F;
+
+console.log('Opening shared memory...');
+
+const handle = kernel32.OpenFileMappingA(FILE_MAP_ALL_ACCESS, 0, SHARED_MEMORY_NAME);
+if (handle.isNull()) {
+    console.error('Failed to open shared memory. Make sure VR overlay is running!');
+    process.exit(1);
+}
+
+const ptr = kernel32.MapViewOfFile(handle, FILE_MAP_ALL_ACCESS, 0, 0, SHARED_MEMORY_SIZE);
+if (ptr.isNull()) {
+    console.error('Failed to map shared memory');
+    kernel32.CloseHandle(handle);
+    process.exit(1);
+}
+
+console.log('Shared memory mapped!');
+
+const buffer = ref.reinterpret(ptr, SHARED_MEMORY_SIZE, 0);
+
+const width = 800;
+const height = 600;
+let frameNumber = 0;
+
+function writeFrame() {
+    // Write header
+    buffer.writeUInt32LE(width, 0);      // width
+    buffer.writeUInt32LE(height, 4);     // height
+    buffer.writeUInt32LE(frameNumber, 8); // frameNumber
+    buffer.writeUInt32LE(1, 12);         // ready = true
+    
+    // Write pixel data (rainbow gradient)
+    const hue = (frameNumber * 2) % 360;
+    
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const offset = HEADER_SIZE + (y * width + x) * 4;
+            const h = (hue + x / width * 360) % 360;
+            
+            // Simple HSV to RGB
+            const c = 1;
+            const xVal = c * (1 - Math.abs((h / 60) % 2 - 1));
+            
+            let r, g, b;
+            if (h < 60) { r = c; g = xVal; b = 0; }
+            else if (h < 120) { r = xVal; g = c; b = 0; }
+            else if (h < 180) { r = 0; g = c; b = xVal; }
+            else if (h < 240) { r = 0; g = xVal; b = c; }
+            else if (h < 300) { r = xVal; g = 0; b = c; }
+            else { r = c; g = 0; b = xVal; }
+            
+            buffer.writeUInt8(Math.floor(b * 255), offset + 0); // B
+            buffer.writeUInt8(Math.floor(g * 255), offset + 1); // G
+            buffer.writeUInt8(Math.floor(r * 255), offset + 2); // R
+            buffer.writeUInt8(255, offset + 3);                  // A
+        }
+    }
+    
+    frameNumber++;
+    
+    if (frameNumber % 60 === 0) {
+        console.log('Wrote frame', frameNumber);
+    }
+}
+
+console.log('Writing rainbow animation...');
+console.log('Start the VR overlay app, then you should see a rainbow!');
+console.log('Press Ctrl+C to exit\n');
+
+setInterval(writeFrame, 16); // ~60fps
+
+process.on('SIGINT', () => {
+    console.log('\nCleaning up...');
+    kernel32.UnmapViewOfFile(ptr);
+    kernel32.CloseHandle(handle);
+    process.exit(0);
+});

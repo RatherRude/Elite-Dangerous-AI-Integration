@@ -29,4 +29,19 @@ plugins/*
 # Ignore all files in the plugin_data folder
 plugin_data/*
 .*
+# VR Overlay build artifacts
+vr-overlay-sharedmem/build/
+shared-memory-addon/build/
+shared-memory-addon/node_modules/
+
+# VR compiled output (keep vr-companion exe/dll but ignore intermediate files)
+*.obj
+*.pdb
+*.ilk
+*.exp
+*.lib
+
+# Node gyp
+shared-memory-addon/build/Release/
+shared-memory-addon/build/Debug/
 !.gitignore

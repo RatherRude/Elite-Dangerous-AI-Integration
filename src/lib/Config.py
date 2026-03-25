@@ -481,7 +481,12 @@ class Config(TypedDict):
     overlay_show_chat: bool
     overlay_position: Literal['left', 'right', 'left-medium', 'left-small', 'right-medium', 'right-small']
     overlay_screen_id: int
-    
+     # VR Overlay settings
+    vr_overlay_enabled: bool = False
+    vr_position_x: float = 0.0
+    vr_position_y: float = 1.5
+    vr_position_z: float = -2.0
+    vr_width: float = 1.5
     enable_remote_tracing: bool
 
     plugin_settings: dict[str, Any]
@@ -958,7 +963,13 @@ def load_config() -> Config:
         "overlay_show_chat": True,
         "overlay_position": "right",
         "overlay_screen_id": -1,  # -1 means primary screen
-        
+        # VR Overlay settings - ADD THESE LINES
+        "vr_overlay_enabled": False,
+        "vr_position_x": 0.0,
+        "vr_position_y": 1.5,
+        "vr_position_z": -2.0,
+        "vr_width": 1.5,
+                
         "enable_remote_tracing": False,
         
         "plugin_settings": {},
