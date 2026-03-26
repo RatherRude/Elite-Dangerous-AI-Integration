@@ -26,6 +26,9 @@ finish-args:
   # Environment variables for better compatibility
   - --env=RUST_BACKTRACE=1
   - --env=SSL_CERT_DIR=/etc/ssl/certs
+  - --env=ELECTRON_OZONE_PLATFORM_HINT=x11
+  - --env=OZONE_PLATFORM=x11
+  - --env=GDK_BACKEND=x11
   #- --env=WEBKIT_DISABLE_DMABUF_RENDERER=1 # This is a fix for Nvidia+Wayland rendering, but it breaks the transparent overlay window – we are forcing X11 in flatpak so we might get away without it
 
 modules:
@@ -57,7 +60,11 @@ modules:
       - |
         cat > /app/bin/covas-next-ui-wrapper << EOF
         #!/bin/bash
-        exec zypak-wrapper /app/bin/covas-next "$@"
+        unset WAYLAND_DISPLAY
+        export ELECTRON_OZONE_PLATFORM_HINT="${ELECTRON_OZONE_PLATFORM_HINT:-x11}"
+        export OZONE_PLATFORM="${OZONE_PLATFORM:-x11}"
+        export GDK_BACKEND="${GDK_BACKEND:-x11}"
+        exec zypak-wrapper /app/bin/covas-next --ozone-platform=x11 "$@"
         EOF
       - chmod +x /app/bin/covas-next-ui-wrapper
       
