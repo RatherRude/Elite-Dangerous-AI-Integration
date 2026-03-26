@@ -266,9 +266,13 @@ private:
     float pitch = header->rotationPitch;
     float cosPitch = cos(pitch);
     float sinPitch = sin(pitch);
-
+    // Center the overlay horizontally by offsetting by half its width
+    // This makes X=0 center the overlay instead of positioning its left edge
+    float halfWidth = header->overlayWidth / 2.0f;
+    float centeredX = header->posX - halfWidth;
+    
     vr::HmdMatrix34_t transform = {
-        1.0f,      0.0f,       0.0f,       header->posX,
+        1.0f,      0.0f,       0.0f,       centeredX,
         0.0f,      cosPitch,   -sinPitch,  header->posY,
         0.0f,      sinPitch,   cosPitch,   header->posZ
     };

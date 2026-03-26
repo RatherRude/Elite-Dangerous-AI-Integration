@@ -43,7 +43,7 @@
   "build": {
     "productName": "COVAS NEXT",
     "appId": "com.covasnext.ui",
-    "directories": {
+	"directories": {
       "buildResources": "electron"
     },
     "extraResources": [
