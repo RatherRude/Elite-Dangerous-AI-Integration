@@ -153,13 +153,14 @@ class VROverlayService {
   }
   
   startVRProcess() {
-    if (this.#vrProcess) {
-       if (!this.#config?.vr_overlay_enabled) {
-         return;
-      }
-      logger.warn('[VR] VR process already running');
-      return;
-    }
+   if (!this.#config?.vr_overlay_enabled) {
+    return;
+  }
+  
+  if (this.#vrProcess) {
+    logger.warn('[VR] VR process already running');
+    return;
+  }
     
     const vrExePath = path.join(__dirname, '../vr-companion/CovasVROverlay.exe');
     
