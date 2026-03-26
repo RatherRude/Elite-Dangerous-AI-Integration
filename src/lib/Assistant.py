@@ -638,7 +638,7 @@ class Assistant:
             )
 
             prompt_usage = PromptUsageStats(system_chars=len(system_prompt), memory_chars=len(user_prompt))
-            log_llm_usage("memory_create", model_usage=model_usage, prompt_usage=prompt_usage)
+            log_llm_usage("memory_create", model_usage=model_usage, prompt_usage=prompt_usage, llm_model=self.llmModel)
 
             (model_name, embedding) = self.embeddingModel.create_embedding(response_text or "")
 
@@ -693,7 +693,7 @@ class Assistant:
             )
 
             prompt_usage = PromptUsageStats(system_chars=len(prompt[0].get('content', '') or ""), conversation_chars=len(user_input))
-            log_llm_usage("action_verification", model_usage=model_usage, prompt_usage=prompt_usage)
+            log_llm_usage("action_verification", model_usage=model_usage, prompt_usage=prompt_usage, llm_model=self.llmModel)
             
             if response_actions:
                 self.action_manager.confirm_action_in_cache(user_input, response_actions[0], tools)
@@ -777,7 +777,7 @@ class Assistant:
                         tools=tool_list,  # pyright: ignore[reportArgumentType]
                     )
 
-                    log_llm_usage("assistant", model_usage=model_usage, prompt_usage=prompt_usage)
+                    log_llm_usage("assistant", model_usage=model_usage, prompt_usage=prompt_usage, llm_model=self.llmModel)
 
                     if not response_text and not response_actions:
                         response_text = "..."
