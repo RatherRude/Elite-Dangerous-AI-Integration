@@ -191,6 +191,21 @@
                                 </div>
                             }
 
+                            @if (e.key === "BountyScanned") {
+                                <div class="event-suboptions">
+                                    <div class="event-suboption">
+                                        <mat-form-field appearance="outline">
+                                            <mat-label>Minimum Bounty (credits)</mat-label>
+                                            <input matInput type="number"
+                                                   [ngModel]="getCharacterProperty('bounty_scanned_min_bounty_var', 1)"
+                                                   (ngModelChange)="setCharacterProperty('bounty_scanned_min_bounty_var', $event)"
+                                                   min="1">
+                                            <mat-hint>Only react when the scanned bounty is at least this amount.</mat-hint>
+                                        </mat-form-field>
+                                    </div>
+                                </div>
+                            }
+
                             @if (e.key === "Idle") {
                                 <div class="event-suboptions">
                                     <div class="event-suboption">

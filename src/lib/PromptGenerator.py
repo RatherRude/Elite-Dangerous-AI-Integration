@@ -2241,6 +2241,9 @@ class PromptGenerator:
         if event_name == 'RememberLimpets':
             return f"{self.commander_name} has cargo capacity available to buy limpets. Remember to buy more."
         if event_name == 'BountyScanned':
+            bounty_value = (content or {}).get('Bounty')
+            if isinstance(bounty_value, (int, float)):
+                return f"{self.commander_name} has scanned a wanted ship with a bounty of {int(bounty_value):,} credits."
             return f"{self.commander_name} has scanned a wanted ship with a bounty."
         if event_name == 'CombatEntered':
             return f"{self.commander_name} is now in combat."

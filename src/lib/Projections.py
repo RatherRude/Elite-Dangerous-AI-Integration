@@ -45,6 +45,7 @@ def registerProjections(
     event_manager: EventManager,
     system_db: SystemDatabase,
     idle_timeout: int,
+    bounty_scanned_min_bounty: int,
 ):
     event_manager.register_projection(EventCounter())
     event_manager.register_projection(CurrentStatus())
@@ -59,7 +60,7 @@ def registerProjections(
     event_manager.register_projection(Statistics())
     event_manager.register_projection(FleetCarriers())
     event_manager.register_projection(ShipInfo())
-    event_manager.register_projection(Target())
+    event_manager.register_projection(Target(bounty_scanned_min_bounty))
     event_manager.register_projection(NavInfo(system_db))
     event_manager.register_projection(ExobiologyScan())
     event_manager.register_projection(Cargo())

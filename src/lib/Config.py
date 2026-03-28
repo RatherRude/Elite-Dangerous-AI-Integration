@@ -405,6 +405,7 @@ class Character(TypedDict, total=False):
     react_to_danger_onfoot_var: bool
     react_to_danger_supercruise_var: bool
     idle_timeout_var: int
+    bounty_scanned_min_bounty_var: int
 
 
 class Config(TypedDict):
@@ -787,6 +788,12 @@ def migrate(data: dict) -> dict:
         if data.get('vision_provider') == 'openai' and data.get('vision_model_name') == 'gpt-4.1-mini':
             data['vision_model_name'] = 'gpt-5.4-nano'
 
+    if data['config_version'] < 15:
+        data['config_version'] = 15
+
+        for character in data.get('characters', []):
+            character['bounty_scanned_min_bounty_var'] = character.get('bounty_scanned_min_bounty_var', 1)
+
     return data
 
 
@@ -880,6 +887,7 @@ def getDefaultCharacter(config: Config) -> Character:
         "react_to_danger_onfoot_var": False,
         "react_to_danger_supercruise_var": False,
         "idle_timeout_var": 300,  # 5 minutes
+        "bounty_scanned_min_bounty_var": 1,
     })
 
 def load_config() -> Config:
