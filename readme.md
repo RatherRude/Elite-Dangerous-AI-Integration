@@ -15,7 +15,7 @@ The AI will react to game events, it will react to given commands not just in te
 
 The integration is designed for every commander: it's amazing at roleplaying, can replace third-party websites, can press buttons on command or if necessary provide tutorials and will always assist commanders no matter their role or level of experience.
 
-## VR Overlay Support
+## VR Overlay Support  (REPLACED _ DO NOT USE_)
 
 COVAS:NEXT now includes native VR overlay support, allowing the assistant to appear directly in your VR headset without requiring third-party tools like OVRToolkit.
 
