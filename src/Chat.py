@@ -85,8 +85,45 @@ from lib.EventManager import EventManager
 from lib.UI import send_message, emit_message
 from lib.QuestCatalogManager import QuestCatalogManager
 from lib.SystemDatabase import SystemDatabase
-from lib.Database import QuestDatabase
+from lib.Database import ModelUsageStore, QuestDatabase
 from lib.Assistant import Assistant
+
+
+def get_model_usage_history_payload(
+    model_usage_store: ModelUsageStore,
+    usage_kind: str | None = None,
+    from_timestamp: str | None = None,
+    to_timestamp: str | None = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> dict[str, Any]:
+    try:
+        normalized_limit = min(max(int(limit), 1), 1000)
+        normalized_offset = max(int(offset), 0)
+    except (TypeError, ValueError):
+        return {"error": "Invalid limit or offset"}
+
+    try:
+        rows, total = model_usage_store.get_history(
+            usage_kind=usage_kind,
+            start_time=from_timestamp,
+            end_time=to_timestamp,
+            limit=normalized_limit,
+            offset=normalized_offset,
+        )
+        return {
+            "rows": rows,
+            "total": total,
+            "limit": normalized_limit,
+            "offset": normalized_offset,
+            "usage_kind": usage_kind,
+            "from": from_timestamp,
+            "to": to_timestamp,
+        }
+    except Exception as e:
+        log("error", f"Error fetching model usage history: {e}")
+        log("error", traceback.format_exc())
+        return {"error": str(e)}
 
 
 @final
@@ -278,6 +315,8 @@ class Chat:
         self.system_database = SystemDatabase()
         log("debug", "Initializing QuestDatabase...")
         self.quest_database = QuestDatabase()
+        log("debug", "Initializing ModelUsageStore...")
+        self.model_usage_store = ModelUsageStore()
         log("debug", "Initializing EDKeys...")
         self.ed_keys = EDKeys(
             get_ed_appdata_path(config),
@@ -553,6 +592,23 @@ class Chat:
 
             log("error", traceback.format_exc())
             return {"error": str(e)}
+
+    def get_model_usage_history(
+        self,
+        usage_kind: str | None = None,
+        from_timestamp: str | None = None,
+        to_timestamp: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ):
+        return get_model_usage_history_payload(
+            model_usage_store=self.model_usage_store,
+            usage_kind=usage_kind,
+            from_timestamp=from_timestamp,
+            to_timestamp=to_timestamp,
+            limit=limit,
+            offset=offset,
+        )
 
     def get_system_event_data(self, system_address: int | str | None):
         """Fetch cached system event data for a given system address."""
@@ -925,6 +981,15 @@ def read_stdin(chat: Chat):
             if data.get("type") == "get_available_dates":
                 results = chat.get_available_dates()
                 emit_message("available_dates", data=results)
+            if data.get("type") == "get_model_usage_history":
+                results = chat.get_model_usage_history(
+                    usage_kind=data.get("usage_kind"),
+                    from_timestamp=data.get("from"),
+                    to_timestamp=data.get("to"),
+                    limit=data.get("limit", 100),
+                    offset=data.get("offset", 0),
+                )
+                emit_message("model_usage_history", data=results)
             if data.get("type") == "get_system_events":
                 system_address = data.get("system_address")
                 results = chat.get_system_event_data(system_address)
@@ -1007,6 +1072,7 @@ if __name__ == "__main__":
         log("debug", "Registering plugin settings for the UI...")
         plugin_manager.register_settings()
         quest_catalog_manager = QuestCatalogManager()
+        model_usage_store = ModelUsageStore()
         while True:
             # print(f"Waiting for command...")
             line = sys.stdin.readline().strip()
@@ -1061,6 +1127,16 @@ if __name__ == "__main__":
                         data=save_result.get("catalog"),
                         raw=save_result.get("raw", ""),
                     )
+                if data.get("type") == "get_model_usage_history":
+                    results = get_model_usage_history_payload(
+                        model_usage_store=model_usage_store,
+                        usage_kind=data.get("usage_kind"),
+                        from_timestamp=data.get("from"),
+                        to_timestamp=data.get("to"),
+                        limit=data.get("limit", 100),
+                        offset=data.get("offset", 0),
+                    )
+                    emit_message("model_usage_history", data=results)
                 if data.get("type") == "reset_quest_progress":
                     try:
                         QuestDatabase().delete_all()

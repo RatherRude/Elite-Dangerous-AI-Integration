@@ -25,9 +25,11 @@ class LLMError(Exception):
 
 class LLMModel(ABC):
     model_name: str
+    provider_name: str | None
 
-    def __init__(self, model_name: str):
+    def __init__(self, model_name: str, provider_name: str | None = None):
         self.model_name = model_name
+        self.provider_name = provider_name
 
     @abstractmethod
     def generate(self, messages: List[dict], tools: Optional[List[dict]] = None, tool_choice: Optional[Any] = None) -> tuple[str | None, List[Any] | None, ModelUsageStats]:
@@ -50,9 +52,48 @@ def _model_dump_compatible(value: Any) -> Any:
         return value.dict()
     return value
 
+def _get_reasoning_tokens(usage: Any) -> int | None:
+    for details_name in ("output_tokens_details", "completion_tokens_details"):
+        details = getattr(usage, details_name, None)
+        if details is None:
+            continue
+
+        reasoning_tokens = getattr(details, "reasoning_tokens", None)
+        if reasoning_tokens is not None:
+            return int(reasoning_tokens)
+
+    prompt_tokens = getattr(usage, "prompt_tokens", None)
+    completion_tokens = getattr(usage, "completion_tokens", None)
+    total_tokens = getattr(usage, "total_tokens", None)
+    if (
+        prompt_tokens is not None
+        and completion_tokens is not None
+        and total_tokens is not None
+    ):
+        fallback_reasoning_tokens = (
+            int(total_tokens) - int(prompt_tokens) - int(completion_tokens)
+        )
+        if fallback_reasoning_tokens >= 0:
+            return fallback_reasoning_tokens
+
+    input_tokens = getattr(usage, "input_tokens", None)
+    output_tokens = getattr(usage, "output_tokens", None)
+    if (
+        input_tokens is not None
+        and output_tokens is not None
+        and total_tokens is not None
+    ):
+        fallback_reasoning_tokens = (
+            int(total_tokens) - int(input_tokens) - int(output_tokens)
+        )
+        if fallback_reasoning_tokens >= 0:
+            return fallback_reasoning_tokens
+
+    return None
+
 class OpenAILLMModel(LLMModel):
-    def __init__(self, base_url: str, api_key: str, model_name: str, temperature: float, reasoning_effort: Optional[str] = None, extra_body: Optional[dict] = None, extra_headers: Optional[dict] = None):
-        super().__init__(model_name)
+    def __init__(self, base_url: str, api_key: str, model_name: str, temperature: float, reasoning_effort: Optional[str] = None, extra_body: Optional[dict] = None, extra_headers: Optional[dict] = None, provider_name: str | None = None):
+        super().__init__(model_name, provider_name=provider_name)
         self.client = OpenAI(base_url=base_url, api_key=api_key)
         self.base_url = base_url
         self.temperature = temperature
@@ -128,13 +169,13 @@ class OpenAILLMModel(LLMModel):
         
         if not completion.choices:
             log("debug", "LLM completion has no choices:", completion)
-            return (None, None, ModelUsageStats()) # Treated as "..."
+            return (None, None, ModelUsageStats(provider=self.provider_name, model_name=self.model_name)) # Treated as "..."
 
         if not hasattr(completion.choices[0], 'message') or not completion.choices[0].message:
             log("debug", "LLM completion choice has no message:", completion)
-            return (None, None, ModelUsageStats()) # Treated as "..."
+            return (None, None, ModelUsageStats(provider=self.provider_name, model_name=self.model_name)) # Treated as "..."
         
-        usage_metadata = ModelUsageStats()
+        usage_metadata = ModelUsageStats(provider=self.provider_name, model_name=self.model_name)
         if hasattr(completion, 'usage') and completion.usage:
             log("debug", f'LLM completion usage', completion.usage)
             usage_metadata.input_tokens = completion.usage.prompt_tokens
@@ -142,6 +183,7 @@ class OpenAILLMModel(LLMModel):
             usage_metadata.total_tokens = completion.usage.total_tokens
             if hasattr(completion.usage, 'prompt_tokens_details') and completion.usage.prompt_tokens_details:
                 usage_metadata.cached_tokens = getattr(completion.usage.prompt_tokens_details, 'cached_tokens', 0)
+            usage_metadata.reasoning_tokens = _get_reasoning_tokens(completion.usage)
         
         response_text = None
         if hasattr(completion.choices[0].message, 'content'):
@@ -170,8 +212,8 @@ class OpenAILLMModel(LLMModel):
             raise e
 
 class OpenAIResponsesLLMModel(LLMModel):
-    def __init__(self, base_url: str, api_key: str, model_name: str, temperature: float, reasoning_effort: Optional[str] = None, extra_body: Optional[dict] = None, extra_headers: Optional[dict] = None):
-        super().__init__(model_name)
+    def __init__(self, base_url: str, api_key: str, model_name: str, temperature: float, reasoning_effort: Optional[str] = None, extra_body: Optional[dict] = None, extra_headers: Optional[dict] = None, provider_name: str | None = None):
+        super().__init__(model_name, provider_name=provider_name)
         self.client = OpenAI(base_url=base_url, api_key=api_key)
         self.base_url = base_url
         self.temperature = temperature
@@ -421,7 +463,7 @@ class OpenAIResponsesLLMModel(LLMModel):
             log("debug", "LLM response error:", response)
             raise LLMError("LLM error: No valid response received")
 
-        usage_metadata = ModelUsageStats()
+        usage_metadata = ModelUsageStats(provider=self.provider_name, model_name=self.model_name)
         if hasattr(response, 'usage') and response.usage:
             log("debug", "LLM response usage", response.usage)
             usage_metadata.input_tokens = getattr(response.usage, "input_tokens", 0)
@@ -429,6 +471,7 @@ class OpenAIResponsesLLMModel(LLMModel):
             usage_metadata.total_tokens = getattr(response.usage, "total_tokens", 0)
             if hasattr(response.usage, "input_tokens_details") and response.usage.input_tokens_details:
                 usage_metadata.cached_tokens = getattr(response.usage.input_tokens_details, "cached_tokens", 0)
+            usage_metadata.reasoning_tokens = _get_reasoning_tokens(response.usage)
 
         response_text = getattr(response, "output_text", None) or None
         response_actions = self._extract_tool_calls(response)
@@ -737,7 +780,8 @@ def create_llm_model(provider: str, config: dict, prefix: str = "llm") -> LLMMod
             temperature=temperature,
             reasoning_effort=reasoning_effort,
             extra_body=extra_body,
-            extra_headers=extra_headers
+            extra_headers=extra_headers,
+            provider_name=provider,
         )
 
     return OpenAILLMModel(
@@ -747,7 +791,8 @@ def create_llm_model(provider: str, config: dict, prefix: str = "llm") -> LLMMod
         temperature=temperature,
         reasoning_effort=reasoning_effort,
         extra_body=extra_body,
-        extra_headers=extra_headers
+        extra_headers=extra_headers,
+        provider_name=provider,
     )
 
 def create_embedding_model(provider: str, config: dict, prefix: str = "embedding") -> EmbeddingModel:
