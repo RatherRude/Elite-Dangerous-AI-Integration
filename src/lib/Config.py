@@ -480,8 +480,11 @@ class Config(TypedDict):
     overlay_show_avatar: bool
     overlay_show_hud: bool
     overlay_show_chat: bool
+    overlay_mode: Literal['screen', 'vr']
     overlay_position: Literal['left', 'right', 'left-medium', 'left-small', 'right-medium', 'right-small']
     overlay_screen_id: int
+    overlay_vr_size_meters: float
+    overlay_vr_anchor: Literal['head', 'world']
     
     enable_remote_tracing: bool
 
@@ -794,6 +797,12 @@ def migrate(data: dict) -> dict:
         for character in data.get('characters', []):
             character['bounty_scanned_min_bounty_var'] = character.get('bounty_scanned_min_bounty_var', 1)
 
+    if data['config_version'] < 16:
+        data['config_version'] = 16
+        data.setdefault('overlay_mode', 'screen')
+        data.setdefault('overlay_vr_size_meters', 0.9)
+        data.setdefault('overlay_vr_anchor', 'head')
+
     return data
 
 
@@ -964,8 +973,11 @@ def load_config() -> Config:
         "overlay_show_avatar": True,
         "overlay_show_hud": False,
         "overlay_show_chat": True,
+        "overlay_mode": "screen",
         "overlay_position": "right",
         "overlay_screen_id": -1,  # -1 means primary screen
+        "overlay_vr_size_meters": 0.9,
+        "overlay_vr_anchor": "head",
         
         "enable_remote_tracing": False,
         

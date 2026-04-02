@@ -40,6 +40,29 @@ export interface BaseMessage {
     [key: string]: any;
 }
 
+export interface OverlayCreateOptions {
+    alwaysOnTop: boolean;
+    screenId?: number;
+    mode?: "screen" | "vr";
+    vrSizeMeters?: number;
+    vrAnchor?: "head" | "world";
+}
+
+export interface OverlayRuntimeInfo {
+    platform: string;
+    probeMode: string;
+    openxrAvailable: boolean;
+    openxrOverlayExtensionAvailable: boolean;
+    openvrAvailable: boolean;
+    openvrRuntimeInstalled: boolean;
+    openvrRuntimePath: string;
+    selectedBackend: "none" | "openxr" | "openvr" | "mock";
+    packageInstalled: boolean;
+    available: boolean;
+    hasRealVRRuntime: boolean;
+    error?: string;
+}
+
 export interface SubmitInputMessage extends BaseCommand {
     type: "submit_input";
     input: string;
@@ -128,7 +151,7 @@ export class TauriService {
 
     }
 
-    public async createOverlay(config: {alwaysOnTop: boolean, screenId?: number}): Promise<void> {
+    public async createOverlay(config: OverlayCreateOptions): Promise<void> {
         const result = await electronAPI.invoke("create_floating_overlay", config);
         return result;
     }
@@ -143,6 +166,14 @@ export class TauriService {
         }
         const result = await electronAPI.invoke('get_available_screens');
         return result as ScreenInfo[];
+    }
+
+    public async getOverlayRuntimeInfo(): Promise<OverlayRuntimeInfo> {
+        if (!electronAPI) {
+            throw new Error('electronAPI not available');
+        }
+        const result = await electronAPI.invoke('get_overlay_runtime_info');
+        return result as OverlayRuntimeInfo;
     }
 
     private async startReadingOutput(): Promise<void> {

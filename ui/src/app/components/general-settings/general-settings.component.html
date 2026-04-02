@@ -106,6 +106,15 @@
                 </mat-slide-toggle>
 
                 <mat-form-field>
+                    <mat-label>Overlay Mode</mat-label>
+                    <mat-select [(ngModel)]="config.overlay_mode"
+                                (ngModelChange)="onConfigChange({overlay_mode: $event})">
+                        <mat-option value="screen">Desktop Screen Overlay</mat-option>
+                        <mat-option value="vr">VR Overlay</mat-option>
+                    </mat-select>
+                </mat-form-field>
+
+                <mat-form-field>
                     <mat-label>Position</mat-label>
                     <mat-select [(ngModel)]="config.overlay_position"
                                 (ngModelChange)="onConfigChange({overlay_position: $event})">
@@ -117,18 +126,43 @@
                         <mat-option value="right-small">Right (Small)</mat-option>
                     </mat-select>
                 </mat-form-field>
-                
-                <mat-form-field>
-                    <mat-label>Screen Selection</mat-label>
-                    <mat-select [(ngModel)]="config.overlay_screen_id"
-                                (ngModelChange)="onConfigChange({overlay_screen_id: $event})">
-                        <mat-option [value]="-1">Primary Screen</mat-option>
-                        @for (screen of screens; track screen.id) {
-                            <mat-option [value]="screen.id">{{ screen.label }}</mat-option>
-                        }
-                    </mat-select>
-                </mat-form-field>
+
+                @if (config.overlay_mode === 'screen') {
+                    <mat-form-field>
+                        <mat-label>Screen Selection</mat-label>
+                        <mat-select [(ngModel)]="config.overlay_screen_id"
+                                    (ngModelChange)="onConfigChange({overlay_screen_id: $event})">
+                            <mat-option [value]="-1">Primary Screen</mat-option>
+                            @for (screen of screens; track screen.id) {
+                                <mat-option [value]="screen.id">{{ screen.label }}</mat-option>
+                            }
+                        </mat-select>
+                    </mat-form-field>
+                }
+
+                @if (config.overlay_mode === 'vr') {
+                    <mat-form-field>
+                        <mat-label>VR Size (meters)</mat-label>
+                        <input matInput
+                               type="number"
+                               min="0.1"
+                               step="0.1"
+                               [ngModel]="config.overlay_vr_size_meters"
+                               (ngModelChange)="onConfigChange({overlay_vr_size_meters: $event})">
+                        <mat-hint>Approximate overlay width in VR space.</mat-hint>
+                    </mat-form-field>
+
+                    <mat-form-field>
+                        <mat-label>VR Anchor</mat-label>
+                        <mat-select [(ngModel)]="config.overlay_vr_anchor"
+                                    (ngModelChange)="onConfigChange({overlay_vr_anchor: $event})">
+                            <mat-option value="head">Head Locked</mat-option>
+                            <mat-option value="world">World Locked</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                }
             </div>
+            <p>{{ overlayRuntimeSummary }}</p>
         </div>
     }
 </div>

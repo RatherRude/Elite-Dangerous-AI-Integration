@@ -159,8 +159,11 @@ export interface Config {
     overlay_show_avatar: boolean;
     overlay_show_hud: boolean;
     overlay_show_chat: boolean;
+    overlay_mode: "screen" | "vr";
     overlay_position: "left" | "right" | "left-medium" | "left-small" | "right-medium" | "right-small";
     overlay_screen_id: number;
+    overlay_vr_size_meters: number;
+    overlay_vr_anchor: "head" | "world";
 
     enable_remote_tracing?: boolean;
 
