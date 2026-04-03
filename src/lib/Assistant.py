@@ -1,3 +1,4 @@
+import copy
 import json
 import traceback
 from pathlib import Path
@@ -161,17 +162,67 @@ class Assistant:
         projected_states: ProjectedStates,
     ) -> list[CharacterTTSPostprocessingConfig]:
         current_status = get_state_dict(projected_states, "CurrentStatus")
+        loadout = get_state_dict(projected_states, "Loadout")
         flags = current_status.get("flags", {}) if isinstance(current_status, dict) else {}
         flags2 = current_status.get("flags2", {}) if isinstance(current_status, dict) else {}
+        hull_health = loadout.get("HullHealth") if isinstance(loadout, dict) else None
 
         layers: list[CharacterTTSPostprocessingConfig] = []
         if isinstance(flags, dict) and flags.get("OverHeating"):
             layers.append(TTS_ENVIRONMENT_EFFECTS_OVERHEATING)
+        elif isinstance(hull_health, (int, float)) and float(hull_health) <= 0.75:
+            layers.append(self._get_scaled_damage_tts_postprocessing(float(hull_health)))
         if isinstance(flags, dict) and flags.get("InSRV"):
             layers.append(TTS_ENVIRONMENT_EFFECTS_IN_SRV)
         if isinstance(flags2, dict) and flags2.get("OnFoot"):
             layers.append(TTS_ENVIRONMENT_EFFECTS_ON_FOOT)
         return layers
+
+    def _get_scaled_damage_tts_postprocessing(
+        self,
+        hull_health: float,
+    ) -> CharacterTTSPostprocessingConfig:
+        intensity = 1.0 - max(0.0, min(1.0, hull_health))
+        scaled = copy.deepcopy(TTS_ENVIRONMENT_EFFECTS_OVERHEATING)
+        effects = scaled.get("effects", {})
+
+        distortion = effects.get("distortion") if isinstance(effects, dict) else None
+        if isinstance(distortion, dict) and distortion.get("enabled"):
+            if isinstance(distortion.get("drive"), (int, float)):
+                distortion["drive"] = float(distortion["drive"]) * intensity
+            if isinstance(distortion.get("mix"), (int, float)):
+                distortion["mix"] = min(1.0, float(distortion["mix"]) * intensity)
+            if isinstance(distortion.get("clip"), (int, float)) and float(distortion["clip"]) > 0.0:
+                distortion["clip"] = max(0.05, float(distortion["clip"]) / intensity)
+
+        glitch = effects.get("glitch") if isinstance(effects, dict) else None
+        if isinstance(glitch, dict) and glitch.get("enabled"):
+            if isinstance(glitch.get("probability"), (int, float)):
+                glitch["probability"] = min(1.0, float(glitch["probability"]) * intensity)
+            if isinstance(glitch.get("repeat_min"), (int, float)):
+                glitch["repeat_min"] = max(1, int(round(float(glitch["repeat_min"]) * intensity)))
+            if isinstance(glitch.get("repeat_max"), (int, float)):
+                glitch["repeat_max"] = max(1, int(round(float(glitch["repeat_max"]) * intensity)))
+            if isinstance(glitch.get("min_seconds"), (int, float)):
+                glitch["min_seconds"] = float(glitch["min_seconds"]) * intensity
+            if isinstance(glitch.get("max_seconds"), (int, float)):
+                glitch["max_seconds"] = float(glitch["max_seconds"]) * intensity
+            if isinstance(glitch.get("detune_base"), (int, float)):
+                glitch["detune_base"] = float(glitch["detune_base"]) * intensity
+            if isinstance(glitch.get("detune_peak"), (int, float)):
+                glitch["detune_peak"] = float(glitch["detune_peak"]) * intensity
+
+            repeat_min = glitch.get("repeat_min")
+            repeat_max = glitch.get("repeat_max")
+            if isinstance(repeat_min, int) and isinstance(repeat_max, int) and repeat_max < repeat_min:
+                glitch["repeat_max"] = repeat_min
+
+            min_seconds = glitch.get("min_seconds")
+            max_seconds = glitch.get("max_seconds")
+            if isinstance(min_seconds, (int, float)) and isinstance(max_seconds, (int, float)) and max_seconds < min_seconds:
+                glitch["max_seconds"] = min_seconds
+
+        return scaled
 
     def _get_tts_postprocessing_layers(
         self,
