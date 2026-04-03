@@ -35,6 +35,7 @@ import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
 import { ModelUsageAnalyticsComponent } from "../model-usage-analytics/model-usage-analytics.component";
 import { QuestsSettingsComponent } from "../quests-settings/quests-settings.component";
+import { ConfigTabShellComponent } from "../config-tab-shell/config-tab-shell.component";
 
 @Component({
     selector: "app-settings-menu",
@@ -63,6 +64,7 @@ import { QuestsSettingsComponent } from "../quests-settings/quests-settings.comp
         GeneralSettingsComponent,
         ModelUsageAnalyticsComponent,
         QuestsSettingsComponent,
+        ConfigTabShellComponent,
         MatButtonModule,
     ],
     templateUrl: "./settings-menu.component.html",

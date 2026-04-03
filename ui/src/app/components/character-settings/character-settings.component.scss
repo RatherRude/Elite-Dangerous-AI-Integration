@@ -21,8 +21,7 @@
 .settings-grid {
   display: flex;
   flex-direction: column;
-  gap: 0px;
-  padding: 20px;
+  gap: 18px;
 }
 
 :not(.avatar-option) mat-form-field {
@@ -35,11 +34,7 @@ mat-slide-toggle {
 
 /* Character Management Styles */
 .character-management-section {
-  margin-bottom: 20px;
-  padding: 20px;
-  border-radius: 8px;
-  background-color: rgba(255, 255, 255, 0.05);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 0;
 }
 
 .character-selector {
@@ -298,9 +293,9 @@ ul {
     display: inline-flex;
     align-items: flex-start;
     padding: 16px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.035);
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
     width: fit-content;
   }
   
@@ -331,7 +326,7 @@ ul {
         position: absolute;
         top: 8px;
         right: 8px;
-        background: rgba(0, 0, 0, 0.7);
+        background: rgba(8, 12, 20, 0.74);
         color: white;
         border: 1px solid rgba(255, 255, 255, 0.3);
         
@@ -428,6 +423,42 @@ ul {
         margin-right: 8px;
       }
     }
+  }
+}
+
+.character-editor,
+.character-prompt-panel,
+.history-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.clear_history {
+  display: flex;
+  justify-content: flex-start;
+}
+
+@media (max-width: 1024px) {
+  .character-edit-header,
+  .character-display.with-traits {
+    flex-direction: column;
+  }
+
+  .character-display.with-traits {
+    .character-traits,
+    .character-content {
+      width: 100%;
+    }
+  }
+
+  .character-prompt-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .character-prompt-actions {
+    flex-wrap: wrap;
   }
 }
 

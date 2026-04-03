@@ -1,3 +1,9 @@
+.settings-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
 .event-suboption {
   padding-left: 16px;
   margin-top: 8px;
@@ -7,7 +13,6 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-bottom: 16px;
 
   .search-box {
     flex: 1;
@@ -36,7 +41,9 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.025);
 
   .event-state-icon {
     color: rgba(255, 255, 255, 0.7);
@@ -78,7 +85,7 @@
     }
   }
   &:hover {
-    background-color: rgba(255, 255, 255, 0.1) ;
+    background-color: rgba(255, 255, 255, 0.08) ;
   }
 }
 
@@ -147,7 +154,6 @@
 }
 
 .import-section {
-  margin-top: 16px;
   display: flex;
   justify-content: flex-start;
 
@@ -166,5 +172,25 @@
   .import-buttons {
     display: flex;
     gap: 8px;
+  }
+}
+
+.empty-state {
+  margin: 0;
+  color: rgba(236, 241, 248, 0.68);
+}
+
+@media (max-width: 900px) {
+  .event-search-and-reset {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .event-row {
+    flex-wrap: wrap;
+  }
+
+  .category-actions {
+    margin-right: 0;
   }
 }
