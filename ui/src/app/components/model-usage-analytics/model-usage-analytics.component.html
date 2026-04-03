@@ -1,64 +1,18 @@
 <div class="usage-shell">
-  <section class="usage-hero">
-    <div class="hero-copy">
-      <p class="eyebrow">Model Usage</p>
-      <h2>Usage Observatory</h2>
-      <p class="hero-text">
-        Review the last seven days of LLM activity, compare use-cases, and split token spend from prompt footprint.
-      </p>
-    </div>
-
-    <div class="hero-actions">
-      @if (lastUpdated) {
-        <span class="last-updated">Updated {{ lastUpdated | date:'medium' }}</span>
-      }
-      <button mat-stroked-button type="button" (click)="refreshData()" [disabled]="isLoading">
-        <mat-icon>refresh</mat-icon>
-        Refresh
-      </button>
-    </div>
-  </section>
-
   <mat-card class="filters-card">
-    <div class="filter-toolbar">
-      <mat-button-toggle-group
-        [ngModel]="selectedPreset"
-        (ngModelChange)="onPresetChange($event)"
-        [disabled]="isLoading"
-        class="preset-group">
-        @for (preset of presets; track preset) {
-          <mat-button-toggle [value]="preset">{{ formatPresetLabel(preset) }}</mat-button-toggle>
-        }
-      </mat-button-toggle-group>
-
-      <button mat-button type="button" class="reset-button" (click)="resetFilters()" [disabled]="isLoading">
-        Reset
-      </button>
-    </div>
-
-    @if (selectedPreset === 'custom') {
-      <div class="custom-range-row">
-        <mat-form-field appearance="outline">
-          <mat-label>From</mat-label>
-          <input matInput [matDatepicker]="fromPicker" [(ngModel)]="customFromDate" [disabled]="isLoading">
-          <mat-datepicker-toggle matIconSuffix [for]="$any(fromPicker)"></mat-datepicker-toggle>
-          <mat-datepicker #fromPicker></mat-datepicker>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>To</mat-label>
-          <input matInput [matDatepicker]="toPicker" [(ngModel)]="customToDate" [disabled]="isLoading">
-          <mat-datepicker-toggle matIconSuffix [for]="$any(toPicker)"></mat-datepicker-toggle>
-          <mat-datepicker #toPicker></mat-datepicker>
-        </mat-form-field>
-
-        <button mat-raised-button color="primary" type="button" (click)="applyCustomRange()" [disabled]="!canApplyCustomRange || isLoading">
-          Apply Range
-        </button>
-      </div>
-    }
-
     <div class="filter-grid">
+      <mat-form-field appearance="outline">
+        <mat-label>Time Window</mat-label>
+        <mat-select
+          [ngModel]="selectedPreset"
+          (ngModelChange)="onPresetChange($event)"
+          [disabled]="isLoading">
+          @for (preset of presets; track preset) {
+            <mat-option [value]="preset">{{ formatPresetLabel(preset) }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
       <mat-form-field appearance="outline">
         <mat-label>Provider</mat-label>
         <mat-select [(ngModel)]="selectedProvider" (ngModelChange)="onProviderChange()">
@@ -88,7 +42,45 @@
           }
         </mat-select>
       </mat-form-field>
+
+      <div class="filter-actions">
+        <div class="filter-action-buttons">
+          <button mat-button type="button" class="reset-button" (click)="resetFilters()" [disabled]="isLoading">
+            Reset
+          </button>
+          <button mat-stroked-button type="button" (click)="refreshData()" [disabled]="isLoading">
+            <mat-icon>refresh</mat-icon>
+            Refresh
+          </button>
+        </div>
+        @if (lastUpdated) {
+          <span class="last-updated">Updated {{ lastUpdated | date:'medium' }}</span>
+        }
+      </div>
     </div>
+
+    @if (selectedPreset === 'custom') {
+      <div class="custom-range-row">
+        <mat-form-field appearance="outline">
+          <mat-label>From</mat-label>
+          <input matInput [matDatepicker]="fromPicker" [(ngModel)]="customFromDate" [disabled]="isLoading">
+          <mat-datepicker-toggle matIconSuffix [for]="$any(fromPicker)"></mat-datepicker-toggle>
+          <mat-datepicker #fromPicker></mat-datepicker>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>To</mat-label>
+          <input matInput [matDatepicker]="toPicker" [(ngModel)]="customToDate" [disabled]="isLoading">
+          <mat-datepicker-toggle matIconSuffix [for]="$any(toPicker)"></mat-datepicker-toggle>
+          <mat-datepicker #toPicker></mat-datepicker>
+        </mat-form-field>
+
+        <button mat-raised-button color="primary" type="button" (click)="applyCustomRange()" [disabled]="!canApplyCustomRange || isLoading">
+          Apply Range
+        </button>
+      </div>
+    }
+
   </mat-card>
 
   @if (isLoading) {
@@ -128,14 +120,14 @@
             <h3>Token composition over time</h3>
           </div>
           <div class="card-legend">
-            <span class="legend-pill legend-cached-input">Cached Input</span>
-            <span class="legend-pill legend-live-input">Input</span>
+            <span class="legend-pill legend-cached-input">Cached Sent</span>
+            <span class="legend-pill legend-live-input">Sent</span>
             <span class="legend-pill legend-thinking-output">Thinking</span>
             <span class="legend-pill legend-visible-output">Output</span>
           </div>
         </div>
 
-        <div class="timeline-chart token-chart">
+        <div class="timeline-chart token-chart" [style.--timeline-bar-count]="tokenTimelineBars.length">
           @for (bar of tokenTimelineBars; track bar.label) {
             <div class="timeline-slot">
               <div class="timeline-stack" [attr.title]="bar.displayLabel + ': ' + (bar.totalTokens | number) + ' tokens'">
@@ -143,12 +135,14 @@
                   <div class="segment" [class]="'segment ' + segment.cssClass" [style.height.%]="segment.heightPct" [attr.title]="formatTimelineSegmentTitle(bar, segment, 'tokens')"></div>
                 }
               </div>
-              <span class="timeline-total">{{ bar.totalTokens | number }}</span>
-              @if (bar.showLabel) {
-                <span class="timeline-label">{{ bar.displayLabel }}</span>
-              } @else {
-                <span class="timeline-label ghost">.</span>
-              }
+              <div class="timeline-footer">
+                <span class="timeline-total">{{ bar.totalTokens | number }}</span>
+                @if (bar.showLabel) {
+                  <span class="timeline-label" [attr.title]="bar.displayLabel">{{ bar.displayLabel }}</span>
+                } @else {
+                  <span class="timeline-label ghost">.</span>
+                }
+              </div>
             </div>
           }
         </div>
@@ -170,7 +164,7 @@
           </div>
         </div>
 
-        <div class="timeline-chart char-chart">
+        <div class="timeline-chart char-chart" [style.--timeline-bar-count]="characterTimelineBars.length">
           @for (bar of characterTimelineBars; track bar.label) {
             <div class="timeline-slot">
               <div class="timeline-stack" [attr.title]="bar.displayLabel">
@@ -178,11 +172,13 @@
                   <div class="segment" [class]="'segment ' + segment.cssClass" [style.height.%]="segment.heightPct" [attr.title]="formatTimelineSegmentTitle(bar, segment, 'chars')"></div>
                 }
               </div>
-              @if (bar.showLabel) {
-                <span class="timeline-label">{{ bar.displayLabel }}</span>
-              } @else {
-                <span class="timeline-label ghost">.</span>
-              }
+              <div class="timeline-footer">
+                @if (bar.showLabel) {
+                  <span class="timeline-label" [attr.title]="bar.displayLabel">{{ bar.displayLabel }}</span>
+                } @else {
+                  <span class="timeline-label ghost">.</span>
+                }
+              </div>
             </div>
           }
         </div>
@@ -289,7 +285,6 @@
       <div class="card-header">
         <div>
           <p class="card-kicker">Recent Calls</p>
-          <h3>Latest persisted usage rows</h3>
         </div>
         <span class="recent-count">{{ recentRows.length }} shown</span>
       </div>
@@ -304,7 +299,7 @@
 
             <div class="recent-metrics">
               <span class="metric-pill metric-cached-input">{{ row.tokenUsage.cachedTokens | number }} cached</span>
-              <span class="metric-pill metric-live-input">{{ row.tokenUsage.liveInputTokens | number }} in</span>
+              <span class="metric-pill metric-live-input">{{ row.tokenUsage.liveInputTokens | number }} sent</span>
               <span class="metric-pill metric-thinking-output">{{ row.tokenUsage.reasoningTokens | number }} thinking</span>
               <span class="metric-pill metric-visible-output">{{ row.tokenUsage.visibleOutputTokens | number }} output</span>
               <span class="metric-pill char-pill">{{ row.promptUsage.totalChars | number }} chars</span>
