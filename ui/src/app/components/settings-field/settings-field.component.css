@@ -8,11 +8,15 @@ mat-form-field {
 }
 
 mat-slide-toggle {
-    margin: 10px 0;
+    margin: 0;
 }
 
 .paragraph-field {
-    margin: 8px 0;
+    margin: 0;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .paragraph-field h4 {
@@ -26,11 +30,11 @@ mat-slide-toggle {
 }
 
 .error-field {
-    margin: 8px 0;
-    padding: 12px;
+    margin: 0;
+    padding: 14px 16px;
     background-color: rgba(244, 67, 54, 0.1);
     border: 1px solid rgba(244, 67, 54, 0.5);
-    border-radius: 4px;
+    border-radius: 16px;
 }
 
 .error-field h4 {

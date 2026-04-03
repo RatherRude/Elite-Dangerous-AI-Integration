@@ -1,8 +1,8 @@
-<div class="settings-grid">
+<div class="settings-grid character-settings">
     @if (config && activeCharacter) {
         <div [class.editing-active]="editMode">
             <!-- Character Management Section -->
-            <div class="character-management-section">
+            <div class="character-management-section config-panel">
                 <div class="character-selector">
                     <mat-form-field appearance="fill">
                         <mat-label>Select Character</mat-label>
@@ -124,7 +124,7 @@
             </div>
 
             <!-- Character settings - only visible when editing -->
-            <div id="character-creation" *ngIf="editMode">
+            <div id="character-creation" class="character-editor config-panel" *ngIf="editMode">
 
 
                 <!-- Character Name -->
@@ -414,7 +414,7 @@
                 }
                 
                 <!-- Character Prompt Display - Always Visible -->
-                <div class="character-display">
+                <div class="character-display config-panel character-prompt-panel">
                     <div class="character-prompt-header">
                         <h4>Character Prompt</h4>
                         @if (activeCharacter.personality_preset !== 'custom') {
@@ -452,14 +452,18 @@
             </div>
         </div>
 
-        <h2>Conversation History</h2>
-        <div class="clear_history">
-            <p>This will clear the entire conversation history with the AI. If you change the character, you may want to reset the conversation history, so
-            the AI starts with a blank slate.</p>
-            <button mat-stroked-button color="warn" (click)="onClearHistory()">
-                <mat-icon>delete_sweep</mat-icon>
-                Clear History
-            </button>
-        </div>
+        <section class="config-panel history-panel">
+            <div class="config-section-heading">
+                <p class="config-section-kicker">Memory</p>
+                <h3>Conversation history</h3>
+                <p>This clears the entire conversation history with the AI. If you change the character, resetting history gives the model a clean slate.</p>
+            </div>
+            <div class="clear_history">
+                <button mat-stroked-button color="warn" (click)="onClearHistory()">
+                    <mat-icon>delete_sweep</mat-icon>
+                    Clear History
+                </button>
+            </div>
+        </section>
     }
 </div>

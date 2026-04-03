@@ -1,8 +1,7 @@
 .settings-grid {
   display: flex;
   flex-direction: column;
-  gap: 0px;
-  padding: 20px;
+  gap: 18px;
 }
 
 mat-form-field {
@@ -17,7 +16,7 @@ mat-panel-title {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 mat-panel-title mat-icon {
@@ -84,4 +83,10 @@ mat-panel-title mat-icon {
   width: 20px;
   height: 20px;
   padding-top: 3px;
+}
+
+.config-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }

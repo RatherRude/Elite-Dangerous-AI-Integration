@@ -53,7 +53,7 @@ import { SettingsGridComponent } from "../settings-grid/settings-grid.component"
     SettingsGridComponent,
   ],
   templateUrl: "./plugin-settings.component.html",
-  styleUrls: ["../settings-menu/settings-menu.component.scss"],
+  styleUrls: ["./plugin-settings.component.css"],
 })
 export class PluginSettingsComponent implements OnInit, OnDestroy {
   config: Config | null = null;

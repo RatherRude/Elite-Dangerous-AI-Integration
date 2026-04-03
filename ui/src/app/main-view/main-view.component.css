@@ -1,7 +1,7 @@
 .app {
   display: flex;
   flex-direction: column;
-  padding: 20px;
+  padding: 0;
   height: 100vh;
   overflow: hidden;
   box-sizing: border-box;
@@ -33,20 +33,61 @@
   flex: 1;
   display: flex;
   flex-direction: column;
+  border-radius: 10px;
   background: rgba(22, 22, 22, 0.7);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border-radius: 10px;
+  padding: 20px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* Style the tab group to fill space */
 .runtime-container mat-tab-group {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.runtime-container ::ng-deep .mat-mdc-tab-header {
+  margin: 0 18px;
+  padding: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  box-shadow: none;
+}
+
+.runtime-container ::ng-deep .mat-mdc-tab-label-container {
+  overflow: hidden;
+}
+
+.runtime-container ::ng-deep .mat-mdc-tab-labels {
+  gap: 0;
+  flex-wrap: nowrap;
+}
+
+.runtime-container ::ng-deep .mat-mdc-tab {
+  min-width: 96px;
+  height: 48px;
+  padding: 0 10px;
+}
+
+.runtime-container ::ng-deep .mat-mdc-tab .mdc-tab__text-label {
+  color: rgba(236, 241, 248, 0.68);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.runtime-container ::ng-deep .mat-mdc-tab.mdc-tab--active .mdc-tab__text-label {
+  color: #f5f7fa;
+}
+
+.runtime-container ::ng-deep .mat-mdc-tab-header .mdc-tab-indicator__content--underline,
+.runtime-container ::ng-deep .mat-mdc-tab:not(.mat-mdc-tab-disabled) .mdc-tab-indicator__content--underline {
+  border-color: rgba(88, 166, 255, 0.85);
 }
 
 /* Style the content area within each tab */
