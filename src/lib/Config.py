@@ -428,6 +428,117 @@ class CharacterTTSSettings(TypedDict, total=False):
     postprocessing: CharacterTTSPostprocessingConfig
 
 
+TTS_ENVIRONMENT_EFFECTS_OVERHEATING: CharacterTTSPostprocessingConfig = {
+    "volume": 1.0,
+    "effects": {
+        "distortion": {
+            "enabled": True,
+            "drive": 18.0,
+            "clip": 0.45,
+            "mix": 0.9,
+            "mode": 'tanh',
+        },
+        "lowpass": {
+            "enabled": False,
+            "cutoff": 4560.0,
+        },
+        "highpass": {
+            "enabled": False,
+            "cutoff": 1060.0,
+        },
+        "chorus": {
+            "enabled": False,
+        },
+        "reverb": {
+            "enabled": False,
+        },
+        "glitch": {
+            "enabled": True,
+            "probability": 0.08,
+            "repeat_min": 2,
+            "repeat_max": 5,
+            "min_seconds": 0.06,
+            "max_seconds": 0.25,
+            "detune_base": 2.0,
+            "detune_peak": 6.0,
+        },
+        "time_pitch": {
+            "enabled": False,
+        },
+    },
+}
+
+
+TTS_ENVIRONMENT_EFFECTS_ON_FOOT: CharacterTTSPostprocessingConfig = {
+    "volume": 1.0,
+    "effects": {
+        "distortion": {
+            "enabled": True,
+            "drive": 22.0,
+            "clip": 0.3,
+            "mix": 0.28,
+            "mode": 'tanh',
+        },
+        "lowpass": {
+            "enabled": True,
+            "cutoff": 4300.0,
+        },
+        "highpass": {
+            "enabled": True,
+            "cutoff": 260.0,
+        },
+        "chorus": {
+            "enabled": False,
+        },
+        "reverb": {
+            "enabled": False,
+        },
+        "glitch": {
+            "enabled": False,
+        },
+        "time_pitch": {
+            "enabled": False,
+        },
+    },
+}
+
+
+TTS_ENVIRONMENT_EFFECTS_IN_SRV: CharacterTTSPostprocessingConfig = {
+    "volume": 1.0,
+    "effects": {
+        "distortion": {
+            "enabled": True,
+            "drive": 6.5,
+            "clip": 0.98,
+            "mix": 0.22,
+            "mode": 'tanh',
+        },
+        "lowpass": {
+            "enabled": True,
+            "cutoff": 5200.0,
+        },
+        "highpass": {
+            "enabled": True,
+            "cutoff": 220.0,
+        },
+        "chorus": {
+            "enabled": False,
+        },
+        "reverb": {
+            "enabled": True,
+            "mix": 0.16,
+            "tail": 0.18,
+        },
+        "glitch": {
+            "enabled": False,
+        },
+        "time_pitch": {
+            "enabled": False,
+        },
+    },
+}
+
+
 def get_default_character_tts_postprocessing() -> CharacterTTSPostprocessingConfig:
     return {
         "volume": 1.0,

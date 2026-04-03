@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
 from time import sleep, time
-from typing import Any, Callable, Generator, Optional, final
+from typing import Any, Callable, Generator, Optional, cast, final
 import wave
 
 from audiostretchy.stretch import AudioStretch
@@ -133,6 +133,7 @@ class TTS:
                 "file_path": item.get("file_path"),
                 "voice": item.get("voice"),
                 "postprocessing": item.get("postprocessing"),
+                "postprocessing_layers": item.get("postprocessing_layers"),
                 "on_start": item.get("on_start"),
                 "on_complete": item.get("on_complete"),
                 "drop_if": item.get("drop_if"),
@@ -143,15 +144,19 @@ class TTS:
             "file_path": None,
             "voice": None,
             "postprocessing": None,
+            "postprocessing_layers": None,
             "on_start": None,
             "on_complete": None,
             "drop_if": None,
         }
 
     def _get_output_device_index(self) -> Optional[int]: #Rewert from String to Index 
+        if not isinstance(self.output_device, str) or not self.output_device:
+            return None
         for i in range(self.p.get_device_count()):
             dev_info = self.p.get_device_info_by_index(i)
-            if self.output_device in dev_info.get('name', ''):
+            device_name = dev_info.get('name', '')
+            if isinstance(device_name, str) and self.output_device in device_name:
                 return i
         return None
 
@@ -189,6 +194,7 @@ class TTS:
                     file_path = item.get("file_path")
                     voice = item.get("voice")
                     postprocessing = item.get("postprocessing")
+                    postprocessing_layers = item.get("postprocessing_layers")
                     on_start = item.get("on_start")
                     on_complete = item.get("on_complete")
                     drop_if = item.get("drop_if")
@@ -211,7 +217,8 @@ class TTS:
                                 text,
                                 stream,
                                 voice if isinstance(voice, str) else None,
-                                postprocessing if isinstance(postprocessing, dict) else None,
+                                cast(CharacterTTSPostprocessingConfig | None, postprocessing if isinstance(postprocessing, dict) else None),
+                                cast(list[CharacterTTSPostprocessingConfig | None] | None, postprocessing_layers if isinstance(postprocessing_layers, list) else None),
                             )
                     except Exception as e:
                         self.read_queue.put(item)
@@ -236,6 +243,7 @@ class TTS:
         stream: pyaudio.Stream,
         voice_override: str | None = None,
         postprocessing_override: CharacterTTSPostprocessingConfig | None = None,
+        postprocessing_layers: list[CharacterTTSPostprocessingConfig | None] | None = None,
     ):
         # Fix numberformatting for different providers
         text = re.sub(r"\d+(,\d{3})*(\.\d+)?", self._number_to_text, text)
@@ -247,7 +255,10 @@ class TTS:
         underflow_count = 0
         empty_buffer_available = stream.get_write_available()
         self._reset_postprocessing_state()
-        postprocessing = self._get_effective_postprocessing_config(postprocessing_override)
+        postprocessing = self._get_effective_postprocessing_config(
+            postprocessing_override,
+            postprocessing_layers,
+        )
         audio_stream = self._stream_audio(text, voice_override)
         if postprocessing:
             audio_stream = self._postprocess_audio(audio_stream, postprocessing)
@@ -291,10 +302,142 @@ class TTS:
     def _get_effective_postprocessing_config(
         self,
         postprocessing_override: CharacterTTSPostprocessingConfig | None,
+        postprocessing_layers: list[CharacterTTSPostprocessingConfig | None] | None = None,
     ) -> CharacterTTSPostprocessingConfig:
-        if postprocessing_override is None:
+        if postprocessing_override is None and not postprocessing_layers:
             return self.postprocessing_config
-        return map_character_tts_postprocessing(postprocessing_override)
+
+        settings: list[CharacterTTSPostprocessingConfig | None] = []
+        if postprocessing_override is not None:
+            settings.append(postprocessing_override)
+        if postprocessing_layers:
+            settings.extend(postprocessing_layers)
+        return self.merge_effect_settings(settings)
+
+    def merge_effect_settings(
+        self,
+        settings: list[CharacterTTSPostprocessingConfig | None],
+    ) -> CharacterTTSPostprocessingConfig:
+        merged = map_character_tts_postprocessing(None)
+        for raw_setting in settings:
+            if raw_setting is None:
+                continue
+            setting = map_character_tts_postprocessing(raw_setting)
+            merged['volume'] = float(merged.get('volume', 1.0)) * float(setting.get('volume', 1.0))
+            self._merge_effect_configs(
+                cast(dict[str, Any], merged.get('effects', {})),
+                cast(dict[str, Any], setting.get('effects', {})),
+            )
+        return map_character_tts_postprocessing(merged)
+
+    def _merge_effect_configs(
+        self,
+        base_effects: dict[str, Any],
+        overlay_effects: dict[str, Any],
+    ) -> None:
+        self._merge_generic_effect(
+            base_effects,
+            overlay_effects,
+            'distortion',
+            {
+                'drive': max,
+                'clip': min,
+                'mix': max,
+            },
+        )
+        self._merge_generic_effect(
+            base_effects,
+            overlay_effects,
+            'lowpass',
+            {
+                'cutoff': min,
+            },
+        )
+        self._merge_generic_effect(
+            base_effects,
+            overlay_effects,
+            'highpass',
+            {
+                'cutoff': max,
+            },
+        )
+        self._merge_generic_effect(
+            base_effects,
+            overlay_effects,
+            'chorus',
+            {
+                'delay_ms': max,
+                'depth_ms': max,
+                'rate_hz': max,
+                'mix': max,
+            },
+        )
+        self._merge_generic_effect(
+            base_effects,
+            overlay_effects,
+            'reverb',
+            {
+                'mix': max,
+                'tail': max,
+            },
+        )
+        self._merge_generic_effect(
+            base_effects,
+            overlay_effects,
+            'glitch',
+            {
+                'probability': max,
+                'repeat_min': max,
+                'repeat_max': max,
+                'min_seconds': max,
+                'max_seconds': max,
+                'detune_base': max,
+                'detune_peak': max,
+            },
+        )
+        self._merge_generic_effect(
+            base_effects,
+            overlay_effects,
+            'time_pitch',
+            {
+                'pitch_shift_semitones': lambda current, incoming: current + incoming,
+                'time_stretch': lambda current, incoming: current * incoming,
+            },
+        )
+
+    def _merge_generic_effect(
+        self,
+        base_effects: dict[str, Any],
+        overlay_effects: dict[str, Any],
+        effect_name: str,
+        merge_rules: dict[str, Callable[[float, float], float]],
+    ) -> None:
+        base_effect = base_effects.get(effect_name)
+        overlay_effect = overlay_effects.get(effect_name)
+        if not isinstance(base_effect, dict) or not isinstance(overlay_effect, dict):
+            return
+
+        base_enabled = bool(base_effect.get('enabled'))
+        overlay_enabled = bool(overlay_effect.get('enabled'))
+        if not base_enabled and overlay_enabled:
+            base_effect.update(overlay_effect)
+            base_effect['enabled'] = True
+            return
+
+        base_effect['enabled'] = base_enabled or overlay_enabled
+        if not overlay_enabled:
+            return
+
+        for key, merge_rule in merge_rules.items():
+            base_value = base_effect.get(key)
+            overlay_value = overlay_effect.get(key)
+            if not isinstance(base_value, (int, float)) or not isinstance(overlay_value, (int, float)):
+                continue
+            base_effect[key] = float(merge_rule(float(base_value), float(overlay_value)))
+
+        if effect_name == 'distortion' and overlay_enabled and overlay_effect.get('mode') in ('tanh', 'hard'):
+            if overlay_effect.get('mode') == 'hard' or not base_enabled:
+                base_effect['mode'] = overlay_effect['mode']
 
     @observe()
     def _stream_audio(self, text: str, voice_override: str | None = None):
@@ -1099,6 +1242,7 @@ class TTS:
         *,
         voice: str | None = None,
         postprocessing: CharacterTTSPostprocessingConfig | None = None,
+        postprocessing_layers: list[CharacterTTSPostprocessingConfig | None] | None = None,
         on_start: Callable[[], None] | None = None,
         on_complete: Callable[[], None] | None = None,
         drop_if: Callable[[], bool] | None = None,
@@ -1108,6 +1252,7 @@ class TTS:
                 "text": text,
                 "voice": voice,
                 "postprocessing": postprocessing,
+                "postprocessing_layers": postprocessing_layers,
                 "on_start": on_start,
                 "on_complete": on_complete,
                 "drop_if": drop_if,

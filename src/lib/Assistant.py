@@ -8,7 +8,13 @@ from time import time
 from pydantic import BaseModel
 from .Models import LLMModel, EmbeddingModel, LLMError
 from .Logger import log, observe, show_chat_message, PromptUsageStats, log_llm_usage
-from .Config import Config
+from .Config import (
+    Config,
+    CharacterTTSPostprocessingConfig,
+    TTS_ENVIRONMENT_EFFECTS_IN_SRV,
+    TTS_ENVIRONMENT_EFFECTS_ON_FOOT,
+    TTS_ENVIRONMENT_EFFECTS_OVERHEATING,
+)
 from .Database import QuestDatabase, QuestState
 from .Event import ConversationEvent, Event, GameEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent, MemoryEvent, QuestEvent
 from .EventManager import EventManager
@@ -139,6 +145,43 @@ class Assistant:
         if isinstance(voice, str) and voice.strip():
             return voice.strip()
         return 'nova'
+
+    def _get_active_character_tts_postprocessing(self) -> CharacterTTSPostprocessingConfig | None:
+        characters = self.config.get('characters') or []
+        if not characters:
+            return None
+        idx = self.config.get('active_character_index', 0)
+        idx = max(0, min(idx, len(characters) - 1))
+        character = characters[idx] if isinstance(characters[idx], dict) else None
+        postprocessing = character.get('tts_postprocessing') if character else None
+        return postprocessing if isinstance(postprocessing, dict) else None
+
+    def _get_environment_tts_postprocessing_layers(
+        self,
+        projected_states: ProjectedStates,
+    ) -> list[CharacterTTSPostprocessingConfig]:
+        current_status = get_state_dict(projected_states, "CurrentStatus")
+        flags = current_status.get("flags", {}) if isinstance(current_status, dict) else {}
+        flags2 = current_status.get("flags2", {}) if isinstance(current_status, dict) else {}
+
+        layers: list[CharacterTTSPostprocessingConfig] = []
+        if isinstance(flags, dict) and flags.get("OverHeating"):
+            layers.append(TTS_ENVIRONMENT_EFFECTS_OVERHEATING)
+        if isinstance(flags, dict) and flags.get("InSRV"):
+            layers.append(TTS_ENVIRONMENT_EFFECTS_IN_SRV)
+        if isinstance(flags2, dict) and flags2.get("OnFoot"):
+            layers.append(TTS_ENVIRONMENT_EFFECTS_ON_FOOT)
+        return layers
+
+    def _get_tts_postprocessing_layers(
+        self,
+        projected_states: ProjectedStates,
+    ) -> list[CharacterTTSPostprocessingConfig | None]:
+        layers: list[CharacterTTSPostprocessingConfig | None] = [
+            self._get_active_character_tts_postprocessing(),
+        ]
+        layers.extend(self._get_environment_tts_postprocessing_layers(projected_states))
+        return layers
 
     def _resolve_quest_audio_path(self, file_name: str) -> Path | None:
         normalized_name = file_name.replace("\\", "/")
@@ -664,7 +707,10 @@ class Assistant:
             action_input_desc = self.action_manager.getActionDesc(action, projected_states)
             action_descriptions.append(action_input_desc)
             if action_input_desc:
-                self.tts.say(action_input_desc)
+                self.tts.say(
+                    action_input_desc,
+                    postprocessing_layers=self._get_tts_postprocessing_layers(projected_states),
+                )
             action_result = self.action_manager.runAction(action, projected_states)
             action_results.append(action_result)
 
@@ -789,7 +835,10 @@ class Assistant:
 
             if response_text and not response_actions:
                 self.event_manager.add_assistant_speaking()
-                self.tts.say(response_text)
+                self.tts.say(
+                    response_text,
+                    postprocessing_layers=self._get_tts_postprocessing_layers(projected_states),
+                )
                 self.event_manager.add_conversation_event('assistant', response_text, reasons=reasons, processed_at=max_conversation_processed)
                 self.tts.wait_for_completion()
                 self.event_manager.add_assistant_complete_event()
@@ -916,7 +965,10 @@ class Assistant:
 
         method = action_descriptor.get('method')
         args = {'query': query}
-        self.tts.say(f"Searching: {query}")
+        self.tts.say(
+            f"Searching: {query}",
+            postprocessing_layers=self._get_tts_postprocessing_layers(projected_states),
+        )
         
         try:
             result_content = method(args, projected_states)

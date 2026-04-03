@@ -522,6 +522,67 @@ def test_reverb_config_maps_mix_and_tail():
     assert config["effects"]["reverb"]["tail"] == pytest.approx(0.42)
 
 
+def test_merge_effect_settings_combines_character_and_environment_layers(mock_pyaudio):
+    """Test layered postprocessing merges additive effect settings"""
+    tts = TTS(None)
+
+    merged = tts.merge_effect_settings([
+        {
+            "volume": 0.8,
+            "effects": {
+                "highpass": {
+                    "enabled": True,
+                    "cutoff": 180.0,
+                },
+                "time_pitch": {
+                    "enabled": True,
+                    "pitch_shift_semitones": 2.0,
+                    "time_stretch": 1.1,
+                },
+                "reverb": {
+                    "enabled": True,
+                    "mix": 0.15,
+                    "tail": 0.10,
+                },
+            },
+        },
+        {
+            "volume": 0.5,
+            "effects": {
+                "highpass": {
+                    "enabled": True,
+                    "cutoff": 500.0,
+                },
+                "lowpass": {
+                    "enabled": True,
+                    "cutoff": 2600.0,
+                },
+                "time_pitch": {
+                    "enabled": True,
+                    "pitch_shift_semitones": -3.0,
+                    "time_stretch": 0.9,
+                },
+                "reverb": {
+                    "enabled": True,
+                    "mix": 0.30,
+                    "tail": 0.25,
+                },
+            },
+        },
+    ])
+
+    assert merged["volume"] == pytest.approx(0.4)
+    assert merged["effects"]["highpass"]["enabled"] is True
+    assert merged["effects"]["highpass"]["cutoff"] == pytest.approx(500.0)
+    assert merged["effects"]["lowpass"]["enabled"] is True
+    assert merged["effects"]["lowpass"]["cutoff"] == pytest.approx(2600.0)
+    assert merged["effects"]["time_pitch"]["enabled"] is True
+    assert merged["effects"]["time_pitch"]["pitch_shift_semitones"] == pytest.approx(-1.0)
+    assert merged["effects"]["time_pitch"]["time_stretch"] == pytest.approx(0.99)
+    assert merged["effects"]["reverb"]["mix"] == pytest.approx(0.30)
+    assert merged["effects"]["reverb"]["tail"] == pytest.approx(0.25)
+
+
 def test_time_pitch_effect_stretches_audio_without_changing_pitch(mock_pyaudio):
     """Test time stretch preserves dominant pitch while changing duration"""
     tts = TTS(None)
