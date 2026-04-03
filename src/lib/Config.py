@@ -366,6 +366,7 @@ class CharacterTTSDistortionConfig(TypedDict, total=False):
     enabled: bool
     drive: float
     clip: float
+    mix: float
     mode: Literal['tanh', 'hard']
 
 
@@ -447,6 +448,7 @@ def get_default_character_tts_postprocessing() -> CharacterTTSPostprocessingConf
                 "enabled": False,
                 "drive": 2.0,
                 "clip": 0.20,
+                "mix": 1.0,
                 "mode": 'tanh',
             },
             "lowpass": {
@@ -481,6 +483,7 @@ def _map_character_tts_distortion(raw: object) -> CharacterTTSDistortionConfig:
         "enabled": False,
         "drive": 2.0,
         "clip": 0.20,
+        "mix": 1.0,
         "mode": 'tanh',
     }
     if not isinstance(raw, dict):
@@ -492,6 +495,8 @@ def _map_character_tts_distortion(raw: object) -> CharacterTTSDistortionConfig:
         distortion['drive'] = float(raw['drive'])
     if isinstance(raw.get('clip'), (int, float)):
         distortion['clip'] = float(raw['clip'])
+    if isinstance(raw.get('mix'), (int, float)):
+        distortion['mix'] = float(raw['mix'])
     if raw.get('mode') in ('tanh', 'hard'):
         distortion['mode'] = raw['mode']
     return distortion

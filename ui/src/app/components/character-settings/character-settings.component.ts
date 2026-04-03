@@ -27,12 +27,6 @@ import {
     CharacterService,
     ConfigWithCharacters,
     Character,
-    CharacterTTSFilterConfig,
-    CharacterTTSDistortionConfig,
-    CharacterTTSChorusConfig,
-    CharacterTTSReverbConfig,
-    CharacterTTSGlitchConfig,
-    CharacterTTSTimePitchConfig,
     CharacterTTSEffectsConfig,
     CharacterTTSPostprocessingConfig,
 } from "../../services/character.service";
@@ -60,25 +54,10 @@ interface PromptSettings {
     moralAlignment: "good" | "neutral" | "evil";
 }
 
-type VoiceEffectPresetKey = "distortion" | "chorus" | "reverb" | "glitch" | "time_pitch";
-type VoiceEffectConfig =
-    | CharacterTTSDistortionConfig
-    | CharacterTTSChorusConfig
-    | CharacterTTSReverbConfig
-    | CharacterTTSGlitchConfig
-    | CharacterTTSTimePitchConfig;
-
-interface VoiceEffectPresetOption<TConfig extends VoiceEffectConfig> {
+interface VoiceProfilePresetOption {
     id: string;
     label: string;
-    config: TConfig | null;
-}
-
-interface LowHighPassPresetOption {
-    id: string;
-    label: string;
-    lowpass: CharacterTTSFilterConfig | null;
-    highpass: CharacterTTSFilterConfig | null;
+    effects: CharacterTTSEffectsConfig;
 }
 
 @Component({
@@ -118,336 +97,69 @@ export class CharacterSettingsComponent {
     private localCharacterCopy: Character | null = null;
     isApplyingChange: boolean = false;
     voiceInstructionSupportedModels: string[] = this.characterService.voiceInstructionSupportedModels;
-    readonly lowHighPassPresets: LowHighPassPresetOption[] = [
-        { id: "off", label: "Off", lowpass: null, highpass: null },
+    readonly voiceProfilePresets: VoiceProfilePresetOption[] = [
         {
-            id: "subtle-comms",
-            label: "Subtle Comms",
-            lowpass: { enabled: true, cutoff: 8000 },
-            highpass: { enabled: true, cutoff: 120 },
+            id: "broken",
+            label: "Broken",
+            effects: {
+                highpass: { enabled: false, cutoff: 1060 },
+                lowpass: { enabled: false, cutoff: 4560 },
+                distortion: { enabled: true, drive: 18.0, clip: 0.45, mix: 0.9, mode: "tanh" },
+                glitch: {
+                    enabled: true,
+                    probability: 0.08,
+                    repeat_min: 3,
+                    repeat_max: 5,
+                    min_seconds: 0.06,
+                    max_seconds: 0.18,
+                    detune_base: 2,
+                    detune_peak: 6.0,
+                },
+            },
         },
         {
-            id: "cockpit-intercom",
-            label: "Cockpit Intercom",
-            lowpass: { enabled: true, cutoff: 6200 },
-            highpass: { enabled: true, cutoff: 180 },
+            id: "suit-headset",
+            label: "Suit Headset",
+            effects: {
+                lowpass: { enabled: true, cutoff: 4300 },
+                highpass: { enabled: true, cutoff: 260 },
+                distortion: { enabled: true, drive: 22.0, clip: 0.0, mix: 0.28, mode: "tanh" },
+            },
         },
         {
-            id: "helmet-radio",
-            label: "Helmet Radio",
-            lowpass: { enabled: true, cutoff: 4300 },
-            highpass: { enabled: true, cutoff: 260 },
+            id: "telephone",
+            label: "Telephone",
+            effects: {
+                lowpass: { enabled: true, cutoff: 3000 },
+                highpass: { enabled: true, cutoff: 420 },
+                distortion: { enabled: true, drive: 14.0, clip: 0.92, mix: 0.5, mode: "tanh" },
+            },
         },
         {
-            id: "ship-pa",
-            label: "Ship PA",
-            lowpass: { enabled: true, cutoff: 5200 },
-            highpass: { enabled: true, cutoff: 220 },
-        },
-        {
-            id: "tactical-uplink",
-            label: "Tactical Uplink",
-            lowpass: { enabled: true, cutoff: 5600 },
-            highpass: { enabled: true, cutoff: 320 },
-        },
-        {
-            id: "walkie-talkie",
-            label: "Walkie Talkie",
-            lowpass: { enabled: true, cutoff: 3000 },
-            highpass: { enabled: true, cutoff: 420 },
-        },
-        {
-            id: "tinny-speaker",
-            label: "Tinny Speaker",
-            lowpass: { enabled: true, cutoff: 3600 },
-            highpass: { enabled: true, cutoff: 520 },
-        },
-        {
-            id: "surveillance-mic",
-            label: "Surveillance Mic",
-            lowpass: { enabled: true, cutoff: 2700 },
-            highpass: { enabled: true, cutoff: 380 },
-        },
-        {
-            id: "emergency-broadcast",
-            label: "Emergency Broadcast",
-            lowpass: { enabled: true, cutoff: 4100 },
-            highpass: { enabled: true, cutoff: 460 },
-        },
-        {
-            id: "distress-beacon",
-            label: "Distress Beacon",
-            lowpass: { enabled: true, cutoff: 2500 },
-            highpass: { enabled: true, cutoff: 560 },
-        },
-        {
-            id: "old-analog-radio",
-            label: "Old Analog Radio",
-            lowpass: { enabled: true, cutoff: 2400 },
-            highpass: { enabled: true, cutoff: 320 },
-        },
-        {
-            id: "encrypted-channel",
-            label: "Encrypted Channel",
-            lowpass: { enabled: true, cutoff: 3100 },
-            highpass: { enabled: true, cutoff: 650 },
-        },
-        {
-            id: "remote-drone-feed",
-            label: "Remote Drone Feed",
-            lowpass: { enabled: true, cutoff: 3700 },
-            highpass: { enabled: true, cutoff: 760 },
-        },
-        {
-            id: "station-announcement",
-            label: "Station Announcement",
-            lowpass: { enabled: true, cutoff: 6500 },
-            highpass: { enabled: true, cutoff: 140 },
-        },
-    ];
-    readonly distortionPresets: VoiceEffectPresetOption<CharacterTTSDistortionConfig>[] = [
-        { id: "off", label: "Off", config: null },
-        {
-            id: "subtle-warmth",
-            label: "Subtle Warmth",
-            config: { enabled: true, drive: 1.1, clip: 0.98, mode: "tanh" },
-        },
-        {
-            id: "soft-grit",
-            label: "Soft Grit",
-            config: { enabled: true, drive: 1.35, clip: 0.92, mode: "tanh" },
-        },
-        {
-            id: "light-crunch",
-            label: "Light Crunch",
-            config: { enabled: true, drive: 1.8, clip: 0.82, mode: "tanh" },
-        },
-        {
-            id: "crunch",
-            label: "Crunch",
-            config: { enabled: true, drive: 2.4, clip: 0.72, mode: "hard" },
-        },
-        {
-            id: "harsh",
-            label: "Harsh",
-            config: { enabled: true, drive: 2.9, clip: 0.62, mode: "hard" },
-        },
-        {
-            id: "clipped",
-            label: "Clipped",
-            config: { enabled: true, drive: 3.3, clip: 0.52, mode: "hard" },
-        },
-        {
-            id: "broken-speaker",
-            label: "Broken Speaker",
-            config: { enabled: true, drive: 3.8, clip: 0.45, mode: "hard" },
-        },
-        {
-            id: "overloaded",
-            label: "Overloaded",
-            config: { enabled: true, drive: 4.4, clip: 0.38, mode: "hard" },
-        },
-    ];
-    readonly chorusPresets: VoiceEffectPresetOption<CharacterTTSChorusConfig>[] = [
-        { id: "off", label: "Off", config: null },
-        {
-            id: "subtle-width",
-            label: "Subtle Width",
-            config: { enabled: true, delay_ms: 16, depth_ms: 3, rate_hz: 0.12, mix: 0.1 },
-        },
-        {
-            id: "soft-double",
-            label: "Soft Double",
-            config: { enabled: true, delay_ms: 20, depth_ms: 5, rate_hz: 0.18, mix: 0.18 },
-        },
-        {
-            id: "double",
-            label: "Double",
-            config: { enabled: true, delay_ms: 24, depth_ms: 8, rate_hz: 0.24, mix: 0.28 },
-        },
-        {
-            id: "shimmer",
-            label: "Shimmer",
-            config: { enabled: true, delay_ms: 18, depth_ms: 9, rate_hz: 0.42, mix: 0.22 },
+            id: "cockpit-speakers",
+            label: "Cockpit Speakers",
+            effects: {
+                lowpass: { enabled: true, cutoff: 5200 },
+                highpass: { enabled: true, cutoff: 220 },
+                distortion: { enabled: true, drive: 10.5, clip: 0.98, mix: 0.22, mode: "tanh" },
+                reverb: { enabled: true, mix: 0.16, tail: 0.18 },
+            },
         },
         {
             id: "hologram",
             label: "Hologram",
-            config: { enabled: true, delay_ms: 22, depth_ms: 11, rate_hz: 0.32, mix: 0.35 },
+            effects: {
+                lowpass: { enabled: true, cutoff: 8000 },
+                highpass: { enabled: true, cutoff: 120 },
+                chorus: { enabled: true, delay_ms: 22, depth_ms: 11, rate_hz: 0.32, mix: 0.35 },
+                reverb: { enabled: true, mix: 0.14, tail: 0.16 },
+                time_pitch: { enabled: true, pitch_shift_semitones: 1.5, time_stretch: 1.0 },
+            },
         },
         {
-            id: "dreamlike",
-            label: "Dreamlike",
-            config: { enabled: true, delay_ms: 28, depth_ms: 14, rate_hz: 0.2, mix: 0.4 },
-        },
-        {
-            id: "alien-resonance",
-            label: "Alien Resonance",
-            config: { enabled: true, delay_ms: 32, depth_ms: 18, rate_hz: 0.48, mix: 0.5 },
-        },
-    ];
-    readonly reverbPresets: VoiceEffectPresetOption<CharacterTTSReverbConfig>[] = [
-        { id: "off", label: "Off", config: null },
-        {
-            id: "studio-booth",
-            label: "Studio Booth",
-            config: { enabled: true, mix: 0.08, tail: 0.08 },
-        },
-        {
-            id: "small-room",
-            label: "Small Room",
-            config: { enabled: true, mix: 0.12, tail: 0.12 },
-        },
-        {
-            id: "control-room",
-            label: "Control Room",
-            config: { enabled: true, mix: 0.14, tail: 0.16 },
-        },
-        {
-            id: "hallway",
-            label: "Hallway",
-            config: { enabled: true, mix: 0.18, tail: 0.24 },
-        },
-        {
-            id: "metal-corridor",
-            label: "Metal Corridor",
-            config: { enabled: true, mix: 0.22, tail: 0.28 },
-        },
-        {
-            id: "cockpit-cabin",
-            label: "Cockpit Cabin",
-            config: { enabled: true, mix: 0.16, tail: 0.18 },
-        },
-        {
-            id: "cargo-bay",
-            label: "Cargo Bay",
-            config: { enabled: true, mix: 0.26, tail: 0.34 },
-        },
-        {
-            id: "station-concourse",
-            label: "Station Concourse",
-            config: { enabled: true, mix: 0.3, tail: 0.4 },
-        },
-        {
-            id: "ship-hangar",
-            label: "Ship Hangar",
-            config: { enabled: true, mix: 0.34, tail: 0.46 },
-        },
-        {
-            id: "cathedral",
-            label: "Cathedral",
-            config: { enabled: true, mix: 0.38, tail: 0.5 },
-        },
-        {
-            id: "cave",
-            label: "Cave",
-            config: { enabled: true, mix: 0.42, tail: 0.5 },
-        },
-        {
-            id: "distant-pa",
-            label: "Distant PA",
-            config: { enabled: true, mix: 0.28, tail: 0.3 },
-        },
-        {
-            id: "dream-space",
-            label: "Dream Space",
-            config: { enabled: true, mix: 0.32, tail: 0.44 },
-        },
-    ];
-    readonly glitchPresets: VoiceEffectPresetOption<CharacterTTSGlitchConfig>[] = [
-        { id: "off", label: "Off", config: null },
-        {
-            id: "minor-dropouts",
-            label: "Minor Dropouts",
-            config: { enabled: true, probability: 0.03, repeat_min: 2, repeat_max: 2, detune_base: 0.5, detune_peak: 2.0 },
-        },
-        {
-            id: "packet-loss",
-            label: "Packet Loss",
-            config: { enabled: true, probability: 0.06, repeat_min: 2, repeat_max: 3, detune_base: 1.0, detune_peak: 4.0 },
-        },
-        {
-            id: "signal-jitter",
-            label: "Signal Jitter",
-            config: { enabled: true, probability: 0.08, min_seconds: 0.03, max_seconds: 0.08, detune_base: 1.5, detune_peak: 4.5 },
-        },
-        {
-            id: "stutter",
-            label: "Stutter",
-            config: { enabled: true, probability: 0.1, repeat_min: 2, repeat_max: 4, detune_base: 0.75, detune_peak: 3.0 },
-        },
-        {
-            id: "fragment-repeats",
-            label: "Fragment Repeats",
-            config: { enabled: true, probability: 0.12, min_seconds: 0.04, max_seconds: 0.1, detune_base: 1.5, detune_peak: 5.0 },
-        },
-        {
-            id: "pitch-drift",
-            label: "Pitch Drift",
-            config: { enabled: true, probability: 0.11, min_seconds: 0.06, max_seconds: 0.14, detune_base: 2.5, detune_peak: 6.5 },
-        },
-        {
-            id: "corrupted-signal",
-            label: "Corrupted Signal",
-            config: { enabled: true, probability: 0.15, repeat_min: 2, repeat_max: 4, min_seconds: 0.05, max_seconds: 0.14, detune_base: 3.0, detune_peak: 8.0 },
-        },
-        {
-            id: "broken-broadcast",
-            label: "Broken Broadcast",
-            config: { enabled: true, probability: 0.18, repeat_min: 3, repeat_max: 5, min_seconds: 0.06, max_seconds: 0.18, detune_base: 3.5, detune_peak: 10.0 },
-        },
-        {
-            id: "severe-malfunction",
-            label: "Severe Malfunction",
-            config: { enabled: true, probability: 0.22, repeat_min: 3, repeat_max: 6, min_seconds: 0.08, max_seconds: 0.2, detune_base: 4.0, detune_peak: 12.0 },
-        },
-    ];
-    readonly timePitchPresets: VoiceEffectPresetOption<CharacterTTSTimePitchConfig>[] = [
-        { id: "natural", label: "Natural", config: null },
-        {
-            id: "slightly-deeper",
-            label: "Slightly Deeper",
-            config: { enabled: true, pitch_shift_semitones: -2.0, time_stretch: 1.0 },
-        },
-        {
-            id: "deep",
-            label: "Deep",
-            config: { enabled: true, pitch_shift_semitones: -4.0, time_stretch: 1.0 },
-        },
-        {
-            id: "very-deep",
-            label: "Very Deep",
-            config: { enabled: true, pitch_shift_semitones: -6.0, time_stretch: 1.0 },
-        },
-        {
-            id: "slightly-higher",
-            label: "Slightly Higher",
-            config: { enabled: true, pitch_shift_semitones: 1.5, time_stretch: 1.0 },
-        },
-        {
-            id: "high",
-            label: "High",
-            config: { enabled: true, pitch_shift_semitones: 3.5, time_stretch: 1.0 },
-        },
-        {
-            id: "slow-and-heavy",
-            label: "Slow and Heavy",
-            config: { enabled: true, pitch_shift_semitones: 0.0, time_stretch: 1.14 },
-        },
-        {
-            id: "slow-and-deep",
-            label: "Slow and Deep",
-            config: { enabled: true, pitch_shift_semitones: -3.0, time_stretch: 1.12 },
-        },
-        {
-            id: "fast-and-tight",
-            label: "Fast and Tight",
-            config: { enabled: true, pitch_shift_semitones: 0.0, time_stretch: 0.92 },
-        },
-        {
-            id: "fast-and-nervous",
-            label: "Fast and Nervous",
-            config: { enabled: true, pitch_shift_semitones: 2.0, time_stretch: 0.9 },
+            id: "clean",
+            label: "Clean",
+            effects: {},
         },
     ];
 
@@ -966,101 +678,6 @@ export class CharacterSettingsComponent {
         return this.characterService.setCharacterProperty(propName, value);
     }
 
-    getSelectedLowHighPassPreset(): string {
-        const effects = this.activeCharacter?.tts_postprocessing?.effects;
-        for (const preset of this.lowHighPassPresets) {
-            if (
-                this.effectConfigsMatch(effects?.lowpass, preset.lowpass)
-                && this.effectConfigsMatch(effects?.highpass, preset.highpass)
-            ) {
-                return preset.id;
-            }
-        }
-        return this.hasEnabledEffect(effects?.lowpass) || this.hasEnabledEffect(effects?.highpass)
-            ? "custom"
-            : "off";
-    }
-
-    getSelectedVoiceEffectPreset(effectKey: VoiceEffectPresetKey): string {
-        const actualConfig = this.activeCharacter?.tts_postprocessing?.effects?.[effectKey];
-        const presets = this.getVoiceEffectPresets(effectKey);
-        for (const preset of presets) {
-            if (this.effectConfigsMatch(actualConfig, this.getNormalizedPresetConfig(effectKey, preset.config))) {
-                return preset.id;
-            }
-        }
-        return this.hasEnabledEffect(actualConfig)
-            ? "custom"
-            : this.getDefaultVoiceEffectPresetId(effectKey);
-    }
-
-    async applyLowHighPassPreset(presetId: string): Promise<void> {
-        const preset = this.lowHighPassPresets.find((option) => option.id === presetId);
-        if (!preset) return;
-
-        await this.updateVoiceEffects((effects) => {
-            if (preset.lowpass) {
-                effects.lowpass = structuredClone(preset.lowpass);
-            } else {
-                delete effects.lowpass;
-            }
-
-            if (preset.highpass) {
-                effects.highpass = structuredClone(preset.highpass);
-            } else {
-                delete effects.highpass;
-            }
-        });
-    }
-
-    async applyVoiceEffectPreset(
-        effectKey: VoiceEffectPresetKey,
-        presetId: string,
-    ): Promise<void> {
-        const preset = this.getVoiceEffectPresets(effectKey).find((option) => option.id === presetId);
-        if (!preset) return;
-
-        await this.updateVoiceEffects((effects) => {
-            switch (effectKey) {
-                case "distortion":
-                    if (preset.config) {
-                        effects.distortion = structuredClone(preset.config as CharacterTTSDistortionConfig);
-                    } else {
-                        delete effects.distortion;
-                    }
-                    break;
-                case "chorus":
-                    if (preset.config) {
-                        effects.chorus = structuredClone(preset.config as CharacterTTSChorusConfig);
-                    } else {
-                        delete effects.chorus;
-                    }
-                    break;
-                case "reverb":
-                    if (preset.config) {
-                        effects.reverb = structuredClone(preset.config as CharacterTTSReverbConfig);
-                    } else {
-                        delete effects.reverb;
-                    }
-                    break;
-                case "glitch":
-                    if (preset.config) {
-                        effects.glitch = structuredClone(preset.config as CharacterTTSGlitchConfig);
-                    } else {
-                        delete effects.glitch;
-                    }
-                    break;
-                case "time_pitch":
-                    if (preset.config) {
-                        effects.time_pitch = structuredClone(preset.config as CharacterTTSTimePitchConfig);
-                    } else {
-                        delete effects.time_pitch;
-                    }
-                    break;
-            }
-        });
-    }
-
     public async setCharacterPropertyAndUpdatePrompt<T extends keyof Character>(
         propName: T,
         value: Character[T],
@@ -1072,27 +689,6 @@ export class CharacterSettingsComponent {
         const newPrompt = this.buildCharacterPrompt(char);
         await this.characterService.setCharacterProperty(propName, value);
         await this.characterService.setCharacterProperty('character', newPrompt);
-    }
-
-    private getVoiceEffectPresets(
-        effectKey: VoiceEffectPresetKey,
-    ): ReadonlyArray<VoiceEffectPresetOption<VoiceEffectConfig>> {
-        switch (effectKey) {
-            case "distortion":
-                return this.distortionPresets;
-            case "chorus":
-                return this.chorusPresets;
-            case "reverb":
-                return this.reverbPresets;
-            case "glitch":
-                return this.glitchPresets;
-            case "time_pitch":
-                return this.timePitchPresets;
-        }
-    }
-
-    private getDefaultVoiceEffectPresetId(effectKey: VoiceEffectPresetKey): string {
-        return effectKey === "time_pitch" ? "natural" : "off";
     }
 
     private hasEnabledEffect(
@@ -1107,61 +703,6 @@ export class CharacterSettingsComponent {
     ): boolean {
         return JSON.stringify(this.normalizeEffectConfig(actualConfig))
             === JSON.stringify(this.normalizeEffectConfig(presetConfig));
-    }
-
-    private getNormalizedPresetConfig(
-        effectKey: VoiceEffectPresetKey,
-        presetConfig: VoiceEffectConfig | null,
-    ): VoiceEffectConfig | null {
-        if (!presetConfig?.enabled) {
-            return null;
-        }
-
-        switch (effectKey) {
-            case "distortion":
-                return {
-                    enabled: true,
-                    drive: 2.0,
-                    clip: 0.2,
-                    mode: "tanh",
-                    ...presetConfig as CharacterTTSDistortionConfig,
-                };
-            case "chorus":
-                return {
-                    enabled: true,
-                    delay_ms: 25.0,
-                    depth_ms: 12.0,
-                    rate_hz: 0.25,
-                    mix: 0.5,
-                    ...presetConfig as CharacterTTSChorusConfig,
-                };
-            case "reverb":
-                return {
-                    enabled: true,
-                    mix: 0.2,
-                    tail: 0.18,
-                    ...presetConfig as CharacterTTSReverbConfig,
-                };
-            case "glitch":
-                return {
-                    enabled: true,
-                    probability: 0.04,
-                    repeat_min: 2,
-                    repeat_max: 4,
-                    min_seconds: 0.05,
-                    max_seconds: 0.2,
-                    detune_base: 4.0,
-                    detune_peak: 12.0,
-                    ...presetConfig as CharacterTTSGlitchConfig,
-                };
-            case "time_pitch":
-                return {
-                    enabled: true,
-                    pitch_shift_semitones: 0.0,
-                    time_stretch: 1.0,
-                    ...presetConfig as CharacterTTSTimePitchConfig,
-                };
-        }
     }
 
     private normalizeEffectConfig(
@@ -1182,22 +723,27 @@ export class CharacterSettingsComponent {
         return Object.fromEntries(entries);
     }
 
-    private async updateVoiceEffects(
-        mutateEffects: (effects: CharacterTTSEffectsConfig) => void,
-    ): Promise<void> {
-        if (!this.activeCharacter) return;
+    getSelectedVoiceProfilePreset(): string {
+        const effects = this.activeCharacter?.tts_postprocessing?.effects;
+        for (const preset of this.voiceProfilePresets) {
+            if (this.voiceProfilePresetMatches(effects, preset.effects)) {
+                return preset.id;
+            }
+        }
+        return effects && Object.keys(effects).length > 0 ? "custom" : "clean";
+    }
 
-        const nextPostprocessing: CharacterTTSPostprocessingConfig = structuredClone(
-            this.activeCharacter.tts_postprocessing ?? {},
-        );
-        const nextEffects: CharacterTTSEffectsConfig = structuredClone(
-            nextPostprocessing.effects ?? {},
-        );
+    async applyVoiceProfilePreset(presetId: string): Promise<void> {
+        const preset = this.voiceProfilePresets.find((option) => option.id === presetId);
+        if (!preset) return;
 
-        mutateEffects(nextEffects);
+        const currentPostprocessing = this.activeCharacter?.tts_postprocessing;
+        const nextPostprocessing: CharacterTTSPostprocessingConfig = {
+            ...(currentPostprocessing ? structuredClone(currentPostprocessing) : {}),
+        };
 
-        if (Object.keys(nextEffects).length > 0) {
-            nextPostprocessing.effects = nextEffects;
+        if (Object.keys(preset.effects).length > 0) {
+            nextPostprocessing.effects = structuredClone(preset.effects);
         } else {
             delete nextPostprocessing.effects;
         }
@@ -1208,6 +754,23 @@ export class CharacterSettingsComponent {
         }
 
         await this.setCharacterProperty("tts_postprocessing", nextPostprocessing);
+    }
+
+    private voiceProfilePresetMatches(
+        actualEffects: CharacterTTSEffectsConfig | null | undefined,
+        presetEffects: CharacterTTSEffectsConfig,
+    ): boolean {
+        const effectKeys: (keyof CharacterTTSEffectsConfig)[] = [
+            "lowpass",
+            "highpass",
+            "distortion",
+            "chorus",
+            "glitch",
+            "reverb",
+            "time_pitch",
+        ];
+
+        return effectKeys.every((key) => this.effectConfigsMatch(actualEffects?.[key], presetEffects[key]));
     }
 
     buildCharacterPrompt(activeChar: Character): string {

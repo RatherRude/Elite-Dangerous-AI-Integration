@@ -614,13 +614,18 @@ class TTS:
         if audio_array.size == 0:
             return audio_array, y_prev
 
-        indices = np.arange(audio_array.shape[0], dtype=np.float64)
-        decay = np.power(float(a), indices)
-        weighted_input = audio_array.astype(np.float64, copy=False) / decay
-        accumulated = np.cumsum(weighted_input, dtype=np.float64)
-        output = decay * (a * y_prev + b * accumulated)
-        output = output.astype(np.float32, copy=False)
-        return output, float(output[-1])
+        # The closed-form version was numerically unstable for long audio blocks
+        # when `a` approached 1.0, which caused the filters to collapse into clicks.
+        output = np.empty_like(audio_array, dtype=np.float32)
+        previous = float(y_prev)
+        coefficient_a = float(a)
+        coefficient_b = float(b)
+
+        for index, sample in enumerate(audio_array):
+            previous = coefficient_a * previous + coefficient_b * float(sample)
+            output[index] = previous
+
+        return output, previous
 
     def _apply_one_pole_lowpass_state(
         self,
@@ -857,16 +862,25 @@ class TTS:
             if not effect_config.get('enabled'):
                 return x
 
+            dry = x
             drive = float(effect_config.get('drive', 1.0))
             mode = effect_config.get('mode', 'tanh')
             clip_level = float(effect_config.get('clip', 0.95))
+            mix = min(1.0, max(0.0, float(effect_config.get('mix', 1.0))))
             if drive != 1.0:
                 x = x * drive
             if mode == 'tanh':
-                return np.tanh(x)
-            if clip_level <= 0:
-                return x
-            return np.clip(x, -clip_level, clip_level) / clip_level
+                wet = np.tanh(x)
+            elif clip_level <= 0:
+                wet = x
+            else:
+                wet = np.clip(x, -clip_level, clip_level) / clip_level
+
+            if mix >= 1.0:
+                return wet.astype(np.float32, copy=False)
+            if mix <= 0.0:
+                return dry
+            return ((1.0 - mix) * dry + mix * wet).astype(np.float32, copy=False)
 
         def apply_chorus(
             x: NDArray[np.float32],
@@ -989,6 +1003,10 @@ class TTS:
             audio_array = np.frombuffer(chunk, dtype=np.int16).astype(np.float32) / 32768.0
             audio_array *= float(config.get('volume', 1.0))
 
+            distortion_config = effects.get('distortion', {})
+            if isinstance(distortion_config, dict):
+                audio_array = apply_distortion(audio_array, distortion_config)
+
             lowpass_config = effects.get('lowpass', {})
             if isinstance(lowpass_config, dict) and lowpass_config.get('enabled'):
                 audio_array = one_pole_lowpass(
@@ -1002,10 +1020,6 @@ class TTS:
                     audio_array,
                     float(highpass_config.get('cutoff', 120.0)),
                 )
-
-            distortion_config = effects.get('distortion', {})
-            if isinstance(distortion_config, dict):
-                audio_array = apply_distortion(audio_array, distortion_config)
 
             chorus_config = effects.get('chorus', {})
             if isinstance(chorus_config, dict):

@@ -15,6 +15,14 @@ def dominant_frequency(samples: np.ndarray, sample_rate: int = 24_000) -> float:
     frequencies = np.fft.rfftfreq(samples.shape[0], d=1.0 / sample_rate)
     return float(frequencies[int(np.argmax(np.abs(spectrum)))])
 
+
+def band_rms(samples: np.ndarray, sample_rate: int, min_hz: float, max_hz: float) -> float:
+    spectrum = np.fft.rfft(samples)
+    frequencies = np.fft.rfftfreq(samples.shape[0], d=1.0 / sample_rate)
+    band = spectrum * ((frequencies >= min_hz) & (frequencies <= max_hz))
+    filtered = np.fft.irfft(band, n=samples.shape[0])
+    return float(np.sqrt(np.mean(filtered * filtered)))
+
 @pytest.fixture
 def mock_pyaudio(monkeypatch):
     """Mock PyAudio functionality"""
@@ -161,6 +169,65 @@ def test_postprocess_audio_applies_volume_and_distortion(mock_pyaudio):
     assert np.max(np.abs(processed)) <= np.iinfo(np.int16).max
 
 
+def test_postprocess_audio_distortion_mix_blends_dry_and_wet(mock_pyaudio):
+    """Test distortion mix interpolates between dry and distorted output"""
+    source = np.array([4000, -4000, 12000, -12000], dtype=np.int16)
+    base_config = {
+        "volume": 1.0,
+        "effects": {
+            "distortion": {
+                "enabled": True,
+                "drive": 4.0,
+                "clip": 0.35,
+                "mode": "tanh",
+            },
+        },
+    }
+
+    dry = np.frombuffer(
+        b"".join(TTS(None)._postprocess_audio(iter([source.tobytes()]), {
+            **base_config,
+            "effects": {
+                "distortion": {
+                    **base_config["effects"]["distortion"],
+                    "mix": 0.0,
+                },
+            },
+        })),
+        dtype=np.int16,
+    )
+    half = np.frombuffer(
+        b"".join(TTS(None)._postprocess_audio(iter([source.tobytes()]), {
+            **base_config,
+            "effects": {
+                "distortion": {
+                    **base_config["effects"]["distortion"],
+                    "mix": 0.5,
+                },
+            },
+        })),
+        dtype=np.int16,
+    )
+    wet = np.frombuffer(
+        b"".join(TTS(None)._postprocess_audio(iter([source.tobytes()]), {
+            **base_config,
+            "effects": {
+                "distortion": {
+                    **base_config["effects"]["distortion"],
+                    "mix": 1.0,
+                },
+            },
+        })),
+        dtype=np.int16,
+    )
+
+    assert np.array_equal(dry, source)
+    assert not np.array_equal(wet, source)
+    assert not np.array_equal(half, dry)
+    assert not np.array_equal(half, wet)
+    assert np.all(np.abs(half.astype(np.float32) - dry.astype(np.float32)) < np.abs(wet.astype(np.float32) - dry.astype(np.float32)))
+
+
 def test_postprocess_audio_reverb_adds_tail(mock_pyaudio):
     """Test reverb adds an audible tail beyond the source chunk"""
     tts = TTS(None)
@@ -219,6 +286,76 @@ def test_postprocess_audio_chorus_is_chunk_consistent(mock_pyaudio):
     assert np.max(np.abs(whole_audio - split_audio)) <= 2.0
 
 
+def test_postprocess_audio_lowpass_reduces_high_frequency_energy(mock_pyaudio):
+    """Test lowpass attenuates highs while preserving low-frequency content"""
+    tts = TTS(None)
+    sample_rate = 24_000
+    time_axis = np.arange(sample_rate, dtype=np.float32) / sample_rate
+    source = (
+        0.45 * np.sin(2 * np.pi * 250.0 * time_axis)
+        + 0.35 * np.sin(2 * np.pi * 3200.0 * time_axis)
+    ).astype(np.float32)
+    source_pcm = (source * 32767.0).astype(np.int16)
+
+    processed = b"".join(tts._postprocess_audio(
+        iter([source_pcm.tobytes()]),
+        {
+            "volume": 1.0,
+            "effects": {
+                "lowpass": {
+                    "enabled": True,
+                    "cutoff": 500.0,
+                },
+            },
+        },
+    ))
+    processed_audio = np.frombuffer(processed, dtype=np.int16).astype(np.float32) / 32768.0
+
+    original_low = band_rms(source, sample_rate, 100.0, 500.0)
+    original_high = band_rms(source, sample_rate, 2000.0, 5000.0)
+    filtered_low = band_rms(processed_audio, sample_rate, 100.0, 500.0)
+    filtered_high = band_rms(processed_audio, sample_rate, 2000.0, 5000.0)
+
+    assert filtered_low > original_low * 0.55
+    assert filtered_high < original_high * 0.3
+    assert filtered_high / max(filtered_low, 1e-6) < original_high / max(original_low, 1e-6) * 0.4
+
+
+def test_postprocess_audio_highpass_reduces_low_frequency_energy(mock_pyaudio):
+    """Test highpass attenuates lows while preserving high-frequency content"""
+    tts = TTS(None)
+    sample_rate = 24_000
+    time_axis = np.arange(sample_rate, dtype=np.float32) / sample_rate
+    source = (
+        0.45 * np.sin(2 * np.pi * 140.0 * time_axis)
+        + 0.30 * np.sin(2 * np.pi * 2400.0 * time_axis)
+    ).astype(np.float32)
+    source_pcm = (source * 32767.0).astype(np.int16)
+
+    processed = b"".join(tts._postprocess_audio(
+        iter([source_pcm.tobytes()]),
+        {
+            "volume": 1.0,
+            "effects": {
+                "highpass": {
+                    "enabled": True,
+                    "cutoff": 800.0,
+                },
+            },
+        },
+    ))
+    processed_audio = np.frombuffer(processed, dtype=np.int16).astype(np.float32) / 32768.0
+
+    original_low = band_rms(source, sample_rate, 60.0, 400.0)
+    original_high = band_rms(source, sample_rate, 1500.0, 4000.0)
+    filtered_low = band_rms(processed_audio, sample_rate, 60.0, 400.0)
+    filtered_high = band_rms(processed_audio, sample_rate, 1500.0, 4000.0)
+
+    assert filtered_low < original_low * 0.3
+    assert filtered_high > original_high * 0.55
+    assert filtered_high / max(filtered_low, 1e-6) > original_high / max(original_low, 1e-6) * 2.5
+
+
 def test_reverb_tail_highpass_reduces_low_end_over_time(mock_pyaudio):
     """Test tail highpass keeps reducing sustained low energy over time"""
     tts = TTS(None)
@@ -242,17 +379,10 @@ def test_reverb_tail_highpass_preserves_more_highs_than_lows(mock_pyaudio):
     ).astype(np.float32)
     shaped = tts._apply_reverb_tail_highpass(tail, sample_rate)
 
-    def band_rms(samples: np.ndarray, min_hz: float, max_hz: float) -> float:
-        spectrum = np.fft.rfft(samples)
-        frequencies = np.fft.rfftfreq(samples.shape[0], d=1.0 / sample_rate)
-        band = spectrum * ((frequencies >= min_hz) & (frequencies <= max_hz))
-        filtered = np.fft.irfft(band, n=samples.shape[0])
-        return float(np.sqrt(np.mean(filtered * filtered)))
-
-    original_low = band_rms(tail, 60.0, 400.0)
-    original_high = band_rms(tail, 1800.0, 5000.0)
-    shaped_low = band_rms(shaped, 60.0, 400.0)
-    shaped_high = band_rms(shaped, 1800.0, 5000.0)
+    original_low = band_rms(tail, sample_rate, 60.0, 400.0)
+    original_high = band_rms(tail, sample_rate, 1800.0, 5000.0)
+    shaped_low = band_rms(shaped, sample_rate, 60.0, 400.0)
+    shaped_high = band_rms(shaped, sample_rate, 1800.0, 5000.0)
 
     assert shaped_low < original_low * 0.75
     assert shaped_high > original_high * 0.85

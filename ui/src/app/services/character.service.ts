@@ -15,6 +15,7 @@ export interface CharacterTTSDistortionConfig {
     enabled?: boolean;
     drive?: number;
     clip?: number;
+    mix?: number;
     mode?: "tanh" | "hard";
 }
 
