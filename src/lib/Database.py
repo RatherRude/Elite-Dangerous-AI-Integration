@@ -90,12 +90,123 @@ class QuestState(TypedDict):
     updated_at: float | None
     version: str | None
 
+class ModelUsageEntry(TypedDict):
+    id: int
+    timestamp: str
+    usage_kind: str
+    payload: dict[str, Any]
+    inserted_at: float | None
+
 @dataclass
 class CodeEntry:
     code: str
     commit_message: str
     version: str
     inserted_at: float
+
+@final
+class ModelUsageStore():
+    def __init__(self, store_name: str = "model_usage"):
+        self.store_name = store_name
+        self.table_name = f'{store_name}_v1'
+
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(f'''
+            CREATE TABLE IF NOT EXISTS {self.table_name} (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                usage_kind TEXT NOT NULL,
+                payload_json TEXT NOT NULL,
+                inserted_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        cursor.execute(f'''
+            CREATE INDEX IF NOT EXISTS {self.table_name}_timestamp_idx
+            ON {self.table_name} (timestamp)
+        ''')
+        cursor.execute(f'''
+            CREATE INDEX IF NOT EXISTS {self.table_name}_kind_timestamp_idx
+            ON {self.table_name} (usage_kind, timestamp)
+        ''')
+        conn.commit()
+
+    def insert(self, timestamp: str, usage_kind: str, payload: Mapping[str, Any]) -> int:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(f'''
+            INSERT INTO {self.table_name} (timestamp, usage_kind, payload_json)
+            VALUES (?, ?, ?)
+        ''', (timestamp, usage_kind, json.dumps(dict(payload))))
+        conn.commit()
+        return int(cursor.lastrowid)
+
+    def get_history(
+        self,
+        usage_kind: str | None = None,
+        start_time: str | None = None,
+        end_time: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> tuple[list[ModelUsageEntry], int]:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        where_clauses: list[str] = []
+        params: list[Any] = []
+
+        if usage_kind:
+            where_clauses.append("usage_kind = ?")
+            params.append(usage_kind)
+        if start_time:
+            where_clauses.append("timestamp >= ?")
+            params.append(start_time)
+        if end_time:
+            where_clauses.append("timestamp <= ?")
+            params.append(end_time)
+
+        where_sql = ""
+        if where_clauses:
+            where_sql = "WHERE " + " AND ".join(where_clauses)
+
+        cursor.execute(f'''
+            SELECT COUNT(*)
+            FROM {self.table_name}
+            {where_sql}
+        ''', params)
+        total_row = cursor.fetchone()
+        total = int(total_row[0]) if total_row and total_row[0] is not None else 0
+
+        cursor.execute(f'''
+            SELECT id, timestamp, usage_kind, payload_json, unixepoch(inserted_at)
+            FROM {self.table_name}
+            {where_sql}
+            ORDER BY timestamp DESC, id DESC
+            LIMIT ? OFFSET ?
+        ''', [*params, limit, offset])
+        rows = cursor.fetchall()
+
+        entries: list[ModelUsageEntry] = []
+        for row in rows:
+            payload = json.loads(row[3]) if row[3] else {}
+            if not isinstance(payload, dict):
+                payload = {}
+            entries.append(ModelUsageEntry(
+                id=int(row[0]),
+                timestamp=str(row[1]),
+                usage_kind=str(row[2]),
+                payload=payload,
+                inserted_at=float(row[4]) if row[4] is not None else None,
+            ))
+        return (entries, total)
+
+    def delete_all(self) -> None:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(f'''
+            DELETE FROM {self.table_name}
+        ''')
+        conn.commit()
 
 @final
 class EventStore():

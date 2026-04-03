@@ -21,6 +21,52 @@ event_manager: EventManager = cast(EventManager, None)
 prompt_generator: PromptGenerator = cast(PromptGenerator, None)
 agent_max_tries: int = 7
 
+
+def extract_http_error_details(response):
+    try:
+        response_json = response.json()
+    except ValueError:
+        response_json = None
+
+    if isinstance(response_json, dict):
+        for key in ("error", "errors", "message", "detail"):
+            value = response_json.get(key)
+            if value:
+                if isinstance(value, (dict, list)):
+                    return json.dumps(value)
+                return str(value)
+
+    response_text = response.text.strip()
+    if not response_text:
+        return None
+
+    response_text = " ".join(response_text.split())
+    if len(response_text) > 500:
+        response_text = response_text[:497] + "..."
+    return response_text
+
+
+def format_web_request_error(action_name, error, response=None):
+    response = response or getattr(error, "response", None)
+
+    if response is not None:
+        base_message = f"The {action_name} request failed with HTTP {response.status_code}."
+        if response.status_code == 400:
+            base_message = f"The {action_name} request was rejected with HTTP 400. Please check the search parameters."
+
+        response_details = extract_http_error_details(response)
+        if response_details:
+            return f"{base_message} Server response: {response_details}"
+        return base_message
+
+    if isinstance(error, requests.Timeout):
+        return f"The {action_name} request timed out."
+
+    if isinstance(error, requests.RequestException):
+        return f"The {action_name} request failed: {error}"
+
+    return f"The {action_name} failed: {error}"
+
 def web_search_agent(
         obj,
         projected_states,
@@ -306,7 +352,7 @@ def web_search_agent(
             # Prompt usage: count assistant + tool loop prompt content as web_search context.
             try:
                 prompt_usage = PromptUsageStats(web_search_chars=sum(len(str(m.get('content', ''))) for m in messages if isinstance(m.get('content'), str)))
-                log_llm_usage("web_search", model_usage=model_usage, prompt_usage=prompt_usage)
+                log_llm_usage("web_search", model_usage=model_usage, prompt_usage=prompt_usage, llm_model=llm_model)
             except Exception:
                 pass
 
@@ -389,7 +435,7 @@ def get_galnet_news(obj, projected_states):
 
             try:
                 prompt_usage = PromptUsageStats(web_search_chars=len(str(articles)) + len(str(obj.get('query', ''))))
-                log_llm_usage("galnet", model_usage=model_usage, prompt_usage=prompt_usage)
+                log_llm_usage("galnet", model_usage=model_usage, prompt_usage=prompt_usage, llm_model=llm_model)
             except Exception:
                 pass
 
@@ -397,8 +443,9 @@ def get_galnet_news(obj, projected_states):
 
         return "News feed currently unavailable"
 
-    except:
-        return "News feed currently unavailable"
+    except Exception as e:
+        log('error', e, traceback.format_exc())
+        return format_web_request_error("news feed", e)
 
 def get_stored_ship_modules(obj, projected_states):
     stored_modules = get_state_dict(projected_states, 'StoredModules')
@@ -2088,7 +2135,7 @@ def station_finder(obj, projected_states):
         return f'Here is a list of stations: {json.dumps(filtered_data)}'
     except Exception as e:
         log('error', e, traceback.format_exc())
-        return 'An error has occurred. The station finder seems currently not available.'
+        return format_web_request_error("station finder", e)
 
 
 def prepare_system_request(obj, projected_states):# Helper function for fuzzy matching
@@ -2295,7 +2342,7 @@ def system_finder(obj, projected_states):
 
     except Exception as e:
         log('error', e, traceback.format_exc())
-        return 'An error occurred. The system finder seems to be currently unavailable.'
+        return format_web_request_error("system finder", e)
 
 
 def prepare_body_request(obj, projected_states):
@@ -2473,8 +2520,8 @@ def body_finder(obj, projected_states):
         return f'Here is a list of celestial bodies: {json.dumps(filtered_data)}'
 
     except Exception as e:
-        log('error', f"Error: {e}")
-        return 'An error occurred. The system finder seems to be currently unavailable.'
+        log('error', e, traceback.format_exc())
+        return format_web_request_error("body finder", e)
 
 
 def register_web_actions(actionManager: ActionManager, eventManager: EventManager, 

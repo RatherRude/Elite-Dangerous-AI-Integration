@@ -33,6 +33,7 @@ import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { FormsModule } from "@angular/forms";
 import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
+import { ModelUsageAnalyticsComponent } from "../model-usage-analytics/model-usage-analytics.component";
 import { QuestsSettingsComponent } from "../quests-settings/quests-settings.component";
 
 @Component({
@@ -60,6 +61,7 @@ import { QuestsSettingsComponent } from "../quests-settings/quests-settings.comp
         CharacterSettingsComponent,
         EventReactionsSettingsComponent,
         GeneralSettingsComponent,
+        ModelUsageAnalyticsComponent,
         QuestsSettingsComponent,
         MatButtonModule,
     ],
