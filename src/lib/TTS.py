@@ -862,6 +862,12 @@ class TTS:
             if not effect_config.get('enabled'):
                 return x
 
+            def get_rms_level(signal: NDArray[np.float32]) -> float:
+                if signal.size == 0:
+                    return 0.0
+                signal64 = signal.astype(np.float64, copy=False)
+                return float(np.sqrt(np.mean(signal64 * signal64)))
+
             dry = x
             drive = float(effect_config.get('drive', 1.0))
             mode = effect_config.get('mode', 'tanh')
@@ -875,6 +881,15 @@ class TTS:
                 wet = x
             else:
                 wet = np.clip(x, -clip_level, clip_level) / clip_level
+
+            dry_rms = get_rms_level(dry)
+            wet_rms = get_rms_level(wet)
+            if dry_rms > 1e-6 and wet_rms > 1e-6:
+                wet_peak = float(np.max(np.abs(wet)))
+                target_gain = dry_rms / wet_rms
+                if wet_peak > 1e-6:
+                    target_gain = min(target_gain, 0.98 / wet_peak)
+                wet = (wet * target_gain).astype(np.float32, copy=False)
 
             if mix >= 1.0:
                 return wet.astype(np.float32, copy=False)

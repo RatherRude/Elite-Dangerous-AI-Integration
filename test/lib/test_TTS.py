@@ -228,6 +228,33 @@ def test_postprocess_audio_distortion_mix_blends_dry_and_wet(mock_pyaudio):
     assert np.all(np.abs(half.astype(np.float32) - dry.astype(np.float32)) < np.abs(wet.astype(np.float32) - dry.astype(np.float32)))
 
 
+def test_postprocess_audio_distortion_stabilizes_output_level(mock_pyaudio):
+    """Test distortion compensates output level toward the dry signal"""
+    source = np.array([1000, -1000, 4000, -4000, 9000, -9000], dtype=np.int16)
+    processed = np.frombuffer(
+        b"".join(TTS(None)._postprocess_audio(iter([source.tobytes()]), {
+            "volume": 1.0,
+            "effects": {
+                "distortion": {
+                    "enabled": True,
+                    "drive": 12.0,
+                    "clip": 0.35,
+                    "mix": 1.0,
+                    "mode": "tanh",
+                },
+            },
+        })),
+        dtype=np.int16,
+    ).astype(np.float32)
+    dry = source.astype(np.float32)
+
+    dry_rms = float(np.sqrt(np.mean(dry * dry)))
+    processed_rms = float(np.sqrt(np.mean(processed * processed)))
+
+    assert processed_rms > 0
+    assert 0.8 <= processed_rms / dry_rms <= 1.2
+
+
 def test_postprocess_audio_reverb_adds_tail(mock_pyaudio):
     """Test reverb adds an audible tail beyond the source chunk"""
     tts = TTS(None)

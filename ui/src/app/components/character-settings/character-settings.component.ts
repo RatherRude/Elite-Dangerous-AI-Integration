@@ -108,10 +108,10 @@ export class CharacterSettingsComponent {
                 glitch: {
                     enabled: true,
                     probability: 0.08,
-                    repeat_min: 3,
+                    repeat_min: 2,
                     repeat_max: 5,
                     min_seconds: 0.06,
-                    max_seconds: 0.18,
+                    max_seconds: 0.25,
                     detune_base: 2,
                     detune_peak: 6.0,
                 },
@@ -123,7 +123,7 @@ export class CharacterSettingsComponent {
             effects: {
                 lowpass: { enabled: true, cutoff: 4300 },
                 highpass: { enabled: true, cutoff: 260 },
-                distortion: { enabled: true, drive: 22.0, clip: 0.0, mix: 0.28, mode: "tanh" },
+                distortion: { enabled: true, drive: 22.0, clip: 0.3, mix: 0.28, mode: "tanh" },
             },
         },
         {
@@ -141,7 +141,7 @@ export class CharacterSettingsComponent {
             effects: {
                 lowpass: { enabled: true, cutoff: 5200 },
                 highpass: { enabled: true, cutoff: 220 },
-                distortion: { enabled: true, drive: 10.5, clip: 0.98, mix: 0.22, mode: "tanh" },
+                distortion: { enabled: true, drive: 6.5, clip: 0.98, mix: 0.22, mode: "tanh" },
                 reverb: { enabled: true, mix: 0.16, tail: 0.18 },
             },
         },
