@@ -474,7 +474,6 @@ class Config(TypedDict):
     qol_autobrake: bool  # Quality of life: Auto brake when approaching stations
     qol_autoscan: bool  # Quality of life: Auto scan when entering new systems
     prefer_primary_bindings: bool  # Prefer primary keybinds over secondary entries
-    show_usage_stats: bool
     
     # Overlay settings
     overlay_show_avatar: bool
@@ -952,9 +951,7 @@ def load_config() -> Config:
         "ed_appdata_path": "",
         "qol_autobrake": False,  # Quality of life: Auto brake when approaching stations
         "qol_autoscan": False,  # Quality of life: Auto scan when entering new systems
-        
-        "show_usage_stats": False,
-        
+
         # Overlay settings - defaults
         "overlay_show_avatar": True,
         "overlay_show_hud": False,
