@@ -157,24 +157,37 @@ class Assistant:
         postprocessing = character.get('tts_postprocessing') if character else None
         return postprocessing if isinstance(postprocessing, dict) else None
 
+    def _get_active_character(self) -> dict[str, Any] | None:
+        characters = self.config.get('characters') or []
+        if not characters:
+            return None
+        idx = self.config.get('active_character_index', 0)
+        idx = max(0, min(idx, len(characters) - 1))
+        character = characters[idx]
+        return character if isinstance(character, dict) else None
+
     def _get_environment_tts_postprocessing_layers(
         self,
         projected_states: ProjectedStates,
     ) -> list[CharacterTTSPostprocessingConfig]:
         current_status = get_state_dict(projected_states, "CurrentStatus")
         loadout = get_state_dict(projected_states, "Loadout")
+        character = self._get_active_character() or {}
         flags = current_status.get("flags", {}) if isinstance(current_status, dict) else {}
         flags2 = current_status.get("flags2", {}) if isinstance(current_status, dict) else {}
         hull_health = loadout.get("HullHealth") if isinstance(loadout, dict) else None
+        damage_effects_enabled = bool(character.get("tts_environment_damage_effects_var", True))
+        helmet_effects_enabled = bool(character.get("tts_environment_helmet_effects_var", True))
+        srv_effects_enabled = bool(character.get("tts_environment_srv_effects_var", True))
 
         layers: list[CharacterTTSPostprocessingConfig] = []
-        if isinstance(flags, dict) and flags.get("OverHeating"):
+        if damage_effects_enabled and isinstance(flags, dict) and flags.get("OverHeating"):
             layers.append(TTS_ENVIRONMENT_EFFECTS_OVERHEATING)
-        elif isinstance(hull_health, (int, float)) and float(hull_health) <= 0.75:
+        elif damage_effects_enabled and isinstance(hull_health, (int, float)) and float(hull_health) <= 0.75:
             layers.append(self._get_scaled_damage_tts_postprocessing(float(hull_health)))
-        if isinstance(flags, dict) and flags.get("InSRV"):
+        if srv_effects_enabled and isinstance(flags, dict) and flags.get("InSRV"):
             layers.append(TTS_ENVIRONMENT_EFFECTS_IN_SRV)
-        if isinstance(flags2, dict) and flags2.get("OnFoot"):
+        if helmet_effects_enabled and isinstance(flags2, dict) and flags2.get("OnFoot"):
             layers.append(TTS_ENVIRONMENT_EFFECTS_ON_FOOT)
         return layers
 

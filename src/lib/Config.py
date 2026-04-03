@@ -782,6 +782,9 @@ class Character(TypedDict, total=False):
     tts_speed: str
     tts_prompt: str
     tts_postprocessing: CharacterTTSPostprocessingConfig
+    tts_environment_damage_effects_var: bool
+    tts_environment_helmet_effects_var: bool
+    tts_environment_srv_effects_var: bool
     avatar: str  # Absolute file path for the avatar image
     event_reactions: dict[str, str]
     event_reaction_enabled_var: bool
@@ -1184,6 +1187,17 @@ def migrate(data: dict) -> dict:
             if 'tts_postprocessing' not in character:
                 character['tts_postprocessing'] = get_default_character_tts_postprocessing()
 
+    if data['config_version'] < 16:
+        data['config_version'] = 16
+
+        for character in data.get('characters', []):
+            if 'tts_environment_damage_effects_var' not in character:
+                character['tts_environment_damage_effects_var'] = True
+            if 'tts_environment_helmet_effects_var' not in character:
+                character['tts_environment_helmet_effects_var'] = True
+            if 'tts_environment_srv_effects_var' not in character:
+                character['tts_environment_srv_effects_var'] = True
+
     return data
 
 
@@ -1266,6 +1280,9 @@ def getDefaultCharacter(config: Config) -> Character:
         "tts_speed": '1.2',
         "tts_prompt": '',
         "tts_postprocessing": get_default_character_tts_postprocessing(),
+        "tts_environment_damage_effects_var": True,
+        "tts_environment_helmet_effects_var": True,
+        "tts_environment_srv_effects_var": True,
         "avatar": '',  # No avatar by default
         "event_reactions": default_event_reactions,
         "event_reaction_enabled_var": True,
@@ -1282,7 +1299,7 @@ def getDefaultCharacter(config: Config) -> Character:
 
 def load_config() -> Config:
     defaults: Config = {
-        'config_version': 15,
+        'config_version': 16,
         'commander_name': "",
         'characters': [],
         'active_character_index': 0,  # -1 means using the default legacy character

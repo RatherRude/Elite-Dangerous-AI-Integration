@@ -91,6 +91,9 @@ export interface Character {
     tts_speed: string;
     tts_prompt: string;
     tts_postprocessing?: CharacterTTSPostprocessingConfig;
+    tts_environment_damage_effects_var: boolean;
+    tts_environment_helmet_effects_var: boolean;
+    tts_environment_srv_effects_var: boolean;
     avatar?: string; // Absolute file path for the avatar image
 
     

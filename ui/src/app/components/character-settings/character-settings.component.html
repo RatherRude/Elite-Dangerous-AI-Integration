@@ -289,6 +289,29 @@
                                     </mat-form-field>
                                 </div>
                             </div>
+                            <div class="trait-container">
+                                <div class="trait-select">
+                                    <mat-slide-toggle
+                                        [ngModel]="activeCharacter.tts_environment_helmet_effects_var"
+                                        (ngModelChange)="setCharacterProperty('tts_environment_helmet_effects_var', $event)">
+                                        Helmet effects on foot
+                                    </mat-slide-toggle>
+                                </div>
+                                <div class="trait-select">
+                                    <mat-slide-toggle
+                                        [ngModel]="activeCharacter.tts_environment_srv_effects_var"
+                                        (ngModelChange)="setCharacterProperty('tts_environment_srv_effects_var', $event)">
+                                        Cockpit speakers in SRV
+                                    </mat-slide-toggle>
+                                </div>
+                                <div class="trait-select">
+                                    <mat-slide-toggle
+                                        [ngModel]="activeCharacter.tts_environment_damage_effects_var"
+                                        (ngModelChange)="setCharacterProperty('tts_environment_damage_effects_var', $event)">
+                                        Damage and overheating effects
+                                    </mat-slide-toggle>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 }

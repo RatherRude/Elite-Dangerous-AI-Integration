@@ -32,6 +32,7 @@ import {
 } from "../../services/character.service";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { CharacterPresets } from "./character-presets";
+import {MatSlideToggle} from "@angular/material/slide-toggle";
 
 interface PromptSettings {
     // Existing settings
@@ -78,6 +79,7 @@ interface VoiceProfilePresetOption {
         MatDivider,
         MatOptgroup,
         MatTooltipModule,
+        MatSlideToggle,
     ],
     templateUrl: "./character-settings.component.html",
     styleUrl: "./character-settings.component.scss",
