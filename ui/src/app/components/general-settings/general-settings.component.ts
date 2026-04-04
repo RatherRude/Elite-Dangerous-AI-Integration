@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from "@angular/core";
+import { Component, OnDestroy } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import {
     MatError,
@@ -15,6 +15,10 @@ import {
     ConfigService,
     SystemInfo,
 } from "../../services/config.service.js";
+import {
+    OverlayRuntimeInfo,
+    TauriService,
+} from "../../services/tauri.service";
 import { Subscription } from "rxjs";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { FormsModule } from "@angular/forms";
@@ -47,6 +51,7 @@ export class GeneralSettingsComponent implements OnDestroy {
     config: Config | null = null;
     system: SystemInfo | null = null;
     screens: ScreenInfo[] = [];
+    overlayRuntimeInfo: OverlayRuntimeInfo | null = null;
     private configSubscription: Subscription;
     private systemSubscription: Subscription;
     private screensSubscription?: Subscription;
@@ -56,6 +61,7 @@ export class GeneralSettingsComponent implements OnDestroy {
 
     constructor(
         private configService: ConfigService,
+        private tauriService: TauriService,
         private snackBar: MatSnackBar,
     ) {
         this.configSubscription = this.configService.config$.subscribe(
@@ -74,6 +80,7 @@ export class GeneralSettingsComponent implements OnDestroy {
                 this.screens = screens ?? [];
             }
         );
+        void this.loadOverlayRuntimeInfo();
     }
 
     ngOnDestroy() {
@@ -162,6 +169,30 @@ export class GeneralSettingsComponent implements OnDestroy {
                     duration: 5000,
                 });
             }
+        }
+    }
+
+    get overlayRuntimeSummary(): string {
+        const info = this.overlayRuntimeInfo;
+        if (!info) {
+            return "Checking VR runtime support...";
+        }
+        if (!info.packageInstalled) {
+            return "The optional electron-vr package is not installed yet.";
+        }
+        if (!info.available) {
+            return `VR bridge loaded, but no runtime is ready. Backend: ${info.selectedBackend}.`;
+        }
+        const runtimePath = info.openvrRuntimePath ? ` (${info.openvrRuntimePath})` : "";
+        return `VR ready via ${info.selectedBackend}${runtimePath}.`;
+    }
+
+    private async loadOverlayRuntimeInfo(): Promise<void> {
+        try {
+            this.overlayRuntimeInfo = await this.tauriService.getOverlayRuntimeInfo();
+        } catch (error) {
+            console.error("Error loading overlay runtime info:", error);
+            this.overlayRuntimeInfo = null;
         }
     }
 }

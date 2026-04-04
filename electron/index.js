@@ -9,6 +9,11 @@ const pino = require('pino')
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 const isLinux = process.platform === 'linux';
+const overlayPreloadPath = path.join(__dirname, 'preload.js');
+const overlayWindowTitle = 'COVAS:NEXT Overlay';
+
+// electron-vr needs shared image transport for efficient offscreen texture forwarding.
+app.commandLine.appendSwitch('enable-features', 'SharedImages');
 
 function logMethod (args, method) {
   if (args.length >= 2) {
@@ -74,6 +79,76 @@ const config = isDevelopment ? {
   backend: path.resolve(__dirname, '../Chat/Chat'),
   backend_cwd: isLinux ? path.join(process.env.XDG_DATA_HOME, './com.covas-next.ui') || app.getPath('sessionData') : app.getPath('userData'),
   backend_args: [],
+}
+
+let electronVrModulePromise = null;
+
+async function loadElectronVrModule() {
+  if (!electronVrModulePromise) {
+    electronVrModulePromise = import('@covas-labs/electron-vr').catch((error) => {
+      electronVrModulePromise = null;
+      throw error;
+    });
+  }
+  return electronVrModulePromise;
+}
+
+function getOverlayPlacement(vrAnchor) {
+  if (vrAnchor === 'world') {
+    return {
+      mode: 'world',
+      position: { x: 0, y: 1.4, z: -2.0 },
+      rotation: { x: 0, y: 0, z: 0, w: 1 },
+    };
+  }
+  return {
+    mode: 'head',
+    position: { x: 0, y: 0, z: -1.1 },
+    rotation: { x: 0, y: 0, z: 0, w: 1 },
+  };
+}
+
+function normalizeOverlayOptions(opts = {}) {
+  return {
+    alwaysOnTop: Boolean(opts.alwaysOnTop),
+    screenId: Number.isInteger(opts.screenId) ? opts.screenId : -1,
+    mode: opts.mode === 'vr' ? 'vr' : 'screen',
+    vrSizeMeters: Number.isFinite(opts.vrSizeMeters) && opts.vrSizeMeters > 0
+      ? opts.vrSizeMeters
+      : 0.9,
+    vrAnchor: opts.vrAnchor === 'world' ? 'world' : 'head',
+  };
+}
+
+async function getOverlayRuntimeInfo() {
+  try {
+    const { VROverlay } = await loadElectronVrModule();
+    console.log("VROverlay:", VROverlay);
+
+    const runtimeInfo = VROverlay.getRuntimeInfo();
+    console.log("runtimeInfo:", runtimeInfo);
+    return {
+      ...runtimeInfo,
+      packageInstalled: true,
+      available: VROverlay.isAvailable(runtimeInfo),
+      hasRealVRRuntime: VROverlay.hasRealVRRuntime(runtimeInfo),
+    };
+  } catch (error) {
+    return {
+      platform: process.platform,
+      probeMode: 'module_unavailable',
+      openxrAvailable: false,
+      openxrOverlayExtensionAvailable: false,
+      openvrAvailable: false,
+      openvrRuntimeInstalled: false,
+      openvrRuntimePath: '',
+      selectedBackend: 'none',
+      packageInstalled: false,
+      available: false,
+      hasRealVRRuntime: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
 }
 
 // list files in the backend directory
@@ -324,7 +399,7 @@ function createMainWindow() {
     height: 768,
     title: 'COVAS:NEXT',
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js')
+      preload: overlayPreloadPath
     }
   });
   mainWindow.setMenuBarVisibility(false);
@@ -385,7 +460,7 @@ function createMainWindow() {
  * @param {boolean} opts.alwaysOnTop - Whether the overlay should always be on top
  * @param {number} opts.screenId - ID of the screen to display on (-1 for primary)
  */
-function createOverlayWindow(opts) {
+function createFloatingOverlayWindow(opts) {
   // Find the target display first
   let targetDisplay;
   const displays = screen.getAllDisplays();
@@ -408,12 +483,12 @@ function createOverlayWindow(opts) {
     y: y,
     width: 800,
     height: 600,
-    title: 'COVAS:NEXT Overlay',
+    title: overlayWindowTitle,
     frame: false,
     transparent: true,
     show: false, // Don't show until positioned and maximized
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: overlayPreloadPath,
     }
   });
   
@@ -431,6 +506,97 @@ function createOverlayWindow(opts) {
 
   return overlayWindow;
 }
+
+async function createVrOverlayWindow(opts) {
+  const { VROverlay } = await loadElectronVrModule().catch((error) => {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `VR overlay requires the optional @covas-labs/electron-vr package. Install it with GitHub Packages access and restart the app. ${reason}`,
+    );
+  });
+
+  const runtimeInfo = VROverlay.getRuntimeInfo();
+  if (!VROverlay.isAvailable(runtimeInfo)) {
+    throw new Error(
+      `No compatible VR runtime was detected. Selected backend: ${runtimeInfo.selectedBackend}. OpenVR installed: ${runtimeInfo.openvrRuntimeInstalled}.`,
+    );
+  }
+
+  const overlayWindow = new BrowserWindow({
+    width: 1280,
+    height: 720,
+    title: overlayWindowTitle,
+    show: false,
+    frame: false,
+    transparent: true,
+    backgroundColor: '#00000000',
+    webPreferences: {
+      preload: overlayPreloadPath,
+      offscreen: { useSharedTexture: true },
+      contextIsolation: true,
+      nodeIntegration: false,
+      backgroundThrottling: false,
+    },
+  });
+  overlayWindow.setMenuBarVisibility(false);
+  await overlayWindow.loadURL(config.overlay);
+
+  const vrOverlay = await VROverlay.openWindow(overlayWindow, {
+    name: 'COVAS_NEXT_Overlay',
+    frameRate: 60,
+    sizeMeters: opts.vrSizeMeters,
+    visible: true,
+    placement: getOverlayPlacement(opts.vrAnchor),
+  });
+
+  if (!vrOverlay) {
+    if (!overlayWindow.isDestroyed()) {
+      overlayWindow.close();
+    }
+    throw new Error('Failed to attach the overlay window to the VR bridge.');
+  }
+
+  return {
+    kind: 'vr',
+    window: overlayWindow,
+    controller: vrOverlay,
+    runtimeInfo,
+    cleanedUp: false,
+  };
+}
+
+async function createManagedOverlay(opts) {
+  const normalized = normalizeOverlayOptions(opts);
+  if (normalized.mode === 'vr') {
+    return createVrOverlayWindow(normalized);
+  }
+  return {
+    kind: 'screen',
+    window: createFloatingOverlayWindow(normalized),
+    controller: null,
+    runtimeInfo: null,
+    cleanedUp: false,
+  };
+}
+
+function disposeOverlay(overlay, backend, closeWindow = true) {
+  if (!overlay || overlay.cleanedUp) {
+    return;
+  }
+  overlay.cleanedUp = true;
+  backend.detachWindow(overlay.window);
+  if (overlay.controller) {
+    try {
+      overlay.controller.destroy();
+    } catch (error) {
+      logger.warn('Failed to destroy VR overlay controller:', error);
+    }
+  }
+  if (closeWindow && overlay.window && !overlay.window.isDestroyed()) {
+    overlay.window.close();
+  }
+}
+
 app.whenReady().then(async ()=>{
 
   protocol.handle('app', (request) => {
@@ -450,9 +616,8 @@ app.whenReady().then(async ()=>{
   ipcMain.handle('send_json_line', (...args)=>backend.sendJsonLine(...args));
   ipcMain.handle('start_process', (...args)=>{
     // Close existing overlay on process start (handles reload scenarios)
-    if (floatingOverlay && !floatingOverlay.isDestroyed()) {
-      backend.detachWindow(floatingOverlay);
-      floatingOverlay.close();
+    if (floatingOverlay) {
+      disposeOverlay(floatingOverlay, backend);
       floatingOverlay = null;
     }
     return backend.startProcess(mainWindow, ...args);
@@ -461,24 +626,29 @@ app.whenReady().then(async ()=>{
   ipcMain.handle('create_floating_overlay', async (event, opts) => {
     if (floatingOverlay) {
       // Always destroy existing overlay to apply new settings
-      backend.detachWindow(floatingOverlay);
-      floatingOverlay.close();
+      disposeOverlay(floatingOverlay, backend);
       floatingOverlay = null;
     }
-    floatingOverlay = createOverlayWindow(opts);
-    backend.attachWindow(floatingOverlay);
-    floatingOverlay.on('closed', () => {
-      backend.detachWindow(floatingOverlay);
-      floatingOverlay = null;
+    floatingOverlay = await createManagedOverlay(opts);
+    const activeOverlay = floatingOverlay;
+    if (floatingOverlay.runtimeInfo) {
+      logger.info('VR overlay runtime info:', floatingOverlay.runtimeInfo);
+    }
+    backend.attachWindow(floatingOverlay.window);
+    activeOverlay.window.on('closed', () => {
+      disposeOverlay(activeOverlay, backend, false);
+      if (floatingOverlay === activeOverlay) {
+        floatingOverlay = null;
+      }
     });
   });
   ipcMain.handle('destroy_floating_overlay', async (event) => {
     if (floatingOverlay) {
-      backend.detachWindow(floatingOverlay);
-      floatingOverlay.close();
+      disposeOverlay(floatingOverlay, backend);
       floatingOverlay = null;
     }
   });
+  ipcMain.handle('get_overlay_runtime_info', async () => getOverlayRuntimeInfo());
   ipcMain.handle('get_available_screens', async (event) => {
     const displays = screen.getAllDisplays();
     const result = displays.map((display, index) => ({
@@ -593,11 +763,8 @@ app.whenReady().then(async ()=>{
 
   mainWindow.on('closed', () => {
     if (floatingOverlay) {
-      backend.detachWindow(floatingOverlay);
-      if (!floatingOverlay.isDestroyed()) {
-        floatingOverlay.close();
-        floatingOverlay = null;
-      };
+      disposeOverlay(floatingOverlay, backend);
+      floatingOverlay = null;
     }
     backend.stopProcess(mainWindow);
     process.exit(0);

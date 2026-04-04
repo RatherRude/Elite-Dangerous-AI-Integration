@@ -27,6 +27,13 @@ class TargetStateModel(BaseModel):
 class Target(Projection[TargetStateModel]):
     StateModel = TargetStateModel
 
+    def __init__(self, minimum_bounty: int = 1):
+        super().__init__()
+        try:
+            self.minimum_bounty = max(1, int(minimum_bounty))
+        except (TypeError, ValueError):
+            self.minimum_bounty = 1
+
     def _reset_state(self) -> None:
         self.state.EventID = None
         self.state.Ship = None
@@ -83,8 +90,11 @@ class Target(Projection[TargetStateModel]):
                     bounty_value = payload.get("Bounty", 0)
                     if isinstance(bounty_value, int):
                         self.state.Bounty = bounty_value
-                        if bounty_value > 1 and not payload.get("Subsystem", False):
-                            projected_events.append(ProjectedEvent(content={"event": "BountyScanned"}))
+                        if bounty_value >= self.minimum_bounty and not payload.get("Subsystem", False):
+                            projected_events.append(ProjectedEvent(content={
+                                "event": "BountyScanned",
+                                "Bounty": bounty_value,
+                            }))
 
                 if "ShieldHealth" in payload:
                     shield_value = payload.get("ShieldHealth", 0.0)

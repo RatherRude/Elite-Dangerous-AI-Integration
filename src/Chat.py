@@ -763,6 +763,7 @@ class Chat:
             self.event_manager,
             self.system_database,
             self.character.get("idle_timeout_var", 300),
+            self.character.get("bounty_scanned_min_bounty_var", 1),
         )
 
         self.event_manager.process()

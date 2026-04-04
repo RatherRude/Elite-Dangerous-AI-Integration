@@ -797,6 +797,7 @@ class Character(TypedDict, total=False):
     react_to_danger_onfoot_var: bool
     react_to_danger_supercruise_var: bool
     idle_timeout_var: int
+    bounty_scanned_min_bounty_var: int
 
 
 class Config(TypedDict):
@@ -871,8 +872,11 @@ class Config(TypedDict):
     overlay_show_avatar: bool
     overlay_show_hud: bool
     overlay_show_chat: bool
+    overlay_mode: Literal['screen', 'vr']
     overlay_position: Literal['left', 'right', 'left-medium', 'left-small', 'right-medium', 'right-small']
     overlay_screen_id: int
+    overlay_vr_size_meters: float
+    overlay_vr_anchor: Literal['head', 'world']
     
     enable_remote_tracing: bool
 
@@ -1198,6 +1202,18 @@ def migrate(data: dict) -> dict:
             if 'tts_environment_srv_effects_var' not in character:
                 character['tts_environment_srv_effects_var'] = True
 
+    if data['config_version'] < 15:
+        data['config_version'] = 15
+
+        for character in data.get('characters', []):
+            character['bounty_scanned_min_bounty_var'] = character.get('bounty_scanned_min_bounty_var', 1)
+
+    if data['config_version'] < 16:
+        data['config_version'] = 16
+        data.setdefault('overlay_mode', 'screen')
+        data.setdefault('overlay_vr_size_meters', 0.9)
+        data.setdefault('overlay_vr_anchor', 'head')
+
     return data
 
 
@@ -1295,6 +1311,7 @@ def getDefaultCharacter(config: Config) -> Character:
         "react_to_danger_onfoot_var": False,
         "react_to_danger_supercruise_var": False,
         "idle_timeout_var": 300,  # 5 minutes
+        "bounty_scanned_min_bounty_var": 1,
     })
 
 def load_config() -> Config:
@@ -1370,8 +1387,11 @@ def load_config() -> Config:
         "overlay_show_avatar": True,
         "overlay_show_hud": False,
         "overlay_show_chat": True,
+        "overlay_mode": "screen",
         "overlay_position": "right",
         "overlay_screen_id": -1,  # -1 means primary screen
+        "overlay_vr_size_meters": 0.9,
+        "overlay_vr_anchor": "head",
         
         "enable_remote_tracing": False,
         

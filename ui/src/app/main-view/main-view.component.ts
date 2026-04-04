@@ -250,12 +250,14 @@ export class MainViewComponent implements OnInit, OnDestroy {
 
     async createOverlay(): Promise<void> {
         try {
-            const isLinux = this.configService.systemInfo?.os === "Linux";
             const screenId = this.config?.overlay_screen_id ?? -1; // -1 for primary screen
-            
+
             await this.tauri.createOverlay({
                 alwaysOnTop: true,
-                screenId: screenId
+                screenId: screenId,
+                mode: this.config?.overlay_mode ?? "screen",
+                vrSizeMeters: this.config?.overlay_vr_size_meters ?? 0.9,
+                vrAnchor: this.config?.overlay_vr_anchor ?? "head",
             });
         } catch (error) {
             console.error("Failed to create overlay:", error);

@@ -38,7 +38,7 @@ export const GameEventTooltips: Record<string, string> = {
   "PVPKill": "COVAS:NEXT will react when you destroy another player’s ship in combat, giving you the victim's name and rank.",
   "ShieldState": "COVAS:NEXT will react when your shields either drop or come back online.",
   "ShipTargeted": "COVAS:NEXT will react when you target another ship, assessing its characteristics.",
-  "BountyScanned": "COVAS:NEXT will react when you finish scanning a wanted ship with a bounty.",
+  "BountyScanned": "COVAS:NEXT will react when you finish scanning a wanted ship whose bounty meets your configured minimum.",
   "UnderAttack": "COVAS:NEXT will react when your ship comes under fire.",
   "CockpitBreached": "COVAS:NEXT will react when your ship’s canopy is breached, activating emergency life support.",
   "CrimeVictim": "COVAS:NEXT will react when another player commits a crime against you, identifying the offender and consequences.",
