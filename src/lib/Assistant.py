@@ -1,3 +1,4 @@
+import copy
 import json
 import traceback
 from pathlib import Path
@@ -8,7 +9,13 @@ from time import time
 from pydantic import BaseModel
 from .Models import LLMModel, EmbeddingModel, LLMError
 from .Logger import log, observe, show_chat_message, PromptUsageStats, log_llm_usage
-from .Config import Config
+from .Config import (
+    Config,
+    CharacterTTSPostprocessingConfig,
+    TTS_ENVIRONMENT_EFFECTS_IN_SRV,
+    TTS_ENVIRONMENT_EFFECTS_ON_FOOT,
+    TTS_ENVIRONMENT_EFFECTS_OVERHEATING,
+)
 from .Database import QuestDatabase, QuestState
 from .Event import ConversationEvent, Event, GameEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent, MemoryEvent, QuestEvent
 from .EventManager import EventManager
@@ -139,6 +146,106 @@ class Assistant:
         if isinstance(voice, str) and voice.strip():
             return voice.strip()
         return 'nova'
+
+    def _get_active_character_tts_postprocessing(self) -> CharacterTTSPostprocessingConfig | None:
+        characters = self.config.get('characters') or []
+        if not characters:
+            return None
+        idx = self.config.get('active_character_index', 0)
+        idx = max(0, min(idx, len(characters) - 1))
+        character = characters[idx] if isinstance(characters[idx], dict) else None
+        postprocessing = character.get('tts_postprocessing') if character else None
+        return postprocessing if isinstance(postprocessing, dict) else None
+
+    def _get_active_character(self) -> dict[str, Any] | None:
+        characters = self.config.get('characters') or []
+        if not characters:
+            return None
+        idx = self.config.get('active_character_index', 0)
+        idx = max(0, min(idx, len(characters) - 1))
+        character = characters[idx]
+        return character if isinstance(character, dict) else None
+
+    def _get_environment_tts_postprocessing_layers(
+        self,
+        projected_states: ProjectedStates,
+    ) -> list[CharacterTTSPostprocessingConfig]:
+        current_status = get_state_dict(projected_states, "CurrentStatus")
+        loadout = get_state_dict(projected_states, "Loadout")
+        character = self._get_active_character() or {}
+        flags = current_status.get("flags", {}) if isinstance(current_status, dict) else {}
+        flags2 = current_status.get("flags2", {}) if isinstance(current_status, dict) else {}
+        hull_health = loadout.get("HullHealth") if isinstance(loadout, dict) else None
+        damage_effects_enabled = bool(character.get("tts_environment_damage_effects_var", True))
+        helmet_effects_enabled = bool(character.get("tts_environment_helmet_effects_var", True))
+        srv_effects_enabled = bool(character.get("tts_environment_srv_effects_var", True))
+
+        layers: list[CharacterTTSPostprocessingConfig] = []
+        if damage_effects_enabled and isinstance(flags, dict) and flags.get("OverHeating"):
+            layers.append(TTS_ENVIRONMENT_EFFECTS_OVERHEATING)
+        elif damage_effects_enabled and isinstance(hull_health, (int, float)) and float(hull_health) <= 0.75:
+            layers.append(self._get_scaled_damage_tts_postprocessing(float(hull_health)))
+        if srv_effects_enabled and isinstance(flags, dict) and flags.get("InSRV"):
+            layers.append(TTS_ENVIRONMENT_EFFECTS_IN_SRV)
+        if helmet_effects_enabled and isinstance(flags2, dict) and flags2.get("OnFoot"):
+            layers.append(TTS_ENVIRONMENT_EFFECTS_ON_FOOT)
+        return layers
+
+    def _get_scaled_damage_tts_postprocessing(
+        self,
+        hull_health: float,
+    ) -> CharacterTTSPostprocessingConfig:
+        intensity = 1.0 - max(0.0, min(1.0, hull_health))
+        scaled = copy.deepcopy(TTS_ENVIRONMENT_EFFECTS_OVERHEATING)
+        effects = scaled.get("effects", {})
+
+        distortion = effects.get("distortion") if isinstance(effects, dict) else None
+        if isinstance(distortion, dict) and distortion.get("enabled"):
+            if isinstance(distortion.get("drive"), (int, float)):
+                distortion["drive"] = float(distortion["drive"]) * intensity
+            if isinstance(distortion.get("mix"), (int, float)):
+                distortion["mix"] = min(1.0, float(distortion["mix"]) * intensity)
+            if isinstance(distortion.get("clip"), (int, float)) and float(distortion["clip"]) > 0.0:
+                distortion["clip"] = max(0.05, float(distortion["clip"]) / intensity)
+
+        glitch = effects.get("glitch") if isinstance(effects, dict) else None
+        if isinstance(glitch, dict) and glitch.get("enabled"):
+            if isinstance(glitch.get("probability"), (int, float)):
+                glitch["probability"] = min(1.0, float(glitch["probability"]) * intensity)
+            if isinstance(glitch.get("repeat_min"), (int, float)):
+                glitch["repeat_min"] = max(1, int(round(float(glitch["repeat_min"]) * intensity)))
+            if isinstance(glitch.get("repeat_max"), (int, float)):
+                glitch["repeat_max"] = max(1, int(round(float(glitch["repeat_max"]) * intensity)))
+            if isinstance(glitch.get("min_seconds"), (int, float)):
+                glitch["min_seconds"] = float(glitch["min_seconds"]) * intensity
+            if isinstance(glitch.get("max_seconds"), (int, float)):
+                glitch["max_seconds"] = float(glitch["max_seconds"]) * intensity
+            if isinstance(glitch.get("detune_base"), (int, float)):
+                glitch["detune_base"] = float(glitch["detune_base"]) * intensity
+            if isinstance(glitch.get("detune_peak"), (int, float)):
+                glitch["detune_peak"] = float(glitch["detune_peak"]) * intensity
+
+            repeat_min = glitch.get("repeat_min")
+            repeat_max = glitch.get("repeat_max")
+            if isinstance(repeat_min, int) and isinstance(repeat_max, int) and repeat_max < repeat_min:
+                glitch["repeat_max"] = repeat_min
+
+            min_seconds = glitch.get("min_seconds")
+            max_seconds = glitch.get("max_seconds")
+            if isinstance(min_seconds, (int, float)) and isinstance(max_seconds, (int, float)) and max_seconds < min_seconds:
+                glitch["max_seconds"] = min_seconds
+
+        return scaled
+
+    def _get_tts_postprocessing_layers(
+        self,
+        projected_states: ProjectedStates,
+    ) -> list[CharacterTTSPostprocessingConfig | None]:
+        layers: list[CharacterTTSPostprocessingConfig | None] = [
+            self._get_active_character_tts_postprocessing(),
+        ]
+        layers.extend(self._get_environment_tts_postprocessing_layers(projected_states))
+        return layers
 
     def _resolve_quest_audio_path(self, file_name: str) -> Path | None:
         normalized_name = file_name.replace("\\", "/")
@@ -664,7 +771,10 @@ class Assistant:
             action_input_desc = self.action_manager.getActionDesc(action, projected_states)
             action_descriptions.append(action_input_desc)
             if action_input_desc:
-                self.tts.say(action_input_desc)
+                self.tts.say(
+                    action_input_desc,
+                    postprocessing_layers=self._get_tts_postprocessing_layers(projected_states),
+                )
             action_result = self.action_manager.runAction(action, projected_states)
             action_results.append(action_result)
 
@@ -789,7 +899,10 @@ class Assistant:
 
             if response_text and not response_actions:
                 self.event_manager.add_assistant_speaking()
-                self.tts.say(response_text)
+                self.tts.say(
+                    response_text,
+                    postprocessing_layers=self._get_tts_postprocessing_layers(projected_states),
+                )
                 self.event_manager.add_conversation_event('assistant', response_text, reasons=reasons, processed_at=max_conversation_processed)
                 self.tts.wait_for_completion()
                 self.event_manager.add_assistant_complete_event()
@@ -916,7 +1029,10 @@ class Assistant:
 
         method = action_descriptor.get('method')
         args = {'query': query}
-        self.tts.say(f"Searching: {query}")
+        self.tts.say(
+            f"Searching: {query}",
+            postprocessing_layers=self._get_tts_postprocessing_layers(projected_states),
+        )
         
         try:
             result_content = method(args, projected_states)

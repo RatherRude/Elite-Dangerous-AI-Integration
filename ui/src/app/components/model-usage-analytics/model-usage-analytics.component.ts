@@ -2,7 +2,6 @@ import { CommonModule } from "@angular/common";
 import { Component, OnInit } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
-import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { MatCardModule } from "@angular/material/card";
 import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -78,7 +77,6 @@ interface TimelineBucket {
         CommonModule,
         FormsModule,
         MatButtonModule,
-        MatButtonToggleModule,
         MatCardModule,
         MatDatepickerModule,
         MatFormFieldModule,
@@ -391,7 +389,6 @@ export class ModelUsageAnalyticsComponent implements OnInit {
             0,
         );
 
-        const topContext = this.buildContextBars(rows, "tokens")[0];
         const avgTokens = rows.length > 0 ? Math.round(totalTokens / rows.length) : 0;
 
         return [
@@ -404,17 +401,17 @@ export class ModelUsageAnalyticsComponent implements OnInit {
             {
                 label: "Total Tokens",
                 value: this.formatCompactNumber(totalTokens),
-                detail: `${this.formatCompactNumber(cachedInputTokens)} cached + ${this.formatCompactNumber(liveInputTokens)} input`,
+                detail: `${this.formatCompactNumber(cachedInputTokens)} cached + ${this.formatCompactNumber(liveInputTokens)} sent`,
                 tone: "blue",
             },
             {
-                label: "Cached Input",
+                label: "Cached Sent",
                 value: this.formatCompactNumber(cachedInputTokens),
                 detail: `${this.formatPercent(cachedInputTokens, totalTokens)} of total tokens`,
                 tone: "slate",
             },
             {
-                label: "Input",
+                label: "Sent",
                 value: this.formatCompactNumber(liveInputTokens),
                 detail: `${this.formatPercent(liveInputTokens, totalTokens)} of total tokens`,
                 tone: "amber",
@@ -430,20 +427,6 @@ export class ModelUsageAnalyticsComponent implements OnInit {
                 value: this.formatCompactNumber(visibleOutputTokens),
                 detail: `${this.formatPercent(visibleOutputTokens, totalTokens)} of total tokens`,
                 tone: "mint",
-            },
-            {
-                label: "Top Use Case",
-                value: topContext ? this.formatContextLabel(topContext.label) : "-",
-                detail: topContext
-                    ? `${this.formatCompactNumber(topContext.value)} tokens across ${topContext.subtitle}`
-                    : "No matching calls in this window",
-                tone: "rose",
-            },
-            {
-                label: "Prompt Chars",
-                value: this.formatCompactNumber(promptChars),
-                detail: `${this.formatCompactNumber(promptChars / Math.max(rows.length, 1))} avg chars per call`,
-                tone: "rose",
             },
         ];
     }
@@ -470,13 +453,13 @@ export class ModelUsageAnalyticsComponent implements OnInit {
                     {
                         cssClass: "segment-cached-input",
                         heightPct: (bucket.cachedInputTokens / maxTokens) * 100,
-                        label: "Cached Input",
+                        label: "Cached Sent",
                         value: bucket.cachedInputTokens,
                     },
                     {
                         cssClass: "segment-live-input",
                         heightPct: (bucket.liveInputTokens / maxTokens) * 100,
-                        label: "Input",
+                        label: "Sent",
                         value: bucket.liveInputTokens,
                     },
                     {
