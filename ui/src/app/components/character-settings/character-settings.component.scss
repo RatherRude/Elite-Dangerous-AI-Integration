@@ -455,11 +455,8 @@ ul {
 }
 
 .voice-effects-title {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.72);
+    display: block;
+    font-weight: 500;
 }
 
 .voice-settings-hint {
