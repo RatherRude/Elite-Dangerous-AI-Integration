@@ -1,5 +1,3 @@
-from distro.distro import TypedDict
-from lib.EventModels import LoadoutEventModulesItemEngineering
 from typing import cast
 
 from typing_extensions import override
@@ -8,7 +6,7 @@ from ..Event import Event, GameEvent
 from ..EventManager import Projection
 from pydantic import BaseModel, Field
 
-from ..EventModels import LoadoutEvent
+from ..EventModels import HullDamageEvent, LoadoutEvent, RepairAllEvent
 
 
 class LoadoutModifierA(BaseModel):
@@ -122,3 +120,14 @@ class Loadout(Projection[LoadoutState]):
             self.state.UnladenMass = payload.get("UnladenMass")
             self.state.Ship = payload.get("Ship")
             self.state.Hot = payload.get("Hot")
+            return
+
+        if isinstance(event, GameEvent) and event.content.get("event") == "HullDamage":
+            payload = cast(HullDamageEvent, event.content)
+            if payload.get("Fighter") is not True:
+                self.state.HullHealth = payload.get("Health")
+            return
+
+        if isinstance(event, GameEvent) and event.content.get("event") in ["RepairAll", "Died"]:
+            _payload = cast(RepairAllEvent, event.content)
+            self.state.HullHealth = 1.0
