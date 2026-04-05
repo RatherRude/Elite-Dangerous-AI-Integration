@@ -105,6 +105,7 @@ class ToolEvent(Event[Literal['tool']]):
     request: list[dict[str, object]]
     results: list[dict[str, object]]
     text: list[str] | None = None
+    do_not_reply: bool = False
     kind: Literal['tool'] = 'tool'
 
 

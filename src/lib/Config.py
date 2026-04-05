@@ -763,6 +763,7 @@ class WeaponType(TypedDict):
 
 class Character(TypedDict, total=False):
     name: str
+    color: str
     character: str
     personality_preset: str
     personality_verbosity: int
@@ -808,6 +809,7 @@ class Config(TypedDict):
     commander_name: str
     characters: List[Character]
     active_character_index: int
+    active_characters: List[int]
     llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom', 'local-ai-server']
     llm_model_name: str
     llm_reasoning_effort: Literal['default', 'none', 'minimal', 'low', 'medium', 'high'] | None
@@ -1214,7 +1216,20 @@ def migrate(data: dict) -> dict:
         data.setdefault('overlay_vr_size_meters', 0.9)
         data.setdefault('overlay_vr_anchor', 'head')
 
-    return data
+    if data['config_version'] < 17:
+        data['config_version'] = 17
+
+        for index, character in enumerate(data.get('characters', [])):
+            if not isinstance(character.get('color'), str) or not character.get('color'):
+                character['color'] = get_default_character_color(index)
+
+        data['active_characters'] = normalize_active_character_indexes(
+            cast(list[Character], data.get('characters', [])),
+            cast(int, data.get('active_character_index', -1)),
+            cast(list[int] | None, data.get('active_characters')),
+        )
+
+    return normalize_characters_config(cast(Config, data))
 
 
 def merge_config_data(defaults: dict, user: dict):
@@ -1274,9 +1289,77 @@ def merge_config_data(defaults: dict, user: dict):
 
     return merge
 
+
+CHARACTER_COLORS = [
+    "#2196F3",
+    "#E91E63",
+    "#4CAF50",
+    "#FF9800",
+    "#9C27B0",
+    "#00BCD4",
+    "#FFC107",
+    "#8BC34A",
+]
+
+
+def get_default_character_color(index: int) -> str:
+    return CHARACTER_COLORS[index % len(CHARACTER_COLORS)]
+
+
+def normalize_active_character_indexes(
+    characters: list[Character],
+    active_character_index: int,
+    active_characters: list[int] | None,
+) -> list[int]:
+    normalized: list[int] = []
+    total = len(characters)
+
+    if 0 <= active_character_index < total:
+        normalized.append(active_character_index)
+
+    for raw_index in active_characters or []:
+        if not isinstance(raw_index, int):
+            continue
+        if raw_index < 0 or raw_index >= total:
+            continue
+        if raw_index in normalized:
+            continue
+        normalized.append(raw_index)
+
+    return normalized
+
+
+def normalize_characters_config(config: Config) -> Config:
+    characters = config.get("characters", [])
+    for index, character in enumerate(characters):
+        color = character.get("color")
+        if not isinstance(color, str) or not color:
+            character["color"] = get_default_character_color(index)
+
+    config["active_characters"] = normalize_active_character_indexes(
+        characters,
+        config.get("active_character_index", -1),
+        cast(list[int] | None, config.get("active_characters")),
+    )
+    return config
+
+
+def get_active_characters(config: Config) -> list[tuple[int, Character]]:
+    characters = config.get("characters", [])
+    return [
+        (index, characters[index])
+        for index in normalize_active_character_indexes(
+            characters,
+            config.get("active_character_index", -1),
+            cast(list[int] | None, config.get("active_characters")),
+        )
+        if 0 <= index < len(characters)
+    ]
+
 def getDefaultCharacter(config: Config) -> Character:
     return Character({
         "name": 'Default',
+        "color": get_default_character_color(len(config.get("characters", []))),
         "character": "Keep your responses extremely brief and minimal. Maintain a professional and serious tone in all responses. Stick to factual information. You are COVAS:NEXT (Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal) - professional, efficient, and no-nonsense. Provides essential information without unnecessary elaboration. Focuses on factual data and operational status. 'Destination reached.' 'Fuel level acceptable.' Clean, precise communication. Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS:NEXT. Always respond in English regardless of the language spoken to you. Balance emotional understanding with factual presentation. Use everyday language that balances casual and professional tones. Project an air of expertise and certainty when providing information. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.",
         "personality_preset": 'default',
         "personality_verbosity": 0,
@@ -1316,10 +1399,11 @@ def getDefaultCharacter(config: Config) -> Character:
 
 def load_config() -> Config:
     defaults: Config = {
-        'config_version': 16,
+        'config_version': 17,
         'commander_name': "",
         'characters': [],
         'active_character_index': 0,  # -1 means using the default legacy character
+        'active_characters': [0],
         'api_key': "",
         'tools_var': True,
         'vision_var': False,
@@ -1715,6 +1799,11 @@ def update_character(config: Config, data: UpdateCharacterRequest) -> Config:
         if data.get("set_active", False):
             config["active_character_index"] = len(config["characters"]) - 1
             print(f"Set active character index to {config['active_character_index']}")
+            config["active_characters"] = normalize_active_character_indexes(
+                config.get("characters", []),
+                config["active_character_index"],
+                config.get("active_characters", []),
+            )
     
     elif data.get('operation') == "update":
         # Update an existing character
@@ -1739,6 +1828,15 @@ def update_character(config: Config, data: UpdateCharacterRequest) -> Config:
                 elif config["active_character_index"] > index:
                     config["active_character_index"] -= 1
                     print(f"Adjusted active character index to {config['active_character_index']}")
+                config["active_characters"] = normalize_active_character_indexes(
+                    config.get("characters", []),
+                    config.get("active_character_index", -1),
+                    [
+                        active_index - 1 if active_index > index else active_index
+                        for active_index in config.get("active_characters", [])
+                        if active_index != index
+                    ],
+                )
     
     elif data.get('operation') == "set_active":
         # Set the active character
@@ -1746,9 +1844,15 @@ def update_character(config: Config, data: UpdateCharacterRequest) -> Config:
             index = int(data["index"])
             if -1 <= index < len(config.get("characters", [])):
                 config["active_character_index"] = index
+                config["active_characters"] = normalize_active_character_indexes(
+                    config.get("characters", []),
+                    index,
+                    config.get("active_characters", []),
+                )
 
     return update_config(old_config, {
         "active_character_index": config["active_character_index"],
+        "active_characters": config.get("active_characters", []),
         "characters": config["characters"]
     })
 
@@ -1984,7 +2088,7 @@ def update_config(config: Config, data: dict) -> Config:
             data["embedding_api_key"] = ""
 
     # Now merge and save as before
-    new_config = cast(Config, {**config, **data})
+    new_config = normalize_characters_config(cast(Config, {**config, **data}))
     emit_message("config", config=new_config)
     save_config(new_config)
     return new_config

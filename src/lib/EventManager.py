@@ -240,8 +240,14 @@ class EventManager:
         if not isinstance(source, GameEvent) or not source.historic:
             self.pending.append(event)
 
-    def add_tool_call(self, request: list[dict[str, Any]], results: list[dict[str, Any]], text: list[str] | None = None):
-        event = ToolEvent(request=request, results=results, text=text)
+    def add_tool_call(
+        self,
+        request: list[dict[str, Any]],
+        results: list[dict[str, Any]],
+        text: list[str] | None = None,
+        do_not_reply: bool = False,
+    ):
+        event = ToolEvent(request=request, results=results, text=text, do_not_reply=do_not_reply)
         self.incoming.put(event)
 
     def add_memory_event(self, model_name: str, last_processed_at: float, content: str, metadata: dict, embedding: list[float]):

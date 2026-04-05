@@ -1475,6 +1475,57 @@ export class CharacterSettingsComponent {
         ).length;
     }
 
+    getActiveCrewIndices(): number[] {
+        if (!this.config) {
+            return [];
+        }
+
+        return this.config.active_characters ?? [];
+    }
+
+    isPrimaryCharacter(index: number): boolean {
+        return this.config?.active_character_index === index;
+    }
+
+    isCrewMemberActive(index: number): boolean {
+        return this.getActiveCrewIndices().includes(index);
+    }
+
+    async toggleCrewMember(index: number, enabled: boolean): Promise<void> {
+        if (!this.config) {
+            return;
+        }
+
+        const primaryIndex = this.config.active_character_index;
+        if (index === primaryIndex) {
+            return;
+        }
+
+        const activeCrew = new Set(this.getActiveCrewIndices().filter((value) => value !== primaryIndex));
+        if (enabled) {
+            activeCrew.add(index);
+        } else {
+            activeCrew.delete(index);
+        }
+
+        await this.configService.changeConfig({
+            active_characters: [primaryIndex, ...Array.from(activeCrew).sort((a, b) => a - b)],
+        });
+    }
+
+    getCharacterColor(character: Character | null | undefined, index: number): string {
+        return character?.color || [
+            "#2196F3",
+            "#E91E63",
+            "#4CAF50",
+            "#FF9800",
+            "#9C27B0",
+            "#00BCD4",
+            "#FFC107",
+            "#8BC34A",
+        ][index % 8];
+    }
+
     duplicateSelectedCharacter(): void {
         if (!this.config || this.selectedCharacterIndex === null) return;
 

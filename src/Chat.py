@@ -28,8 +28,11 @@ from lib.Models import (
 
 from lib.PluginHelper import PluginHelper
 from lib.Config import (
+    Character,
+    CharacterTTSPostprocessingConfig,
     Config,
     assign_ptt,
+    get_active_characters,
     get_ed_appdata_path,
     get_ed_journals_path,
     get_system_info,
@@ -61,6 +64,7 @@ def parse_plugin_provider(provider: str) -> tuple[str, str] | None:
 
 
 from lib.actions.Actions import register_actions
+from lib.actions.actions_crew import register_crew_actions
 from lib.ControllerManager import ControllerManager
 from lib.EDKeys import EDKeys
 from lib.Event import (
@@ -133,6 +137,7 @@ class Chat:
         self.plugin_manager = plugin_manager
         if self.config["api_key"] == "":
             self.config["api_key"] = "-"
+        self.active_characters = get_active_characters(self.config)
         self.character = self.config["characters"][
             self.config["active_character_index"]
         ]
@@ -143,15 +148,27 @@ class Chat:
             "{commander_name}", self.config["commander_name"]
         )
 
-        self.enabled_game_events: list[str] = []
-        disabled_events: list[str] = []
-        event_reactions = self.character.get("event_reactions", {})
-        if self.character.get("event_reaction_enabled_var", False):
-            for event, state in event_reactions.items():
-                if state == "on":
-                    self.enabled_game_events.append(event)
-                if state == "hidden":
-                    disabled_events.append(event)
+        enabled_events: set[str] = set()
+        hidden_event_sets: list[set[str]] = []
+        for _, active_character in self.active_characters:
+            if not active_character.get("event_reaction_enabled_var", False):
+                continue
+            event_reactions = active_character.get("event_reactions", {})
+            enabled_events.update(
+                event_name
+                for event_name, state in event_reactions.items()
+                if state == "on"
+            )
+            hidden_event_sets.append(
+                {
+                    event_name
+                    for event_name, state in event_reactions.items()
+                    if state == "hidden"
+                },
+            )
+
+        self.enabled_game_events = sorted(enabled_events)
+        disabled_events = sorted(set.intersection(*hidden_event_sets)) if hidden_event_sets else []
 
         log("debug", "Initializing Controller Manager...")
         self.controller_manager = ControllerManager()
@@ -333,6 +350,7 @@ class Chat:
             system_db=self.system_database,
             weapon_types=cast(list[dict], self.config.get("weapon_types", [])),
             disabled_game_events=disabled_events,
+            active_characters=self._build_active_character_prompt_context(),
         )
 
         log("debug", "Initializing event manager...")
@@ -377,6 +395,64 @@ class Chat:
         log("debug", "Plugin helper is ready...")
 
         self.previous_states = {}
+
+    def _build_active_character_prompt_context(self) -> list[dict[str, Any]]:
+        return [
+            {
+                "speaker_id": f"character_{index}",
+                "name": character.get("name", f"Character {index}"),
+                "character_prompt": character.get("character", ""),
+                "is_primary": index == self.config.get("active_character_index", -1),
+            }
+            for index, character in self.active_characters
+        ]
+
+    def _schedule_character_audio_event(
+        self,
+        transcription: str,
+        *,
+        chat_role: str,
+        voice: str | None = None,
+        actor_id: str | None = None,
+        actor_name: str | None = None,
+        actor_name_color: str | None = None,
+        avatar_url: str | None = None,
+        postprocessing: CharacterTTSPostprocessingConfig | None = None,
+        audio_file_path: Path | None = None,
+    ) -> None:
+        def on_start() -> None:
+            show_chat_message(
+                chat_role,
+                transcription,
+                actor_id=actor_id if isinstance(actor_id, str) else None,
+                actor_name=actor_name if isinstance(actor_name, str) else None,
+                display_color=actor_name_color if isinstance(actor_name_color, str) else None,
+                avatar_url=avatar_url if isinstance(avatar_url, str) else None,
+                display_name=actor_name if isinstance(actor_name, str) and actor_name else "NPC",
+            )
+            self.event_manager.add_assistant_speaking()
+
+        def on_complete() -> None:
+            if not self.tts.has_queued_items():
+                self.event_manager.add_assistant_complete_event()
+
+        if audio_file_path is not None:
+            self.tts.play_audio_file(
+                str(audio_file_path),
+                on_start=on_start,
+                on_complete=on_complete,
+                drop_if=lambda: self.stt.recording,
+            )
+            return
+
+        self.tts.say(
+            transcription,
+            voice=voice if isinstance(voice, str) and voice else None,
+            postprocessing=postprocessing,
+            on_start=on_start,
+            on_complete=on_complete,
+            drop_if=lambda: self.stt.recording,
+        )
 
     def on_event(self, event: Event, projected_states: dict[str, Any]):
         for key, value in projected_states.items():
@@ -434,7 +510,7 @@ class Chat:
             action_value = event.content.get("action") if isinstance(event.content, dict) else None
             action_name = (
                 action_value
-                if isinstance(action_value, str) and action_value in ["play_sound", "npc_message"]
+                if isinstance(action_value, str) and action_value in ["play_sound", "npc_message", "crew_message"]
                 else None
             )
             is_audio_quest_action = action_name is not None
@@ -768,6 +844,7 @@ class Chat:
 
         self.event_manager.process()
 
+        crew_talk_available = len(self.active_characters) > 1
         if self.config["tools_var"]:
             log("info", "Register actions...")
 
@@ -779,6 +856,7 @@ class Chat:
                 visionModel=self.visionModel,
                 visionModelName=self.config["vision_model_name"],
                 embeddingModel=self.embeddingModel,
+                config=self.config,
                 edKeys=self.ed_keys,
                 discovery_primary_var_flag=self.config.get(
                     "discovery_primary_var", True
@@ -803,6 +881,14 @@ class Chat:
 
             log("info", "Actions ready.")
             show_chat_message("info", "Actions ready.")
+        elif crew_talk_available:
+            register_crew_actions(
+                self.action_manager,
+                self.event_manager,
+                self.config,
+            )
+            log("info", "Crew speech tool ready.")
+            show_chat_message("info", "Crew speech tool ready.")
 
         # Execute plugin helper ready hooks
         self.plugin_manager.on_chat_start(self.plugin_helper)
@@ -909,6 +995,9 @@ class Chat:
         avatar_url = payload.get("avatar_url")
         if not isinstance(avatar_url, str) or not avatar_url:
             avatar_url = None
+        postprocessing = payload.get("tts_postprocessing")
+        if not isinstance(postprocessing, dict):
+            postprocessing = None
 
         audio_file_path: Path | None = None
         if action == "play_sound":
@@ -924,40 +1013,17 @@ class Chat:
                 log("warn", f"Quest audio file does not exist: {audio_file_path}")
                 return
 
-        def on_start() -> None:
-            if action in ("npc_message", "play_sound"):
-                show_chat_message(
-                    "npc_message",
-                    transcription,
-                    actor_id=actor_id if isinstance(actor_id, str) else None,
-                    actor_name=actor_name if isinstance(actor_name, str) else None,
-                    display_color=actor_name_color if isinstance(actor_name_color, str) else None,
-                    avatar_url=avatar_url if isinstance(avatar_url, str) else None,
-                    display_name=actor_name if isinstance(actor_name, str) and actor_name else "NPC",
-                )
-            self.event_manager.add_assistant_speaking()
-
-        def on_complete() -> None:
-            # Avoid clearing avatar/state between back-to-back queued lines.
-            # Only emit completion when this was the last queued utterance.
-            if not self.tts.has_queued_items():
-                self.event_manager.add_assistant_complete_event()
-
-        if action == "play_sound" and audio_file_path is not None:
-            self.tts.play_audio_file(
-                str(audio_file_path),
-                on_start=on_start,
-                on_complete=on_complete,
-                drop_if=lambda: self.stt.recording,
-            )
-        else:
-            self.tts.say(
-                transcription,
-                voice=voice if isinstance(voice, str) and voice else None,
-                on_start=on_start,
-                on_complete=on_complete,
-                drop_if=lambda: self.stt.recording,
-            )
+        self._schedule_character_audio_event(
+            transcription,
+            chat_role="covas" if action == "crew_message" else "npc_message",
+            voice=voice if isinstance(voice, str) and voice else None,
+            actor_id=(payload.get("speaker_id") if action == "crew_message" else actor_id) if isinstance(payload.get("speaker_id") if action == "crew_message" else actor_id, str) else None,
+            actor_name=actor_name if isinstance(actor_name, str) else None,
+            actor_name_color=actor_name_color if isinstance(actor_name_color, str) else None,
+            avatar_url=avatar_url if isinstance(avatar_url, str) else None,
+            postprocessing=cast(CharacterTTSPostprocessingConfig | None, postprocessing),
+            audio_file_path=audio_file_path,
+        )
 
 
 def read_stdin(chat: Chat):

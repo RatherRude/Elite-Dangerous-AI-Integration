@@ -15,6 +15,7 @@ from .Config import (
     TTS_ENVIRONMENT_EFFECTS_IN_SRV,
     TTS_ENVIRONMENT_EFFECTS_ON_FOOT,
     TTS_ENVIRONMENT_EFFECTS_OVERHEATING,
+    get_active_characters,
 )
 from .Database import QuestDatabase, QuestState
 from .Event import ConversationEvent, Event, GameEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent, MemoryEvent, QuestEvent
@@ -22,7 +23,7 @@ from .EventManager import EventManager
 from .ActionManager import ActionManager
 from .PromptGenerator import PromptGenerator
 from .TTS import TTS
-from typing import Any,  Callable, final
+from typing import Any, Callable, cast, final
 import yaml
 from threading import Thread
 from .actions.Actions import set_speed, fire_weapons, get_visuals
@@ -165,6 +166,109 @@ class Assistant:
         idx = max(0, min(idx, len(characters) - 1))
         character = characters[idx]
         return character if isinstance(character, dict) else None
+
+    def _get_active_characters(self) -> list[tuple[int, dict[str, Any]]]:
+        return [
+            (index, character)
+            for index, character in get_active_characters(self.config)
+            if isinstance(character, dict)
+        ]
+
+    def _should_offer_crew_talk_tool(self) -> bool:
+        return len(self._get_active_characters()) > 1
+
+    def _get_optional_tool(self, name: str) -> dict[str, Any] | None:
+        action = self.action_manager.actions.get(name)
+        tool = action.get('tool') if isinstance(action, dict) else None
+        return tool if isinstance(tool, dict) else None
+
+    def _append_optional_tool(
+        self,
+        tools: list[dict[str, Any]] | None,
+        tool_name: str,
+    ) -> list[dict[str, Any]] | None:
+        tool = self._get_optional_tool(tool_name)
+        if tool is None:
+            return tools
+        if tools is None:
+            return [tool]
+        tool_names = {
+            cast(dict[str, Any], existing.get('function', {})).get('name')
+            for existing in tools
+            if isinstance(existing, dict)
+        }
+        if tool_name in tool_names:
+            return tools
+        return [*tools, tool]
+
+    def _character_handles_game_event(self, character: dict[str, Any], event: GameEvent) -> bool:
+        event_name = event.content.get('event')
+        reactions = character.get('event_reactions', {}) if character.get('event_reaction_enabled_var', False) else {}
+        if reactions.get(event_name) != 'on':
+            return False
+
+        if event_name == 'ReceiveText':
+            channel = event.content.get('Channel')
+            if channel not in ['wing', 'voicechat', 'friend', 'player'] and (
+                (not character.get('react_to_text_local_var', True) and channel == 'local') or
+                (not character.get('react_to_text_starsystem_var', True) and channel == 'starsystem') or
+                (not character.get('react_to_text_npc_var', False) and channel == 'npc') or
+                (not character.get('react_to_text_squadron_var', True) and channel == 'squadron')
+            ):
+                return False
+
+        if event_name == 'ProspectedAsteroid':
+            chunks = [chunk.strip() for chunk in str(character.get('react_to_material', '')).split(',') if chunk.strip()]
+            contains_material = False
+            for chunk in chunks:
+                for material in event.content.get('Materials', []):
+                    if chunk.lower() in material['Name'].lower():
+                        contains_material = True
+                if event.content.get('MotherlodeMaterial', False):
+                    if chunk.lower() in event.content['MotherlodeMaterial'].lower():
+                        contains_material = True
+            if not contains_material:
+                return False
+
+        if event_name == 'ScanOrganic':
+            return False
+
+        return True
+
+    def _character_handles_status_event(
+        self,
+        character: dict[str, Any],
+        states: dict[str, Any],
+        event: StatusEvent,
+    ) -> bool:
+        event_name = event.status.get('event')
+        reactions = character.get('event_reactions', {}) if character.get('event_reaction_enabled_var', False) else {}
+        if reactions.get(event_name) != 'on':
+            return False
+
+        if event_name in ['InDanger', 'OutOfDanger']:
+            ship_info = get_state_dict(states, 'ShipInfo')
+            location = get_state_dict(states, 'Location')
+            current_status = get_state_dict(states, 'CurrentStatus')
+            nav_info = get_state_dict(states, 'NavInfo', {'NavRoute': []})
+            flags = current_status.get('flags', {}) if isinstance(current_status, dict) else {}
+            flags2 = current_status.get('flags2', {}) if isinstance(current_status, dict) else {}
+            nav_route = nav_info.get('NavRoute', []) if isinstance(nav_info, dict) else []
+
+            if not character.get('react_to_danger_mining_var', False):
+                if ship_info.get('IsMiningShip', False) and location.get('PlanetaryRing', False):
+                    return False
+            if not character.get('react_to_danger_onfoot_var', False):
+                if flags2 and flags2.get('OnFoot'):
+                    return False
+            if not character.get('react_to_danger_supercruise_var', False):
+                if flags.get('Supercruise') and len(nav_route):
+                    return False
+
+        return True
+
+    def _is_terminal_tool_action(self, action: ChatCompletionMessageToolCall) -> bool:
+        return action.function.name == 'crewTalk'
 
     def _get_environment_tts_postprocessing_layers(
         self,
@@ -778,7 +882,12 @@ class Assistant:
             action_result = self.action_manager.runAction(action, projected_states)
             action_results.append(action_result)
 
-            self.event_manager.add_tool_call([action.model_dump()], [action_result], [action_input_desc] if action_input_desc else None)
+            self.event_manager.add_tool_call(
+                [action.model_dump()],
+                [action_result],
+                [action_input_desc] if action_input_desc else None,
+                do_not_reply=self._is_terminal_tool_action(action),
+            )
 
 
     def verify_action(self, user_input: str, action: ChatCompletionMessageToolCall, prompt: list, tools: list):
@@ -847,6 +956,7 @@ class Assistant:
                         reasons.append(event.kind)
             
             use_tools = self.config["tools_var"] and ('user' in reasons or 'tool' in reasons)
+            crew_talk_available = self._should_offer_crew_talk_tool()
 
             current_status = get_state_dict(projected_states, "CurrentStatus")
             flags = current_status.get("flags", {})
@@ -870,6 +980,8 @@ class Assistant:
             # append allowed actions from config
             allowed_actions = self.config.get("allowed_actions", [])
             tool_list = self.action_manager.getToolsList(active_mode, uses_actions, uses_web_actions, uses_ui_actions, allowed_actions) if use_tools else None
+            if crew_talk_available:
+                tool_list = self._append_optional_tool(tool_list, 'crewTalk')
             predicted_actions = None
             if tool_list and user_input and not tool_uses and self.config["use_action_cache_var"]:
                 predicted_actions = self.action_manager.predict_action(user_input[-1], tool_list)
@@ -922,7 +1034,7 @@ class Assistant:
             self.is_replying = False
 
     def should_reply(self, states:dict[str, Any]):
-        character = self.config['characters'][self.config['active_character_index']]
+        active_characters = self._get_active_characters()
         if len(self.pending) == 0:
             return False
 
@@ -939,53 +1051,12 @@ class Assistant:
                 return True
 
             if isinstance(event, GameEvent) and event.content.get("event") in self.enabled_game_events:
-                if event.content.get("event") == "ReceiveText":
-                    if event.content.get("Channel") not in ['wing', 'voicechat', 'friend', 'player'] and (
-                        (not character["react_to_text_local_var"] and event.content.get("Channel") == 'local') or
-                        (not character["react_to_text_starsystem_var"] and event.content.get("Channel") == 'starsystem') or
-                        (not character["react_to_text_npc_var"] and event.content.get("Channel") == 'npc') or
-                        (not character["react_to_text_squadron_var"] and event.content.get("Channel") == 'squadron')):
-                        continue
-
-                if event.content.get("event") == "ProspectedAsteroid":
-                    chunks = [chunk.strip() for chunk in character["react_to_material"].split(",")]
-                    contains_material = False
-                    for chunk in chunks:
-                        for material in event.content.get("Materials"):
-                            if chunk.lower() in material["Name"].lower():
-                                contains_material = True
-                        if event.content.get("MotherlodeMaterial", False):
-                            if chunk.lower() in event.content['MotherlodeMaterial'].lower():
-                                contains_material = True
-
-                    if not contains_material:
-                        continue
-
-                if event.content.get("event") == "ScanOrganic":
-                    continue
-
-                return True
+                if any(self._character_handles_game_event(character, event) for _, character in active_characters):
+                    return True
 
             if isinstance(event, StatusEvent) and event.status.get("event") in self.enabled_game_events:
-                if event.status.get("event") in ["InDanger", "OutOfDanger"]:
-                    ship_info = get_state_dict(states, "ShipInfo")
-                    location = get_state_dict(states, "Location")
-                    current_status = get_state_dict(states, "CurrentStatus")
-                    nav_info = get_state_dict(states, "NavInfo", {"NavRoute": []})
-                    flags = current_status.get("flags", {}) if isinstance(current_status, dict) else {}
-                    flags2 = current_status.get("flags2", {}) if isinstance(current_status, dict) else {}
-                    nav_route = nav_info.get("NavRoute", []) if isinstance(nav_info, dict) else []
-
-                    if not character["react_to_danger_mining_var"]:
-                        if ship_info.get("IsMiningShip", False) and location.get("PlanetaryRing", False):
-                            continue
-                    if not character["react_to_danger_onfoot_var"]:
-                        if flags2 and flags2.get("OnFoot"):
-                            continue
-                    if not character["react_to_danger_supercruise_var"]:
-                        if flags.get("Supercruise") and len(nav_route):
-                            continue
-                return True
+                if any(self._character_handles_status_event(character, states, event) for _, character in active_characters):
+                    return True
 
             if isinstance(event, ExternalEvent):
                 if event.content.get("event") == "ExternalTwitchMessage":
@@ -993,13 +1064,22 @@ class Assistant:
                 return True
 
             if isinstance(event, ProjectedEvent):
-                if event.content.get("event").startswith('ScanOrganic') and 'ScanOrganic' in self.enabled_game_events:
+                event_name = event.content.get("event")
+                if any(
+                    character.get('event_reactions', {}).get('ScanOrganic') == 'on'
+                    for _, character in active_characters
+                ) and isinstance(event_name, str) and event_name.startswith('ScanOrganic'):
                     return True
-                if event.content.get("event") in self.enabled_game_events:
+                if any(
+                    character.get('event_reactions', {}).get(event_name) == 'on'
+                    for _, character in active_characters
+                ):
                     return True
 
             if isinstance(event, QuestEvent):
-                if 'quest' in self.enabled_game_events:
+                if event.content.get('action') == 'crew_message':
+                    continue
+                if any(character.get('event_reactions', {}).get('quest') == 'on' for _, character in active_characters):
                     return True
 
             # run should_reply handlers for each plugin

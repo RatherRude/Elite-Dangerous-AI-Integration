@@ -58,18 +58,17 @@ NavRouteEvent = dict
 class PromptGenerator:
     previous_prompt_json = ''
     
-    def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str], system_db: SystemDatabase, weapon_types: list[dict] | None = None, disabled_game_events: list[str] | None = None):
+    def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str], system_db: SystemDatabase, weapon_types: list[dict] | None = None, disabled_game_events: list[str] | None = None, active_characters: list[dict[str, Any]] | None = None):
         self.registered_prompt_event_handlers: list[Callable[[Event], str|None]] = []
         self.registered_status_generators: list[Callable[[ProjectedStates], list[tuple[str, Any]]]] = []
         self.commander_name = commander_name
         self.character_prompt = character_prompt
+        self.active_characters = active_characters if active_characters is not None else []
         self.important_game_events = important_game_events
         self.disabled_game_events = disabled_game_events if disabled_game_events is not None else []
         self.system_db = system_db
         self.weapon_types: list[dict] = weapon_types if weapon_types is not None else []
         self.quest_db = QuestDatabase()
-
-        # Pad map for station docking positions
         self.pad_map = {
             "1":  {"clock": 6, "depth": "very front"},
             "2":  {"clock": 6, "depth": "front"},
@@ -117,6 +116,32 @@ class PromptGenerator:
             "44": {"clock": 5, "depth": "back"},
             "45": {"clock": 5, "depth": "very back"}
         }
+
+    def get_multicrew_prompt_block(self) -> str:
+        if len(self.active_characters) <= 1:
+            return ""
+
+        lines = [
+            "Multicrew is active and crew members are available as distinct speakers.",
+            "When only the primary ship voice should answer, respond normally without calling a tool.",
+            "When a non-primary crew member should speak, or when multiple active crew members should speak back and forth, call the crewTalk tool once with an ordered list of utterances.",
+            "Prefer one crewTalk call for the whole exchange, and reuse the same speaker_id in multiple utterances whenever that crew member speaks again later in the same sequence.",
+            "Crew roster by speaker_id for crewTalk:",
+        ]
+        for character in self.active_characters:
+            speaker_id = character.get("speaker_id", "unknown")
+            name = character.get("name", speaker_id)
+            prompt_template = character.get("character_prompt", "")
+            prompt = prompt_template.format(commander_name=self.commander_name) if isinstance(prompt_template, str) else ""
+            role = "primary" if character.get("is_primary") else "active"
+            lines.append(f"- {speaker_id} -> {name} ({role}): {prompt}")
+        return " ".join(lines)
+
+    def get_character_prompt_block(self) -> str:
+        if len(self.active_characters) > 1:
+            return self.get_multicrew_prompt_block()
+
+        return "Your character prompt is: " + self.character_prompt.format(commander_name=self.commander_name)
 
     def announce_pad(self, pad_number):
         """Generate a detailed description of the landing pad location."""
@@ -2464,6 +2489,15 @@ class PromptGenerator:
 
     def quest_conversation_message(self, event: QuestEvent):
         action = event.content.get("action") if isinstance(event.content, dict) else None
+        if action == "crew_message":
+            actor_name = event.content.get("actor_name") if isinstance(event.content, dict) else None
+            transcription = event.content.get("transcription") if isinstance(event.content, dict) else None
+            resolved_name = actor_name if isinstance(actor_name, str) and actor_name else "Crew"
+            resolved_text = transcription if isinstance(transcription, str) and transcription else ""
+            return {
+                "role": "assistant",
+                "content": f"[{resolved_name}] {resolved_text}",
+            }
         if action not in ("npc_message", "play_sound"):
             return None
         actor_name = event.content.get("actor_name") if isinstance(event.content, dict) else None
@@ -2481,6 +2515,10 @@ class PromptGenerator:
         }
 
     def tool_messages(self, event: ToolEvent):
+        if len(event.request) == 1:
+            function_name = event.request[0].get("function", {}).get("name")
+            if function_name == "crewTalk":
+                return []
         responses = []
         for result in event.results:
             responses.append(result)
@@ -3718,7 +3756,7 @@ class PromptGenerator:
                     + "Be specific about amounts and percentages for inquiries as the commander can not see the game events' text description but lives in the universe. " \
                     + "You do not ask questions or initiate conversations. You respond only when addressed and in a single sentence. " \
                     + "Don't repeat the same words and sentences, mix it up. " \
-                    + "Your character prompt is: " + self.character_prompt.format(commander_name=self.commander_name)
+                    + self.get_character_prompt_block()
             
             usage_stats.system_chars = len(system_prompt_content)
             conversational_pieces.append(
@@ -3818,7 +3856,7 @@ class PromptGenerator:
         if "primaryStar" in system_info and system_info["primaryStar"]:
             star_data = system_info["primaryStar"]
             formatted["Star"] = star_data.get("name", "Unknown")
-            formatted["Star Type"] = star_data.get("type", "Unknown") + f" ({'' if star_data.get("isScoopable", False) else 'Not '}Scoopable)"
+            formatted["Star Type"] = star_data.get("type", "Unknown") + f" ({'' if star_data.get('isScoopable', False) else 'Not '}Scoopable)"
 
         # Include coordinates if available
         if "coords" in system_info:

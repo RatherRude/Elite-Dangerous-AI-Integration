@@ -13,11 +13,13 @@ from pydantic import BaseModel
 from .actions_web import register_web_actions
 from .actions_ui import register_ui_actions
 from .actions_genui import register_genui_actions
+from .actions_crew import register_crew_actions
 
 from ..Logger import log, show_chat_message
 from ..EDKeys import EDKeys
 from ..EventManager import EventManager
 from ..ActionManager import ActionManager
+from ..Config import Config
 from ..PromptGenerator import PromptGenerator
 from ..Models import LLMModel, EmbeddingModel
 from ..Projections import get_state_dict, ProjectedStates
@@ -1429,6 +1431,7 @@ def target_subsystem(args, projected_states):
 def register_actions(actionManager: ActionManager, eventManager: EventManager, promptGenerator: PromptGenerator ,llmModel: LLMModel,
                      visionModel: LLMModel | None, visionModelName: str | None,
                      embeddingModel: EmbeddingModel | None,
+                     config: Config,
                      edKeys: EDKeys, discovery_primary_var_flag: bool = True, discovery_firegroup_var_flag: int = 1,
                      chat_local_tabbed_flag: bool = False,
                      chat_wing_tabbed_flag: bool = False,
@@ -2516,6 +2519,12 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         },
         "required": ["message", "channel"]
     }, send_message, 'global', permission='textMessage')
+
+    register_crew_actions(
+        actionManager,
+        eventManager,
+        config,
+    )
 
     register_web_actions(
         actionManager, eventManager,

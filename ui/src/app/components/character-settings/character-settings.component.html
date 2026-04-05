@@ -17,6 +17,22 @@
                             </mat-option>
                         </mat-select>
                     </mat-form-field>
+                    <div class="active-crew-section">
+                        <div class="active-crew-title">Active Crew</div>
+                        <div class="active-crew-list">
+                            <label class="crew-chip" *ngFor="let character of config.characters; let i = index" [class.crew-chip--primary]="isPrimaryCharacter(i)">
+                                <input type="checkbox"
+                                       [checked]="isCrewMemberActive(i)"
+                                       [disabled]="isPrimaryCharacter(i)"
+                                       (change)="toggleCrewMember(i, $any($event.target).checked)">
+                                <span class="crew-chip__swatch" [style.backgroundColor]="getCharacterColor(character, i)"></span>
+                                <span>{{ character.name }}</span>
+                                @if (isPrimaryCharacter(i)) {
+                                    <span class="crew-chip__role">Primary</span>
+                                }
+                            </label>
+                        </div>
+                    </div>
                     @if (!editMode) {
                         <div class="character-display" [class.with-traits]="!isCustomPreset()">
                             <div class="character-avatar-preview">
@@ -140,18 +156,25 @@
                                         (ngModelChange)="setCharacterPropertyAndUpdatePrompt('name', $event)">
                                 </mat-form-field>
                             </div>
-                            <div class="trait-input">
-                                <!-- Character Language -->
-                                <mat-form-field appearance="outline">
+                             <div class="trait-input">
+                                 <!-- Character Language -->
+                                 <mat-form-field appearance="outline">
                                     <mat-label>Character Language</mat-label>
                                     <input matInput
                                         [ngModel]="activeCharacter.personality_language"
                                         [ngModelOptions]="{updateOn: 'blur'}"
-                                        (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_language', $event)">
-                                </mat-form-field>
+                                         (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_language', $event)">
+                                 </mat-form-field>
+                             </div>
+                            <div class="character-color-picker">
+                                <label for="character-color-input">Name Color</label>
+                                <input id="character-color-input"
+                                       type="color"
+                                       [ngModel]="activeCharacter.color || getCharacterColor(activeCharacter, selectedCharacterIndex ?? 0)"
+                                       (ngModelChange)="setCharacterProperty('color', $event)">
                             </div>
-                            <div class="character-voice-container">
-                                <div class="trait-select">
+                             <div class="character-voice-container">
+                                 <div class="trait-select">
                                     <!-- Voice selection -->
                                     <mat-form-field appearance="outline">
                                         <mat-label>Voice</mat-label>
