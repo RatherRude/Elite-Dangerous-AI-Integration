@@ -733,6 +733,11 @@ export class CharacterSettingsComponent {
         }));
     }
 
+    get inactiveRosterEntries(): RosterCharacterEntry[] {
+        const activeIndices = new Set(this.getActiveCrewIndices());
+        return this.allRosterEntries.filter((entry) => !activeIndices.has(entry.index));
+    }
+
     get standbyCharacterCount(): number {
         return Math.max(this.allRosterEntries.length - this.activeRosterEntries.length, 0);
     }
@@ -757,6 +762,29 @@ export class CharacterSettingsComponent {
         }
 
         void this.toggleCrewMember(index, !this.isCrewMemberActive(index));
+    }
+
+    duplicateCharacterFromCard(index: number, event: Event): void {
+        event.stopPropagation();
+        this.duplicateCharacter(index);
+    }
+
+    deleteCharacterFromCard(index: number, event: Event): void {
+        event.stopPropagation();
+        this.deleteCharacter(index);
+    }
+
+    async editCharacterFromCard(index: number, event: Event): Promise<void> {
+        event.stopPropagation();
+        this.hoveredCharacterIndex = null;
+
+        if (this.selectedCharacterIndex !== index) {
+            await this.characterService.setActiveCharacter(index);
+        }
+
+        if (!this.editMode) {
+            this.toggleEditMode();
+        }
     }
 
     getCharacterAvatarUrlForIndex(index: number | null): string {
@@ -1572,23 +1600,28 @@ export class CharacterSettingsComponent {
     }
 
     deleteSelectedCharacter(): void {
-        if (!this.config || this.selectedCharacterIndex === null) return;
+        if (this.selectedCharacterIndex === null) return;
+
+        this.deleteCharacter(this.selectedCharacterIndex);
+    }
+
+    deleteCharacter(index: number): void {
+        if (!this.config) return;
 
         // default cannot be deleted
-        if (this.selectedCharacterIndex === 0) return;
+        if (index === 0) return;
+
+        const character = this.config.characters?.[index];
+        if (!character) return;
 
         this.confirmationDialog.openConfirmationDialog({
             title: "Delete Character",
-            message: `Are you sure you want to delete "${
-                this.config.characters[this.selectedCharacterIndex].name
-            }"? This action cannot be undone.`,
+            message: `Are you sure you want to delete "${character.name}"? This action cannot be undone.`,
             confirmButtonText: "Delete",
             cancelButtonText: "Cancel",
         }).subscribe((confirmed) => {
             if (confirmed && this.config && this.config.characters) {
-                if (this.selectedCharacterIndex === null) return;
-
-                this.characterService.deleteCharacter(this.selectedCharacterIndex);
+                this.characterService.deleteCharacter(index);
 
                 // Show success message
                 this.snackBar.open(
@@ -1686,12 +1719,18 @@ export class CharacterSettingsComponent {
     }
 
     duplicateSelectedCharacter(): void {
-        if (!this.config || this.selectedCharacterIndex === null) return;
+        if (this.selectedCharacterIndex === null) return;
+
+        this.duplicateCharacter(this.selectedCharacterIndex);
+    }
+
+    duplicateCharacter(index: number): void {
+        if (!this.config) return;
 
         // Make sure we have a characters array and the selected index is valid
         if (
             !this.config.characters ||
-            !this.config.characters[this.selectedCharacterIndex]
+            !this.config.characters[index]
         ) {
             this.snackBar.open("Error: Character not found", "OK", {
                 duration: 5000,
@@ -1700,7 +1739,7 @@ export class CharacterSettingsComponent {
         }
 
         const config = this.config; // Store in local variable
-        const originalChar = config.characters[this.selectedCharacterIndex];
+        const originalChar = config.characters[index];
 
         // Create a deep copy of the character
         const duplicatedChar = JSON.parse(JSON.stringify(originalChar));

@@ -103,6 +103,14 @@ mat-slide-toggle {
   gap: 4px;
 }
 
+.crew-roster-manager__header--actions {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
 .crew-roster-manager__title {
   font-size: 0.95rem;
   font-weight: 700;
@@ -113,6 +121,20 @@ mat-slide-toggle {
   color: rgba(255, 255, 255, 0.7);
   font-size: 0.84rem;
   line-height: 1.45;
+}
+
+.crew-roster-manager__section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.crew-roster-manager__section-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
 }
 
 .crew-avatar-card {
@@ -155,8 +177,27 @@ mat-slide-toggle {
     opacity: 0.78;
   }
 
+  &.crew-avatar-card--compact {
+    padding: 0;
+    overflow: hidden;
+    border: none;
+    background: transparent;
+
+    &:hover,
+    &:focus-visible,
+    &.crew-avatar-card--hovered {
+      background: transparent;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
+    }
+
+    &.crew-avatar-card--primary {
+      background: transparent;
+      box-shadow: 0 0 0 1px var(--character-color), 0 12px 28px rgba(0, 0, 0, 0.24);
+    }
+  }
+
   &.crew-avatar-card--manager {
-    padding: 10px;
+    min-width: 0;
   }
 }
 
@@ -167,6 +208,38 @@ mat-slide-toggle {
   border-radius: 12px;
   border: 2px solid var(--character-color);
   background: rgba(255, 255, 255, 0.04);
+}
+
+.crew-avatar-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 28px 10px 10px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.36), transparent);
+  pointer-events: none;
+}
+
+.crew-avatar-overlay__name {
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crew-avatar-overlay__meta {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.78rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .crew-avatar-image {
@@ -184,9 +257,6 @@ mat-slide-toggle {
 }
 
 .crew-avatar-action {
-  position: absolute;
-  top: 8px;
-  right: 8px;
   background: rgba(0, 0, 0, 0.68);
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.24);
@@ -203,9 +273,31 @@ mat-slide-toggle {
   }
 }
 
+.crew-avatar-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  z-index: 2;
+
+  .crew-avatar-action {
+    margin: 0;
+  }
+}
+
+.crew-avatar-card--manager .crew-avatar-action {
+  opacity: 1;
+}
+
+.crew-avatar-card--manager .crew-avatar-actions {
+  width: 84px;
+}
+
 .avatar-star {
   position: absolute;
-  bottom: 8px;
+  top: 8px;
   left: 8px;
   z-index: 1;
   font-size: 26px;

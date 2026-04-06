@@ -9,7 +9,11 @@
                             <div class="crew-roster-copy">
                                 <div class="crew-roster-title">Active Crew</div>
                                 <div class="crew-roster-subtitle">
-                                    {{ activeRosterEntries.length }} active, {{ standbyCharacterCount }} standby
+                                    @if (showCrewRosterManager) {
+                                        Manage your active crew here. Click a portrait to make that character primary.
+                                    } @else {
+                                        {{ activeRosterEntries.length }} active, {{ standbyCharacterCount }} standby
+                                    }
                                 </div>
                             </div>
                             <button mat-stroked-button
@@ -26,6 +30,8 @@
                                 <div class="crew-avatar-card"
                                      [class.crew-avatar-card--primary]="isPrimaryCharacter(entry.index)"
                                      [class.crew-avatar-card--active]="isCrewMemberActive(entry.index)"
+                                     [class.crew-avatar-card--compact]="true"
+                                     [class.crew-avatar-card--manager]="showCrewRosterManager"
                                      [class.crew-avatar-card--hovered]="displayCharacterIndex === entry.index"
                                      [style.--character-color]="getCharacterColor(entry.character, entry.index)"
                                      [attr.tabindex]="0"
@@ -42,18 +48,46 @@
                                         @if (isPrimaryCharacter(entry.index)) {
                                             <span class="avatar-star">★</span>
                                         }
-                                    </div>
-                                    <div class="avatar-name">{{ entry.character.name }}</div>
-                                    <div class="avatar-meta">
-                                        <span>{{ entry.character.tts_voice }}</span>
-                                        <span>{{ countActiveEvents(entry.character) }} events</span>
-                                    </div>
-                                    <div class="avatar-role-row">
-                                        @if (isPrimaryCharacter(entry.index)) {
-                                            <span class="avatar-role avatar-role--primary">Primary</span>
-                                        } @else {
-                                            <span class="avatar-role">Active Crew</span>
+                                        @if (showCrewRosterManager) {
+                                            <div class="crew-avatar-actions">
+                                                <button mat-icon-button
+                                                        type="button"
+                                                        class="crew-avatar-action"
+                                                        matTooltip="Edit character"
+                                                        (click)="editCharacterFromCard(entry.index, $event)">
+                                                    <mat-icon>edit</mat-icon>
+                                                </button>
+                                                <button mat-icon-button
+                                                        type="button"
+                                                        class="crew-avatar-action"
+                                                        [disabled]="isPrimaryCharacter(entry.index)"
+                                                        matTooltip="Remove from active crew"
+                                                        (click)="toggleCrewMemberFromCard(entry.index, $event)">
+                                                    <mat-icon>group_remove</mat-icon>
+                                                </button>
+                                                <button mat-icon-button
+                                                        type="button"
+                                                        class="crew-avatar-action"
+                                                        matTooltip="Duplicate character"
+                                                        (click)="duplicateCharacterFromCard(entry.index, $event)">
+                                                    <mat-icon>content_copy</mat-icon>
+                                                </button>
+                                                <button mat-icon-button
+                                                        type="button"
+                                                        class="crew-avatar-action"
+                                                        [disabled]="entry.index === 0"
+                                                        matTooltip="Delete character"
+                                                        (click)="deleteCharacterFromCard(entry.index, $event)">
+                                                    <mat-icon>delete</mat-icon>
+                                                </button>
+                                            </div>
                                         }
+                                        <div class="crew-avatar-overlay">
+                                            <div class="crew-avatar-overlay__name">{{ entry.character.name }}</div>
+                                            <div class="crew-avatar-overlay__meta">
+                                                {{ entry.character.tts_voice }} / {{ countActiveEvents(entry.character) }} events
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             }
@@ -61,18 +95,25 @@
 
                         @if (showCrewRosterManager) {
                             <div class="crew-roster-manager">
-                                <div class="crew-roster-manager__header">
-                                    <div class="crew-roster-manager__title">Crew Roster</div>
-                                    <div class="crew-roster-manager__subtitle">
-                                        Click a character to make them primary. Use the corner button to add or remove support crew.
+                                <div class="crew-roster-manager__header crew-roster-manager__header--actions">
+                                    <div>
+                                        <div class="crew-roster-manager__title">Crew Roster</div>
+                                        <div class="crew-roster-manager__subtitle">
+                                            Add support crew here. Active crew controls live on the active roster above.
+                                        </div>
                                     </div>
+                                    <button mat-stroked-button type="button" (click)="addNewCharacter()">
+                                        <mat-icon>add</mat-icon>
+                                        New Character
+                                    </button>
                                 </div>
-                                <div class="crew-roster crew-roster--manager">
-                                    @for (entry of allRosterEntries; track entry.index) {
-                                        <div class="crew-avatar-card crew-avatar-card--manager"
+                                <div class="crew-roster-manager__section">
+                                    <div class="crew-roster-manager__section-title">Standby Roster</div>
+                                    <div class="crew-roster crew-roster--manager">
+                                        @for (entry of inactiveRosterEntries; track entry.index) {
+                                            <div class="crew-avatar-card crew-avatar-card--compact crew-avatar-card--manager"
                                              [class.crew-avatar-card--primary]="isPrimaryCharacter(entry.index)"
-                                             [class.crew-avatar-card--active]="isCrewMemberActive(entry.index)"
-                                             [class.crew-avatar-card--inactive]="!isCrewMemberActive(entry.index)"
+                                             [class.crew-avatar-card--inactive]="true"
                                              [style.--character-color]="getCharacterColor(entry.character, entry.index)"
                                              [attr.tabindex]="0"
                                              (click)="onCharacterSelect(entry.index)"
@@ -83,34 +124,50 @@
                                                      [alt]="entry.character.name + ' avatar'"
                                                      class="crew-avatar-image"
                                                      [class.crew-avatar-image--single]="!getCharacterAvatarUsesSpriteSheet(entry.index)">
-                                                @if (isPrimaryCharacter(entry.index)) {
-                                                    <span class="avatar-star">★</span>
-                                                }
-                                                <button mat-icon-button
-                                                        type="button"
-                                                        class="crew-avatar-action"
-                                                        [disabled]="isPrimaryCharacter(entry.index)"
-                                                        [matTooltip]="isCrewMemberActive(entry.index) ? 'Remove from active crew' : 'Add to active crew'"
-                                                        (click)="toggleCrewMemberFromCard(entry.index, $event)">
-                                                    <mat-icon>{{ isCrewMemberActive(entry.index) ? 'group_remove' : 'group_add' }}</mat-icon>
-                                                </button>
+                                                 @if (isPrimaryCharacter(entry.index)) {
+                                                     <span class="avatar-star">★</span>
+                                                 }
+                                                 <div class="crew-avatar-actions">
+                                                     <button mat-icon-button
+                                                             type="button"
+                                                             class="crew-avatar-action"
+                                                             matTooltip="Edit character"
+                                                             (click)="editCharacterFromCard(entry.index, $event)">
+                                                         <mat-icon>edit</mat-icon>
+                                                     </button>
+                                                     <button mat-icon-button
+                                                             type="button"
+                                                             class="crew-avatar-action"
+                                                             matTooltip="Add to active crew"
+                                                             (click)="toggleCrewMemberFromCard(entry.index, $event)">
+                                                         <mat-icon>group_add</mat-icon>
+                                                     </button>
+                                                     <button mat-icon-button
+                                                             type="button"
+                                                             class="crew-avatar-action"
+                                                             matTooltip="Duplicate character"
+                                                             (click)="duplicateCharacterFromCard(entry.index, $event)">
+                                                         <mat-icon>content_copy</mat-icon>
+                                                     </button>
+                                                     <button mat-icon-button
+                                                             type="button"
+                                                             class="crew-avatar-action"
+                                                             [disabled]="entry.index === 0"
+                                                             matTooltip="Delete character"
+                                                             (click)="deleteCharacterFromCard(entry.index, $event)">
+                                                         <mat-icon>delete</mat-icon>
+                                                     </button>
+                                                 </div>
+                                                 <div class="crew-avatar-overlay">
+                                                     <div class="crew-avatar-overlay__name">{{ entry.character.name }}</div>
+                                                     <div class="crew-avatar-overlay__meta">
+                                                         {{ entry.character.tts_voice }} / {{ countActiveEvents(entry.character) }} events
+                                                     </div>
+                                                 </div>
+                                             </div>
                                             </div>
-                                            <div class="avatar-name">{{ entry.character.name }}</div>
-                                            <div class="avatar-meta">
-                                                <span>{{ entry.character.tts_voice }}</span>
-                                                <span>{{ countActiveEvents(entry.character) }} events</span>
-                                            </div>
-                                            <div class="avatar-role-row">
-                                                @if (isPrimaryCharacter(entry.index)) {
-                                                    <span class="avatar-role avatar-role--primary">Primary</span>
-                                                } @else if (isCrewMemberActive(entry.index)) {
-                                                    <span class="avatar-role">Active Crew</span>
-                                                } @else {
-                                                    <span class="avatar-role avatar-role--inactive">Standby</span>
-                                                }
-                                            </div>
-                                        </div>
-                                    }
+                                        }
+                                    </div>
                                 </div>
                             </div>
                         }
@@ -181,25 +238,6 @@
                                     [matTooltip]="'Enter edit mode to modify character name, personality traits, and event reactions'"
                                     (click)="toggleEditMode()">
                                 <mat-icon>edit</mat-icon> Edit
-                            </button>
-
-                            <button mat-raised-button color="accent" (click)="addNewCharacter()"
-                                    [matTooltip]="selectedCharacterIndex === 0 ? 'Create a new character with customizable traits and personality prompt' : 'Create a new character based on the current one'">
-                                <mat-icon>add</mat-icon> New
-
-                            </button>
-
-                            <button mat-raised-button color="accent" 
-                                    (click)="duplicateSelectedCharacter()"
-                                    [matTooltip]="selectedCharacterIndex === 0 ? 'Create a copy of this character that you can customize with different traits and settings' : 'Create a copy of this character with all current settings'">
-                                <mat-icon>content_copy</mat-icon> Duplicate
-                            </button>
-
-                            <button mat-raised-button color="warn"
-                                    [disabled]="selectedCharacterIndex === 0"
-                                    (click)="deleteSelectedCharacter()"
-                                    [matTooltip]="'Permanently delete the currently selected character'">
-                                <mat-icon>delete</mat-icon> Delete
                             </button>
                         }
 
