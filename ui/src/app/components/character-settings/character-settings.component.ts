@@ -19,6 +19,7 @@ import { MatDialog } from "@angular/material/dialog";
 import { EdgeTtsVoicesDialogComponent } from "../edge-tts-voices-dialog/edge-tts-voices-dialog.component.js";
 import { ConfirmationDialogComponent } from "../confirmation-dialog/confirmation-dialog.component.js";
 import { AvatarCatalogDialogComponent, AvatarCatalogResult } from "../avatar-catalog-dialog/avatar-catalog-dialog.component.js";
+import { AvatarService } from "../../services/avatar.service";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatDivider } from "@angular/material/divider";
 import { MatInputModule } from "@angular/material/input";
@@ -82,6 +83,16 @@ interface LowHighPassPresetOption {
     highpass: CharacterTTSFilterConfig | null;
 }
 
+interface CachedAvatarMeta {
+    url: string;
+    mimeType: string | null;
+}
+
+interface RosterCharacterEntry {
+    index: number;
+    character: Character;
+}
+
 @Component({
     selector: "app-character-settings",
     standalone: true,
@@ -109,16 +120,21 @@ export class CharacterSettingsComponent {
     config: ConfigWithCharacters | null = null;
     configSubscription: Subscription;
     characterSubscription: Subscription;
-    private avatarMimeSubscription: Subscription;
     activeCharacter: Character | null = null;
     selectedCharacterIndex: number | null = null;
     editMode = false;
     showVoiceMoreSettings = false;
+    showCrewRosterManager = false;
     initializing: boolean = true;
-    /** Primary MIME from CharacterService (blob avatars); null when no file or unknown. */
-    private avatarMimePrimary: string | null = null;
+    hoveredCharacterIndex: number | null = null;
     private localCharacterCopy: Character | null = null;
     isApplyingChange: boolean = false;
+    private avatarMetaCache: Record<string, CachedAvatarMeta> = {};
+    private pendingAvatarLoads = new Set<string>();
+    private readonly fallbackAvatarMeta: CachedAvatarMeta = {
+        url: "assets/cn_avatar_default.png",
+        mimeType: "image/png",
+    };
     voiceInstructionSupportedModels: string[] = this.characterService.voiceInstructionSupportedModels;
     readonly lowHighPassPresets: LowHighPassPresetOption[] = [
         { id: "off", label: "Off", lowpass: null, highpass: null },
@@ -625,6 +641,7 @@ export class CharacterSettingsComponent {
     constructor(
         private configService: ConfigService,
         private characterService: CharacterService,
+        private avatarService: AvatarService,
         private snackBar: MatSnackBar,
         private confirmationDialog: ConfirmationDialogService,
         private dialog: MatDialog,
@@ -633,17 +650,18 @@ export class CharacterSettingsComponent {
             (config) => {
                 this.config = config as ConfigWithCharacters;
                 this.selectedCharacterIndex = config?.active_character_index ?? null;
+                if (
+                    this.hoveredCharacterIndex !== null
+                    && (!config?.characters || this.hoveredCharacterIndex >= config.characters.length)
+                ) {
+                    this.hoveredCharacterIndex = null;
+                }
             },
         );
         this.characterSubscription = this.characterService.character$.subscribe(
             (character) => {
                 this.activeCharacter = character;
             }
-        );
-        this.avatarMimeSubscription = this.characterService.avatarMime$.subscribe(
-            (mime) => {
-                this.avatarMimePrimary = mime;
-            },
         );
     }
     ngOnDestroy() {
@@ -654,22 +672,160 @@ export class CharacterSettingsComponent {
         if (this.characterSubscription) {
             this.characterSubscription.unsubscribe();
         }
-        if (this.avatarMimeSubscription) {
-            this.avatarMimeSubscription.unsubscribe();
+        this.clearAvatarCache();
+    }
+
+    get displayCharacterIndex(): number | null {
+        if (this.hoveredCharacterIndex !== null) {
+            return this.hoveredCharacterIndex;
         }
+
+        return this.selectedCharacterIndex;
+    }
+
+    get displayCharacter(): Character | null {
+        const index = this.displayCharacterIndex;
+        if (index === null) {
+            return this.activeCharacter;
+        }
+
+        return this.config?.characters?.[index] ?? this.activeCharacter;
+    }
+
+    get isDisplayCharacterCustom(): boolean {
+        return this.displayCharacter?.personality_preset === "custom";
+    }
+
+    get activeRosterEntries(): RosterCharacterEntry[] {
+        if (!this.config?.characters) {
+            return [];
+        }
+
+        const activeIndexes = this.getActiveCrewIndices();
+        const resolvedEntries = activeIndexes
+            .map((index) => {
+                const character = this.config?.characters[index];
+                return character ? { index, character } : null;
+            })
+            .filter((entry): entry is RosterCharacterEntry => entry !== null);
+
+        if (resolvedEntries.length > 0) {
+            return resolvedEntries;
+        }
+
+        if (
+            this.selectedCharacterIndex !== null
+            && this.config.characters[this.selectedCharacterIndex]
+        ) {
+            return [{
+                index: this.selectedCharacterIndex,
+                character: this.config.characters[this.selectedCharacterIndex],
+            }];
+        }
+
+        return [];
+    }
+
+    get allRosterEntries(): RosterCharacterEntry[] {
+        return (this.config?.characters ?? []).map((character, index) => ({
+            index,
+            character,
+        }));
+    }
+
+    get standbyCharacterCount(): number {
+        return Math.max(this.allRosterEntries.length - this.activeRosterEntries.length, 0);
     }
 
     /** PNG/WebP sprite sheet preview uses 200% + clip; SVG is one graphic. */
     get avatarPreviewUsesSpriteSheet(): boolean {
-        if (!this.activeCharacter?.avatar) {
+        return this.getCharacterAvatarUsesSpriteSheet(this.displayCharacterIndex);
+    }
+
+    setHoveredCharacter(index: number | null): void {
+        this.hoveredCharacterIndex = index;
+    }
+
+    toggleCrewRosterManager(): void {
+        this.showCrewRosterManager = !this.showCrewRosterManager;
+    }
+
+    toggleCrewMemberFromCard(index: number, event: Event): void {
+        event.stopPropagation();
+        if (this.editMode || this.isPrimaryCharacter(index)) {
+            return;
+        }
+
+        void this.toggleCrewMember(index, !this.isCrewMemberActive(index));
+    }
+
+    getCharacterAvatarUrlForIndex(index: number | null): string {
+        return this.getCharacterAvatarMeta(index).url;
+    }
+
+    getCharacterAvatarUsesSpriteSheet(index: number | null): boolean {
+        const character = this.getCharacterByIndex(index);
+        if (!character?.avatar) {
             return true;
         }
-        const mime = this.avatarMimePrimary;
+
+        const mime = this.getCharacterAvatarMeta(index).mimeType;
         if (!mime) {
             return true;
         }
+
         const primary = mime.trim().toLowerCase().split(";")[0]?.trim() ?? "";
         return primary !== "image/svg+xml";
+    }
+
+    private getCharacterByIndex(index: number | null): Character | null {
+        if (index === null) {
+            return null;
+        }
+
+        return this.config?.characters?.[index] ?? null;
+    }
+
+    private getCharacterAvatarMeta(index: number | null): CachedAvatarMeta {
+        const character = this.getCharacterByIndex(index);
+        if (!character?.avatar) {
+            return this.fallbackAvatarMeta;
+        }
+
+        const cached = this.avatarMetaCache[character.avatar];
+        if (cached) {
+            return cached;
+        }
+
+        if (!this.pendingAvatarLoads.has(character.avatar)) {
+            this.pendingAvatarLoads.add(character.avatar);
+            void this.avatarService.getAvatarWithMime(character.avatar)
+                .then((meta) => {
+                    this.avatarMetaCache[character.avatar!] = meta
+                        ? { url: meta.url, mimeType: meta.mimeType ?? null }
+                        : { ...this.fallbackAvatarMeta };
+                })
+                .catch(() => {
+                    this.avatarMetaCache[character.avatar!] = {
+                        ...this.fallbackAvatarMeta,
+                    };
+                })
+                .finally(() => {
+                    this.pendingAvatarLoads.delete(character.avatar!);
+                });
+        }
+
+        return this.fallbackAvatarMeta;
+    }
+
+    private clearAvatarCache(): void {
+        Object.values(this.avatarMetaCache).forEach((meta) => {
+            if (this.avatarService.isObjectUrl(meta.url)) {
+                URL.revokeObjectURL(meta.url);
+            }
+        });
+        this.avatarMetaCache = {};
+        this.pendingAvatarLoads.clear();
     }
 
     // Modify applySettingsFromPreset to work with the new approach
@@ -1342,6 +1498,7 @@ export class CharacterSettingsComponent {
 
         // If not in edit mode, enter edit mode
         if (!this.editMode) {
+            this.showCrewRosterManager = false;
             // Store a copy of the current character state before entering edit mode
             this.localCharacterCopy = JSON.parse(
                 JSON.stringify(
@@ -1377,6 +1534,7 @@ export class CharacterSettingsComponent {
 
         this.localCharacterCopy = null;
         this.showVoiceMoreSettings = false;
+        this.showCrewRosterManager = false;
         this.editMode = false;
     }
 
@@ -1402,6 +1560,7 @@ export class CharacterSettingsComponent {
 
         // Always exit edit mode
         this.showVoiceMoreSettings = false;
+        this.showCrewRosterManager = false;
         this.editMode = false;
     }
 

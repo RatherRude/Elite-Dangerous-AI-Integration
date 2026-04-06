@@ -4,87 +4,168 @@
             <!-- Character Management Section -->
             <div class="character-management-section">
                 <div class="character-selector">
-                    <mat-form-field appearance="fill">
-                        <mat-label>Select Character</mat-label>
-                        <mat-select [(value)]="selectedCharacterIndex" (selectionChange)="onCharacterSelect($event.value)" [disabled]="editMode">
-                            <mat-divider *ngIf="config.characters && config.characters.length > 0"></mat-divider>
-                            <mat-option *ngFor="let character of config.characters; let i = index" [value]="i">
-                                {{ character.name }} ({{ character.tts_voice }})
-                                <span class="char-details">
-                                    {{ character.personality_preset | slice:0:1 | uppercase }}{{ character.personality_preset | slice:1 }} -
-                                    {{ countActiveEvents(character) }} active events
-                                </span>
-                            </mat-option>
-                        </mat-select>
-                    </mat-form-field>
-                    <div class="active-crew-section">
-                        <div class="active-crew-title">Active Crew</div>
-                        <div class="active-crew-list">
-                            <label class="crew-chip" *ngFor="let character of config.characters; let i = index" [class.crew-chip--primary]="isPrimaryCharacter(i)">
-                                <input type="checkbox"
-                                       [checked]="isCrewMemberActive(i)"
-                                       [disabled]="isPrimaryCharacter(i)"
-                                       (change)="toggleCrewMember(i, $any($event.target).checked)">
-                                <span class="crew-chip__swatch" [style.backgroundColor]="getCharacterColor(character, i)"></span>
-                                <span>{{ character.name }}</span>
-                                @if (isPrimaryCharacter(i)) {
-                                    <span class="crew-chip__role">Primary</span>
-                                }
-                            </label>
-                        </div>
-                    </div>
                     @if (!editMode) {
-                        <div class="character-display" [class.with-traits]="!isCustomPreset()">
+                        <div class="crew-roster-header">
+                            <div class="crew-roster-copy">
+                                <div class="crew-roster-title">Active Crew</div>
+                                <div class="crew-roster-subtitle">
+                                    {{ activeRosterEntries.length }} active, {{ standbyCharacterCount }} standby
+                                </div>
+                            </div>
+                            <button mat-stroked-button
+                                    type="button"
+                                    class="crew-roster-toggle"
+                                    (click)="toggleCrewRosterManager()">
+                                <mat-icon>{{ showCrewRosterManager ? 'done' : 'groups' }}</mat-icon>
+                                {{ showCrewRosterManager ? 'Done' : 'Modify Crew Roster' }}
+                            </button>
+                        </div>
+
+                        <div class="crew-roster">
+                            @for (entry of activeRosterEntries; track entry.index) {
+                                <div class="crew-avatar-card"
+                                     [class.crew-avatar-card--primary]="isPrimaryCharacter(entry.index)"
+                                     [class.crew-avatar-card--active]="isCrewMemberActive(entry.index)"
+                                     [class.crew-avatar-card--hovered]="displayCharacterIndex === entry.index"
+                                     [style.--character-color]="getCharacterColor(entry.character, entry.index)"
+                                     [attr.tabindex]="0"
+                                     (mouseenter)="setHoveredCharacter(entry.index)"
+                                     (mouseleave)="setHoveredCharacter(null)"
+                                     (click)="onCharacterSelect(entry.index)"
+                                     (keydown.enter)="onCharacterSelect(entry.index)"
+                                     (keydown.space)="onCharacterSelect(entry.index); $event.preventDefault()">
+                                    <div class="crew-avatar-frame">
+                                        <img [src]="getCharacterAvatarUrlForIndex(entry.index)"
+                                             [alt]="entry.character.name + ' avatar'"
+                                             class="crew-avatar-image"
+                                             [class.crew-avatar-image--single]="!getCharacterAvatarUsesSpriteSheet(entry.index)">
+                                        @if (isPrimaryCharacter(entry.index)) {
+                                            <span class="avatar-star">★</span>
+                                        }
+                                    </div>
+                                    <div class="avatar-name">{{ entry.character.name }}</div>
+                                    <div class="avatar-meta">
+                                        <span>{{ entry.character.tts_voice }}</span>
+                                        <span>{{ countActiveEvents(entry.character) }} events</span>
+                                    </div>
+                                    <div class="avatar-role-row">
+                                        @if (isPrimaryCharacter(entry.index)) {
+                                            <span class="avatar-role avatar-role--primary">Primary</span>
+                                        } @else {
+                                            <span class="avatar-role">Active Crew</span>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        @if (showCrewRosterManager) {
+                            <div class="crew-roster-manager">
+                                <div class="crew-roster-manager__header">
+                                    <div class="crew-roster-manager__title">Crew Roster</div>
+                                    <div class="crew-roster-manager__subtitle">
+                                        Click a character to make them primary. Use the corner button to add or remove support crew.
+                                    </div>
+                                </div>
+                                <div class="crew-roster crew-roster--manager">
+                                    @for (entry of allRosterEntries; track entry.index) {
+                                        <div class="crew-avatar-card crew-avatar-card--manager"
+                                             [class.crew-avatar-card--primary]="isPrimaryCharacter(entry.index)"
+                                             [class.crew-avatar-card--active]="isCrewMemberActive(entry.index)"
+                                             [class.crew-avatar-card--inactive]="!isCrewMemberActive(entry.index)"
+                                             [style.--character-color]="getCharacterColor(entry.character, entry.index)"
+                                             [attr.tabindex]="0"
+                                             (click)="onCharacterSelect(entry.index)"
+                                             (keydown.enter)="onCharacterSelect(entry.index)"
+                                             (keydown.space)="onCharacterSelect(entry.index); $event.preventDefault()">
+                                            <div class="crew-avatar-frame">
+                                                <img [src]="getCharacterAvatarUrlForIndex(entry.index)"
+                                                     [alt]="entry.character.name + ' avatar'"
+                                                     class="crew-avatar-image"
+                                                     [class.crew-avatar-image--single]="!getCharacterAvatarUsesSpriteSheet(entry.index)">
+                                                @if (isPrimaryCharacter(entry.index)) {
+                                                    <span class="avatar-star">★</span>
+                                                }
+                                                <button mat-icon-button
+                                                        type="button"
+                                                        class="crew-avatar-action"
+                                                        [disabled]="isPrimaryCharacter(entry.index)"
+                                                        [matTooltip]="isCrewMemberActive(entry.index) ? 'Remove from active crew' : 'Add to active crew'"
+                                                        (click)="toggleCrewMemberFromCard(entry.index, $event)">
+                                                    <mat-icon>{{ isCrewMemberActive(entry.index) ? 'group_remove' : 'group_add' }}</mat-icon>
+                                                </button>
+                                            </div>
+                                            <div class="avatar-name">{{ entry.character.name }}</div>
+                                            <div class="avatar-meta">
+                                                <span>{{ entry.character.tts_voice }}</span>
+                                                <span>{{ countActiveEvents(entry.character) }} events</span>
+                                            </div>
+                                            <div class="avatar-role-row">
+                                                @if (isPrimaryCharacter(entry.index)) {
+                                                    <span class="avatar-role avatar-role--primary">Primary</span>
+                                                } @else if (isCrewMemberActive(entry.index)) {
+                                                    <span class="avatar-role">Active Crew</span>
+                                                } @else {
+                                                    <span class="avatar-role avatar-role--inactive">Standby</span>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        <div class="character-display" [class.with-traits]="!isDisplayCharacterCustom">
                             <div class="character-avatar-preview">
-                                <img [src]="getAvatarUrl()"
-                                     [alt]="activeCharacter.name + ' avatar'"
+                                <img [src]="getCharacterAvatarUrlForIndex(displayCharacterIndex)"
+                                     [alt]="(displayCharacter?.name || activeCharacter.name) + ' avatar'"
                                      class="avatar-preview-image"
                                      [class.avatar-preview-image--single]="!avatarPreviewUsesSpriteSheet">
                             </div>
                             <div class="character-content">
-                                <span class="trait-label">{{activeCharacter.name}}:</span>
-                                {{!isCustomPreset() ? activeCharacter.personality_character_inspiration : activeCharacter.character}}
+                                <span class="trait-label">{{displayCharacter?.name || activeCharacter.name}}:</span>
+                                {{!isDisplayCharacterCustom ? displayCharacter?.personality_character_inspiration : displayCharacter?.character}}
                             </div>
-                            @if (!isCustomPreset()) {
+                            @if (!isDisplayCharacterCustom) {
                                 <div class="character-traits">
                                     <div class="trait-item">
                                         <span class="trait-label">Verbosity:</span>
-                                        <span class="trait-value">{{activeCharacter.personality_verbosity}}%</span>
+                                        <span class="trait-value">{{displayCharacter?.personality_verbosity}}%</span>
                                     </div>
                                     <div class="trait-item">
                                         <span class="trait-label">Vulgarity:</span>
-                                        <span class="trait-value">{{activeCharacter.personality_vulgarity}}%</span>
+                                        <span class="trait-value">{{displayCharacter?.personality_vulgarity}}%</span>
                                     </div>
                                     <div class="trait-item">
                                         <span class="trait-label">Empathy:</span>
-                                        <span class="trait-value">{{activeCharacter.personality_empathy}}%</span>
+                                        <span class="trait-value">{{displayCharacter?.personality_empathy}}%</span>
                                     </div>
                                     <div class="trait-item">
                                         <span class="trait-label">Formality:</span>
-                                        <span class="trait-value">{{activeCharacter.personality_formality}}%</span>
+                                        <span class="trait-value">{{displayCharacter?.personality_formality}}%</span>
                                     </div>
                                     <div class="trait-item">
                                         <span class="trait-label">Confidence:</span>
-                                        <span class="trait-value">{{activeCharacter.personality_confidence}}%</span>
+                                        <span class="trait-value">{{displayCharacter?.personality_confidence}}%</span>
                                     </div>
                                     <div class="trait-item">
                                         <span class="trait-label">Tone:</span>
-                                        <span class="trait-value">{{activeCharacter.personality_tone}}</span>
+                                        <span class="trait-value">{{displayCharacter?.personality_tone}}</span>
                                     </div>
                                     <div class="trait-item">
                                         <span class="trait-label">Ethical Alignment:</span>
-                                        <span class="trait-value">{{activeCharacter.personality_ethical_alignment}}</span>
+                                        <span class="trait-value">{{displayCharacter?.personality_ethical_alignment}}</span>
                                     </div>
                                     <div class="trait-item">
                                         <span class="trait-label">Moral Alignment:</span>
-                                        <span class="trait-value">{{activeCharacter.personality_moral_alignment}}</span>
+                                        <span class="trait-value">{{displayCharacter?.personality_moral_alignment}}</span>
                                     </div>
                                     <div class="trait-item">
                                         <span class="trait-label">Knowledge:</span>
                                         <div class="trait-value">
-                                            <span [class.active]="activeCharacter.personality_knowledge_pop_culture">pop culture</span>
-                                            <span [class.active]="activeCharacter.personality_knowledge_scifi">sci-fi</span>
-                                            <span [class.active]="activeCharacter.personality_knowledge_history">history</span>
+                                            <span [class.active]="displayCharacter?.personality_knowledge_pop_culture">pop culture</span>
+                                            <span [class.active]="displayCharacter?.personality_knowledge_scifi">sci-fi</span>
+                                            <span [class.active]="displayCharacter?.personality_knowledge_history">history</span>
                                         </div>
                                     </div>
                                 </div>
