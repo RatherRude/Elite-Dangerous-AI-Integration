@@ -124,7 +124,9 @@ class PromptGenerator:
         lines = [
             "Multicrew is active and crew members are available as distinct speakers.",
             "When only the primary ship voice should answer, respond normally without calling a tool.",
+            "Responses without using the crewTalk tool are always spoken by the primary ship voice.",
             "When a non-primary crew member should speak, or when multiple active crew members should speak back and forth, call the crewTalk tool once with an ordered list of utterances.",
+            "Never write character names to simulate a different speaker in plain text; only use crewTalk tool for that. The previous messages will be written by me, never copy that.",
             "Prefer one crewTalk call for the whole exchange, and reuse the same speaker_id in multiple utterances whenever that crew member speaks again later in the same sequence.",
             "Crew roster by speaker_id for crewTalk:",
         ]
@@ -3218,6 +3220,11 @@ class PromptGenerator:
 
                     # Add modules to the loadout display
                     loadout_display = modules_by_category
+
+                    if loadout_info.get('HullHealth') is not None:
+                        loadout_display['ShipHealth'] = {
+                            'HullHealth': loadout_info.get('HullHealth')
+                        }
 
                 # Add the loadout information to status entries
                 ship_display['Loadout'] = loadout_display
