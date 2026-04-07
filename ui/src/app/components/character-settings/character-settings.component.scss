@@ -95,8 +95,8 @@ mat-slide-toggle {
 }
 
 .crew-roster--active {
-  grid-template-columns: repeat(auto-fit, 80px);
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, 160px);
+  gap: 16px;
 }
 
 .crew-roster--manager {
@@ -198,7 +198,7 @@ mat-slide-toggle {
     overflow: hidden;
     border: none;
     background: transparent;
-    width: 80px;
+    width: 160px;
 
     &:hover,
     &:focus-visible,
@@ -306,7 +306,7 @@ mat-slide-toggle {
 }
 
 .crew-avatar-card--manager .crew-avatar-action {
-  opacity: 1;
+  opacity: 0;
 }
 
 .crew-avatar-card--manager .crew-avatar-actions {

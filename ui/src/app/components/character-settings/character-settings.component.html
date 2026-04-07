@@ -7,7 +7,9 @@
                     @if (!editMode) {
                         <div class="crew-roster-header">
                             <div class="crew-roster-copy">
-                                <div class="crew-roster-title">Active Crew</div>
+                                @if (hasMultipleActiveCrew) {
+                                    <div class="crew-roster-title">Active Crew</div>
+                                }
                                 @if (hasSingleActiveCrew) {
                                     <mat-form-field appearance="outline" class="crew-roster-dropdown">
                                         <mat-label>Active Character</mat-label>
