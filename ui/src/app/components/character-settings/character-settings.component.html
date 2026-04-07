@@ -1,5 +1,5 @@
 <div class="settings-grid">
-    @if (config && activeCharacter) {
+    @if (config && currentCharacter) {
         <div [class.editing-active]="editMode">
             <!-- Character Management Section -->
             <div class="character-management-section">
@@ -175,12 +175,12 @@
                         <div class="character-display" [class.with-traits]="!isDisplayCharacterCustom">
                             <div class="character-avatar-preview">
                                 <img [src]="getCharacterAvatarUrlForIndex(displayCharacterIndex)"
-                                     [alt]="(displayCharacter?.name || activeCharacter.name) + ' avatar'"
+                                     [alt]="(displayCharacter?.name || currentCharacter.name) + ' avatar'"
                                      class="avatar-preview-image"
                                      [class.avatar-preview-image--single]="!avatarPreviewUsesSpriteSheet">
                             </div>
                             <div class="character-content">
-                                <span class="trait-label">{{displayCharacter?.name || activeCharacter.name}}:</span>
+                                <span class="trait-label">{{displayCharacter?.name || currentCharacter.name}}:</span>
                                 {{!isDisplayCharacterCustom ? displayCharacter?.personality_character_inspiration : displayCharacter?.character}}
                             </div>
                             @if (!isDisplayCharacterCustom) {
@@ -270,7 +270,7 @@
                                 <mat-form-field appearance="outline">
                                     <mat-label>Character Name</mat-label>
                                     <input matInput
-                                        [ngModel]="activeCharacter.name"
+                                        [ngModel]="currentCharacter.name"
                                         [ngModelOptions]="{updateOn: 'blur'}"
                                         (ngModelChange)="setCharacterPropertyAndUpdatePrompt('name', $event)">
                                 </mat-form-field>
@@ -280,7 +280,7 @@
                                  <mat-form-field appearance="outline">
                                     <mat-label>Character Language</mat-label>
                                     <input matInput
-                                        [ngModel]="activeCharacter.personality_language"
+                                        [ngModel]="currentCharacter.personality_language"
                                         [ngModelOptions]="{updateOn: 'blur'}"
                                          (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_language', $event)">
                                  </mat-form-field>
@@ -289,7 +289,7 @@
                                 <label for="character-color-input">Name Color</label>
                                 <input id="character-color-input"
                                        type="color"
-                                       [ngModel]="activeCharacter.color || getCharacterColor(activeCharacter, selectedCharacterIndex ?? 0)"
+                                       [ngModel]="currentCharacter.color || getCharacterColor(currentCharacter, currentCharacterIndex ?? 0)"
                                        (ngModelChange)="setCharacterProperty('color', $event)">
                             </div>
                              <div class="character-voice-container">
@@ -298,7 +298,7 @@
                                     <mat-form-field appearance="outline">
                                         <mat-label>Voice</mat-label>
                                         @if (config.tts_provider === 'openai') {
-                                            <mat-select [ngModel]="activeCharacter.tts_voice"
+                                            <mat-select [ngModel]="currentCharacter.tts_voice"
                                                     (ngModelChange)="setCharacterProperty('tts_voice', $event)">
                                                 <mat-option value="alloy">Alloy - Neutral, versatile voice</mat-option>
                                                 <mat-option value="ash">Ash - New voice</mat-option>
@@ -312,11 +312,11 @@
                                                 <mat-option value="shimmer">Shimmer - Clear, warm voice</mat-option>
                                             </mat-select>
                                         } @else if (config.tts_provider === 'edge-tts') {
-                                            <mat-select [ngModel]="activeCharacter.tts_voice"
+                                            <mat-select [ngModel]="currentCharacter.tts_voice"
                                                     (selectionChange)="onVoiceSelectionChange($event.value)">
-                                                @if (isCustomVoice(activeCharacter.tts_voice)) {
-                                                    <mat-option [value]="activeCharacter.tts_voice" style="font-style: italic">
-                                                        {{ getVoiceDisplayName(activeCharacter.tts_voice) }}
+                                                @if (isCustomVoice(currentCharacter.tts_voice)) {
+                                                    <mat-option [value]="currentCharacter.tts_voice" style="font-style: italic">
+                                                        {{ getVoiceDisplayName(currentCharacter.tts_voice) }}
                                                     </mat-option>
                                                     <mat-divider class="custom-voice-divider"></mat-divider>
                                                 }
@@ -347,7 +347,7 @@
                                                 <mat-option value="show-all-voices">Show All Voices...</mat-option>
                                             </mat-select>
                                         } @else {
-                                            <input matInput [ngModel]="activeCharacter.tts_voice"
+                                            <input matInput [ngModel]="currentCharacter.tts_voice"
                                                 (ngModelChange)="setCharacterProperty('tts_voice', $event)">
                                         }
                                     </mat-form-field>
@@ -370,7 +370,7 @@
                                 <div class="avatar-display-container">
                                     <div class="avatar-full-display">
                                         <img [src]="getAvatarUrl()"
-                                             [alt]="activeCharacter.name + ' avatar'"
+                                             [alt]="currentCharacter.name + ' avatar'"
                                              class="avatar-full-image">
                                         <button mat-icon-button
                                                 class="avatar-edit-button"
@@ -392,7 +392,7 @@
                                 <div class="trait-select">
                                     <mat-form-field appearance="outline">
                                         <mat-label>Speed</mat-label>
-                                        <input matInput [ngModel]="activeCharacter.tts_speed"
+                                        <input matInput [ngModel]="currentCharacter.tts_speed"
                                                 (ngModelChange)="setCharacterProperty('tts_speed', $event)">
                                     </mat-form-field>
                                 </div>
@@ -408,7 +408,7 @@
                                 </div>
                                 <mat-form-field appearance="outline">
                                     <mat-label>Voice Tone Instructions</mat-label>
-                                    <textarea matInput [ngModel]="activeCharacter.tts_prompt"
+                                    <textarea matInput [ngModel]="currentCharacter.tts_prompt"
                                             (ngModelChange)="setCharacterProperty('tts_prompt', $event)"></textarea>
                                 </mat-form-field>
                             </div>
@@ -506,21 +506,21 @@
                             <div class="trait-container">
                                 <div class="trait-select">
                                     <mat-slide-toggle
-                                        [ngModel]="activeCharacter.tts_environment_helmet_effects_var"
+                                        [ngModel]="currentCharacter.tts_environment_helmet_effects_var"
                                         (ngModelChange)="setCharacterProperty('tts_environment_helmet_effects_var', $event)">
                                         Helmet effects on foot
                                     </mat-slide-toggle>
                                 </div>
                                 <div class="trait-select">
                                     <mat-slide-toggle
-                                        [ngModel]="activeCharacter.tts_environment_srv_effects_var"
+                                        [ngModel]="currentCharacter.tts_environment_srv_effects_var"
                                         (ngModelChange)="setCharacterProperty('tts_environment_srv_effects_var', $event)">
                                         Cockpit speakers in SRV
                                     </mat-slide-toggle>
                                 </div>
                                 <div class="trait-select">
                                     <mat-slide-toggle
-                                        [ngModel]="activeCharacter.tts_environment_damage_effects_var"
+                                        [ngModel]="currentCharacter.tts_environment_damage_effects_var"
                                         (ngModelChange)="setCharacterProperty('tts_environment_damage_effects_var', $event)">
                                         Damage and overheating effects
                                     </mat-slide-toggle>
@@ -531,7 +531,7 @@
                 }
 
                 <!-- Character settings when preset is not custom -->
-                @if (activeCharacter.personality_preset !== 'custom') {
+                @if (currentCharacter.personality_preset !== 'custom') {
                     <div class="personality-settings">
                         <div class="trait-container">
                             <!-- Character Inspiration -->
@@ -540,7 +540,7 @@
                                     <label class="character-inspiration-label">Character Inspiration</label>
                                     <div class="character-inspiration-editable"
                                          contenteditable="true"
-                                         [textContent]="activeCharacter.personality_character_inspiration"
+                                         [textContent]="currentCharacter.personality_character_inspiration"
                                          (blur)="onCharacterInspirationChange($event)"
                                          role="textbox"
                                          aria-multiline="true">
@@ -554,7 +554,7 @@
                             <div class="trait-select">
                                 <mat-form-field appearance="outline">
                                     <mat-label>Verbosity</mat-label>
-                                    <mat-select [ngModel]="activeCharacter.personality_verbosity"
+                                    <mat-select [ngModel]="currentCharacter.personality_verbosity"
                                         (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_verbosity', $event)">
                                         <mat-option [value]="0">Minimal</mat-option>
                                         <mat-option [value]="25">Brief</mat-option>
@@ -569,7 +569,7 @@
                             <div class="trait-select">
                                 <mat-form-field appearance="outline">
                                     <mat-label>Tone</mat-label>
-                                    <mat-select [ngModel]="activeCharacter.personality_tone"
+                                    <mat-select [ngModel]="currentCharacter.personality_tone"
                                         (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_tone', $event)">
                                         <mat-option value="serious">Serious</mat-option>
                                         <mat-option value="humorous">Humorous</mat-option>
@@ -582,7 +582,7 @@
                             <div class="trait-select">
                                 <mat-form-field appearance="outline">
                                     <mat-label>Vulgarity</mat-label>
-                                    <mat-select [ngModel]="activeCharacter.personality_vulgarity"
+                                    <mat-select [ngModel]="currentCharacter.personality_vulgarity"
                                         (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_vulgarity', $event)">
                                         <mat-option [value]="0">None</mat-option>
                                         <mat-option [value]="25">Mild</mat-option>
@@ -599,7 +599,7 @@
                             <div class="trait-select">
                                 <mat-form-field appearance="outline">
                                     <mat-label>Empathy</mat-label>
-                                    <mat-select [ngModel]="activeCharacter.personality_empathy"
+                                    <mat-select [ngModel]="currentCharacter.personality_empathy"
                                         (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_empathy', $event)">
                                         <mat-option [value]="0">Cold</mat-option>
                                         <mat-option [value]="25">Detached</mat-option>
@@ -614,7 +614,7 @@
                             <div class="trait-select">
                                 <mat-form-field appearance="outline">
                                     <mat-label>Formality</mat-label>
-                                    <mat-select [ngModel]="activeCharacter.personality_formality"
+                                    <mat-select [ngModel]="currentCharacter.personality_formality"
                                         (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_formality', $event)">
                                         <mat-option [value]="0">Casual</mat-option>
                                         <mat-option [value]="25">Relaxed</mat-option>
@@ -629,7 +629,7 @@
                             <div class="trait-select">
                                 <mat-form-field appearance="outline">
                                     <mat-label>Confidence</mat-label>
-                                    <mat-select [ngModel]="activeCharacter.personality_confidence"
+                                    <mat-select [ngModel]="currentCharacter.personality_confidence"
                                         (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_confidence', $event)">
                                         <mat-option [value]="0">Uncertain</mat-option>
                                         <mat-option [value]="25">Tentative</mat-option>
@@ -646,7 +646,7 @@
                             <div class="trait-select">
                                 <mat-form-field appearance="outline">
                                     <mat-label>Ethical Alignment</mat-label>
-                                    <mat-select [ngModel]="activeCharacter.personality_ethical_alignment"
+                                    <mat-select [ngModel]="currentCharacter.personality_ethical_alignment"
                                         (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_ethical_alignment', $event)">
                                         <mat-option value="lawful">Lawful (Order, Rules, Structure)</mat-option>
                                         <mat-option value="neutral">Neutral (Balance, Pragmatism)</mat-option>
@@ -659,7 +659,7 @@
                             <div class="trait-select">
                                 <mat-form-field appearance="outline">
                                     <mat-label>Moral Alignment</mat-label>
-                                    <mat-select [ngModel]="activeCharacter.personality_moral_alignment"
+                                    <mat-select [ngModel]="currentCharacter.personality_moral_alignment"
                                         (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_moral_alignment', $event)">
                                         <mat-option value="good">Good (Altruism, Compassion)</mat-option>
                                         <mat-option value="neutral">Neutral (Self-Interest, Balance)</mat-option>
@@ -673,11 +673,11 @@
                         <div class="knowledge-areas">
                             <label class="knowledge-label">Knowledge Areas</label>
                             <div class="knowledge-checkboxes">
-                                <mat-checkbox [ngModel]="activeCharacter.personality_knowledge_pop_culture"
+                                <mat-checkbox [ngModel]="currentCharacter.personality_knowledge_pop_culture"
                                             (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_knowledge_pop_culture', $event)">Pop Culture</mat-checkbox>
-                                <mat-checkbox [ngModel]="activeCharacter.personality_knowledge_scifi"
+                                <mat-checkbox [ngModel]="currentCharacter.personality_knowledge_scifi"
                                             (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_knowledge_scifi', $event)">Sci-Fi</mat-checkbox>
-                                <mat-checkbox [ngModel]="activeCharacter.personality_knowledge_history"
+                                <mat-checkbox [ngModel]="currentCharacter.personality_knowledge_history"
                                             (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_knowledge_history', $event)">History</mat-checkbox>
                             </div>
                         </div>
@@ -686,7 +686,7 @@
                 
                 <!-- Character Prompt Display - Always Visible -->
                 <div class="character-display character-prompt-section">
-                    @if (activeCharacter.personality_preset !== 'custom') {
+                    @if (currentCharacter.personality_preset !== 'custom') {
                         <div class="character-prompt-actions-row">
                             <div class="character-prompt-actions">
                                 <button mat-raised-button
@@ -708,10 +708,10 @@
                         </div>
                     }
                     
-                    @if (activeCharacter.personality_preset === 'custom') {
+                    @if (currentCharacter.personality_preset === 'custom') {
                         <mat-form-field appearance="outline" class="character-prompt-field">
                             <mat-label>Character Prompt</mat-label>
-                            <textarea matInput [ngModel]="activeCharacter.character"
+                            <textarea matInput [ngModel]="currentCharacter.character"
                                     [ngModelOptions]="{updateOn: 'blur'}"
                                     (ngModelChange)="setCharacterProperty('character', $event)"
                                     rows="10"></textarea>
@@ -720,7 +720,7 @@
                         <mat-form-field appearance="outline" class="character-prompt-field">
                             <mat-label>Character Prompt</mat-label>
                             <textarea matInput
-                                    [value]="activeCharacter.character"
+                                    [value]="currentCharacter.character"
                                     readonly
                                     rows="10"></textarea>
                         </mat-form-field>

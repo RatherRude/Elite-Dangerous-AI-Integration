@@ -122,6 +122,7 @@ export class CharacterSettingsComponent {
     characterSubscription: Subscription;
     activeCharacter: Character | null = null;
     selectedCharacterIndex: number | null = null;
+    editCharacterIndex: number | null = null;
     editMode = false;
     showVoiceMoreSettings = false;
     showCrewRosterManager = false;
@@ -683,6 +684,19 @@ export class CharacterSettingsComponent {
         return this.selectedCharacterIndex;
     }
 
+    get currentCharacterIndex(): number | null {
+        return this.editCharacterIndex ?? this.selectedCharacterIndex;
+    }
+
+    get currentCharacter(): Character | null {
+        const index = this.currentCharacterIndex;
+        if (index === null) {
+            return this.activeCharacter;
+        }
+
+        return this.config?.characters?.[index] ?? this.activeCharacter;
+    }
+
     get displayCharacter(): Character | null {
         const index = this.displayCharacterIndex;
         if (index === null) {
@@ -777,14 +791,7 @@ export class CharacterSettingsComponent {
     async editCharacterFromCard(index: number, event: Event): Promise<void> {
         event.stopPropagation();
         this.hoveredCharacterIndex = null;
-
-        if (this.selectedCharacterIndex !== index) {
-            await this.characterService.setActiveCharacter(index);
-        }
-
-        if (!this.editMode) {
-            this.toggleEditMode();
-        }
+        this.toggleEditMode(index);
     }
 
     getCharacterAvatarUrlForIndex(index: number | null): string {
@@ -858,14 +865,16 @@ export class CharacterSettingsComponent {
 
     // Modify applySettingsFromPreset to work with the new approach
     applySettingsFromPreset(preset: string): void {
-        if (!this.activeCharacter) return;
-        if (!this.selectedCharacterIndex) return;
+        const currentCharacter = this.currentCharacter;
+        const currentCharacterIndex = this.currentCharacterIndex;
+        if (!currentCharacter) return;
+        if (currentCharacterIndex === null) return;
         console.log("Applying settings from preset:", preset);
 
         const changes = CharacterPresets[preset];
         
         const newChar: Character = {
-            ...this.activeCharacter,
+            ...currentCharacter,
             ...changes,
             personality_preset: preset,
         };
@@ -874,7 +883,7 @@ export class CharacterSettingsComponent {
 
         newChar.character = this.buildCharacterPrompt(newChar);
 
-        this.characterService.updateCharacter(this.selectedCharacterIndex, newChar)
+        this.characterService.updateCharacter(currentCharacterIndex, newChar)
     }
 
     
@@ -882,20 +891,30 @@ export class CharacterSettingsComponent {
         propName: T,
         value: Character[T],
     ): Promise<void> {
-        return this.characterService.setCharacterProperty(propName, value);
+        const currentCharacter = this.currentCharacter;
+        const currentCharacterIndex = this.currentCharacterIndex;
+        if (!currentCharacter || currentCharacterIndex === null) {
+            return;
+        }
+
+        const nextCharacter = structuredClone(currentCharacter);
+        nextCharacter[propName] = value;
+        return this.characterService.updateCharacter(currentCharacterIndex, nextCharacter);
     }
 
     public async setCharacterPropertyAndUpdatePrompt<T extends keyof Character>(
         propName: T,
         value: Character[T],
     ): Promise<void> {
-        if (!this.activeCharacter) return;
+        const currentCharacter = this.currentCharacter;
+        const currentCharacterIndex = this.currentCharacterIndex;
+        if (!currentCharacter || currentCharacterIndex === null) return;
 
-        const char = structuredClone(this.activeCharacter);
+        const char = structuredClone(currentCharacter);
         char[propName] = value;
         const newPrompt = this.buildCharacterPrompt(char);
-        await this.characterService.setCharacterProperty(propName, value);
-        await this.characterService.setCharacterProperty('character', newPrompt);
+        char.character = newPrompt;
+        await this.characterService.updateCharacter(currentCharacterIndex, char);
     }
 
     private hasEnabledEffect(
@@ -931,7 +950,7 @@ export class CharacterSettingsComponent {
     }
 
     getSelectedLowHighPassPreset(): string {
-        const effects = this.activeCharacter?.tts_postprocessing?.effects;
+        const effects = this.currentCharacter?.tts_postprocessing?.effects;
         for (const preset of this.lowHighPassPresets) {
             if (
                 this.effectConfigsMatch(effects?.lowpass, preset.lowpass)
@@ -946,7 +965,7 @@ export class CharacterSettingsComponent {
     }
 
     getSelectedVoiceEffectPreset(effectKey: VoiceEffectPresetKey): string {
-        const actualConfig = this.activeCharacter?.tts_postprocessing?.effects?.[effectKey];
+        const actualConfig = this.currentCharacter?.tts_postprocessing?.effects?.[effectKey];
         const presets = this.getVoiceEffectPresets(effectKey);
         for (const preset of presets) {
             if (this.effectConfigsMatch(actualConfig, this.getNormalizedPresetConfig(effectKey, preset.config))) {
@@ -1105,10 +1124,10 @@ export class CharacterSettingsComponent {
     private async updateVoiceEffects(
         mutateEffects: (effects: CharacterTTSEffectsConfig) => void,
     ): Promise<void> {
-        if (!this.activeCharacter) return;
+        if (!this.currentCharacter) return;
 
         const nextPostprocessing: CharacterTTSPostprocessingConfig = structuredClone(
-            this.activeCharacter.tts_postprocessing ?? {},
+            this.currentCharacter.tts_postprocessing ?? {},
         );
         const nextEffects: CharacterTTSEffectsConfig = structuredClone(
             nextPostprocessing.effects ?? {},
@@ -1420,7 +1439,7 @@ export class CharacterSettingsComponent {
     }
 
     openEdgeTtsVoicesDialog() {
-        const currentVoice = this.activeCharacter?.tts_voice ?? "en-US-AvaMultilingualNeural";
+        const currentVoice = this.currentCharacter?.tts_voice ?? "en-US-AvaMultilingualNeural";
 
         const dialogRef = this.dialog.open(EdgeTtsVoicesDialogComponent, {
             width: "800px",
@@ -1520,17 +1539,19 @@ export class CharacterSettingsComponent {
         }
     }
 
-    toggleEditMode() {
+    toggleEditMode(index: number | null = null) {
         if (!this.config) return;
-        if (this.selectedCharacterIndex === null) return;
+        const targetIndex = index ?? this.currentCharacterIndex;
+        if (targetIndex === null) return;
 
         // If not in edit mode, enter edit mode
         if (!this.editMode) {
             this.showCrewRosterManager = false;
+            this.editCharacterIndex = targetIndex;
             // Store a copy of the current character state before entering edit mode
             this.localCharacterCopy = JSON.parse(
                 JSON.stringify(
-                    this.config.characters[this.selectedCharacterIndex],
+                    this.config.characters[targetIndex],
                 ),
             );
             this.showVoiceMoreSettings = false;
@@ -1556,11 +1577,12 @@ export class CharacterSettingsComponent {
     // Helper method to save characters
     public saveCharacters() {
         if (!this.config || !this.config.characters) return;
-        if (this.selectedCharacterIndex === null) return;
+        if (this.currentCharacterIndex === null) return;
 
         // actually its all saved already, all we need it to clear the local backup
 
         this.localCharacterCopy = null;
+        this.editCharacterIndex = null;
         this.showVoiceMoreSettings = false;
         this.showCrewRosterManager = false;
         this.editMode = false;
@@ -1568,7 +1590,7 @@ export class CharacterSettingsComponent {
 
     cancelEditMode(): void {
         if (!this.config) return;
-        if (this.selectedCharacterIndex===null) return;
+        if (this.currentCharacterIndex===null) return;
 
         // If we were editing an existing character, restore it from the local copy
         if (
@@ -1576,7 +1598,7 @@ export class CharacterSettingsComponent {
         ) {
             // Update the backend with the restored character
             this.characterService.updateCharacter(
-                this.selectedCharacterIndex,
+                this.currentCharacterIndex,
                 JSON.parse(
                     JSON.stringify(this.localCharacterCopy),
                 )
@@ -1585,6 +1607,7 @@ export class CharacterSettingsComponent {
 
         // Clear the local copy
         this.localCharacterCopy = null;
+        this.editCharacterIndex = null;
 
         // Always exit edit mode
         this.showVoiceMoreSettings = false;
@@ -1639,9 +1662,9 @@ export class CharacterSettingsComponent {
         defaultValue: Character[T],
     ): Character[T] {
         if (!this.config) return defaultValue;
-        if (!this.activeCharacter) return defaultValue;
+        if (!this.currentCharacter) return defaultValue;
         // Use optional chaining to safely access the property
-        return this.activeCharacter[propName] ?? defaultValue;
+        return this.currentCharacter?.[propName] ?? defaultValue;
     }
 
     // Helper method to check if personality preset is custom
@@ -1804,18 +1827,18 @@ export class CharacterSettingsComponent {
     }
 
     getAvatarUrl(): string {
-        return this.characterService.getAvatarUrl();
+        return this.getCharacterAvatarUrlForIndex(this.currentCharacterIndex);
     }
 
     openAvatarCatalog() {
         const dialogRef = this.dialog.open(AvatarCatalogDialogComponent, {
             width: '850px',
             maxWidth: '95vw',
-            data: { currentAvatarPath: this.activeCharacter?.avatar }
+            data: { currentAvatarPath: this.currentCharacter?.avatar }
         });
 
         dialogRef.afterClosed().subscribe((result: AvatarCatalogResult) => {
-            if (result !== undefined && this.activeCharacter) {
+            if (result !== undefined && this.currentCharacter) {
                 this.setCharacterProperty('avatar', result.avatarPath);
                 // The character service will automatically reload the avatar
             }
@@ -1824,7 +1847,7 @@ export class CharacterSettingsComponent {
 
     // Enable custom character editor with confirmation
     enableCustomCharacterEditor() {
-        if (!this.activeCharacter) return;
+        if (!this.currentCharacter) return;
 
         const dialogRef = this.confirmationDialog.openConfirmationDialog({
             title: "Enable Custom Prompt",
@@ -1846,7 +1869,7 @@ export class CharacterSettingsComponent {
 
     // Randomize character preset
     randomizePreset() {
-        if (!this.activeCharacter) return;
+        if (!this.currentCharacter) return;
 
         // Get all available presets except 'custom'
         const availablePresets = Object.keys(CharacterPresets).filter(
