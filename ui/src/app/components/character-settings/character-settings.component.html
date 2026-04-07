@@ -8,24 +8,53 @@
                         <div class="crew-roster-header">
                             <div class="crew-roster-copy">
                                 <div class="crew-roster-title">Active Crew</div>
-                                <div class="crew-roster-subtitle">
-                                    @if (showCrewRosterManager) {
-                                        Manage your active crew here. Click a portrait to make that character primary.
-                                    } @else {
-                                        {{ activeRosterEntries.length }} active, {{ standbyCharacterCount }} standby
-                                    }
-                                </div>
+                                @if (hasSingleActiveCrew) {
+                                    <mat-form-field appearance="outline" class="crew-roster-dropdown">
+                                        <mat-label>Active Character</mat-label>
+                                        <mat-select [value]="selectedCharacterIndex" (selectionChange)="onCharacterSelect($event.value)">
+                                            @for (entry of allRosterEntries; track entry.index) {
+                                                <mat-option [value]="entry.index">{{ entry.character.name }}</mat-option>
+                                            }
+                                        </mat-select>
+                                    </mat-form-field>
+                                } @else {
+                                    <div class="crew-roster-subtitle">
+                                        @if (showCrewRosterManager) {
+                                            Manage your active crew here. Click a portrait to make that character primary.
+                                        } @else {
+                                            {{ activeRosterEntries.length }} active, {{ standbyCharacterCount }} standby
+                                        }
+                                    </div>
+                                }
                             </div>
-                            <button mat-stroked-button
-                                    type="button"
-                                    class="crew-roster-toggle"
-                                    (click)="toggleCrewRosterManager()">
-                                <mat-icon>{{ showCrewRosterManager ? 'done' : 'groups' }}</mat-icon>
-                                {{ showCrewRosterManager ? 'Done' : 'Modify Crew Roster' }}
-                            </button>
+                            <div class="crew-roster-header-actions">
+                                @if (hasSingleActiveCrew) {
+                                    <button mat-stroked-button
+                                            type="button"
+                                            [disabled]="currentCharacterIndex === 0"
+                                            (click)="toggleEditMode()">
+                                        <mat-icon>edit</mat-icon>
+                                        Edit
+                                    </button>
+                                    <button mat-stroked-button
+                                            type="button"
+                                            (click)="duplicateSelectedCharacter()">
+                                        <mat-icon>content_copy</mat-icon>
+                                        Duplicate
+                                    </button>
+                                }
+                                <button mat-stroked-button
+                                        type="button"
+                                        class="crew-roster-toggle"
+                                        (click)="toggleCrewRosterManager()">
+                                    <mat-icon>{{ showCrewRosterManager ? 'done' : 'groups' }}</mat-icon>
+                                    {{ showCrewRosterManager ? 'Done' : 'Modify Crew Roster' }}
+                                </button>
+                            </div>
                         </div>
 
-                        <div class="crew-roster">
+                        @if (hasMultipleActiveCrew) {
+                        <div class="crew-roster crew-roster--active">
                             @for (entry of activeRosterEntries; track entry.index) {
                                 <div class="crew-avatar-card"
                                      [class.crew-avatar-card--primary]="isPrimaryCharacter(entry.index)"
@@ -92,6 +121,7 @@
                                 </div>
                             }
                         </div>
+                        }
 
                         @if (showCrewRosterManager) {
                             <div class="crew-roster-manager">
@@ -173,12 +203,14 @@
                         }
 
                         <div class="character-display" [class.with-traits]="!isDisplayCharacterCustom">
-                            <div class="character-avatar-preview">
-                                <img [src]="getCharacterAvatarUrlForIndex(displayCharacterIndex)"
-                                     [alt]="(displayCharacter?.name || currentCharacter.name) + ' avatar'"
-                                     class="avatar-preview-image"
-                                     [class.avatar-preview-image--single]="!avatarPreviewUsesSpriteSheet">
-                            </div>
+                            @if (!hasMultipleActiveCrew) {
+                                <div class="character-avatar-preview">
+                                    <img [src]="getCharacterAvatarUrlForIndex(displayCharacterIndex)"
+                                         [alt]="(displayCharacter?.name || currentCharacter.name) + ' avatar'"
+                                         class="avatar-preview-image"
+                                         [class.avatar-preview-image--single]="!avatarPreviewUsesSpriteSheet">
+                                </div>
+                            }
                             <div class="character-content">
                                 <span class="trait-label">{{displayCharacter?.name || currentCharacter.name}}:</span>
                                 {{!isDisplayCharacterCustom ? displayCharacter?.personality_character_inspiration : displayCharacter?.character}}
@@ -231,16 +263,6 @@
                     }
 
                     <div class="character-buttons">
-                        <!-- When not in edit mode, show Edit and New buttons -->
-                        @if (!editMode) {
-                            <button mat-raised-button color="primary"
-                                    [disabled]="selectedCharacterIndex === 0"
-                                    [matTooltip]="'Enter edit mode to modify character name, personality traits, and event reactions'"
-                                    (click)="toggleEditMode()">
-                                <mat-icon>edit</mat-icon> Edit
-                            </button>
-                        }
-
                         <!-- When in edit mode, show Save and Cancel buttons -->
                         @if (editMode) {
                             <button mat-raised-button color="primary" (click)="saveCharacters()"

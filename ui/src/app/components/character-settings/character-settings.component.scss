@@ -62,6 +62,13 @@ mat-slide-toggle {
   gap: 4px;
 }
 
+.crew-roster-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .crew-roster-title {
   font-size: 1rem;
   font-weight: 700;
@@ -77,10 +84,19 @@ mat-slide-toggle {
   white-space: nowrap;
 }
 
+.crew-roster-dropdown {
+  width: min(320px, 100%);
+}
+
 .crew-roster {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 16px;
+}
+
+.crew-roster--active {
+  grid-template-columns: repeat(auto-fit, 80px);
+  gap: 12px;
 }
 
 .crew-roster--manager {
@@ -182,6 +198,7 @@ mat-slide-toggle {
     overflow: hidden;
     border: none;
     background: transparent;
+    width: 80px;
 
     &:hover,
     &:focus-visible,
@@ -198,6 +215,7 @@ mat-slide-toggle {
 
   &.crew-avatar-card--manager {
     min-width: 0;
+    width: auto;
   }
 }
 

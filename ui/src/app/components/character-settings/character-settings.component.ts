@@ -756,6 +756,14 @@ export class CharacterSettingsComponent {
         return Math.max(this.allRosterEntries.length - this.activeRosterEntries.length, 0);
     }
 
+    get hasMultipleActiveCrew(): boolean {
+        return this.activeRosterEntries.length > 1;
+    }
+
+    get hasSingleActiveCrew(): boolean {
+        return this.activeRosterEntries.length === 1;
+    }
+
     /** PNG/WebP sprite sheet preview uses 200% + clip; SVG is one graphic. */
     get avatarPreviewUsesSpriteSheet(): boolean {
         return this.getCharacterAvatarUsesSpriteSheet(this.displayCharacterIndex);
