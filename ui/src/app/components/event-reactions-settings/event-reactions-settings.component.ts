@@ -64,8 +64,10 @@ import { GameEventCategories } from "../character-settings/game-event-categories
     styleUrl: "./event-reactions-settings.component.scss",
 })
 export class EventReactionsSettingsComponent implements OnDestroy {
+    config: Config | null = null;
     activeCharacter: Character | null = null;
     activeCharacterIndex: number | null = null;
+    selectedCharacterIndex: number | null = null;
     characterList: Character[] = [];
     filteredEventReactions: Record<string, Record<string, EventReactionState>> = {};
     eventSearchQuery: string = "";
@@ -87,20 +89,35 @@ export class EventReactionsSettingsComponent implements OnDestroy {
     ) {
         this.configSubscription = this.configService.config$
             .subscribe((config: Config | null) => {
+                this.config = config;
                 this.activeCharacterIndex =
                     config?.active_character_index ?? null;
+                const activeCrew = this.getActiveCrewIndices(config);
+                if (
+                    this.selectedCharacterIndex === null
+                    || !activeCrew.includes(this.selectedCharacterIndex)
+                ) {
+                    this.selectedCharacterIndex = activeCrew[0] ?? null;
+                }
+                this.activeCharacter = this.getSelectedCharacter();
                 this.filterEvents(this.eventSearchQuery);
             });
 
         this.characterSubscription = this.characterService.character$
             .subscribe((character) => {
-                this.activeCharacter = character;
+                if (this.selectedCharacterIndex === this.activeCharacterIndex) {
+                    this.activeCharacter = character;
+                } else {
+                    this.activeCharacter = this.getSelectedCharacter();
+                }
                 this.filterEvents(this.eventSearchQuery);
             });
 
         this.characterListSubscription = this.characterService.characterList$
             .subscribe((list) => {
                 this.characterList = list || [];
+                this.activeCharacter = this.getSelectedCharacter();
+                this.filterEvents(this.eventSearchQuery);
             });
     }
 
@@ -136,14 +153,13 @@ export class EventReactionsSettingsComponent implements OnDestroy {
     ) {
         if (!this.activeCharacter) return;
 
-        await this.characterService.setCharacterEventProperty(
-            event,
-            state,
-        );
+        const currentEventReactions = { ...(this.activeCharacter.event_reactions || {}) };
+        currentEventReactions[event] = state;
+        await this.setCharacterProperty("event_reactions", currentEventReactions as Character["event_reactions"]);
     }
 
     async resetGameEvents() {
-        if (this.activeCharacterIndex === null) return;
+        if (this.selectedCharacterIndex === null) return;
 
         const dialogRef = this.confirmationDialog.openConfirmationDialog({
             title: "Reset Game Events",
@@ -156,7 +172,7 @@ export class EventReactionsSettingsComponent implements OnDestroy {
         dialogRef.subscribe(async (result: boolean) => {
             if (result) {
                 await this.characterService.resetGameEvents(
-                    this.activeCharacterIndex!,
+                    this.selectedCharacterIndex!,
                 );
                 this.snackBar.open("Game events reset to defaults", "OK", {
                     duration: 3000,
@@ -181,7 +197,47 @@ export class EventReactionsSettingsComponent implements OnDestroy {
         propName: T,
         value: Character[T],
     ): Promise<void> {
-        await this.characterService.setCharacterProperty(propName, value);
+        if (!this.activeCharacter || this.selectedCharacterIndex === null) return;
+
+        const nextCharacter = structuredClone(this.activeCharacter);
+        nextCharacter[propName] = value;
+        await this.characterService.updateCharacter(this.selectedCharacterIndex, nextCharacter);
+        this.activeCharacter = nextCharacter;
+    }
+
+    onCharacterSelectionChange(index: number): void {
+        this.selectedCharacterIndex = index;
+        this.activeCharacter = this.getSelectedCharacter();
+        this.filterEvents(this.eventSearchQuery);
+        this.cancelImportSelection();
+    }
+
+    getActiveCrewEntries(): Array<{ index: number; name: string }> {
+        const activeCrew = this.getActiveCrewIndices();
+        return activeCrew
+            .map((index) => {
+                const character = this.characterList[index];
+                return character
+                    ? { index, name: character.name || `Character ${index + 1}` }
+                    : null;
+            })
+            .filter((entry): entry is { index: number; name: string } => entry !== null);
+    }
+
+    hasMultipleActiveCharacters(): boolean {
+        return this.getActiveCrewEntries().length > 1;
+    }
+
+    private getActiveCrewIndices(config: Config | null = this.config): number[] {
+        return config?.active_characters ?? [];
+    }
+
+    private getSelectedCharacter(): Character | null {
+        if (this.selectedCharacterIndex === null) {
+            return null;
+        }
+
+        return this.characterList[this.selectedCharacterIndex] ?? null;
     }
 
     private categorizeEvents(
@@ -268,10 +324,7 @@ export class EventReactionsSettingsComponent implements OnDestroy {
             currentEventReactions[eventName] = state;
         }
 
-        await this.characterService.setCharacterProperty(
-            "event_reactions",
-            currentEventReactions,
-        );
+        await this.setCharacterProperty("event_reactions", currentEventReactions as Character["event_reactions"]);
     }
 
     getEventState(eventName: string): "on" | "off" | "hidden" {
@@ -317,7 +370,7 @@ export class EventReactionsSettingsComponent implements OnDestroy {
     getImportCandidates(): Array<{ index: number; name: string }> {
         const candidates: Array<{ index: number; name: string }> = [];
         this.characterList.forEach((c, idx) => {
-            if (idx !== this.activeCharacterIndex) {
+            if (idx !== this.selectedCharacterIndex) {
                 candidates.push({ index: idx, name: c.name || `Character ${idx + 1}` });
             }
         });
@@ -339,9 +392,9 @@ export class EventReactionsSettingsComponent implements OnDestroy {
         const source = this.characterList[this.selectedImportIndex];
         if (!source || !source.event_reactions) return;
 
-        await this.characterService.setCharacterProperty(
+        await this.setCharacterProperty(
             "event_reactions",
-            { ...source.event_reactions },
+            { ...source.event_reactions } as Character["event_reactions"],
         );
 
         this.snackBar.open("Event reactions imported from selected character", "OK", {

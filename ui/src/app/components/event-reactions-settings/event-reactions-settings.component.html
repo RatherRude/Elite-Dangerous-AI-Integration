@@ -1,6 +1,20 @@
 @if (activeCharacter) {
     <div class="event-reactions">
-        <h2>Event reactions for character "{{ activeCharacter.name || 'Unknown' }}"</h2>
+        <div class="event-reactions-header">
+            @if (hasMultipleActiveCharacters()) {
+                <div class="event-reactions-header__label">Event reactions for character</div>
+                <mat-form-field appearance="outline" class="event-reactions-header__select">
+                    <mat-label>Character</mat-label>
+                    <mat-select [value]="selectedCharacterIndex" (selectionChange)="onCharacterSelectionChange($event.value)">
+                        @for (entry of getActiveCrewEntries(); track entry.index) {
+                            <mat-option [value]="entry.index">{{ entry.name }}</mat-option>
+                        }
+                    </mat-select>
+                </mat-form-field>
+            } @else {
+                <h2>Event reactions for character "{{ activeCharacter.name || 'Unknown' }}"</h2>
+            }
+        </div>
 
         <mat-slide-toggle
             [ngModel]="getCharacterProperty('event_reaction_enabled_var', false)"

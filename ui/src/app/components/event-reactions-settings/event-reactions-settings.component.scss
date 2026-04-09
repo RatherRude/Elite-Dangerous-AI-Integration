@@ -1,3 +1,24 @@
+.event-reactions-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+
+  h2 {
+    margin: 0;
+  }
+}
+
+.event-reactions-header__label {
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+.event-reactions-header__select {
+  width: min(320px, 100%);
+}
+
 .event-suboption {
   padding-left: 16px;
   margin-top: 8px;
