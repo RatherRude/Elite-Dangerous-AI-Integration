@@ -13,7 +13,7 @@
                                 @if (hasSingleActiveCrew) {
                                     <mat-form-field appearance="outline" class="crew-roster-dropdown">
                                         <mat-label>Active Character</mat-label>
-                                        <mat-select [value]="selectedCharacterIndex" (selectionChange)="onCharacterSelect($event.value)">
+                                        <mat-select [value]="selectedCharacterIndex" (selectionChange)="onSingleActiveCharacterSelect($event.value)">
                                             @for (entry of allRosterEntries; track entry.index) {
                                                 <mat-option [value]="entry.index">{{ entry.character.name }}</mat-option>
                                             }
@@ -102,14 +102,6 @@
                                                         matTooltip="Duplicate character"
                                                         (click)="duplicateCharacterFromCard(entry.index, $event)">
                                                     <mat-icon>content_copy</mat-icon>
-                                                </button>
-                                                <button mat-icon-button
-                                                        type="button"
-                                                        class="crew-avatar-action"
-                                                        [disabled]="entry.index === 0"
-                                                        matTooltip="Delete character"
-                                                        (click)="deleteCharacterFromCard(entry.index, $event)">
-                                                    <mat-icon>delete</mat-icon>
                                                 </button>
                                             </div>
                                         }

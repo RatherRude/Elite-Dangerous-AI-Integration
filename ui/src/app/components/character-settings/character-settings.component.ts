@@ -1547,6 +1547,34 @@ export class CharacterSettingsComponent {
         }
     }
 
+    onSingleActiveCharacterSelect(index: number): void {
+        if (!this.config) return;
+
+        const applySelection = () => {
+            void this.configService.changeConfig({
+                active_character_index: index,
+                active_characters: [index],
+            });
+        };
+
+        if (this.editMode) {
+            this.confirmationDialog.openConfirmationDialog({
+                title: "Unsaved Changes",
+                message:
+                    "You have unsaved changes. Do you want to discard them?",
+                confirmButtonText: "Discard Changes",
+                cancelButtonText: "Keep Editing",
+            }).subscribe((result) => {
+                if (result) {
+                    applySelection();
+                }
+            });
+            return;
+        }
+
+        applySelection();
+    }
+
     toggleEditMode(index: number | null = null) {
         if (!this.config) return;
         const targetIndex = index ?? this.currentCharacterIndex;
