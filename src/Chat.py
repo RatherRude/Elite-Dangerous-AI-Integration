@@ -305,6 +305,9 @@ class Chat:
             speed=float(self.character["tts_speed"]),
             postprocessing_config=self.character.get("tts_postprocessing"),
             output_device=self.config["output_device_name"],
+            output_volume_multiplier=float(
+                self.config.get("output_volume_multiplier", 1.0)
+            ),
         )
         self.stt = STT(
             stt_model=self.sttModel,
@@ -967,6 +970,15 @@ def read_stdin(chat: Chat):
         line = sys.stdin.readline().strip()
         if line:
             data = json.loads(line)
+            if data.get("type") == "change_config":
+                partial = data.get("config")
+                if isinstance(partial, dict):
+                    chat.config = update_config(chat.config, partial)
+                    chat.plugin_manager.on_settings_changed(chat.config)
+                    if "output_volume_multiplier" in partial:
+                        chat.tts.set_output_volume_multiplier(
+                            float(chat.config.get("output_volume_multiplier", 1.0))
+                        )
             if data.get("type") == "submit_input":
                 chat.submit_input(data["input"])
             if data.get("type") == "query_memories":

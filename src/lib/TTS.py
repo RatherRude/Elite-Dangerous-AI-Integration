@@ -84,6 +84,7 @@ class TTS:
         speed: float = 1.0,
         postprocessing_config: CharacterTTSPostprocessingConfig | None = None,
         output_device: Optional[str] = None,
+        output_volume_multiplier: float = 1.0,
     ):
         self.tts_model = tts_model
         self.voice = voice
@@ -94,6 +95,7 @@ class TTS:
         
         self.p = pyaudio.PyAudio()
         self.output_device = output_device
+        self.output_volume_multiplier = max(0.0, min(1.5, float(output_volume_multiplier)))
         self.read_queue = queue.Queue()
         self.is_aborted = False
         self._is_playing = False
@@ -149,6 +151,17 @@ class TTS:
             "on_complete": None,
             "drop_if": None,
         }
+
+    def set_output_volume_multiplier(self, value: float) -> None:
+        self.output_volume_multiplier = max(0.0, min(1.5, float(value)))
+
+    def _apply_output_gain_pcm16(self, chunk: bytes) -> bytes:
+        g = self.output_volume_multiplier
+        if math.isclose(g, 1.0, abs_tol=1e-6) or not chunk:
+            return chunk
+        arr = np.frombuffer(chunk, dtype=np.int16).astype(np.float32) * g
+        np.clip(arr, -32768.0, 32767.0, out=arr)
+        return arr.astype(np.int16).tobytes()
 
     def _get_output_device_index(self) -> Optional[int]: #Rewert from String to Index 
         if not isinstance(self.output_device, str) or not self.output_device:
@@ -275,13 +288,16 @@ class TTS:
                     # log('debug', 'tts write available', available)
                     if available == empty_buffer_available:
                         raise IOError('underflow')
-                stream.write(chunk, exception_on_underflow=False) # this may throw for various system reasons
+                stream.write(
+                    self._apply_output_gain_pcm16(chunk),
+                    exception_on_underflow=False,
+                )  # this may throw for various system reasons
                 first_chunk = False
             except IOError as e:
                 if not first_chunk:
                     underflow_count += 1
                     # log('debug', 'tts underflow detected', underflow_count)
-                stream.write(chunk, exception_on_underflow=False)
+                stream.write(self._apply_output_gain_pcm16(chunk), exception_on_underflow=False)
         
         if underflow_count > 0:
             self.prebuffer_size *= 2
@@ -473,7 +489,10 @@ class TTS:
         for frame in pcm_stream:
             if self.is_aborted:
                 break
-            stream.write(frame.tobytes(), exception_on_underflow=False)
+            stream.write(
+                self._apply_output_gain_pcm16(frame.tobytes()),
+                exception_on_underflow=False,
+            )
 
     def _number_to_text(self, match: re.Match[str]):
         """Converts numbers like 100,203.12 to one hundred thousand two hundred three point one two"""
@@ -1311,7 +1330,7 @@ class TTS:
 if __name__ == "__main__":
     import os
     model = OpenAITTSModel(base_url='https://api.openai.com/v1', model_name="tts-1", api_key=os.environ.get('OPENAI_API_KEY'))
-    tts = TTS(model, "nova", speed=1.0, postprocessing_config=None, output_device="pulse")
+    tts = TTS(model, "nova", speed=1.0, postprocessing_config=None, output_device="pulse", output_volume_multiplier=1.0)
     tts.say("Hello, this is a test of the text to speech system.", postprocessing={
         "volume": 1.0,
         "effects": {

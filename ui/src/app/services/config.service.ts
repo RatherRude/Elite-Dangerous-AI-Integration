@@ -148,6 +148,7 @@ export interface Config {
     ptt_key: string;
     input_device_name: string;
     output_device_name: string;
+    output_volume_multiplier: number; // Linear gain applied to TTS PCM before the output device (0–1.5)
     cn_autostart: boolean;
     ed_journal_path: string;
     ed_appdata_path: string;

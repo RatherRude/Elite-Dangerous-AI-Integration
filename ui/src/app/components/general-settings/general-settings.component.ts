@@ -24,6 +24,7 @@ import { MatSnackBar } from "@angular/material/snack-bar";
 import { FormsModule } from "@angular/forms";
 import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
+import { MatSliderModule } from "@angular/material/slider";
 import { ScreenInfo } from "../../models/screen-info";
 
 @Component({
@@ -43,6 +44,7 @@ import { ScreenInfo } from "../../models/screen-info";
         MatOption,
         MatHint,
         MatError,
+        MatSliderModule,
     ],
     templateUrl: "./general-settings.component.html",
     styleUrls: ["./general-settings.component.css"],
@@ -156,6 +158,8 @@ export class GeneralSettingsComponent implements OnDestroy {
         this.isAssigningPTT = true;
         await this.configService.assignPTT();
     }
+
+    formatOutputVolumeLabel = (value: number): string => value.toFixed(2);
 
     async onConfigChange(partialConfig: Partial<Config>) {
         if (this.config) {

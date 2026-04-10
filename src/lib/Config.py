@@ -861,6 +861,7 @@ class Config(TypedDict):
     ptt_key: str
     input_device_name: str
     output_device_name: str
+    output_volume_multiplier: float
     cn_autostart: bool
     ed_journal_path: str
     ed_appdata_path: str
@@ -1344,6 +1345,7 @@ def load_config() -> Config:
         'cn_autostart': False,
         'input_device_name': get_default_input_device_name(),
         'output_device_name': get_default_output_device_name(),
+        'output_volume_multiplier': 1.0,
         'llm_provider': "openai",
         'llm_model_name': "gpt-5.4-nano",
         'llm_reasoning_effort': 'none',
@@ -1775,6 +1777,13 @@ def cast_int_float(current: dict, data: dict) -> dict:
 
 def update_config(config: Config, data: dict) -> Config:
     data = cast_int_float(config, data)
+
+    if "output_volume_multiplier" in data:
+        try:
+            v = float(data["output_volume_multiplier"])
+        except (TypeError, ValueError):
+            v = float(config.get("output_volume_multiplier", 1.0))
+        data["output_volume_multiplier"] = max(0.0, min(1.5, v))
     
     # Update provider-specific settings
     if data.get("llm_provider"):
