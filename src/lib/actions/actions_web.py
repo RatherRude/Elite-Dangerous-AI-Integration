@@ -46,13 +46,43 @@ def extract_http_error_details(response):
     return response_text
 
 
+def describe_http_status(status_code):
+    return {
+        400: "Spansh rejected the submitted search parameters.",
+        401: "Spansh requires authentication for this request.",
+        403: "Spansh refused the request.",
+        404: "The Spansh search endpoint was not found.",
+        408: "Spansh timed out while handling the request.",
+        422: "Spansh could not process the submitted search parameters.",
+        429: "Spansh rate limited the request.",
+        500: "Spansh reported an internal server error.",
+        502: "Spansh returned a bad gateway error.",
+        503: "Spansh is temporarily unavailable.",
+        504: "Spansh timed out upstream while handling the request.",
+    }.get(status_code)
+
+
 def format_web_request_error(action_name, error, response=None):
     response = response or getattr(error, "response", None)
 
     if response is not None:
-        base_message = f"The {action_name} request failed with HTTP {response.status_code}."
-        if response.status_code == 400:
-            base_message = f"The {action_name} request was rejected with HTTP 400. Please check the search parameters."
+        status_code = response.status_code
+        reason = str(getattr(response, "reason", "") or "").strip()
+        status_label = f"HTTP {status_code}"
+        if reason:
+            status_label = f"{status_label} {reason}"
+
+        if isinstance(error, ValueError):
+            base_message = f"The {action_name} returned {status_label}, but the response body was not valid JSON."
+            response_details = extract_http_error_details(response)
+            if response_details:
+                return f"{base_message} Response body: {response_details}"
+            return base_message
+
+        base_message = f"The {action_name} request failed with {status_label}."
+        status_details = describe_http_status(status_code)
+        if status_details:
+            base_message = f"{base_message} {status_details}"
 
         response_details = extract_http_error_details(response)
         if response_details:
@@ -60,10 +90,13 @@ def format_web_request_error(action_name, error, response=None):
         return base_message
 
     if isinstance(error, requests.Timeout):
-        return f"The {action_name} request timed out."
+        return f"The {action_name} request timed out while waiting for Spansh."
+
+    if isinstance(error, requests.ConnectionError):
+        return f"The {action_name} request could not reach Spansh: {error}"
 
     if isinstance(error, requests.RequestException):
-        return f"The {action_name} request failed: {error}"
+        return f"The {action_name} request failed before a valid response was returned: {error}"
 
     return f"The {action_name} failed: {error}"
 
@@ -2124,6 +2157,7 @@ def station_finder(obj, projected_states):
     log('debug', 'station search input', request_body)
 
     url = "https://spansh.co.uk/api/stations/search"
+    response = None
     try:
         response = requests.post(url, json=request_body, timeout=15)
         response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
@@ -2135,7 +2169,7 @@ def station_finder(obj, projected_states):
         return f'Here is a list of stations: {json.dumps(filtered_data)}'
     except Exception as e:
         log('error', e, traceback.format_exc())
-        return format_web_request_error("station finder", e)
+        return format_web_request_error("station finder", e, response)
 
 
 def prepare_system_request(obj, projected_states):# Helper function for fuzzy matching
@@ -2330,6 +2364,7 @@ def system_finder(obj, projected_states):
 
     url = "https://spansh.co.uk/api/systems/search"
 
+    response = None
     try:
         response = requests.post(url, json=request_body, timeout=15)
         response.raise_for_status()
@@ -2342,7 +2377,7 @@ def system_finder(obj, projected_states):
 
     except Exception as e:
         log('error', e, traceback.format_exc())
-        return format_web_request_error("system finder", e)
+        return format_web_request_error("system finder", e, response)
 
 
 def prepare_body_request(obj, projected_states):
@@ -2509,6 +2544,7 @@ def body_finder(obj, projected_states):
 
     url = "https://spansh.co.uk/api/bodies/search"
 
+    response = None
     try:
         response = requests.post(url, json=request_body, timeout=15)
         response.raise_for_status()
@@ -2521,7 +2557,7 @@ def body_finder(obj, projected_states):
 
     except Exception as e:
         log('error', e, traceback.format_exc())
-        return format_web_request_error("body finder", e)
+        return format_web_request_error("body finder", e, response)
 
 
 def register_web_actions(actionManager: ActionManager, eventManager: EventManager, 
