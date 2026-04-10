@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron/renderer')
+const { contextBridge, ipcRenderer } = require('electron/renderer');
 
 let stdoutCallback = null;
 let stderrCallback = null;

@@ -1,15 +1,16 @@
-const { app, BrowserWindow, dialog, ipcMain, protocol, net, screen, shell } = require('electron');
-const { spawn } = require('child_process');
-const path = require('path');
-const url = require('node:url')
-const fs = require('node:fs');
-const fsPromises = require('node:fs/promises');
-const contextMenu = require('electron-context-menu');
-const pino = require('pino')
+import { app, BrowserWindow, dialog, ipcMain, protocol, net, screen, shell } from 'electron';
+import { spawn } from 'child_process';
+import path from 'path';
+import url from 'node:url';
+import fs from 'node:fs';
+import fsPromises from 'node:fs/promises';
+import contextMenu from 'electron-context-menu';
+import pino from 'pino';
+import {VROverlay} from '@covas-labs/electron-vr';
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 const isLinux = process.platform === 'linux';
-const overlayPreloadPath = path.join(__dirname, 'preload.js');
+const overlayPreloadPath = path.join(import.meta.dirname, 'preload.js');
 const overlayWindowTitle = 'COVAS:NEXT Overlay';
 
 // electron-vr needs shared image transport for efficient offscreen texture forwarding.
@@ -49,11 +50,11 @@ const logger = pino({
 // delete old tauri log files
 if (process.platform === 'win32') {
   const logsPath = path.join(process.env.LOCALAPPDATA, 'com.covas-next.ui', 'logs');
-  require('fs').rmSync(logsPath, { recursive: true, force: true });
+  fs.rmSync(logsPath, { recursive: true, force: true });
   logger.info('Deleted logs directory:', logsPath);
 } else if (isLinux) {
   const logsPath = path.join(process.env.XDG_DATA_HOME ?? `${process.env.HOME}/.local/share`, 'com.covas-next.ui', 'logs');
-  require('fs').rmSync(logsPath, { recursive: true, force: true });
+  fs.rmSync(logsPath, { recursive: true, force: true });
   logger.info('Deleted logs directory:', logsPath);
 }
 
@@ -71,26 +72,14 @@ const config = isDevelopment ? {
   ui: 'http://localhost:1420',
   overlay: 'http://localhost:1420#/overlay',
   backend: 'python',
-  backend_cwd: path.join(__dirname, '..'),
-  backend_args: [path.join(__dirname, '../src/Chat.py')],
+  backend_cwd: path.join(import.meta.dirname, '..'),
+  backend_args: [path.join(import.meta.dirname, '../src/Chat.py')],
 } : {
   ui: 'app://./index.html',
   overlay: 'app://./index.html#/overlay',
-  backend: path.resolve(__dirname, '../Chat/Chat'),
+  backend: path.resolve(import.meta.dirname, '../Chat/Chat'),
   backend_cwd: isLinux ? path.join(process.env.XDG_DATA_HOME, './com.covas-next.ui') || app.getPath('sessionData') : app.getPath('userData'),
   backend_args: [],
-}
-
-let electronVrModulePromise = null;
-
-async function loadElectronVrModule() {
-  if (!electronVrModulePromise) {
-    electronVrModulePromise = import('@covas-labs/electron-vr').catch((error) => {
-      electronVrModulePromise = null;
-      throw error;
-    });
-  }
-  return electronVrModulePromise;
 }
 
 function getOverlayPlacement(vrAnchor) {
@@ -122,7 +111,6 @@ function normalizeOverlayOptions(opts = {}) {
 
 async function getOverlayRuntimeInfo() {
   try {
-    const { VROverlay } = await loadElectronVrModule();
     console.log("VROverlay:", VROverlay);
 
     const runtimeInfo = VROverlay.getRuntimeInfo();
@@ -154,15 +142,15 @@ async function getOverlayRuntimeInfo() {
 // list files in the backend directory
 try {
   // create backend_cwd if it doesn't exist
-  require('fs').mkdirSync(config.backend_cwd, { recursive: true });
+  fs.mkdirSync(config.backend_cwd, { recursive: true });
   
-  const files = require('fs').readdirSync(config.backend_cwd);
+  const files = fs.readdirSync(config.backend_cwd);
   logger.info('Backend files:', files);
 } catch (error) {
   logger.error('Error reading backend directory:', error);
 }
 
-contextMenu.default({
+contextMenu({
   showSpellCheck: false,
   showLearnSpelling: false,
   showSeparator: false,
@@ -508,13 +496,6 @@ function createFloatingOverlayWindow(opts) {
 }
 
 async function createVrOverlayWindow(opts) {
-  const { VROverlay } = await loadElectronVrModule().catch((error) => {
-    const reason = error instanceof Error ? error.message : String(error);
-    throw new Error(
-      `VR overlay requires the optional @covas-labs/electron-vr package. Install it with GitHub Packages access and restart the app. ${reason}`,
-    );
-  });
-
   const runtimeInfo = VROverlay.getRuntimeInfo();
   if (!VROverlay.isAvailable(runtimeInfo)) {
     throw new Error(
@@ -601,11 +582,11 @@ app.whenReady().then(async ()=>{
 
   protocol.handle('app', (request) => {
     const requestUrl = new URL(request.url);
-    const resolved = url.pathToFileURL(path.join(__dirname, './ui/', requestUrl.pathname)).toString()
+    const resolved = url.pathToFileURL(path.join(import.meta.dirname, './ui/', requestUrl.pathname)).toString()
     //logger.info(request.url, '->', resolved)
     // if file is directory, return index.html
     if (requestUrl.pathname.endsWith('/')) {
-      return net.fetch(url.pathToFileURL(path.join(__dirname, './ui/index.html')).toString())
+      return net.fetch(url.pathToFileURL(path.join(import.meta.dirname, './ui/index.html')).toString())
     }
     return net.fetch(resolved)
   })
