@@ -403,6 +403,16 @@ class Chat:
                 "name": character.get("name", f"Character {index}"),
                 "character_prompt": character.get("character", ""),
                 "is_primary": index == self.config.get("active_character_index", -1),
+                "event_reactions": character.get("event_reactions", {}),
+                "event_reaction_enabled_var": character.get("event_reaction_enabled_var", False),
+                "react_to_text_local_var": character.get("react_to_text_local_var", True),
+                "react_to_text_starsystem_var": character.get("react_to_text_starsystem_var", True),
+                "react_to_text_npc_var": character.get("react_to_text_npc_var", False),
+                "react_to_text_squadron_var": character.get("react_to_text_squadron_var", True),
+                "react_to_material": character.get("react_to_material", ""),
+                "react_to_danger_mining_var": character.get("react_to_danger_mining_var", False),
+                "react_to_danger_onfoot_var": character.get("react_to_danger_onfoot_var", False),
+                "react_to_danger_supercruise_var": character.get("react_to_danger_supercruise_var", False),
             }
             for index, character in self.active_characters
         ]

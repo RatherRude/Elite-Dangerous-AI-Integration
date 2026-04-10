@@ -88,6 +88,7 @@ sys.modules.setdefault("opentelemetry.exporter.otlp.proto.http._log_exporter", l
 sys.modules.setdefault("opentelemetry.instrumentation.openai", openai_instrumentation_stub)
 
 from src.lib.PromptGenerator import PromptGenerator
+from src.lib.EDJournal import GameEvent
 
 
 def make_prompt_generator(monkeypatch, active_characters=None):
@@ -148,6 +149,45 @@ def test_get_character_prompt_block_uses_multicrew_roster_when_multiple_active_c
     assert "Crew roster by speaker_id for crewTalk:" in prompt_block
     assert "character_0 -> COVAS (primary): I am Rude's main ship voice." in prompt_block
     assert "character_2 -> Nyx (active): I am the gunner covering Rude." in prompt_block
+
+
+def test_event_message_marks_important_characters(monkeypatch):
+    generator = make_prompt_generator(
+        monkeypatch,
+        active_characters=[
+            {
+                "speaker_id": "character_0",
+                "name": "COVAS",
+                "is_primary": True,
+                "character_prompt": "I am {commander_name}'s main ship voice.",
+                "event_reaction_enabled_var": True,
+                "event_reactions": {"ReceiveText": "on"},
+                "react_to_text_local_var": True,
+                "react_to_text_starsystem_var": False,
+                "react_to_text_npc_var": False,
+                "react_to_text_squadron_var": False,
+            },
+            {
+                "speaker_id": "character_2",
+                "name": "Nyx",
+                "is_primary": False,
+                "character_prompt": "I am the gunner covering {commander_name}.",
+                "event_reaction_enabled_var": True,
+                "event_reactions": {"ReceiveText": "on"},
+                "react_to_text_local_var": False,
+                "react_to_text_starsystem_var": False,
+                "react_to_text_npc_var": False,
+                "react_to_text_squadron_var": True,
+            },
+        ],
+    )
+
+    event = GameEvent(content={"event": "ReceiveText", "Channel": "local"})
+
+    piece = generator.event_message(event, "a minute ago", True, {})
+
+    assert piece is not None
+    assert piece["content"].startswith("[IMPORTANT Game Event for COVAS, a minute ago]")
 
 
 def test_generate_status_message_includes_main_ship_loadout_hull_health(monkeypatch):

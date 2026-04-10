@@ -124,9 +124,9 @@ class PromptGenerator:
         lines = [
             "Multicrew is active and crew members are available as distinct speakers.",
             "When only the primary ship voice should answer, respond normally without calling a tool.",
-            "Responses without using the crewTalk tool are always spoken by the primary ship voice.",
+            "Responses will always be spoken by the primary ship voice.",
             "When a non-primary crew member should speak, or when multiple active crew members should speak back and forth, call the crewTalk tool once with an ordered list of utterances.",
-            "Never write character names to simulate a different speaker in plain text; only use crewTalk tool for that. The previous messages will be written by me, never copy that.",
+            "Never write character names in square brackets like [COVAS] to simulate them talking, only use crewTalk tool for that. Earlier messages were created by using the crewTalk tool.",
             "Prefer one crewTalk call for the whole exchange, and reuse the same speaker_id in multiple utterances whenever that crew member speaks again later in the same sequence.",
             "Crew roster by speaker_id for crewTalk:",
         ]
@@ -144,6 +144,107 @@ class PromptGenerator:
             return self.get_multicrew_prompt_block()
 
         return "Your character prompt is: " + self.character_prompt.format(commander_name=self.commander_name)
+
+    def _character_handles_game_event(self, character: dict[str, Any], event: GameEvent) -> bool:
+        reactions = character.get('event_reactions', {}) if character.get('event_reaction_enabled_var', False) else {}
+        event_name = event.content.get('event')
+        if reactions.get(event_name) != 'on':
+            return False
+
+        if event_name == 'ReceiveText':
+            channel = event.content.get('Channel')
+            if channel not in ['wing', 'voicechat', 'friend', 'player'] and (
+                (not character.get('react_to_text_local_var', True) and channel == 'local') or
+                (not character.get('react_to_text_starsystem_var', True) and channel == 'starsystem') or
+                (not character.get('react_to_text_npc_var', False) and channel == 'npc') or
+                (not character.get('react_to_text_squadron_var', True) and channel == 'squadron')
+            ):
+                return False
+
+        if event_name == 'ProspectedAsteroid':
+            chunks = [chunk.strip() for chunk in str(character.get('react_to_material', '')).split(',') if chunk.strip()]
+            contains_material = False
+            for chunk in chunks:
+                for material in event.content.get('Materials', []):
+                    if chunk.lower() in material['Name'].lower():
+                        contains_material = True
+                if event.content.get('MotherlodeMaterial', False):
+                    if chunk.lower() in event.content['MotherlodeMaterial'].lower():
+                        contains_material = True
+            if not contains_material:
+                return False
+
+        if event_name == 'ScanOrganic':
+            return False
+
+        return True
+
+    def _character_handles_status_event(self, character: dict[str, Any], states: dict[str, Any], event: StatusEvent) -> bool:
+        reactions = character.get('event_reactions', {}) if character.get('event_reaction_enabled_var', False) else {}
+        event_name = event.status.get('event')
+        if reactions.get(event_name) != 'on':
+            return False
+
+        if event_name in ['InDanger', 'OutOfDanger']:
+            ship_info = get_state_dict(states, 'ShipInfo')
+            location = get_state_dict(states, 'Location')
+            current_status = get_state_dict(states, 'CurrentStatus')
+            nav_info = get_state_dict(states, 'NavInfo', {'NavRoute': []})
+            flags = current_status.get('flags', {}) if isinstance(current_status, dict) else {}
+            flags2 = current_status.get('flags2', {}) if isinstance(current_status, dict) else {}
+            nav_route = nav_info.get('NavRoute', []) if isinstance(nav_info, dict) else []
+
+            if not character.get('react_to_danger_mining_var', False):
+                if ship_info.get('IsMiningShip', False) and location.get('PlanetaryRing', False):
+                    return False
+            if not character.get('react_to_danger_onfoot_var', False):
+                if flags2 and flags2.get('OnFoot'):
+                    return False
+            if not character.get('react_to_danger_supercruise_var', False):
+                if flags.get('Supercruise') and len(nav_route):
+                    return False
+
+        return True
+
+    def _get_important_character_names(self, event: Event, projected_states: dict[str, Any] | None = None) -> list[str]:
+        matched_names: list[str] = []
+        for character in self.active_characters:
+            name = character.get('name')
+            if not isinstance(name, str) or not name:
+                continue
+
+            matches = False
+            if isinstance(event, GameEvent):
+                matches = self._character_handles_game_event(character, event)
+            elif isinstance(event, StatusEvent):
+                matches = self._character_handles_status_event(character, projected_states or {}, event)
+            elif isinstance(event, ProjectedEvent):
+                event_name = event.content.get('event')
+                reactions = character.get('event_reactions', {})
+                matches = (
+                    isinstance(event_name, str)
+                    and event_name.startswith('ScanOrganic')
+                    and reactions.get('ScanOrganic') == 'on'
+                ) or reactions.get(event_name) == 'on'
+            elif isinstance(event, QuestEvent):
+                matches = character.get('event_reactions', {}).get('quest') == 'on'
+            elif isinstance(event, ExternalEvent):
+                matches = True
+
+            if matches:
+                matched_names.append(name)
+
+        return matched_names
+
+    def _format_event_label(self, event: Event, is_important: bool, projected_states: dict[str, Any] | None = None) -> str:
+        if not is_important:
+            return 'Game Event'
+
+        names = self._get_important_character_names(event, projected_states)
+        if not names:
+            return 'IMPORTANT Game Event'
+
+        return f"IMPORTANT Game Event for {', '.join(names)}"
 
     def announce_pad(self, pad_number):
         """Generate a detailed description of the landing pad location."""
@@ -2462,24 +2563,24 @@ class PromptGenerator:
 
         return None
 
-    def event_message(self, event: Union[GameEvent, ProjectedEvent, ExternalEvent, QuestEvent], timeoffset: str, is_important: bool):
+    def event_message(self, event: Union[GameEvent, ProjectedEvent, ExternalEvent, QuestEvent], timeoffset: str, is_important: bool, projected_states: dict[str, Any] | None = None):
         message = self.get_event_template(event)
         if message:
             return {
                 "role": "user",
-                "content": f"[{'IMPORTANT ' if is_important else ''}Game Event, {timeoffset}] {message}",
+                "content": f"[{self._format_event_label(event, is_important, projected_states)}, {timeoffset}] {message}",
             }
 
         # Deliberately ignored events
         # log('info', f'ignored event', event)
         return None
 
-    def status_messages(self, event: StatusEvent, timeoffset: str, is_important: bool):
+    def status_messages(self, event: StatusEvent, timeoffset: str, is_important: bool, projected_states: dict[str, Any] | None = None):
         message = self.get_status_event_template(event)
         if message:
             return {
                 "role": "user",
-                "content": f"[{'IMPORTANT ' if is_important else ''}Game Event, {timeoffset}] {message}",
+                "content": f"[{self._format_event_label(event, is_important, projected_states)}, {timeoffset}] {message}",
             }
 
         # Deliberately ignored events
@@ -3668,7 +3769,7 @@ class PromptGenerator:
 
                 if len(conversational_pieces) < 20:
                     is_important = is_pending and event_type in self.important_game_events
-                    message = self.event_message(event, time_offset, is_important)
+                    message = self.event_message(event, time_offset, is_important, projected_states)
                     if message:
                         piece = message
                         conversational_pieces.append(piece)
@@ -3684,7 +3785,7 @@ class PromptGenerator:
                     and event_type != "Status"
                 ):
                     is_important = is_pending and event_type in self.important_game_events
-                    message = self.status_messages(event, time_offset, is_important)
+                    message = self.status_messages(event, time_offset, is_important, projected_states)
                     if message:
                         piece = message
                         conversational_pieces.append(piece)
