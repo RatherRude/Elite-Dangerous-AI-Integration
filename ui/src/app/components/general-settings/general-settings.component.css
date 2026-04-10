@@ -52,6 +52,8 @@ div.output-device-column .mat-mdc-form-field-subscript-wrapper {
   padding: 0 0 0 2px;
   min-height: 28px;
   box-sizing: border-box;
+  position: relative;
+  top: -25px;
 }
 
 .output-volume-label {
@@ -72,6 +74,9 @@ div.output-device-column .mat-mdc-form-field-subscript-wrapper {
   height: 3px;
 }
 
+.output-volume-slider ::ng-deep .mat-mdc-focus-indicator {
+  top: -10px;
+}
 .output-volume-slider ::ng-deep .mdc-slider__thumb-knob {
   width: 14px;
   height: 14px;
