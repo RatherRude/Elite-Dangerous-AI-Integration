@@ -1178,7 +1178,7 @@ if __name__ == "__main__":
         stdin_thread = threading.Thread(target=read_stdin, args=(chat,), daemon=True)
         stdin_thread.start()
 
-        if sys.platform.startswith("linux"):
+        if sys.platform.startswith(("linux", "darwin")):
             zombie_check_thread = threading.Thread(
                 target=check_zombie_status, daemon=True
             )

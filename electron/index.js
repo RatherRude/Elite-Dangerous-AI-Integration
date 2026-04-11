@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, protocol, net, screen, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, protocol, net, screen, shell, systemPreferences } from 'electron';
 import { spawn } from 'child_process';
 import path from 'path';
 import url from 'node:url';
@@ -261,6 +261,51 @@ async function resolveManagedUserAssetPath(filePath) {
   const userAssetsDir = await ensureUserAssetsDirectory();
   const safeName = sanitizeUserAssetFileName(path.basename(filePath));
   return assertUserAssetPath(path.join(userAssetsDir, safeName));
+}
+
+async function openMacAccessibilitySettings() {
+  if (process.platform !== 'darwin') {
+    return false;
+  }
+
+  const settingsUrl = 'x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility';
+  try {
+    await shell.openExternal(settingsUrl);
+    return true;
+  } catch (error) {
+    logger.warn('Failed to open macOS Accessibility settings via deep link:', error);
+    return (await shell.openPath('/System/Library/PreferencePanes/Security.prefPane')) === '';
+  }
+}
+
+async function requestMacAccessibilityPermission() {
+  if (process.platform !== 'darwin') {
+    return {
+      supported: false,
+      granted: false,
+      prompted: false,
+      openedSettings: false,
+    };
+  }
+
+  const alreadyGranted = systemPreferences.isTrustedAccessibilityClient(false);
+  if (alreadyGranted) {
+    return {
+      supported: true,
+      granted: true,
+      prompted: false,
+      openedSettings: false,
+    };
+  }
+
+  const grantedAfterPrompt = systemPreferences.isTrustedAccessibilityClient(true);
+
+  return {
+    supported: true,
+    granted: grantedAfterPrompt,
+    prompted: true,
+    openedSettings: false,
+  };
 }
 
 function resolveReadableAssetPath(filePath) {
@@ -740,6 +785,15 @@ app.whenReady().then(async ()=>{
     }
     await fsPromises.unlink(assetPath);
     return { deleted: true };
+  });
+  ipcMain.handle('request_accessibility_permission', async () => {
+    return requestMacAccessibilityPermission();
+  });
+  ipcMain.handle('open_accessibility_settings', async () => {
+    return {
+      supported: process.platform === 'darwin',
+      opened: await openMacAccessibilitySettings(),
+    };
   });
 
   mainWindow.on('closed', () => {

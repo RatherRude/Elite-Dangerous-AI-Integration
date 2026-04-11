@@ -195,4 +195,45 @@ def test_transcribe(stt, mock_openai, mock_vad):
     audio = sr.AudioData(b'\xff\xff' * 16000, 16000, pyaudio.get_sample_size(pyaudio.paInt16))
     res = stt._transcribe(audio)
     assert res == 'Test transcription via API'
+
+
+def test_read_stream_buffer_disables_overflow_exceptions(stt):
+    source = MagicMock()
+    source.read.return_value = b'audio'
+
+    buffer = stt._read_stream_buffer(source)
+
+    assert buffer == b'audio'
+    source.read.assert_called_once_with(stt.frames_per_buffer, exception_on_overflow=False)
+
+
+def test_read_stream_buffer_falls_back_for_streams_without_overflow_kwarg(stt):
+    class LegacyStream:
+        def __init__(self):
+            self.calls = []
+
+        def read(self, frames_per_buffer, exception_on_overflow=True):
+            self.calls.append((frames_per_buffer, exception_on_overflow))
+            if len(self.calls) == 1:
+                raise TypeError('unexpected keyword argument')
+            return b'legacy-audio'
+
+    source = LegacyStream()
+
+    buffer = stt._read_stream_buffer(source)
+
+    assert buffer == b'legacy-audio'
+    assert source.calls == [
+        (stt.frames_per_buffer, False),
+        (stt.frames_per_buffer, True),
+    ]
+
+
+def test_read_stream_buffer_handles_input_overflow(stt):
+    source = MagicMock()
+    source.read.side_effect = OSError(-9981, 'Input overflowed')
+
+    buffer = stt._read_stream_buffer(source)
+
+    assert buffer == b'\x00' * stt.frames_per_buffer * stt.sample_width
     

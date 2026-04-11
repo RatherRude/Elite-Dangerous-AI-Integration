@@ -16,12 +16,12 @@ import {
 } from "../../services/config.service.js";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { FormsModule } from "@angular/forms";
-import { MatDivider } from "@angular/material/divider";
 import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
 import { Character, CharacterService } from "../../services/character.service.js";
 import { ConfigBackupService } from "../../services/config-backup.service";
 import { MatIcon } from "@angular/material/icon";
+import { TauriService } from "../../services/tauri.service";
 import {
     MatAccordion,
     MatExpansionModule,
@@ -48,7 +48,6 @@ import { SettingsGridComponent } from "../settings-grid/settings-grid.component"
         MatOption,
         MatHint,
         MatOptgroup,
-        MatDivider,
         MatIcon,
         MatAccordion,
         MatExpansionModule,
@@ -83,6 +82,7 @@ export class AdvancedSettingsComponent implements OnDestroy {
         private characterService: CharacterService,
         private snackBar: MatSnackBar,
         private configBackupService: ConfigBackupService,
+        private tauriService: TauriService,
     ) {
         this.configSubscription = this.configService.config$.subscribe(
             (config) => {
@@ -212,7 +212,89 @@ export class AdvancedSettingsComponent implements OnDestroy {
     isPathOutsideHome(path: string): boolean {
         if (!path) return false;
         const normalizedPath = this.normalizePath(path);
-        return normalizedPath.startsWith('/') && !normalizedPath.startsWith('/home');
+        if (!normalizedPath.startsWith('/')) return false;
+
+        const homePrefix = this.system?.os === 'Darwin' ? '/Users' : '/home';
+        return !normalizedPath.startsWith(homePrefix);
+    }
+
+    isManualEdPathConfigAvailable(): boolean {
+        return this.system?.os === 'Linux' || this.system?.os === 'Darwin';
+    }
+
+    getManualEdPathSettingsLabel(): string {
+        return this.system?.os === 'Darwin' ? 'macOS Settings' : 'Linux Settings';
+    }
+
+    getManualEdPathPermissionHint(): string {
+        if (this.system?.os === 'Darwin') {
+            return 'Directories outside of /Users may require additional macOS permissions.';
+        }
+
+        return 'Directories outside of /home need to be permitted manually via flatpak override';
+    }
+
+    isMacOS(): boolean {
+        return this.system?.os === 'Darwin';
+    }
+
+    async requestAccessibilityPermission(): Promise<void> {
+        try {
+            const result = await this.tauriService.requestAccessibilityPermission();
+            if (!result.supported) {
+                this.snackBar.open('Accessibility permission requests are only available on macOS.', 'OK', {
+                    duration: 5000,
+                });
+                return;
+            }
+
+            if (result.granted) {
+                this.snackBar.open('Accessibility access is already enabled for COVAS:NEXT.', 'OK', {
+                    duration: 5000,
+                });
+                return;
+            }
+
+            const message = result.openedSettings
+                ? 'macOS opened Accessibility settings. Enable COVAS:NEXT there and restart the app if needed.'
+                : 'Accessibility permission was requested. Enable COVAS:NEXT in System Settings if macOS did not grant it immediately.';
+            this.snackBar.open(message, 'OK', {
+                duration: 8000,
+            });
+        } catch (error) {
+            console.error('Error requesting accessibility permission:', error);
+            this.snackBar.open('Failed to request Accessibility permission.', 'OK', {
+                duration: 5000,
+            });
+        }
+    }
+
+    async openAccessibilitySettings(): Promise<void> {
+        try {
+            const result = await this.tauriService.openAccessibilitySettings();
+            if (!result.supported) {
+                this.snackBar.open('Accessibility settings deep-link is only available on macOS.', 'OK', {
+                    duration: 5000,
+                });
+                return;
+            }
+
+            if (result.opened) {
+                this.snackBar.open('Opened macOS Accessibility settings.', 'OK', {
+                    duration: 5000,
+                });
+                return;
+            }
+
+            this.snackBar.open('Unable to open macOS Accessibility settings automatically.', 'OK', {
+                duration: 5000,
+            });
+        } catch (error) {
+            console.error('Error opening accessibility settings:', error);
+            this.snackBar.open('Failed to open Accessibility settings.', 'OK', {
+                duration: 5000,
+            });
+        }
     }
 
     onPathChange(field: 'ed_appdata_path' | 'ed_journal_path', value: string) {

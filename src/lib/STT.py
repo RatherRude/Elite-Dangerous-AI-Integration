@@ -39,6 +39,7 @@ class STT:
         self.continuous_listening_paused = False
 
         self.rate=16000
+        self.sample_width = pyaudio.get_sample_size(pyaudio.paInt16)
         self.frames_per_buffer=self.vad.chunk_bytes() // pyaudio.get_sample_size(pyaudio.paInt16)
 
         self.vad_threshold = 0.2
@@ -70,13 +71,13 @@ class STT:
             timestamp = time()
             frames = []
             while self.listening:
-                buffer = source.read(self.frames_per_buffer)
+                buffer = self._read_stream_buffer(source)
                 if len(buffer) == 0: break  # reached end of the stream
                 frames.append(buffer)
             source.close()
 
             audio_raw = b''.join(frames)
-            audio_data = sr.AudioData(audio_raw, self.rate, pyaudio.get_sample_size(pyaudio.paInt16))
+            audio_data = sr.AudioData(audio_raw, self.rate, self.sample_width)
             text = self._transcribe(audio_data)
         finally:
             self.recording = False
@@ -111,7 +112,7 @@ class STT:
         frames = []
         activity = []
         while self.listening:
-            buffer = source.read(self.frames_per_buffer)
+            buffer = self._read_stream_buffer(source)
             if self.continuous_listening_paused:
                 self.recording = False
                 continue
@@ -142,7 +143,7 @@ class STT:
                         # no voice in the last 0.5 seconds, so we know the user has stopped speaking
                         # so we can transcribe the audio
                         #log('debug','no voice detected in the last 0.5 seconds, transcribing')
-                        audio_data = sr.AudioData(audio_raw, self.rate, pyaudio.get_sample_size(pyaudio.paInt16))
+                        audio_data = sr.AudioData(audio_raw, self.rate, self.sample_width)
                         text = self._transcribe(audio_data)
                         frames = []
                         activity = []
@@ -151,6 +152,17 @@ class STT:
                         self.recording = False
         source.close()
         self.recording = False
+
+    def _read_stream_buffer(self, source: pyaudio.Stream) -> bytes:
+        try:
+            return source.read(self.frames_per_buffer, exception_on_overflow=False)
+        except TypeError:
+            return source.read(self.frames_per_buffer)
+        except OSError as e:
+            if getattr(e, 'errno', None) == -9981:
+                log('warn', 'Audio input overflow detected, dropping one microphone chunk')
+                return b'\x00' * self.frames_per_buffer * self.sample_width
+            raise
 
     def _get_microphone(self) -> pyaudio.Stream:
         audio = pyaudio.PyAudio()

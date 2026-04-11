@@ -1,10 +1,11 @@
 import threading
 import time
+import platform
 from typing import Callable, Any, final
 
 import pygame
-from pynput.keyboard import Controller as KeyboardController, Listener as KeyboardListener
-from pynput.mouse import Controller as MouseController, Listener as MouseListener
+from pynput.keyboard import Controller as KeyboardController, Listener as KeyboardListener, Key
+from pynput.mouse import Controller as MouseController, Listener as MouseListener, Button
 import logging 
 
 logger = logging.getLogger(__name__)
@@ -14,6 +15,7 @@ class ControllerManager:
     def __init__(self):
         self.keyboard_controller = KeyboardController()
         self.mouse_controller = MouseController()
+        self.joystick_hotkeys_supported = platform.system() != "Darwin"
 
         self.is_pressed = False
         self.last_press: str | None = None
@@ -22,14 +24,16 @@ class ControllerManager:
         self.keyboard_listener: KeyboardListener | None = None
         self.mouse_listener: MouseListener | None = None
         self.joystick_listener: threading.Thread | None = None
+        self.joystick_listener_running = False
 
-        pygame.init()
-        pygame.joystick.init()
         self.joysticks = []
-        for i in range(0,pygame.joystick.get_count()):
-            joystick = pygame.joystick.Joystick(i)
-            joystick.init()
-            self.joysticks.append(joystick)
+        if self.joystick_hotkeys_supported:
+            pygame.init()
+            pygame.joystick.init()
+            for i in range(0,pygame.joystick.get_count()):
+                joystick = pygame.joystick.Joystick(i)
+                joystick.init()
+                self.joysticks.append(joystick)
 
         self.capture_event_thread = None
         self.capture_event_thread_running = False
@@ -76,8 +80,9 @@ class ControllerManager:
 
     def _start_listeners(self, on_press, on_release):
         self._stop_listeners()
-        for _event in pygame.event.get():
-            pass
+        if self.joystick_hotkeys_supported:
+            for _event in pygame.event.get():
+                pass
 
         def on_key_press(key):
             on_press(str(key))
@@ -114,10 +119,12 @@ class ControllerManager:
                     logger.warning(f"Error capturing joystick event: {e}")
                 time.sleep(0.01)  # Small sleep to prevent high CPU usage
 
-        # Start a thread for capturing game controller events
-        self.joystick_listener_running = True
-        self.joystick_listener = threading.Thread(target=capture_event, daemon=True)
-        self.joystick_listener.start()
+        if self.joystick_hotkeys_supported:
+            # On macOS, SDL event pumping from a background thread crashes AppKit.
+            # Keep best-effort keyboard and mouse capture there, but skip joystick hotkeys.
+            self.joystick_listener_running = True
+            self.joystick_listener = threading.Thread(target=capture_event, daemon=True)
+            self.joystick_listener.start()
 
     def _stop_listeners(self):
         # Stop existing listeners
@@ -137,13 +144,13 @@ class ControllerManager:
     def emulate_hotkey(self, key: str) -> None:
         try:
             # Try to interpret key as a Key object
-            key_obj = eval(key)
+            key_obj = eval(key, {"Key": Key, "Button": Button})
             self.keyboard_controller.press(key_obj)
             self.keyboard_controller.release(key_obj)
         except (NameError, SyntaxError):
             # If not a keyboard key, check for mouse button
             if key.startswith("Button."):
-                button = eval(key)
+                button = eval(key, {"Button": Button})
                 self.mouse_controller.click(button)
             else:
                 print(f"Unknown key type: {key}")

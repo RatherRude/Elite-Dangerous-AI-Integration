@@ -6,9 +6,9 @@
 import ctypes
 import time
 import platform
-from .Logger import log
+from typing import final
 
-from pynput.keyboard import Key, Controller, KeyCode
+from pynput.keyboard import Controller, KeyCode  # pyright: ignore[reportMissingModuleSource]
 
 SendInput = ctypes.windll.user32.SendInput if 'windll' in dir(ctypes) else None
 pynput_keyboard = Controller()
@@ -16,6 +16,9 @@ pynput_keyboard = Controller()
 # C struct redefinitions
 
 PUL = ctypes.POINTER(ctypes.c_ulong)
+
+
+@final
 class KeyBdInput(ctypes.Structure):
     _fields_ = [("wVk", ctypes.c_ushort),
                 ("wScan", ctypes.c_ushort),
@@ -23,11 +26,15 @@ class KeyBdInput(ctypes.Structure):
                 ("time", ctypes.c_ulong),
                 ("dwExtraInfo", PUL)]
 
+
+@final
 class HardwareInput(ctypes.Structure):
     _fields_ = [("uMsg", ctypes.c_ulong),
                 ("wParamL", ctypes.c_short),
                 ("wParamH", ctypes.c_ushort)]
 
+
+@final
 class MouseInput(ctypes.Structure):
     _fields_ = [("dx", ctypes.c_long),
                 ("dy", ctypes.c_long),
@@ -36,11 +43,15 @@ class MouseInput(ctypes.Structure):
                 ("time",ctypes.c_ulong),
                 ("dwExtraInfo", PUL)]
 
+
+@final
 class Input_I(ctypes.Union):
     _fields_ = [("ki", KeyBdInput),
                  ("mi", MouseInput),
                  ("hi", HardwareInput)]
 
+
+@final
 class Input(ctypes.Structure):
     _fields_ = [("type", ctypes.c_ulong),
                 ("ii", Input_I)]
@@ -48,8 +59,10 @@ class Input(ctypes.Structure):
 
 # Actual Functions
 
-def PressKey(keyCode):
+def PressKey(keyCode: int | str):
     if platform.system() == 'Windows':
+        assert SendInput is not None
+        assert isinstance(keyCode, int)
         extra = ctypes.c_ulong(0)
         ii_ = Input_I()
         flags = 0x0008  # KEYEVENTF_SCANCODE
@@ -64,8 +77,10 @@ def PressKey(keyCode):
     else:
         pynput_keyboard.press(KeyCode.from_vk(keyCode) if isinstance(keyCode, int) else KeyCode.from_char(keyCode))
 
-def ReleaseKey(keyCode):
+def ReleaseKey(keyCode: int | str):
     if platform.system() == 'Windows':
+        assert SendInput is not None
+        assert isinstance(keyCode, int)
         extra = ctypes.c_ulong(0)
         ii_ = Input_I()
         flags = 0x0008 | 0x0002  # KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP
@@ -80,7 +95,7 @@ def ReleaseKey(keyCode):
     else:
         pynput_keyboard.release(KeyCode.from_vk(keyCode) if isinstance(keyCode, int) else KeyCode.from_char(keyCode))
 
-def PressAndReleaseKey(hexKeyCode):
+def PressAndReleaseKey(hexKeyCode: int | str):
     PressKey(hexKeyCode)
     time.sleep(0.1)
     ReleaseKey(hexKeyCode)

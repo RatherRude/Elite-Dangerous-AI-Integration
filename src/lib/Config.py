@@ -911,6 +911,9 @@ def get_ed_appdata_path(config: Config) -> str:
         path = os.path.abspath(config['ed_appdata_path'])
         return path
 
+    if platform.system() != "Windows":
+        return os.getcwd()
+
     from os import environ
     return environ.get('LOCALAPPDATA', '') + "\\Frontier Developments\\Elite Dangerous"
 

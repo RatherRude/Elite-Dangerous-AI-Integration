@@ -883,17 +883,30 @@
             </mat-expansion-panel>
         }
         
-        @if (system?.os === 'Linux') {
+        @if (isManualEdPathConfigAvailable()) {
             <mat-expansion-panel>
                 <mat-expansion-panel-header>
                     <mat-panel-title>
                         <mat-icon>computer</mat-icon>
-                        Linux Settings
+                        {{ getManualEdPathSettingsLabel() }}
                     </mat-panel-title>
                 </mat-expansion-panel-header>
             <p>Learn more about this setup <a target="_blank" rel="noopener noreferrer"
                                                 href="https://ratherrude.github.io/Elite-Dangerous-AI-Integration/advanced/linux/">here.</a>
             </p>
+            @if (isMacOS()) {
+                <p>Keyboard emulation and global hotkeys may require macOS Accessibility permission.</p>
+                <div class="backup-buttons">
+                    <button mat-raised-button color="primary" (click)="requestAccessibilityPermission()">
+                        <mat-icon>privacy_tip</mat-icon>
+                        Request Accessibility Access
+                    </button>
+                    <button mat-raised-button color="accent" (click)="openAccessibilitySettings()">
+                        <mat-icon>open_in_new</mat-icon>
+                        Open Accessibility Settings
+                    </button>
+                </div>
+            }
             <mat-form-field>
                 <mat-label>ED AppData Path</mat-label>
                 <input matInput [(ngModel)]="config.ed_appdata_path"
@@ -904,7 +917,7 @@
                     <mat-error>Path must start with /</mat-error>
                 }
                 @if (config.ed_appdata_path && isPathOutsideHome(config.ed_appdata_path)) {
-                    <mat-hint>⚠️ Directories outside of /home need to be permitted manually via flatpak override</mat-hint>
+                    <mat-hint>⚠️ {{ getManualEdPathPermissionHint() }}</mat-hint>
                 }
             </mat-form-field>
             <mat-form-field>
@@ -917,7 +930,7 @@
                     <mat-error>Path must start with /</mat-error>
                 }
                 @if (config.ed_journal_path && isPathOutsideHome(config.ed_journal_path)) {
-                    <mat-hint>⚠️ Directories outside of /home need to be permitted manually via flatpak override</mat-hint>
+                    <mat-hint>⚠️ {{ getManualEdPathPermissionHint() }}</mat-hint>
                 }
             </mat-form-field>
             </mat-expansion-panel>

@@ -63,6 +63,18 @@ export interface OverlayRuntimeInfo {
     error?: string;
 }
 
+export interface AccessibilityPermissionResult {
+    supported: boolean;
+    granted: boolean;
+    prompted: boolean;
+    openedSettings: boolean;
+}
+
+export interface AccessibilitySettingsResult {
+    supported: boolean;
+    opened: boolean;
+}
+
 export interface SubmitInputMessage extends BaseCommand {
     type: "submit_input";
     input: string;
@@ -188,6 +200,22 @@ export class TauriService {
         }
         const result = await electronAPI.invoke('get_overlay_runtime_info');
         return result as OverlayRuntimeInfo;
+    }
+
+    public async requestAccessibilityPermission(): Promise<AccessibilityPermissionResult> {
+        if (!electronAPI) {
+            throw new Error('electronAPI not available');
+        }
+        const result = await electronAPI.invoke('request_accessibility_permission');
+        return result as AccessibilityPermissionResult;
+    }
+
+    public async openAccessibilitySettings(): Promise<AccessibilitySettingsResult> {
+        if (!electronAPI) {
+            throw new Error('electronAPI not available');
+        }
+        const result = await electronAPI.invoke('open_accessibility_settings');
+        return result as AccessibilitySettingsResult;
     }
 
     private async startReadingOutput(): Promise<void> {
