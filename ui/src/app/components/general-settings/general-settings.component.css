@@ -15,9 +15,18 @@ mat-slide-toggle {
 
 .ptt-container, .overlay-controls {
   display: flex;
+  gap: 1rem;
+}
+
+.ptt-container {
+  align-items: flex-start;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.overlay-controls {
   align-items: center;
   justify-content: center;
-  gap: 1rem;
 }
 
 .sound-devices {
@@ -102,12 +111,12 @@ div.output-device-column .mat-mdc-form-field-subscript-wrapper {
 }
 
 .ptt-container mat-form-field {
-  flex: 1;
+  flex: 1 1 14rem;
   margin: 0;
 }
 
 .ptt-container mat-slide-toggle {
-  flex: 1;
+  flex: 1 1 14rem;
   padding-bottom: 1rem;
 }
 

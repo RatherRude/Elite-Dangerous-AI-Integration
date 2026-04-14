@@ -17,7 +17,7 @@ class ControllerManager:
         self.mouse_controller = MouseController()
         self.joystick_hotkeys_supported = platform.system() != "Darwin"
 
-        self.is_pressed = False
+        self.pressed_hotkeys: set[str] = set()
         self.last_press: str | None = None
         self.last_release: str | None = None
         
@@ -38,17 +38,29 @@ class ControllerManager:
         self.capture_event_thread = None
         self.capture_event_thread_running = False
 
-    # PPT: Registers event listener for ptt
-    def register_hotkey(self, key: str, on_press: Callable[[str], Any], on_release: Callable[[str], Any]) -> None:
+    # PTT: Registers event listeners for one or more hotkeys
+    def register_hotkey(self, key: str | list[str], on_press: Callable[[str], Any], on_release: Callable[[str], Any]) -> None:
+        hotkeys = {hotkey for hotkey in ([key] if isinstance(key, str) else key) if hotkey}
+        if not hotkeys:
+            return
+
+        if not hasattr(self, "pressed_hotkeys"):
+            self.pressed_hotkeys = set()
+        self.pressed_hotkeys.clear()
+
         def on_press_wrapper(k):
-            if k == key and not self.is_pressed:
-                self.is_pressed = True
+            if k in hotkeys and k not in self.pressed_hotkeys:
+                self.pressed_hotkeys.add(k)
+                if len(self.pressed_hotkeys) > 1:
+                    return True
                 on_press(k)
                 return True  # Keep listening after capturing the event
 
         def on_release_wrapper(k):
-            if k == key:
-                self.is_pressed = False
+            if k in self.pressed_hotkeys:
+                self.pressed_hotkeys.remove(k)
+                if self.pressed_hotkeys:
+                    return True
                 on_release(k)
                 return True  # Keep listening after capturing the event
 

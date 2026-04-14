@@ -42,9 +42,16 @@
                 </mat-select>
             </mat-form-field>
             @if (config.ptt_var !== 'voice_activation') {
-                <mat-form-field (click)="onAssignPTT($event)">
-                    <mat-label>Hotkey</mat-label>
-                    <input required matInput [value]="isAssigningPTT ? 'Press any key...' : config.ptt_key" readonly>
+                <mat-form-field (click)="onAssignPTT($event, 0)">
+                    <mat-label>Hotkey 1</mat-label>
+                    <input required matInput [value]="assigningPTTIndex === 0 ? 'Press any key...' : config.ptt_key" readonly>
+                    <button matSuffix mat-icon-button>
+                        <mat-icon>keyboard</mat-icon>
+                    </button>
+                </mat-form-field>
+                <mat-form-field (click)="onAssignPTT($event, 1)">
+                    <mat-label>Hotkey 2 (Optional)</mat-label>
+                    <input matInput [value]="assigningPTTIndex === 1 ? 'Press any key...' : config.ptt_key_secondary" readonly>
                     <button matSuffix mat-icon-button>
                         <mat-icon>keyboard</mat-icon>
                     </button>

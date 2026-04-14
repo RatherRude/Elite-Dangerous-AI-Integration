@@ -722,30 +722,37 @@ class Chat:
 
         # Microphone/Listening setup based on mode
         mode = self.config.get("ptt_var", "voice_activation")
-        ptt_key = self.config.get("ptt_key", "")
-        if mode == "push_to_talk" and ptt_key:
-            log("info", f"Setting push-to-talk hotkey {ptt_key}.")
+        ptt_keys = [
+            key
+            for key in [
+                self.config.get("ptt_key", ""),
+                self.config.get("ptt_key_secondary", ""),
+            ]
+            if key
+        ]
+        if mode == "push_to_talk" and ptt_keys:
+            log("info", f"Setting push-to-talk hotkeys {ptt_keys}.")
             self.controller_manager.register_hotkey(
-                ptt_key,
+                ptt_keys,
                 lambda _: self.stt.listen_once_start(),
                 lambda _: self.stt.listen_once_end(),
             )
-        elif mode == "push_to_mute" and ptt_key:
-            log("info", f"Setting push-to-mute hotkey {ptt_key}.")
+        elif mode == "push_to_mute" and ptt_keys:
+            log("info", f"Setting push-to-mute hotkeys {ptt_keys}.")
             self.stt.listen_continuous()
             self.controller_manager.register_hotkey(
-                ptt_key,
+                ptt_keys,
                 lambda _: self.stt.pause_continuous_listening(True),
                 lambda _: self.stt.pause_continuous_listening(False),
             )
-        elif mode == "toggle" and ptt_key:
-            log("info", f"Setting hotkey {ptt_key} to toggle voice activation.")
+        elif mode == "toggle" and ptt_keys:
+            log("info", f"Setting hotkeys {ptt_keys} to toggle voice activation.")
             self.stt.listen_continuous()
             self.stt.pause_continuous_listening(
                 self.config.get("ptt_inverted_var", False)
             )
             self.controller_manager.register_hotkey(
-                ptt_key,
+                ptt_keys,
                 lambda _: _,
                 lambda _: self.stt.pause_continuous_listening(
                     not self.stt.continuous_listening_paused
@@ -1106,7 +1113,12 @@ if __name__ == "__main__":
                             config = new_config
                             break
                 if data.get("type") == "assign_ptt":
-                    config = assign_ptt(config, ControllerManager())
+                    index = data.get("index", 0)
+                    config = assign_ptt(
+                        config,
+                        ControllerManager(),
+                        index if isinstance(index, int) else 0,
+                    )
                 if data.get("type") == "change_config":
                     config = update_config(config, data["config"])
                     plugin_manager.on_settings_changed(config)

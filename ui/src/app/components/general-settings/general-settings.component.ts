@@ -59,7 +59,7 @@ export class GeneralSettingsComponent implements OnDestroy {
     private screensSubscription?: Subscription;
     hideApiKey = true;
     apiKeyType: string | null = null;
-    isAssigningPTT = false;
+    assigningPTTIndex: number | null = null;
 
     constructor(
         private configService: ConfigService,
@@ -69,7 +69,7 @@ export class GeneralSettingsComponent implements OnDestroy {
         this.configSubscription = this.configService.config$.subscribe(
             (config) => {
                 this.config = config;
-                this.isAssigningPTT = false;
+                this.assigningPTTIndex = null;
             },
         );
         this.systemSubscription = this.configService.system$.subscribe(
@@ -153,10 +153,10 @@ export class GeneralSettingsComponent implements OnDestroy {
         await this.onConfigChange(providerChanges);
     }
 
-    async onAssignPTT(e: Event) {
+    async onAssignPTT(e: Event, index: number) {
         e.preventDefault();
-        this.isAssigningPTT = true;
-        await this.configService.assignPTT();
+        this.assigningPTTIndex = index;
+        await this.configService.assignPTT(index);
     }
 
     formatOutputVolumeLabel = (value: number): string => value.toFixed(2);

@@ -859,6 +859,7 @@ class Config(TypedDict):
     chat_squadron_tabbed_var: bool
     chat_direct_tabbed_var: bool
     ptt_key: str
+    ptt_key_secondary: str
     input_device_name: str
     output_device_name: str
     output_volume_multiplier: float
@@ -1363,6 +1364,7 @@ def load_config() -> Config:
         'agent_llm_temperature': 1.0,
         'agent_llm_max_tries': 7,
         'ptt_key': '',
+        'ptt_key_secondary': '',
         'vision_provider': "none",
         'vision_model_name': "gpt-5.4-nano",
         'vision_endpoint': "https://api.openai.com/v1",
@@ -1458,12 +1460,13 @@ def save_config(config: Config):
         json.dump(config, f, indent=4)
 
 
-def assign_ptt(config: Config, controller_manager):
+def assign_ptt(config: Config, controller_manager, index: int = 0):
     semaphore = Semaphore(1)
+    ptt_key_field = 'ptt_key_secondary' if index == 1 else 'ptt_key'
 
     def on_hotkey_detected(key: str):
         # print(f"Received key: {key}")
-        config["ptt_key"] = key
+        config[ptt_key_field] = key
         semaphore.release()
 
     semaphore.acquire()

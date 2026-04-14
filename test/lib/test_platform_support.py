@@ -30,14 +30,51 @@ def test_assign_ptt_uses_hotkey_listener_on_macos(monkeypatch):
     controller_manager.listen_hotkey.assert_called_once()
 
 
+def test_assign_ptt_can_store_secondary_hotkey(monkeypatch):
+    monkeypatch.setattr('platform.system', lambda: 'Darwin')
+    controller_manager = MagicMock()
+
+    def trigger_hotkey(callback):
+        callback('Button.x2')
+
+    controller_manager.listen_hotkey.side_effect = trigger_hotkey
+    monkeypatch.setattr('src.lib.Config.emit_message', lambda *args, **kwargs: None)
+    monkeypatch.setattr('src.lib.Config.save_config', lambda *args, **kwargs: None)
+
+    config = assign_ptt({"ptt_key": "Key.space", "ptt_key_secondary": ""}, controller_manager, index=1)
+
+    assert config['ptt_key'] == 'Key.space'
+    assert config['ptt_key_secondary'] == 'Button.x2'
+    controller_manager.listen_hotkey.assert_called_once()
+
+
 def test_controller_manager_register_hotkey_uses_listener_path():
     manager = object.__new__(ControllerManager)
-    manager.is_pressed = False
     manager._start_listeners = MagicMock()
 
     manager.register_hotkey('Key.space', lambda _: None, lambda _: None)
 
     manager._start_listeners.assert_called_once()
+
+
+def test_controller_manager_register_hotkey_supports_multiple_bindings():
+    manager = object.__new__(ControllerManager)
+    manager._start_listeners = MagicMock()
+
+    on_press = MagicMock()
+    on_release = MagicMock()
+
+    manager.register_hotkey(['Key.space', 'Button.left'], on_press, on_release)
+
+    press_listener, release_listener = manager._start_listeners.call_args[0]
+
+    press_listener('Key.space')
+    press_listener('Button.left')
+    release_listener('Key.space')
+    release_listener('Button.left')
+
+    on_press.assert_called_once_with('Key.space')
+    on_release.assert_called_once_with('Button.left')
 
 
 def test_controller_manager_listen_hotkey_uses_listener_path():

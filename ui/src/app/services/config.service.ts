@@ -146,6 +146,7 @@ export interface Config {
     chat_squadron_tabbed_var: boolean;
     chat_direct_tabbed_var: boolean;
     ptt_key: string;
+    ptt_key_secondary: string;
     input_device_name: string;
     output_device_name: string;
     output_volume_multiplier: number; // Linear gain applied to TTS PCM before the output device (0–1.5)
@@ -344,11 +345,11 @@ export class ConfigService {
         return this.configSubject.getValue();
     }
 
-    public async assignPTT(): Promise<void> {
+    public async assignPTT(index: number): Promise<void> {
         const message = {
             type: "assign_ptt",
             timestamp: new Date().toISOString(),
-            index: 0,
+            index,
         };
         await this.tauriService.send_command(message);
     }
