@@ -24,6 +24,10 @@ export interface ChangeEventConfigMessage extends BaseCommand {
     value: any;
 }
 
+export interface RefreshSystemInfoMessage extends BaseCommand {
+    type: "refresh_system_info";
+}
+
 export interface ModelValidationMessage extends BaseMessage {
     type: "model_validation";
     success: boolean;
@@ -365,5 +369,14 @@ export class ConfigService {
         } catch (error) {
             console.error("Error sending clear history request:", error);
         }
+    }
+
+    public async refreshSystemInfo(): Promise<void> {
+        const message: RefreshSystemInfoMessage = {
+            type: "refresh_system_info",
+            timestamp: new Date().toISOString(),
+        };
+
+        await this.tauriService.send_command(message);
     }
 }

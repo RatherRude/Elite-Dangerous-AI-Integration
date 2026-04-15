@@ -36,6 +36,11 @@ mat-slide-toggle {
   gap: 1rem;
 }
 
+.audio-refresh-button {
+  flex: 0 0 auto;
+  margin-top: 0.25rem;
+}
+
 .sound-devices > .sound-devices-input,
 .sound-devices > .output-device-column {
   flex: 1 1 0;

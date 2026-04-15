@@ -109,6 +109,16 @@
                     </mat-slider>
                 </div>
             </div>
+            <button
+                mat-icon-button
+                type="button"
+                class="audio-refresh-button"
+                [disabled]="isRefreshingAudioDevices"
+                (click)="refreshAudioDevices()"
+                aria-label="Refresh audio device list"
+                matTooltip="Refresh audio devices">
+                <mat-icon>refresh</mat-icon>
+            </button>
         </div>
         <div class="overlay-settings">
             <h2>Overlay</h2>

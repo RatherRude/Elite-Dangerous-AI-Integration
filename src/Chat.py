@@ -1025,6 +1025,8 @@ def read_stdin(chat: Chat):
                     "quests",
                     data=results,
                 )
+            if data.get("type") == "refresh_system_info":
+                emit_message("system", system=get_system_info())
             if data.get("type") == "get_quest_catalog":
                 results = chat.quest_catalog_manager.get_catalog()
                 emit_message(
@@ -1133,6 +1135,8 @@ if __name__ == "__main__":
                 if data.get("type") == "clear_history":
                     EventManager.clear_history()
                     # ActionManager.clear_action_cache()
+                if data.get("type") == "refresh_system_info":
+                    emit_message("system", system=get_system_info())
                 if data.get("type") == "init_overlay":
                     update_config(config, {}) # Ensure that the overlay gets a new config on start
                 if data.get("type") == "get_quest_catalog":

@@ -25,6 +25,7 @@ import { FormsModule } from "@angular/forms";
 import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
 import { MatSliderModule } from "@angular/material/slider";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { ScreenInfo } from "../../models/screen-info";
 
 @Component({
@@ -45,6 +46,7 @@ import { ScreenInfo } from "../../models/screen-info";
         MatHint,
         MatError,
         MatSliderModule,
+        MatTooltipModule,
     ],
     templateUrl: "./general-settings.component.html",
     styleUrls: ["./general-settings.component.css"],
@@ -60,6 +62,7 @@ export class GeneralSettingsComponent implements OnDestroy {
     hideApiKey = true;
     apiKeyType: string | null = null;
     assigningPTTIndex: number | null = null;
+    isRefreshingAudioDevices = false;
 
     constructor(
         private configService: ConfigService,
@@ -173,6 +176,21 @@ export class GeneralSettingsComponent implements OnDestroy {
                     duration: 5000,
                 });
             }
+        }
+    }
+
+    async refreshAudioDevices() {
+        this.isRefreshingAudioDevices = true;
+
+        try {
+            await this.configService.refreshSystemInfo();
+        } catch (error) {
+            console.error("Error refreshing audio devices:", error);
+            this.snackBar.open("Error refreshing audio devices", "OK", {
+                duration: 5000,
+            });
+        } finally {
+            this.isRefreshingAudioDevices = false;
         }
     }
 
