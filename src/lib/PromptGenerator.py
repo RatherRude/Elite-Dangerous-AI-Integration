@@ -2309,12 +2309,12 @@ class PromptGenerator:
         # "SpanshTradePlanner": "The Spansh API has suggested a Trade Planner route for Commander {commanderName}.",
         # "SpanshNeutronPlotter": "The Spansh API has suggested a Neutron Plotter router for Commander {commanderName}.",
         # "SpanshRoadToRiches": "The Spansh API has suggested a Road-to-Riches route for Commander {commanderName}.",
-        if event_name == 'ExternalTwitchMessage':
-            twitch_event = cast(Dict[str, Any], content)
-            return f"Message received from {twitch_event.get('username','')} on Twitch Chat: {twitch_event.get('text','')}"
-        if event_name == 'ExternalTwitchNotification':
-            twitch_event = cast(Dict[str, Any], content)
-            return f"{self.commander_name} has received a Discord notification."
+        # if event_name == 'ExternalTwitchMessage':
+        #     twitch_event = cast(Dict[str, Any], content)
+        #     return f"Message received from {twitch_event.get('username','')} on Twitch Chat: {twitch_event.get('text','')}"
+        # if event_name == 'ExternalTwitchNotification':
+        #     twitch_event = cast(Dict[str, Any], content)
+        #     return f"{self.commander_name} has received a Discord notification."
         if event_name == 'Idle':
             return f"Your conversation with {self.commander_name} hasgone silent for a while. Get their attention by making a joke fitting to the current situation or self-reflecting on the recent past.",
 

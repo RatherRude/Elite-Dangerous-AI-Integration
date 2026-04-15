@@ -987,10 +987,10 @@ class Assistant:
                             continue
                 return True
 
-            if isinstance(event, ExternalEvent):
-                if event.content.get("event") == "ExternalTwitchMessage":
-                    continue
-                return True
+            # if isinstance(event, ExternalEvent):
+            #     if event.content.get("event") == "ExternalTwitchMessage":
+            #         continue
+            #     return True
 
             if isinstance(event, ProjectedEvent):
                 if event.content.get("event").startswith('ScanOrganic') and 'ScanOrganic' in self.enabled_game_events:
