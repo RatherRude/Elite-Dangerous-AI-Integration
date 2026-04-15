@@ -61,7 +61,9 @@
                         @for (e of section.value | keyvalue:orderByKey; track e.key) {
                             <div class="event-row">
                                 <mat-icon class="event-state-icon">{{ getEventIcon(getEventState(e.key)) }}</mat-icon>
-                                <div class="event-name">
+                                <div class="event-name"
+                                     [matTooltip]="getEventDescription(e.key)"
+                                     matTooltipPosition="above">
                                     {{ e.key }}
                                 </div>
                                 <mat-button-toggle-group
@@ -69,13 +71,13 @@
                                     [value]="getEventState(e.key)"
                                     (change)="onEventConfigChange(section.key, e.key, $event.value)"
                                     [attr.aria-label]="'Set reaction for ' + e.key">
-                                    <mat-button-toggle value="on" [matTooltip]="GameEventTooltips[e.key]" matTooltipPosition="below">
+                                    <mat-button-toggle value="on" matTooltip="React" matTooltipPosition="below">
                                         <mat-icon>{{ getEventIcon("on") }}</mat-icon>
                                     </mat-button-toggle>
-                                    <mat-button-toggle value="off" [matTooltip]="'Disable reactions to this event'" matTooltipPosition="below">
+                                    <mat-button-toggle value="off" matTooltip="No reaction" matTooltipPosition="below">
                                         <mat-icon>{{ getEventIcon("off") }}</mat-icon>
                                     </mat-button-toggle>
-                                    <mat-button-toggle value="hidden" [matTooltip]="'Hide this event from the LLM'" matTooltipPosition="below">
+                                    <mat-button-toggle value="hidden" matTooltip="Hidden" matTooltipPosition="below">
                                         <mat-icon>{{ getEventIcon("hidden") }}</mat-icon>
                                     </mat-button-toggle>
                                 </mat-button-toggle-group>

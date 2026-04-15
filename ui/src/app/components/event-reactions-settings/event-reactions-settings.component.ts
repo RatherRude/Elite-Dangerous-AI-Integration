@@ -291,6 +291,10 @@ export class EventReactionsSettingsComponent implements OnDestroy {
         }
     }
 
+    getEventDescription(eventName: string): string {
+        return this.GameEventTooltips[eventName] ?? `${eventName} game event.`;
+    }
+
     getCategoryCounts(categoryKey: string): { on: number; off: number; hidden: number } {
         const section = this.filteredEventReactions[categoryKey];
         const initial = { on: 0, off: 0, hidden: 0 };
