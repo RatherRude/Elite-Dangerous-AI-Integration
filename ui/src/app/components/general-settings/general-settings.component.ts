@@ -110,7 +110,7 @@ export class GeneralSettingsComponent implements OnDestroy {
         // Detect API key type
         let providerChanges: Partial<Config> = {};
 
-        if (apiKey.startsWith("AIzaS")) {
+        if (apiKey.startsWith("AQ")) {
             // Google AI Studio
             this.apiKeyType = "Google AI Studio";
             providerChanges = {
