@@ -1,5 +1,6 @@
-import { Component } from "@angular/core";
+import { AfterViewInit, Component, ElementRef, OnDestroy, QueryList, ViewChildren } from "@angular/core";
 import { CommonModule } from "@angular/common";
+import { DomSanitizer, SafeHtml } from "@angular/platform-browser";
 import {
     MatFormField,
     MatFormFieldModule,
@@ -7,7 +8,7 @@ import {
 } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatOptgroup, MatOption, MatSelect } from "@angular/material/select";
-import { Subscription } from "rxjs";
+import { combineLatest, Subscription } from "rxjs";
 import {
     Config,
     ConfigService,
@@ -62,6 +63,7 @@ interface PromptSettings {
 }
 
 type VoiceEffectPresetKey = "distortion" | "chorus" | "reverb" | "glitch" | "time_pitch";
+type AvatarPreviewStateClass = "" | "listening" | "thinking" | "speaking" | "acting";
 type VoiceEffectConfig =
     | CharacterTTSDistortionConfig
     | CharacterTTSChorusConfig
@@ -105,11 +107,14 @@ interface LowHighPassPresetOption {
     templateUrl: "./character-settings.component.html",
     styleUrl: "./character-settings.component.scss",
 })
-export class CharacterSettingsComponent {
+export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
+    @ViewChildren("avatarPreviewSvg") private avatarPreviewSvgElements?: QueryList<ElementRef<HTMLDivElement>>;
+    private readonly svgStateClasses = ["listening", "speaking", "thinking", "acting"];
     config: ConfigWithCharacters | null = null;
     configSubscription: Subscription;
     characterSubscription: Subscription;
     private avatarMimeSubscription: Subscription;
+    private avatarPreviewSvgElementsSubscription?: Subscription;
     activeCharacter: Character | null = null;
     selectedCharacterIndex: number | null = null;
     editMode = false;
@@ -117,6 +122,13 @@ export class CharacterSettingsComponent {
     initializing: boolean = true;
     /** Primary MIME from CharacterService (blob avatars); null when no file or unknown. */
     private avatarMimePrimary: string | null = null;
+    private avatarUrlPrimary: string | null = null;
+    private avatarSvgFetchSeq = 0;
+    sanitizedAvatarPreviewSvg: SafeHtml | null = null;
+    private readonly avatarPreviewStateClasses: readonly AvatarPreviewStateClass[] = ["", "listening", "thinking", "speaking", "acting"];
+    private avatarPreviewStateIndex = 0;
+    private readonly avatarPreviewInterval = setInterval(() => this.advanceAvatarPreviewState(), 1200);
+    avatarPreviewStateClass: AvatarPreviewStateClass = "";
     private localCharacterCopy: Character | null = null;
     isApplyingChange: boolean = false;
     voiceInstructionSupportedModels: string[] = this.characterService.voiceInstructionSupportedModels;
@@ -628,6 +640,7 @@ export class CharacterSettingsComponent {
         private snackBar: MatSnackBar,
         private confirmationDialog: ConfirmationDialogService,
         private dialog: MatDialog,
+        private sanitizer: DomSanitizer,
     ) {
         this.configSubscription = this.configService.config$.subscribe(
             (config) => {
@@ -638,15 +651,26 @@ export class CharacterSettingsComponent {
         this.characterSubscription = this.characterService.character$.subscribe(
             (character) => {
                 this.activeCharacter = character;
+                this.refreshAvatarPreviewSvg();
             }
         );
-        this.avatarMimeSubscription = this.characterService.avatarMime$.subscribe(
-            (mime) => {
+        this.avatarMimeSubscription = combineLatest([this.characterService.avatarUrl$, this.characterService.avatarMime$]).subscribe(
+            ([avatarUrl, mime]) => {
+                this.avatarUrlPrimary = avatarUrl;
                 this.avatarMimePrimary = mime;
+                this.refreshAvatarPreviewSvg();
             },
         );
     }
-    ngOnDestroy() {
+
+    ngAfterViewInit(): void {
+        this.avatarPreviewSvgElementsSubscription = this.avatarPreviewSvgElements?.changes.subscribe(() => {
+            setTimeout(() => this.applyAvatarPreviewSvgStateClass());
+        });
+        setTimeout(() => this.applyAvatarPreviewSvgStateClass());
+    }
+
+    ngOnDestroy(): void {
         // Unsubscribe from the config observable to prevent memory leaks
         if (this.configSubscription) {
             this.configSubscription.unsubscribe();
@@ -657,6 +681,78 @@ export class CharacterSettingsComponent {
         if (this.avatarMimeSubscription) {
             this.avatarMimeSubscription.unsubscribe();
         }
+        if (this.avatarPreviewSvgElementsSubscription) {
+            this.avatarPreviewSvgElementsSubscription.unsubscribe();
+        }
+        clearInterval(this.avatarPreviewInterval);
+    }
+
+    private advanceAvatarPreviewState(): void {
+        this.avatarPreviewStateIndex = (this.avatarPreviewStateIndex + 1) % this.avatarPreviewStateClasses.length;
+        this.avatarPreviewStateClass = this.avatarPreviewStateClasses[this.avatarPreviewStateIndex];
+        this.applyAvatarPreviewSvgStateClass();
+    }
+
+    private refreshAvatarPreviewSvg(): void {
+        if (!this.avatarPreviewUsesInlineSvg || !this.avatarUrlPrimary) {
+            this.avatarSvgFetchSeq += 1;
+            this.sanitizedAvatarPreviewSvg = null;
+            return;
+        }
+        void this.loadAvatarPreviewSvg(this.avatarUrlPrimary);
+    }
+
+    private async loadAvatarPreviewSvg(url: string): Promise<void> {
+        const seq = ++this.avatarSvgFetchSeq;
+        try {
+            const res = await fetch(url);
+            const text = await res.text();
+            if (seq !== this.avatarSvgFetchSeq || url !== this.avatarUrlPrimary || !this.avatarPreviewUsesInlineSvg) {
+                return;
+            }
+            const safe = this.stripScriptsFromSvg(this.syncSvgRootClass(text, this.avatarPreviewStateClass));
+            this.sanitizedAvatarPreviewSvg = this.sanitizer.bypassSecurityTrustHtml(safe);
+            setTimeout(() => this.applyAvatarPreviewSvgStateClass());
+        } catch (err) {
+            console.error("Character settings: failed to load SVG avatar preview", err);
+            if (seq === this.avatarSvgFetchSeq) {
+                this.sanitizedAvatarPreviewSvg = null;
+            }
+        }
+    }
+
+    private syncSvgRootClass(svg: string, stateClass: AvatarPreviewStateClass): string {
+        return svg.replace(/<svg\b([^>]*)>/i, (_m, attrs: string) => {
+            const classMatch = attrs.match(/\sclass\s*=\s*(["'])(.*?)\1/i);
+            const preservedClasses = classMatch?.[2]
+                .split(/\s+/)
+                .filter(Boolean)
+                .filter((className) => !this.svgStateClasses.includes(className)) ?? [];
+            const nextAttrs = attrs.replace(/\sclass\s*=\s*(["']).*?\1/i, "").trim();
+            const nextClasses = stateClass ? [...preservedClasses, stateClass] : preservedClasses;
+            const classAttr = nextClasses.length > 0 ? ` class="${nextClasses.join(" ")}"` : "";
+            return nextAttrs ? `<svg ${nextAttrs}${classAttr}>` : `<svg${classAttr}>`;
+        });
+    }
+
+    private stripScriptsFromSvg(svg: string): string {
+        return svg.replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "");
+    }
+
+    private applyAvatarPreviewSvgStateClass(): void {
+        if (!this.avatarPreviewUsesInlineSvg) {
+            return;
+        }
+        this.avatarPreviewSvgElements?.forEach((element) => {
+            const svg = element.nativeElement.querySelector("svg");
+            if (!svg) {
+                return;
+            }
+            svg.classList.remove(...this.svgStateClasses);
+            if (this.avatarPreviewStateClass) {
+                svg.classList.add(this.avatarPreviewStateClass);
+            }
+        });
     }
 
     /** PNG/WebP sprite sheet preview uses 200% + clip; SVG is one graphic. */
@@ -670,6 +766,10 @@ export class CharacterSettingsComponent {
         }
         const primary = mime.trim().toLowerCase().split(";")[0]?.trim() ?? "";
         return primary !== "image/svg+xml";
+    }
+
+    get avatarPreviewUsesInlineSvg(): boolean {
+        return !this.avatarPreviewUsesSpriteSheet;
     }
 
     // Modify applySettingsFromPreset to work with the new approach
