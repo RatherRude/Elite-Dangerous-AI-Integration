@@ -177,6 +177,12 @@
                 }
 
                 @if (config.overlay_mode === 'vr') {
+                    <mat-slide-toggle
+                        [(ngModel)]="config.overlay_vr_streamer_mode"
+                        (ngModelChange)="onConfigChange({overlay_vr_streamer_mode: $event})">
+                        Streamer Mode
+                    </mat-slide-toggle>
+
                     <mat-form-field>
                         <mat-label>VR Size (meters)</mat-label>
                         <input matInput

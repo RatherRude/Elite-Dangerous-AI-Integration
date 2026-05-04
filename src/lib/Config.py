@@ -884,6 +884,7 @@ class Config(TypedDict):
     overlay_vr_distance_offset: float
     overlay_vr_tilt_degrees: float
     overlay_vr_curvature: float
+    overlay_vr_streamer_mode: bool
     
     enable_remote_tracing: bool
 
@@ -1409,6 +1410,7 @@ def load_config() -> Config:
         "overlay_vr_distance_offset": 0.0,
         "overlay_vr_tilt_degrees": 0.0,
         "overlay_vr_curvature": 0.0,
+        "overlay_vr_streamer_mode": False,
         
         "enable_remote_tracing": False,
         

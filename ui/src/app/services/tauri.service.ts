@@ -51,6 +51,7 @@ export interface OverlayCreateOptions {
     vrDistanceOffset?: number;
     vrTiltDegrees?: number;
     vrCurvature?: number;
+    vrStreamerMode?: boolean;
 }
 
 export interface OverlayRuntimeInfo {

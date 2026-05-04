@@ -82,6 +82,23 @@ const config = isDevelopment ? {
   backend_args: [],
 }
 
+function getOverlayUrl(opts = {}) {
+  const overlayUrl = new URL(config.overlay);
+  if (overlayUrl.hash) {
+    const [hashPath, hashQuery = ''] = overlayUrl.hash.split('?');
+    const hashParams = new URLSearchParams(hashQuery);
+    for (const [key, value] of Object.entries(opts)) {
+      hashParams.set(key, String(value));
+    }
+    overlayUrl.hash = `${hashPath}?${hashParams.toString()}`;
+  } else {
+    for (const [key, value] of Object.entries(opts)) {
+      overlayUrl.searchParams.set(key, String(value));
+    }
+  }
+  return overlayUrl.toString();
+}
+
 function getPitchRotation(tiltDegrees = 0) {
   const radians = tiltDegrees * Math.PI / 180;
   const halfRadians = radians / 2;
@@ -142,6 +159,7 @@ function normalizeOverlayOptions(opts = {}) {
     vrDistanceOffset,
     vrTiltDegrees,
     vrCurvature,
+    vrStreamerMode: Boolean(opts.vrStreamerMode),
   };
 }
 
@@ -576,6 +594,28 @@ function createFloatingOverlayWindow(opts) {
   return overlayWindow;
 }
 
+async function createStreamerOverlayWindow() {
+  const overlayWindow = new BrowserWindow({
+    width: 1280,
+    height: 720,
+    title: `${overlayWindowTitle} Streamer`,
+    frame: false,
+    transparent: true,
+    backgroundColor: '#00000000',
+    resizable: true,
+    show: false,
+    webPreferences: {
+      preload: overlayPreloadPath,
+    },
+  });
+
+  overlayWindow.setMenuBarVisibility(false);
+  await overlayWindow.loadURL(getOverlayUrl({ streamer: 1 }));
+  overlayWindow.show();
+
+  return overlayWindow;
+}
+
 async function createVrOverlayWindow(opts) {
   const runtimeInfo = VROverlay.getRuntimeInfo();
   if (!VROverlay.isAvailable(runtimeInfo)) {
@@ -622,6 +662,7 @@ async function createVrOverlayWindow(opts) {
   return {
     kind: 'vr',
     window: overlayWindow,
+    windows: [overlayWindow],
     controller: vrOverlay,
     runtimeInfo,
     cleanedUp: false,
@@ -631,11 +672,19 @@ async function createVrOverlayWindow(opts) {
 async function createManagedOverlay(opts) {
   const normalized = normalizeOverlayOptions(opts);
   if (normalized.mode === 'vr') {
-    return createVrOverlayWindow(normalized);
+    const overlay = await createVrOverlayWindow(normalized);
+    if (normalized.vrStreamerMode) {
+      const streamerWindow = await createStreamerOverlayWindow();
+      overlay.streamerWindow = streamerWindow;
+      overlay.windows = [overlay.window, streamerWindow];
+    }
+    return overlay;
   }
+  const overlayWindow = createFloatingOverlayWindow(normalized);
   return {
     kind: 'screen',
-    window: createFloatingOverlayWindow(normalized),
+    window: overlayWindow,
+    windows: [overlayWindow],
     controller: null,
     runtimeInfo: null,
     cleanedUp: false,
@@ -647,7 +696,9 @@ function disposeOverlay(overlay, backend, closeWindow = true) {
     return;
   }
   overlay.cleanedUp = true;
-  backend.detachWindow(overlay.window);
+  for (const window of overlay.windows ?? [overlay.window]) {
+    backend.detachWindow(window);
+  }
   if (overlay.controller) {
     try {
       overlay.controller.destroy();
@@ -655,8 +706,12 @@ function disposeOverlay(overlay, backend, closeWindow = true) {
       logger.warn('Failed to destroy VR overlay controller:', error);
     }
   }
-  if (closeWindow && overlay.window && !overlay.window.isDestroyed()) {
-    overlay.window.close();
+  if (closeWindow) {
+    for (const window of overlay.windows ?? [overlay.window]) {
+      if (window && !window.isDestroyed()) {
+        window.close();
+      }
+    }
   }
 }
 
@@ -697,13 +752,15 @@ app.whenReady().then(async ()=>{
     if (floatingOverlay.runtimeInfo) {
       logger.info('VR overlay runtime info:', floatingOverlay.runtimeInfo);
     }
-    backend.attachWindow(floatingOverlay.window);
-    activeOverlay.window.on('closed', () => {
-      disposeOverlay(activeOverlay, backend, false);
-      if (floatingOverlay === activeOverlay) {
-        floatingOverlay = null;
-      }
-    });
+    for (const window of floatingOverlay.windows ?? [floatingOverlay.window]) {
+      backend.attachWindow(window);
+      window.on('closed', () => {
+        disposeOverlay(activeOverlay, backend);
+        if (floatingOverlay === activeOverlay) {
+          floatingOverlay = null;
+        }
+      });
+    }
   });
   ipcMain.handle('destroy_floating_overlay', async (event) => {
     if (floatingOverlay) {

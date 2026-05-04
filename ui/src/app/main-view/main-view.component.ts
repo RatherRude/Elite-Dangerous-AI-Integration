@@ -263,6 +263,7 @@ export class MainViewComponent implements OnInit, OnDestroy {
                 vrDistanceOffset: this.config?.overlay_vr_distance_offset ?? 0,
                 vrTiltDegrees: this.config?.overlay_vr_tilt_degrees ?? 0,
                 vrCurvature: this.config?.overlay_vr_curvature ?? 0,
+                vrStreamerMode: this.config?.overlay_vr_streamer_mode ?? false,
             });
         } catch (error) {
             console.error("Failed to create overlay:", error);
