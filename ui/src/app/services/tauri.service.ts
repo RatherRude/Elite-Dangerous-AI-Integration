@@ -46,6 +46,10 @@ export interface OverlayCreateOptions {
     mode?: "screen" | "vr";
     vrSizeMeters?: number;
     vrAnchor?: "head" | "world";
+    vrHorizontalOffset?: number;
+    vrVerticalOffset?: number;
+    vrDistanceOffset?: number;
+    vrTiltDegrees?: number;
 }
 
 export interface OverlayRuntimeInfo {

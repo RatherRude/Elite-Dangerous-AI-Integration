@@ -170,6 +170,10 @@ export interface Config {
     overlay_screen_id: number;
     overlay_vr_size_meters: number;
     overlay_vr_anchor: "head" | "world";
+    overlay_vr_horizontal_offset: number;
+    overlay_vr_vertical_offset: number;
+    overlay_vr_distance_offset: number;
+    overlay_vr_tilt_degrees: number;
 
     enable_remote_tracing?: boolean;
 

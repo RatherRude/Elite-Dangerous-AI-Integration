@@ -879,6 +879,10 @@ class Config(TypedDict):
     overlay_screen_id: int
     overlay_vr_size_meters: float
     overlay_vr_anchor: Literal['head', 'world']
+    overlay_vr_horizontal_offset: float
+    overlay_vr_vertical_offset: float
+    overlay_vr_distance_offset: float
+    overlay_vr_tilt_degrees: float
     
     enable_remote_tracing: bool
 
@@ -1399,6 +1403,10 @@ def load_config() -> Config:
         "overlay_screen_id": -1,  # -1 means primary screen
         "overlay_vr_size_meters": 0.9,
         "overlay_vr_anchor": "head",
+        "overlay_vr_horizontal_offset": 0.0,
+        "overlay_vr_vertical_offset": 0.0,
+        "overlay_vr_distance_offset": 0.0,
+        "overlay_vr_tilt_degrees": 0.0,
         
         "enable_remote_tracing": False,
         

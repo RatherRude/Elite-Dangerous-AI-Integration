@@ -196,6 +196,54 @@
                             <mat-option value="world">World Locked</mat-option>
                         </mat-select>
                     </mat-form-field>
+
+                    <mat-form-field>
+                        <mat-label>Horizontal Offset</mat-label>
+                        <input matInput
+                               type="number"
+                               min="-2"
+                               max="2"
+                               step="0.05"
+                               [ngModel]="config.overlay_vr_horizontal_offset"
+                               (ngModelChange)="onConfigChange({overlay_vr_horizontal_offset: $event})">
+                        <mat-hint>Move the overlay left or right in VR space.</mat-hint>
+                    </mat-form-field>
+
+                    <mat-form-field>
+                        <mat-label>Vertical Offset</mat-label>
+                        <input matInput
+                               type="number"
+                               min="-1.5"
+                               max="1.5"
+                               step="0.05"
+                               [ngModel]="config.overlay_vr_vertical_offset"
+                               (ngModelChange)="onConfigChange({overlay_vr_vertical_offset: $event})">
+                        <mat-hint>Move the overlay up or down in VR space.</mat-hint>
+                    </mat-form-field>
+
+                    <mat-form-field>
+                        <mat-label>Distance Offset</mat-label>
+                        <input matInput
+                               type="number"
+                               min="-0.75"
+                               max="1.5"
+                               step="0.01"
+                               [ngModel]="config.overlay_vr_distance_offset"
+                               (ngModelChange)="onConfigChange({overlay_vr_distance_offset: $event})">
+                        <mat-hint>Move the overlay closer or farther away in VR space.</mat-hint>
+                    </mat-form-field>
+
+                    <mat-form-field>
+                        <mat-label>Tilt</mat-label>
+                        <input matInput
+                               type="number"
+                               min="-45"
+                               max="45"
+                               step="1"
+                               [ngModel]="config.overlay_vr_tilt_degrees"
+                               (ngModelChange)="onConfigChange({overlay_vr_tilt_degrees: $event})">
+                        <mat-hint>Tilt the overlay forward or back in VR space.</mat-hint>
+                    </mat-form-field>
                 }
             </div>
             <p>{{ overlayRuntimeSummary }}</p>

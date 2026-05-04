@@ -82,22 +82,50 @@ const config = isDevelopment ? {
   backend_args: [],
 }
 
-function getOverlayPlacement(vrAnchor) {
+function getPitchRotation(tiltDegrees = 0) {
+  const radians = tiltDegrees * Math.PI / 180;
+  const halfRadians = radians / 2;
+  return { x: Math.sin(halfRadians), y: 0, z: 0, w: Math.cos(halfRadians) };
+}
+
+function getOverlayPlacement(vrAnchor, vrSizeMeters, horizontalOffset = 0, verticalOffset = 0, distanceOffset = 0, tiltDegrees = 0) {
+  const rotation = getPitchRotation(tiltDegrees);
   if (vrAnchor === 'world') {
+    const distance = Math.max(0.1, 2.0 + distanceOffset);
+    const widthOffset = 0.5;
+    const heightOffset = (720 / 1280) / 2;
     return {
       mode: 'world',
-      position: { x: 0, y: 1.4, z: -2.0 },
-      rotation: { x: 0, y: 0, z: 0, w: 1 },
+      position: { x: horizontalOffset - widthOffset, y: 1.4 + verticalOffset - heightOffset, z: -distance },
+      rotation,
     };
   }
+  const distance = Math.max(0.1, 1.1 + distanceOffset);
   return {
     mode: 'head',
-    position: { x: 0, y: 0, z: -1.1 },
-    rotation: { x: 0, y: 0, z: 0, w: 1 },
+    position: { x: horizontalOffset, y: verticalOffset, z: -distance },
+    rotation,
   };
 }
 
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
 function normalizeOverlayOptions(opts = {}) {
+  const vrHorizontalOffset = Number.isFinite(opts.vrHorizontalOffset)
+    ? clamp(opts.vrHorizontalOffset, -2.0, 2.0)
+    : 0;
+  const vrVerticalOffset = Number.isFinite(opts.vrVerticalOffset)
+    ? clamp(opts.vrVerticalOffset, -1.5, 1.5)
+    : 0;
+  const vrDistanceOffset = Number.isFinite(opts.vrDistanceOffset)
+    ? clamp(opts.vrDistanceOffset, -0.75, 1.5)
+    : 0;
+  const vrTiltDegrees = Number.isFinite(opts.vrTiltDegrees)
+    ? clamp(opts.vrTiltDegrees, -45, 45)
+    : 0;
+
   return {
     alwaysOnTop: Boolean(opts.alwaysOnTop),
     screenId: Number.isInteger(opts.screenId) ? opts.screenId : -1,
@@ -106,6 +134,10 @@ function normalizeOverlayOptions(opts = {}) {
       ? opts.vrSizeMeters
       : 0.9,
     vrAnchor: opts.vrAnchor === 'world' ? 'world' : 'head',
+    vrHorizontalOffset,
+    vrVerticalOffset,
+    vrDistanceOffset,
+    vrTiltDegrees,
   };
 }
 
@@ -572,7 +604,7 @@ async function createVrOverlayWindow(opts) {
     frameRate: 60,
     sizeMeters: opts.vrSizeMeters,
     visible: true,
-    placement: getOverlayPlacement(opts.vrAnchor),
+    placement: getOverlayPlacement(opts.vrAnchor, opts.vrSizeMeters, opts.vrHorizontalOffset, opts.vrVerticalOffset, opts.vrDistanceOffset, opts.vrTiltDegrees),
   });
 
   if (!vrOverlay) {
