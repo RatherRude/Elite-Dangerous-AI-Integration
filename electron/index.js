@@ -125,6 +125,9 @@ function normalizeOverlayOptions(opts = {}) {
   const vrTiltDegrees = Number.isFinite(opts.vrTiltDegrees)
     ? clamp(opts.vrTiltDegrees, -45, 45)
     : 0;
+  const vrCurvature = Number.isFinite(opts.vrCurvature)
+    ? clamp(opts.vrCurvature, 0, 0.5)
+    : 0;
 
   return {
     alwaysOnTop: Boolean(opts.alwaysOnTop),
@@ -138,6 +141,7 @@ function normalizeOverlayOptions(opts = {}) {
     vrVerticalOffset,
     vrDistanceOffset,
     vrTiltDegrees,
+    vrCurvature,
   };
 }
 
@@ -603,6 +607,7 @@ async function createVrOverlayWindow(opts) {
     name: 'COVAS_NEXT_Overlay',
     frameRate: 60,
     sizeMeters: opts.vrSizeMeters,
+    curvature: opts.vrCurvature,
     visible: true,
     placement: getOverlayPlacement(opts.vrAnchor, opts.vrSizeMeters, opts.vrHorizontalOffset, opts.vrVerticalOffset, opts.vrDistanceOffset, opts.vrTiltDegrees),
   });

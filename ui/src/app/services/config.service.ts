@@ -174,6 +174,7 @@ export interface Config {
     overlay_vr_vertical_offset: number;
     overlay_vr_distance_offset: number;
     overlay_vr_tilt_degrees: number;
+    overlay_vr_curvature: number;
 
     enable_remote_tracing?: boolean;
 
