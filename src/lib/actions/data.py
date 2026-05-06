@@ -1182,9 +1182,10 @@ known_ships = [
     "Keelback",
     "Krait MkII",
     "Krait Phantom",
+    "Lynx Highliner",
     "Mamba",
     "Orca",
-    "Panther Clipper MkII"
+    "Panther Clipper MkII",
     "Python",
     "Python MkII",
     "Sidewinder",
