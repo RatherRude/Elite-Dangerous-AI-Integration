@@ -128,6 +128,18 @@ def test_event_store_delete_all(event_store: EventStore) -> None:
     events = event_store.get_latest()
     assert len(events) == 0
 
+def test_event_store_delete_classes(event_store: EventStore) -> None:
+    """Test deleting only selected event classes"""
+    event_store.insert_event(SampleEvent1(name="keep", value=1), 1.0)
+    event_store.insert_event(SampleEvent2(message="delete"), 2.0)
+
+    event_store.delete_classes(["SampleEvent2"])
+
+    events = event_store.get_latest()
+    assert len(events) == 1
+    assert isinstance(events[0], SampleEvent1)
+    assert events[0].name == "keep"
+
 # KeyValueStore Tests
 def test_kv_store_init(kv_store: KeyValueStore, mock_connection: sqlite3.Connection) -> None:
     """Test KeyValueStore initialization creates table"""

@@ -128,6 +128,18 @@ class Assistant:
         except Exception as e:
             log('error', 'Quest processing failed', e, traceback.format_exc())
 
+    def clear_conversation_state(self):
+        self.pending = [
+            event for event in self.pending
+            if not isinstance(event, (ConversationEvent, ToolEvent))
+        ]
+        self.reply_pending = False
+
+    def reset_runtime_state(self):
+        self.pending = []
+        self.reply_pending = False
+        self.short_term_memories = []
+
     def _get_quests_path(self) -> Path:
         return Path(__file__).resolve().parent.parent / "data" / "quests.yaml"
 

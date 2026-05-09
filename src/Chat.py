@@ -1019,6 +1019,15 @@ def read_stdin(chat: Chat):
                     system_address=system_address,
                     data=results,
                 )
+            if data.get("type") == "clear_history":
+                chat.event_manager.clear_conversation_history()
+                chat.assistant.clear_conversation_state()
+                emit_message("history_cleared", scope="conversation")
+            if data.get("type") == "reset_state_machine":
+                chat.event_manager.reset_state_machine()
+                chat.assistant.reset_runtime_state()
+                chat.previous_states = {}
+                emit_message("history_cleared", scope="state_machine")
             if data.get("type") == "get_quests":
                 results = chat.get_quest_overview()
                 emit_message(
@@ -1135,6 +1144,8 @@ if __name__ == "__main__":
                 if data.get("type") == "clear_history":
                     EventManager.clear_history()
                     # ActionManager.clear_action_cache()
+                if data.get("type") == "reset_state_machine":
+                    EventManager.reset_state_machine_store()
                 if data.get("type") == "refresh_system_info":
                     emit_message("system", system=get_system_info())
                 if data.get("type") == "init_overlay":

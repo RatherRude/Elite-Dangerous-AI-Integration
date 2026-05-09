@@ -939,6 +939,24 @@
         <mat-expansion-panel>
             <mat-expansion-panel-header>
                 <mat-panel-title>
+                    <mat-icon>restart_alt</mat-icon>
+                    State Machine
+                </mat-panel-title>
+            </mat-expansion-panel-header>
+            <div class="state-machine-section">
+                <p>Reset the persisted event history and projection state. Use this only when the derived state machine is stale or inconsistent.</p>
+                <div class="state-machine-buttons">
+                    <button mat-stroked-button color="warn" (click)="onResetStateMachine()">
+                        <mat-icon>restart_alt</mat-icon>
+                        Reset State Machine
+                    </button>
+                </div>
+            </div>
+        </mat-expansion-panel>
+
+        <mat-expansion-panel>
+            <mat-expansion-panel-header>
+                <mat-panel-title>
                     <mat-icon>backup</mat-icon>
                     Backup & Restore
                 </mat-panel-title>

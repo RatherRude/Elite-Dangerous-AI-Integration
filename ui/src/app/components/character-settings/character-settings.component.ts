@@ -39,6 +39,7 @@ import {
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { CharacterPresets } from "./character-presets";
 import {MatSlideToggle} from "@angular/material/slide-toggle";
+import { ChatService } from "../../services/chat.service.js";
 
 interface PromptSettings {
     // Existing settings
@@ -628,6 +629,7 @@ export class CharacterSettingsComponent {
         private snackBar: MatSnackBar,
         private confirmationDialog: ConfirmationDialogService,
         private dialog: MatDialog,
+        private chatService: ChatService,
     ) {
         this.configSubscription = this.configService.config$.subscribe(
             (config) => {
@@ -1535,15 +1537,19 @@ export class CharacterSettingsComponent {
     async onClearHistory(): Promise<void> {
         const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
             data: {
-                title: "Clear History",
+                title: "Clear Conversation",
                 message:
-                    "Are you sure you want to clear the conversation history? This action cannot be undone.",
+                    "Are you sure you want to clear the conversation history? Game state and projections will be kept.",
             },
         });
 
         dialogRef.afterClosed().subscribe(async (result) => {
             if (result) {
                 await this.configService.clearHistory();
+                this.chatService.clearChat();
+                this.snackBar.open("Conversation history cleared", "OK", {
+                    duration: 3000,
+                });
             }
         });
     }
