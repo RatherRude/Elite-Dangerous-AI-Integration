@@ -349,6 +349,13 @@ def _to_usage_payload_dict(value: Any) -> dict[str, Any] | None:
     return {key: item for key, item in data.items() if item is not None}
 
 
+def _normalize_optional_string(value: Any) -> str | None:
+    if isinstance(value, str):
+        normalized = value.strip()
+        return normalized if normalized else None
+    return None
+
+
 def _persist_and_send_usage(
     *,
     usage_kind: str,
@@ -380,14 +387,14 @@ def _build_usage_message(
     latency_usage: dict[str, Any] | None = None,
     audio_usage: dict[str, Any] | None = None,
     text_usage: dict[str, Any] | None = None,
-) -> dict[str, Any]:
+    ) -> dict[str, Any]:
     message: dict[str, Any] = {
         "type": message_type,
         "schema_version": 2,
         "timestamp": timestamp,
         "context": context,
-        "provider": provider,
-        "model_name": model_name,
+        "provider": _normalize_optional_string(provider),
+        "model_name": _normalize_optional_string(model_name),
     }
 
     if model_usage is not None:
@@ -412,8 +419,12 @@ def log_llm_usage(
     response_text: str | None = None,
 ) -> None:
     timestamp = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-    provider = getattr(llm_model, "provider_name", None) or model_usage.provider
-    model_name = getattr(llm_model, "model_name", None) or model_usage.model_name
+    provider = _normalize_optional_string(getattr(llm_model, "provider_name", None))
+    if provider is None:
+        provider = _normalize_optional_string(model_usage.provider)
+    model_name = _normalize_optional_string(getattr(llm_model, "model_name", None))
+    if model_name is None:
+        model_name = _normalize_optional_string(model_usage.model_name)
     model_usage_data = {
         "input_tokens": model_usage.input_tokens,
         "output_tokens": model_usage.output_tokens,
