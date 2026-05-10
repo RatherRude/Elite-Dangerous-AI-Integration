@@ -301,6 +301,31 @@ class PromptUsageStats:
 
 
 @dataclass
+class LatencyUsageStats:
+    response_ms: float | None = None
+    time_to_first_token_ms: float | None = None
+    time_to_first_byte_ms: float | None = None
+
+
+@dataclass
+class AudioUsageStats:
+    input_audio_duration_ms: float | None = None
+    output_audio_duration_ms: float | None = None
+
+
+@dataclass
+class TextUsageStats:
+    input_chars: int | None = None
+    output_chars: int | None = None
+
+
+@dataclass
+class CacheUsageStats:
+    llm_calls_saved: int = 0
+    llm_calls_added: int = 0
+
+
+@dataclass
 class ModelUsageStats:
     """Token-level API usage as reported by the model provider."""
 
@@ -311,6 +336,72 @@ class ModelUsageStats:
     reasoning_tokens: int | None = None
     provider: str | None = None
     model_name: str | None = None
+    response_ms: float | None = None
+    time_to_first_token_ms: float | None = None
+    output_chars: int | None = None
+
+
+def _to_usage_payload_dict(value: Any) -> dict[str, Any] | None:
+    if value is None:
+        return None
+
+    data = vars(value).copy()
+    return {key: item for key, item in data.items() if item is not None}
+
+
+def _persist_and_send_usage(
+    *,
+    usage_kind: str,
+    message: dict[str, Any],
+) -> None:
+    try:
+        from .Database import ModelUsageStore
+
+        ModelUsageStore().insert(
+            timestamp=message["timestamp"],
+            usage_kind=usage_kind,
+            payload=message,
+        )
+    except Exception as exc:
+        log("error", "Failed to persist model usage:", exc)
+
+    send_message(message)
+
+
+def _build_usage_message(
+    *,
+    message_type: str,
+    timestamp: str,
+    context: str,
+    provider: str | None,
+    model_name: str | None,
+    model_usage: dict[str, Any] | None = None,
+    prompt_usage: dict[str, Any] | None = None,
+    latency_usage: dict[str, Any] | None = None,
+    audio_usage: dict[str, Any] | None = None,
+    text_usage: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    message: dict[str, Any] = {
+        "type": message_type,
+        "schema_version": 2,
+        "timestamp": timestamp,
+        "context": context,
+        "provider": provider,
+        "model_name": model_name,
+    }
+
+    if model_usage is not None:
+        message["model_usage"] = model_usage
+    if prompt_usage is not None:
+        message["prompt_usage"] = prompt_usage
+    if latency_usage is not None:
+        message["latency_usage"] = latency_usage
+    if audio_usage is not None:
+        message["audio_usage"] = audio_usage
+    if text_usage is not None:
+        message["text_usage"] = text_usage
+
+    return message
 
 
 def log_llm_usage(
@@ -318,33 +409,118 @@ def log_llm_usage(
     model_usage: ModelUsageStats,
     prompt_usage: PromptUsageStats,
     llm_model: Any | None = None,
+    response_text: str | None = None,
 ) -> None:
     timestamp = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
     provider = getattr(llm_model, "provider_name", None) or model_usage.provider
     model_name = getattr(llm_model, "model_name", None) or model_usage.model_name
-    model_usage_data = vars(model_usage).copy()
+    model_usage_data = {
+        "input_tokens": model_usage.input_tokens,
+        "output_tokens": model_usage.output_tokens,
+        "total_tokens": model_usage.total_tokens,
+        "cached_tokens": model_usage.cached_tokens,
+        "reasoning_tokens": model_usage.reasoning_tokens,
+    }
     if provider is not None:
         model_usage_data["provider"] = provider
     if model_name is not None:
         model_usage_data["model_name"] = model_name
     prompt_usage_data = vars(prompt_usage).copy()
     prompt_usage_data["total_prompt_chars"] = prompt_usage.compute_total()
+    latency_usage = _to_usage_payload_dict(
+        LatencyUsageStats(
+            response_ms=model_usage.response_ms,
+            time_to_first_token_ms=model_usage.time_to_first_token_ms,
+        ),
+    )
+    text_usage = _to_usage_payload_dict(
+        TextUsageStats(
+            output_chars=(
+                len(response_text)
+                if response_text is not None
+                else model_usage.output_chars
+            ),
+        ),
+    )
 
-    message = {
-        "type": "llm_usage",
-        "timestamp": timestamp,
-        "context": context,
-        "provider": provider,
-        "model_name": model_name,
-        "model_usage": model_usage_data,
-        "prompt_usage": prompt_usage_data,
-    }
+    message = _build_usage_message(
+        message_type="llm_usage",
+        timestamp=timestamp,
+        context=context,
+        provider=provider,
+        model_name=model_name,
+        model_usage=model_usage_data,
+        prompt_usage=prompt_usage_data,
+        latency_usage=latency_usage,
+        text_usage=text_usage,
+    )
 
-    try:
-        from .Database import ModelUsageStore
+    _persist_and_send_usage(usage_kind="llm", message=message)
 
-        ModelUsageStore().insert(timestamp=timestamp, usage_kind="llm", payload=message)
-    except Exception as exc:
-        log("error", "Failed to persist model usage:", exc)
 
-    send_message(message)
+def log_stt_usage(
+    context: str,
+    *,
+    provider: str | None,
+    model_name: str | None,
+    latency_usage: LatencyUsageStats | None = None,
+    audio_usage: AudioUsageStats | None = None,
+    text_usage: TextUsageStats | None = None,
+) -> None:
+    timestamp = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    message = _build_usage_message(
+        message_type="stt_usage",
+        timestamp=timestamp,
+        context=context,
+        provider=provider,
+        model_name=model_name,
+        latency_usage=_to_usage_payload_dict(latency_usage),
+        audio_usage=_to_usage_payload_dict(audio_usage),
+        text_usage=_to_usage_payload_dict(text_usage),
+    )
+
+    _persist_and_send_usage(usage_kind="stt", message=message)
+
+
+def log_tts_usage(
+    context: str,
+    *,
+    provider: str | None,
+    model_name: str | None,
+    latency_usage: LatencyUsageStats | None = None,
+    audio_usage: AudioUsageStats | None = None,
+    text_usage: TextUsageStats | None = None,
+) -> None:
+    timestamp = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    message = _build_usage_message(
+        message_type="tts_usage",
+        timestamp=timestamp,
+        context=context,
+        provider=provider,
+        model_name=model_name,
+        latency_usage=_to_usage_payload_dict(latency_usage),
+        audio_usage=_to_usage_payload_dict(audio_usage),
+        text_usage=_to_usage_payload_dict(text_usage),
+    )
+
+    _persist_and_send_usage(usage_kind="tts", message=message)
+
+
+def log_action_cache_usage(
+    context: str,
+    *,
+    provider: str | None,
+    model_name: str | None,
+    cache_usage: CacheUsageStats,
+) -> None:
+    timestamp = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    message = _build_usage_message(
+        message_type="action_cache_usage",
+        timestamp=timestamp,
+        context=context,
+        provider=provider,
+        model_name=model_name,
+    )
+    message["cache_usage"] = _to_usage_payload_dict(cache_usage) or {}
+
+    _persist_and_send_usage(usage_kind="llm", message=message)

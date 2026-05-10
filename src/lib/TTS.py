@@ -32,6 +32,7 @@ from .Config import (
     map_character_tts_postprocessing,
 )
 from .Logger import log, observe, show_chat_message
+from .Logger import AudioUsageStats, LatencyUsageStats, TextUsageStats, log_tts_usage
 from .Models import TTSModel, OpenAITTSModel
 
 
@@ -121,6 +122,7 @@ class TTS:
             return {
                 "type": "text",
                 "text": item,
+                "context": "speech",
                 "file_path": None,
                 "voice": None,
                 "postprocessing": None,
@@ -132,6 +134,7 @@ class TTS:
             return {
                 "type": item.get("type", "text"),
                 "text": item.get("text", ""),
+                "context": item.get("context", "speech"),
                 "file_path": item.get("file_path"),
                 "voice": item.get("voice"),
                 "postprocessing": item.get("postprocessing"),
@@ -143,6 +146,7 @@ class TTS:
         return {
             "type": "text",
             "text": "",
+            "context": "speech",
             "file_path": None,
             "voice": None,
             "postprocessing": None,
@@ -204,6 +208,7 @@ class TTS:
                     item = self._normalize_queue_item(self.read_queue.get())
                     item_type = item.get("type")
                     text = item.get("text")
+                    context = item.get("context")
                     file_path = item.get("file_path")
                     voice = item.get("voice")
                     postprocessing = item.get("postprocessing")
@@ -229,6 +234,7 @@ class TTS:
                             self._playback_one(
                                 text,
                                 stream,
+                                context if isinstance(context, str) else "speech",
                                 voice if isinstance(voice, str) else None,
                                 cast(CharacterTTSPostprocessingConfig | None, postprocessing if isinstance(postprocessing, dict) else None),
                                 cast(list[CharacterTTSPostprocessingConfig | None] | None, postprocessing_layers if isinstance(postprocessing_layers, list) else None),
@@ -254,6 +260,7 @@ class TTS:
         self,
         text: str,
         stream: pyaudio.Stream,
+        context: str = "speech",
         voice_override: str | None = None,
         postprocessing_override: CharacterTTSPostprocessingConfig | None = None,
         postprocessing_layers: list[CharacterTTSPostprocessingConfig | None] | None = None,
@@ -263,7 +270,8 @@ class TTS:
         text = strip_markdown.strip_markdown(text)
         # print('reading:', text)
         start_time = time()
-        end_time = None
+        first_byte_time = None
+        total_audio_bytes = 0
         first_chunk = True
         underflow_count = 0
         empty_buffer_available = stream.get_write_available()
@@ -272,14 +280,19 @@ class TTS:
             postprocessing_override,
             postprocessing_layers,
         )
-        audio_stream = self._stream_audio(text, voice_override)
+        stream_metrics: dict[str, float | None] = {
+            "response_ms": None,
+            "time_to_first_byte_ms": None,
+        }
+        audio_stream = self._stream_audio(text, voice_override, stream_metrics)
         if postprocessing:
             audio_stream = self._postprocess_audio(audio_stream, postprocessing)
 
         for chunk in audio_stream:
-            if not end_time:
-                end_time = time()
-                log('debug', f'Response time TTS', end_time - start_time)
+            total_audio_bytes += len(chunk)
+            if first_byte_time is None:
+                first_byte_time = time()
+                log('debug', f'Response time TTS', first_byte_time - start_time)
             if self.is_aborted:
                 break
             try:
@@ -302,6 +315,26 @@ class TTS:
         if underflow_count > 0:
             self.prebuffer_size *= 2
             log('debug', 'tts underflow detected, total', underflow_count, 'increasing prebuffer size to', self.prebuffer_size)
+
+        output_audio_duration_ms = 0.0
+        if total_audio_bytes > 0:
+            output_audio_duration_ms = (
+                total_audio_bytes / (24_000 * self.sample_size)
+            ) * 1000
+
+        log_tts_usage(
+            context,
+            provider=getattr(self.tts_model, "provider_name", None),
+            model_name=getattr(self.tts_model, "model_name", None),
+            latency_usage=LatencyUsageStats(
+                response_ms=stream_metrics.get("response_ms"),
+                time_to_first_byte_ms=stream_metrics.get("time_to_first_byte_ms"),
+            ),
+            audio_usage=AudioUsageStats(
+                output_audio_duration_ms=output_audio_duration_ms,
+            ),
+            text_usage=TextUsageStats(input_chars=len(text)),
+        )
 
 
     def _reset_postprocessing_state(self) -> None:
@@ -456,19 +489,33 @@ class TTS:
                 base_effect['mode'] = overlay_effect['mode']
 
     @observe()
-    def _stream_audio(self, text: str, voice_override: str | None = None):
+    def _stream_audio(
+        self,
+        text: str,
+        voice_override: str | None = None,
+        metrics: dict[str, float | None] | None = None,
+    ):
+        started_at = time()
         if self.tts_model is None:
             word_count = len(text.split())
             words_per_minute = 150 * float(self.speed)
             audio_duration = word_count / words_per_minute * 60
             # generate silent audio for the duration of the text
             for _ in range(int(audio_duration * 24_000 / 1024)):
+                if metrics is not None and metrics.get("time_to_first_byte_ms") is None:
+                    metrics["time_to_first_byte_ms"] = (time() - started_at) * 1000
                 yield b"\x00" * 1024
+            if metrics is not None:
+                metrics["response_ms"] = (time() - started_at) * 1000
         else:
             try:
                 selected_voice = voice_override if voice_override else self.voice
                 for chunk in self.tts_model.synthesize(text, selected_voice):
+                    if metrics is not None and metrics.get("time_to_first_byte_ms") is None:
+                        metrics["time_to_first_byte_ms"] = (time() - started_at) * 1000
                     yield chunk
+                if metrics is not None:
+                    metrics["response_ms"] = (time() - started_at) * 1000
             except Exception as e:
                 log('error', 'TTS synthesis error', e, traceback.format_exc())
                 show_chat_message('error', 'TTS synthesis error:', str(e))
@@ -1259,6 +1306,7 @@ class TTS:
         self,
         text: str,
         *,
+        context: str = "speech",
         voice: str | None = None,
         postprocessing: CharacterTTSPostprocessingConfig | None = None,
         postprocessing_layers: list[CharacterTTSPostprocessingConfig | None] | None = None,
@@ -1269,6 +1317,7 @@ class TTS:
         self.read_queue.put(
             {
                 "text": text,
+                "context": context,
                 "voice": voice,
                 "postprocessing": postprocessing,
                 "postprocessing_layers": postprocessing_layers,

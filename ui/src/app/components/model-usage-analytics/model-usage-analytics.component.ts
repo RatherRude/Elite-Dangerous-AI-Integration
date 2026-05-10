@@ -15,9 +15,11 @@ import {
     ModelUsageRecord,
     ModelUsageService,
     TimeWindowPreset,
+    UsageKind,
 } from "../../services/model-usage.service";
 
 type TimelineGranularity = "hour" | "day" | "week";
+type UsageKindOption = "all" | UsageKind;
 
 interface SummaryCard {
     label: string;
@@ -91,8 +93,10 @@ interface TimelineBucket {
 })
 export class ModelUsageAnalyticsComponent implements OnInit {
     protected readonly presets: TimeWindowPreset[] = ["24h", "7d", "30d", "all", "custom"];
+    protected readonly usageKinds: UsageKindOption[] = ["all", "llm", "stt", "tts"];
 
     public selectedPreset: TimeWindowPreset = "7d";
+    public selectedUsageKind: UsageKindOption = "all";
     public selectedProvider = "all";
     public selectedModel = "all";
     public selectedContext = "all";
@@ -113,6 +117,7 @@ export class ModelUsageAnalyticsComponent implements OnInit {
     public tokenTimelineBars: TimelineBar[] = [];
     public characterTimelineBars: TimelineBar[] = [];
     public useCaseTokenBars: BreakdownBar[] = [];
+    public usageKindBars: BreakdownBar[] = [];
     public characterTypeBars: BreakdownBar[] = [];
     public providerBars: BreakdownBar[] = [];
     public modelBars: BreakdownBar[] = [];
@@ -143,6 +148,10 @@ export class ModelUsageAnalyticsComponent implements OnInit {
         await this.loadWindow();
     }
 
+    public async onUsageKindChange(): Promise<void> {
+        await this.loadWindow();
+    }
+
     public async refreshData(): Promise<void> {
         this.modelUsageService.clearCache();
         await this.loadWindow();
@@ -150,6 +159,7 @@ export class ModelUsageAnalyticsComponent implements OnInit {
 
     public async resetFilters(): Promise<void> {
         this.selectedPreset = "7d";
+        this.selectedUsageKind = "all";
         this.selectedProvider = "all";
         this.selectedModel = "all";
         this.selectedContext = "all";
@@ -215,6 +225,16 @@ export class ModelUsageAnalyticsComponent implements OnInit {
         return labels[preset];
     }
 
+    public formatUsageKindLabel(kind: UsageKindOption): string {
+        const labels: Record<UsageKindOption, string> = {
+            all: "All kinds",
+            llm: "LLM",
+            stt: "STT",
+            tts: "TTS",
+        };
+        return labels[kind];
+    }
+
     public formatTimelineSegmentTitle(
         bar: TimelineBar,
         segment: TimelineSegment,
@@ -233,6 +253,34 @@ export class ModelUsageAnalyticsComponent implements OnInit {
             return false;
         }
         return this.customFromDate.getTime() <= this.customToDate.getTime();
+    }
+
+    public get hasTokenMetrics(): boolean {
+        return this.filteredRows.some((row) => row.tokenUsage.totalTokens > 0);
+    }
+
+    public get hasPromptMetrics(): boolean {
+        return this.filteredRows.some((row) => row.promptUsage.totalChars > 0);
+    }
+
+    public get hasLatencyMetrics(): boolean {
+        return this.filteredRows.some((row) => row.latencyUsage.responseMs !== null);
+    }
+
+    public get hasAudioMetrics(): boolean {
+        return this.filteredRows.some(
+            (row) =>
+                row.audioUsage.inputAudioDurationMs !== null ||
+                row.audioUsage.outputAudioDurationMs !== null,
+        );
+    }
+
+    public get hasTextMetrics(): boolean {
+        return this.filteredRows.some(
+            (row) =>
+                row.textUsage.inputChars !== null ||
+                row.textUsage.outputChars !== null,
+        );
     }
 
     private async loadWindow(): Promise<void> {
@@ -260,6 +308,7 @@ export class ModelUsageAnalyticsComponent implements OnInit {
             this.tokenTimelineBars = [];
             this.characterTimelineBars = [];
             this.useCaseTokenBars = [];
+            this.usageKindBars = [];
             this.characterTypeBars = [];
             this.providerBars = [];
             this.modelBars = [];
@@ -269,11 +318,12 @@ export class ModelUsageAnalyticsComponent implements OnInit {
         }
     }
 
-    private buildWindowQuery(): { usageKind: string; from?: string; to?: string } {
+    private buildWindowQuery(): { usageKind?: string; from?: string; to?: string } {
+        const usageKind = this.selectedUsageKind === "all" ? undefined : this.selectedUsageKind;
         const now = new Date();
 
         if (this.selectedPreset === "all") {
-            return { usageKind: "llm" };
+            return usageKind ? { usageKind } : {};
         }
 
         if (this.selectedPreset === "custom") {
@@ -285,7 +335,7 @@ export class ModelUsageAnalyticsComponent implements OnInit {
                 : undefined;
 
             return {
-                usageKind: "llm",
+                usageKind,
                 from,
                 to,
             };
@@ -301,7 +351,7 @@ export class ModelUsageAnalyticsComponent implements OnInit {
         }
 
         return {
-            usageKind: "llm",
+            usageKind,
             from: from.toISOString(),
             to: now.toISOString(),
         };
@@ -353,82 +403,235 @@ export class ModelUsageAnalyticsComponent implements OnInit {
             return true;
         });
 
+        const llmRows = this.filteredRows.filter((row) => row.usageKind === "llm");
+
         this.summaryCards = this.buildSummaryCards(this.filteredRows);
         this.tokenTimelineBars = this.buildTimelineBars(this.filteredRows, "tokens");
         this.characterTimelineBars = this.buildTimelineBars(this.filteredRows, "chars");
-        this.useCaseTokenBars = this.buildContextBars(this.filteredRows, "tokens");
+        this.useCaseTokenBars = this.buildContextBars(llmRows, "tokens");
+        this.usageKindBars = this.buildUsageKindBars(this.filteredRows);
         this.characterTypeBars = this.buildCharacterTypeBars(this.filteredRows);
-        this.providerBars = this.buildGroupBars(this.filteredRows, "provider");
-        this.modelBars = this.buildGroupBars(this.filteredRows, "model");
+        this.providerBars = this.buildGroupBars(llmRows, "provider");
+        this.modelBars = this.buildGroupBars(llmRows, "model");
         this.recentRows = this.filteredRows.slice(0, 18);
     }
 
     private buildSummaryCards(rows: ModelUsageRecord[]): SummaryCard[] {
-        const totalTokens = rows.reduce(
+        const cards: SummaryCard[] = [];
+        const requestRows = rows.filter((row) => row.messageType !== "action_cache_usage");
+        const llmRows = rows.filter((row) => row.usageKind === "llm");
+        const llmRequestRows = llmRows.filter(
+            (row) => row.messageType !== "action_cache_usage",
+        );
+        const sttRows = rows.filter((row) => row.usageKind === "stt");
+        const ttsRows = rows.filter((row) => row.usageKind === "tts");
+        const actionCacheSavedCalls = rows.reduce(
+            (sum, row) => sum + row.cacheUsage.llmCallsSaved,
+            0,
+        );
+        const actionCacheAddedCalls =
+            rows.reduce((sum, row) => sum + row.cacheUsage.llmCallsAdded, 0) +
+            llmRequestRows.filter((row) => row.context === "action_verification").length;
+
+        const totalTokens = llmRows.reduce(
             (sum, row) => sum + row.tokenUsage.totalTokens,
             0,
         );
-        const cachedInputTokens = rows.reduce(
+        const cachedInputTokens = llmRows.reduce(
             (sum, row) => sum + row.tokenUsage.cachedTokens,
             0,
         );
-        const liveInputTokens = rows.reduce(
+        const liveInputTokens = llmRows.reduce(
             (sum, row) => sum + row.tokenUsage.liveInputTokens,
             0,
         );
-        const thinkingOutputTokens = rows.reduce(
+        const thinkingOutputTokens = llmRows.reduce(
             (sum, row) => sum + row.tokenUsage.reasoningTokens,
             0,
         );
-        const visibleOutputTokens = rows.reduce(
+        const visibleOutputTokens = llmRows.reduce(
             (sum, row) => sum + row.tokenUsage.visibleOutputTokens,
             0,
         );
-        const promptChars = rows.reduce(
+        const promptChars = llmRows.reduce(
             (sum, row) => sum + row.promptUsage.totalChars,
             0,
         );
+        const responseLatencies = rows
+            .map((row) => row.latencyUsage.responseMs)
+            .filter((value): value is number => value !== null);
+        const firstByteLatencies = rows
+            .map((row) => row.latencyUsage.timeToFirstByteMs)
+            .filter((value): value is number => value !== null);
+        const inputAudioDurationMs = rows.reduce(
+            (sum, row) => sum + (row.audioUsage.inputAudioDurationMs ?? 0),
+            0,
+        );
+        const outputAudioDurationMs = rows.reduce(
+            (sum, row) => sum + (row.audioUsage.outputAudioDurationMs ?? 0),
+            0,
+        );
+        const ttsInputChars = ttsRows.reduce(
+            (sum, row) => sum + (row.textUsage.inputChars ?? 0),
+            0,
+        );
+        const llmOutputChars = llmRows.reduce(
+            (sum, row) => sum + (row.textUsage.outputChars ?? 0),
+            0,
+        );
+        const sttOutputChars = sttRows.reduce(
+            (sum, row) => sum + (row.textUsage.outputChars ?? 0),
+            0,
+        );
 
-        const avgTokens = rows.length > 0 ? Math.round(totalTokens / rows.length) : 0;
+        const avgTokens =
+            llmRequestRows.length > 0
+                ? Math.round(totalTokens / llmRequestRows.length)
+                : 0;
 
-        return [
-            {
-                label: "Calls",
-                value: this.formatCompactNumber(rows.length),
-                detail: `${this.formatCompactNumber(avgTokens)} avg tokens per call`,
-                tone: "amber",
-            },
-            {
-                label: "Total Tokens",
-                value: this.formatCompactNumber(totalTokens),
-                detail: `${this.formatCompactNumber(cachedInputTokens)} cached + ${this.formatCompactNumber(liveInputTokens)} sent`,
-                tone: "blue",
-            },
-            {
-                label: "Cached Sent",
-                value: this.formatCompactNumber(cachedInputTokens),
-                detail: `${this.formatPercent(cachedInputTokens, totalTokens)} of total tokens`,
-                tone: "slate",
-            },
-            {
-                label: "Sent",
-                value: this.formatCompactNumber(liveInputTokens),
-                detail: `${this.formatPercent(liveInputTokens, totalTokens)} of total tokens`,
-                tone: "amber",
-            },
-            {
-                label: "Thinking Output",
-                value: this.formatCompactNumber(thinkingOutputTokens),
-                detail: `${this.formatPercent(thinkingOutputTokens, totalTokens)} of total tokens`,
-                tone: "violet",
-            },
-            {
-                label: "Output",
-                value: this.formatCompactNumber(visibleOutputTokens),
-                detail: `${this.formatPercent(visibleOutputTokens, totalTokens)} of total tokens`,
+        cards.push({
+            label: "Calls",
+            value: this.formatCompactNumber(requestRows.length),
+            detail:
+                totalTokens > 0
+                    ? `${this.formatCompactNumber(avgTokens)} avg tokens per call`
+                    : "persisted usage rows",
+            tone: "amber",
+        });
+
+        if (totalTokens > 0) {
+            cards.push(
+                {
+                    label: "Total Tokens",
+                    value: this.formatCompactNumber(totalTokens),
+                    detail: `${this.formatCompactNumber(cachedInputTokens)} cached + ${this.formatCompactNumber(liveInputTokens)} sent`,
+                    tone: "blue",
+                },
+                {
+                    label: "Cached Sent",
+                    value: this.formatCompactNumber(cachedInputTokens),
+                    detail: `${this.formatPercent(cachedInputTokens, totalTokens)} of total tokens`,
+                    tone: "slate",
+                },
+                {
+                    label: "Sent",
+                    value: this.formatCompactNumber(liveInputTokens),
+                    detail: `${this.formatPercent(liveInputTokens, totalTokens)} of total tokens`,
+                    tone: "amber",
+                },
+                {
+                    label: "Thinking Output",
+                    value: this.formatCompactNumber(thinkingOutputTokens),
+                    detail: `${this.formatPercent(thinkingOutputTokens, totalTokens)} of total tokens`,
+                    tone: "violet",
+                },
+                {
+                    label: "Output",
+                    value: this.formatCompactNumber(visibleOutputTokens),
+                    detail: `${this.formatPercent(visibleOutputTokens, totalTokens)} of total tokens`,
+                    tone: "mint",
+                },
+            );
+        }
+
+        if (promptChars > 0) {
+            cards.push({
+                label: "Prompt Chars",
+                value: this.formatCompactNumber(promptChars),
+                detail: `${this.formatCompactNumber(Math.round(promptChars / Math.max(llmRequestRows.length, 1)))} avg chars per call`,
+                tone: "rose",
+            });
+        }
+
+        if (actionCacheSavedCalls > 0 || actionCacheAddedCalls > 0) {
+            cards.push({
+                label: "Cache Saved",
+                value: this.formatCompactNumber(actionCacheSavedCalls),
+                detail: `${this.formatCompactNumber(actionCacheAddedCalls)} extra verification calls`,
                 tone: "mint",
-            },
-        ];
+            });
+
+            cards.push({
+                label: "Cache Net",
+                value: this.formatCompactNumber(
+                    actionCacheSavedCalls - actionCacheAddedCalls,
+                ),
+                detail:
+                    actionCacheAddedCalls > 0
+                        ? `${this.formatCompactNumber(actionCacheSavedCalls)} saved vs ${this.formatCompactNumber(actionCacheAddedCalls)} extra calls`
+                        : "no extra verification calls",
+                tone: "slate",
+            });
+        }
+
+        if (responseLatencies.length > 0) {
+            const avgResponseMs =
+                responseLatencies.reduce((sum, value) => sum + value, 0) /
+                responseLatencies.length;
+            cards.push({
+                label: "Avg Response",
+                value: this.formatDuration(avgResponseMs),
+                detail: `${this.formatDuration(this.percentile(responseLatencies, 95))} p95 response time`,
+                tone: "violet",
+            });
+        }
+
+        if (firstByteLatencies.length > 0) {
+            const avgFirstByteMs =
+                firstByteLatencies.reduce((sum, value) => sum + value, 0) /
+                firstByteLatencies.length;
+            cards.push({
+                label: "Avg TTS First Byte",
+                value: this.formatDuration(avgFirstByteMs),
+                detail: `${this.formatDuration(this.percentile(firstByteLatencies, 95))} p95 first byte`,
+                tone: "mint",
+            });
+        }
+
+        if (inputAudioDurationMs > 0) {
+            cards.push({
+                label: "Input Audio",
+                value: this.formatDuration(inputAudioDurationMs),
+                detail: "captured by STT requests",
+                tone: "blue",
+            });
+        }
+
+        if (outputAudioDurationMs > 0) {
+            cards.push({
+                label: "Output Audio",
+                value: this.formatDuration(outputAudioDurationMs),
+                detail: "generated by TTS requests",
+                tone: "slate",
+            });
+        }
+
+        if (this.selectedUsageKind === "tts" && ttsInputChars > 0) {
+            cards.push({
+                label: "Input Chars",
+                value: this.formatCompactNumber(ttsInputChars),
+                detail: "text sent into TTS",
+                tone: "amber",
+            });
+        }
+
+        if (this.selectedUsageKind === "stt" && sttOutputChars > 0) {
+            cards.push({
+                label: "Output Chars",
+                value: this.formatCompactNumber(sttOutputChars),
+                detail: "characters returned by STT",
+                tone: "mint",
+            });
+        } else if (llmOutputChars > 0) {
+            cards.push({
+                label: "Output Chars",
+                value: this.formatCompactNumber(llmOutputChars),
+                detail: "characters returned by LLM",
+                tone: "mint",
+            });
+        }
+
+        return cards;
     }
 
     private buildTimelineBars(
@@ -673,6 +876,9 @@ export class ModelUsageAnalyticsComponent implements OnInit {
                 metric === "tokens"
                     ? row.tokenUsage.totalTokens
                     : row.promptUsage.totalChars;
+            if (value <= 0) {
+                continue;
+            }
             const existing = groups.get(key) ?? { value: 0, count: 0 };
             existing.value += value;
             existing.count += 1;
@@ -744,6 +950,26 @@ export class ModelUsageAnalyticsComponent implements OnInit {
             });
     }
 
+    private buildUsageKindBars(rows: ModelUsageRecord[]): BreakdownBar[] {
+        const groups = new Map<string, number>();
+
+        for (const row of rows) {
+            groups.set(row.usageKind, (groups.get(row.usageKind) ?? 0) + 1);
+        }
+
+        return this.toBreakdownBars(
+            Array.from(groups.entries()).map(([label, count], index) => ({
+                label: this.formatUsageKindLabel(label as UsageKindOption),
+                value: count,
+                valueLabel: this.formatCompactNumber(count),
+                subtitle: "calls",
+                tone: this.pickTone(index),
+            })),
+            4,
+            true,
+        );
+    }
+
     private buildGroupBars(
         rows: ModelUsageRecord[],
         groupBy: "provider" | "model",
@@ -751,6 +977,9 @@ export class ModelUsageAnalyticsComponent implements OnInit {
         const groups = new Map<string, { value: number; count: number }>();
 
         for (const row of rows) {
+            if (row.tokenUsage.totalTokens <= 0) {
+                continue;
+            }
             const key = groupBy === "provider" ? row.provider : row.modelName;
             const existing = groups.get(key) ?? { value: 0, count: 0 };
             existing.value += row.tokenUsage.totalTokens;
@@ -903,8 +1132,33 @@ export class ModelUsageAnalyticsComponent implements OnInit {
         }).format(Math.round(value));
     }
 
+    private formatDuration(valueMs: number): string {
+        if (!Number.isFinite(valueMs) || valueMs <= 0) {
+            return "0 ms";
+        }
+
+        if (valueMs < 1000) {
+            return `${Math.round(valueMs)} ms`;
+        }
+
+        return `${(valueMs / 1000).toFixed(valueMs >= 10_000 ? 0 : 1)} s`;
+    }
+
     private formatFullNumber(value: number): string {
         return new Intl.NumberFormat().format(Math.round(value));
+    }
+
+    private percentile(values: number[], percentile: number): number {
+        if (values.length === 0) {
+            return 0;
+        }
+
+        const sorted = [...values].sort((left, right) => left - right);
+        const index = Math.min(
+            sorted.length - 1,
+            Math.max(0, Math.ceil((percentile / 100) * sorted.length) - 1),
+        );
+        return sorted[index];
     }
 
     private formatPercent(value: number, total: number): string {
