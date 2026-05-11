@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron/renderer');
 
 let stdoutCallback = null;
 let stderrCallback = null;
+let backendLifecycleCallback = null;
 let windowCloseCallback = [];
 
 ipcRenderer.on('stdout', (_event, value) => {
@@ -18,6 +19,13 @@ ipcRenderer.on('stderr', (_event, value) => {
     console.warn('No stderr callback set, received:', value);
   }
 });
+ipcRenderer.on('backend-lifecycle', (_event, value) => {
+  if (backendLifecycleCallback) {
+    backendLifecycleCallback(value);
+  } else {
+    console.warn('No backend lifecycle callback set, received:', value);
+  }
+});
 ipcRenderer.on('window-close', (e) => {
   windowCloseCallback.forEach(callback => callback(e));
 });
@@ -25,6 +33,7 @@ ipcRenderer.on('window-close', (e) => {
 contextBridge.exposeInMainWorld('electronAPI', {
   onStdout: (callback) => stdoutCallback = callback,
   onStderr: (callback) => stderrCallback = callback,
+  onBackendLifecycle: (callback) => backendLifecycleCallback = callback,
   onWindowClose: (callback) => windowCloseCallback.push(callback),
   confirmWindowClose: () => ipcRenderer.invoke('window-close-ready'),
   userAssets: {

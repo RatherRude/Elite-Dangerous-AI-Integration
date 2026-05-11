@@ -5,6 +5,7 @@ import { routes } from "./app.routes";
 import { provideAnimationsAsync } from "@angular/platform-browser/animations/async";
 import { provideHttpClient } from "@angular/common/http";
 import { MAT_DIALOG_DEFAULT_OPTIONS, MatDialogModule } from "@angular/material/dialog";
+import { MatSnackBarModule } from "@angular/material/snack-bar";
 import { importProvidersFrom } from "@angular/core";
 import { MarkdownModule } from 'ngx-markdown';
 import { AvatarMigrationService } from "./services/avatar-migration.service";
@@ -15,6 +16,7 @@ export const appConfig: ApplicationConfig = {
     provideAnimationsAsync(),
     provideHttpClient(),
     importProvidersFrom(MatDialogModule),
+    importProvidersFrom(MatSnackBarModule),
     importProvidersFrom(MarkdownModule.forRoot()),
     {
       provide: APP_INITIALIZER,
