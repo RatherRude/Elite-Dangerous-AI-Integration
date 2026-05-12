@@ -20,10 +20,19 @@
                     @if (!editMode) {
                         <div class="character-display" [class.with-traits]="!isCustomPreset()">
                             <div class="character-avatar-preview">
-                                <img [src]="getAvatarUrl()"
-                                     [alt]="activeCharacter.name + ' avatar'"
-                                     class="avatar-preview-image"
-                                     [class.avatar-preview-image--single]="!avatarPreviewUsesSpriteSheet">
+                                @if (avatarPreviewUsesInlineSvg) {
+                                    <div class="avatar-preview-svg"
+                                         #avatarPreviewSvg
+                                         [ngClass]="avatarPreviewStateClass"
+                                         [innerHTML]="sanitizedAvatarPreviewSvg"
+                                         [attr.aria-label]="activeCharacter.name + ' avatar'"
+                                         role="img"></div>
+                                } @else {
+                                    <img [src]="getAvatarUrl()"
+                                         [alt]="activeCharacter.name + ' avatar'"
+                                         class="avatar-preview-image"
+                                         [ngClass]="avatarPreviewStateClass">
+                                }
                             </div>
                             <div class="character-content">
                                 <span class="trait-label">{{activeCharacter.name}}:</span>
@@ -227,9 +236,19 @@
                                 <!-- Avatar Image (Left Side) -->
                                 <div class="avatar-display-container">
                                     <div class="avatar-full-display">
-                                        <img [src]="getAvatarUrl()"
-                                             [alt]="activeCharacter.name + ' avatar'"
-                                             class="avatar-full-image">
+                                        @if (avatarPreviewUsesInlineSvg) {
+                                            <div class="avatar-preview-svg"
+                                                 #avatarPreviewSvg
+                                                 [ngClass]="avatarPreviewStateClass"
+                                                 [innerHTML]="sanitizedAvatarPreviewSvg"
+                                                 [attr.aria-label]="activeCharacter.name + ' avatar'"
+                                                 role="img"></div>
+                                        } @else {
+                                            <img [src]="getAvatarUrl()"
+                                                 [alt]="activeCharacter.name + ' avatar'"
+                                                 class="avatar-full-image"
+                                                 [ngClass]="avatarPreviewStateClass">
+                                        }
                                         <button mat-icon-button
                                                 class="avatar-edit-button"
                                                 (click)="openAvatarCatalog()"
