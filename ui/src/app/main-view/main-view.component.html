@@ -3,7 +3,7 @@
 }
 
 <main class="app" [class.red]="isInCombat">
-    @if (!isRunning) {
+    @if (!showRuntimeView) {
         <div class="settings-container">
             <app-settings-menu (questEditorVisibilityChange)="onQuestEditorVisibilityChange($event)"></app-settings-menu>
         </div>
@@ -94,7 +94,7 @@
     }
 
     <div class="floating-action-container" [style.display]="isQuestEditorOpen ? 'none' : 'flex'">
-        @if (!isRunning) {
+        @if (!showRuntimeView) {
             @if (isLoading) {
                 <button mat-fab color="primary" aria-label="Starting" [disabled]="true">
                     <mat-icon>hourglass_empty</mat-icon>
