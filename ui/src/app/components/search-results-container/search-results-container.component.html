@@ -25,7 +25,12 @@
   </div>
 
   <div class="results-content">
-    @if (searchResult) {
+    @if (searchError) {
+      <div class="search-error">
+        <div class="search-error-title">Search failed</div>
+        <pre>{{ searchError }}</pre>
+      </div>
+    } @else if (searchResult) {
       <markdown [data]="searchResult"></markdown>
     } @else {
       <div class="no-results">No search results available yet.</div>
