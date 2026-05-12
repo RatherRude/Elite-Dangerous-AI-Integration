@@ -1019,6 +1019,15 @@ def read_stdin(chat: Chat):
                     system_address=system_address,
                     data=results,
                 )
+            if data.get("type") == "clear_history":
+                chat.event_manager.clear_conversation_history()
+                chat.assistant.clear_conversation_state()
+                emit_message("history_cleared", scope="conversation")
+            if data.get("type") == "reset_state_machine":
+                chat.event_manager.reset_state_machine()
+                chat.assistant.reset_runtime_state()
+                chat.previous_states = {}
+                emit_message("history_cleared", scope="state_machine")
             if data.get("type") == "get_quests":
                 results = chat.get_quest_overview()
                 emit_message(
@@ -1072,6 +1081,7 @@ def check_zombie_status():
 
 
 if __name__ == "__main__":
+    startup_phase = "bootstrap"
     try:
         configure_stdio()
         sys.stdin = io.TextIOWrapper(
@@ -1079,11 +1089,13 @@ if __name__ == "__main__":
         )
         emit_message("ready")
         # Wait for start signal on stdin
+        startup_phase = "config_load"
         config = load_config()
         emit_message("config", config=config)
         system = get_system_info()
         emit_message("system", system=system)
 
+        startup_phase = "plugin_load"
         ed_keys = EDKeys(
             get_ed_appdata_path(config),
             prefer_primary_bindings=config.get("prefer_primary_bindings", False),
@@ -1096,6 +1108,7 @@ if __name__ == "__main__":
         plugin_manager.register_settings()
         quest_catalog_manager = QuestCatalogManager()
         model_usage_store = ModelUsageStore()
+        startup_phase = "waiting_for_start_signal"
         while True:
             # print(f"Waiting for command...")
             line = sys.stdin.readline().strip()
@@ -1135,6 +1148,8 @@ if __name__ == "__main__":
                 if data.get("type") == "clear_history":
                     EventManager.clear_history()
                     # ActionManager.clear_action_cache()
+                if data.get("type") == "reset_state_machine":
+                    EventManager.reset_state_machine_store()
                 if data.get("type") == "refresh_system_info":
                     emit_message("system", system=get_system_info())
                 if data.get("type") == "init_overlay":
@@ -1189,6 +1204,7 @@ if __name__ == "__main__":
         plugin_manager.on_settings_changed(config)
         emit_message("start")
 
+        startup_phase = "assistant_initialization"
         chat = Chat(config, plugin_manager)
         # run chat in a thread
         stdin_thread = threading.Thread(target=read_stdin, args=(chat,), daemon=True)
@@ -1201,7 +1217,19 @@ if __name__ == "__main__":
             zombie_check_thread.start()
 
         log("debug", "Running chat...")
+        startup_phase = "running"
         chat.run()
     except Exception as e:
-        log("error", e, traceback.format_exc())
+        details = traceback.format_exc()
+        if startup_phase != "running":
+            try:
+                emit_message(
+                    "startup_error",
+                    phase=startup_phase,
+                    message=str(e),
+                    details=details,
+                )
+            except Exception:
+                pass
+        log("error", e, details)
         sys.exit(1)

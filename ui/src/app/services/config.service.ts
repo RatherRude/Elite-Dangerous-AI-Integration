@@ -376,6 +376,19 @@ export class ConfigService {
         }
     }
 
+    public async resetStateMachine(): Promise<void> {
+        const message: BaseCommand = {
+            type: "reset_state_machine",
+            timestamp: new Date().toISOString(),
+        };
+
+        try {
+            await this.tauriService.send_command(message);
+        } catch (error) {
+            console.error("Error sending state machine reset request:", error);
+        }
+    }
+
     public async refreshSystemInfo(): Promise<void> {
         const message: RefreshSystemInfoMessage = {
             type: "refresh_system_info",

@@ -2,6 +2,7 @@
 import { Injectable, NgZone } from "@angular/core";
 //import { invoke } from "@tauri-apps/api/core";
 import { type UnlistenFn } from "@tauri-apps/api/event";
+import { MatSnackBar } from "@angular/material/snack-bar";
 import { BehaviorSubject, Observable, ReplaySubject } from "rxjs";
 import { MatDialog } from "@angular/material/dialog";
 import { UpdateDialogComponent } from "../components/update-dialog/update-dialog.component";
@@ -14,6 +15,7 @@ declare global {
             invoke: (call: string, opts?: any) => Promise<any>;
             onStdout: (callback: (value: any) => void) => Promise<void> | void;
             onStderr: (callback: (value: any) => void) => Promise<void> | void;
+            onBackendLifecycle: (callback: (value: any) => void) => Promise<void> | void;
             onWindowClose: (callback: (event: Event) => void) => void;
             confirmWindowClose: () => Promise<void>;
             userAssets?: {
@@ -38,6 +40,29 @@ export interface BaseMessage {
     timestamp: string;
     index: number;
     [key: string]: any;
+}
+
+type OutboundMessage = {
+    type: string;
+    timestamp: string;
+    [key: string]: any;
+};
+
+export interface StartupErrorMessage extends BaseMessage {
+    type: "startup_error";
+    phase: string;
+    message: string;
+    details?: string;
+}
+
+export interface BackendLifecycleMessage extends BaseMessage {
+    type: "backend_process_state";
+    status: "exited" | "error";
+    expected: boolean;
+    pid: number | null;
+    code?: number | null;
+    signal?: string | null;
+    message?: string;
 }
 
 export interface OverlayCreateOptions {
@@ -155,7 +180,7 @@ export class TauriService {
     public readonly commitHash = environment.COMMIT_HASH;
     public readonly windowCloseCallbacks = [] as ((event: Event) => void)[];
     private runModeSubject = new BehaviorSubject<
-        "starting" | "configuring" | "running"
+        "starting" | "configuring" | "running" | "error"
     >(
         "starting",
     );
@@ -173,8 +198,14 @@ export class TauriService {
     private stopStderrListener?: UnlistenFn;
 
     private currentIndex = 0;
+    private startupErrorPendingExit = false;
+    private restartTimer: number | null = null;
 
-    constructor(private ngZone: NgZone, private dialog: MatDialog) {
+    constructor(
+        private ngZone: NgZone,
+        private dialog: MatDialog,
+        private snackBar: MatSnackBar,
+    ) {
         this.startReadingOutput();
         window.localStorage.setItem("install_id", this.installId);
 
@@ -232,6 +263,90 @@ export class TauriService {
         await electronAPI.onStderr(
             (e) => this.processStderr(e),
         );
+        await electronAPI.onBackendLifecycle(
+            (e) => this.processBackendLifecycle(e),
+        );
+    }
+
+    private pushMessage(message: OutboundMessage): void {
+        const nextMessage: BaseMessage = {
+            ...message,
+            index: this.currentIndex++,
+        };
+        this.messagesSubject.next(nextMessage);
+    }
+
+    private pushLog(message: string, prefix: "debug" | "info" | "warn" | "error" = "error"): void {
+        this.pushMessage({
+            type: "log",
+            timestamp: new Date().toISOString(),
+            message,
+            prefix,
+        });
+    }
+
+    private isOverlayWindow(): boolean {
+        return window.location.hash.startsWith("#/overlay");
+    }
+
+    private showErrorToast(message: string): void {
+        if (this.isOverlayWindow()) {
+            return;
+        }
+        this.snackBar.open(message, "Dismiss", {
+            duration: 15000,
+            panelClass: ["validation-error-snackbar"],
+        });
+    }
+
+    private scheduleBackendRestart(): void {
+        if (this.isOverlayWindow() || this.restartTimer !== null) {
+            return;
+        }
+
+        this.runModeSubject.next("starting");
+        this.restartTimer = window.setTimeout(async () => {
+            this.restartTimer = null;
+            try {
+                await this.runExe();
+            } catch (error) {
+                console.error("Scheduled backend restart failed:", error);
+            }
+        }, 3000);
+    }
+
+    private handleStartupError(message: StartupErrorMessage): void {
+        const currentMode = this.runModeSubject.getValue();
+        const shouldStayInConfig = currentMode === "starting" || currentMode === "configuring";
+
+        if (!shouldStayInConfig) {
+            this.runModeSubject.next("error");
+        }
+        this.startupErrorPendingExit = true;
+
+        const phase = message.phase || "startup";
+        const summary = message.message?.trim() || "Unknown startup error";
+        const details = message.details?.trim();
+        const detailLine = details
+            ?.split("\n")
+            .map((line) => line.trim())
+            .filter(Boolean)
+            .at(-1);
+
+        this.pushLog(`Assistant startup failed during ${phase}: ${summary}`);
+        if (details && details !== summary) {
+            this.pushLog(details);
+        }
+
+        if (!shouldStayInConfig) {
+            this.pushMessage({
+                type: "chat",
+                timestamp: message.timestamp || new Date().toISOString(),
+                role: "error",
+                message: `Assistant startup failed during ${phase}: ${detailLine || summary}`,
+                show_in_overlay: false,
+            });
+        }
     }
 
     private processStdout(event: any): void {
@@ -252,24 +367,86 @@ export class TauriService {
                 if (message.type === "config") {
                     this.runModeSubject.next("configuring");
                 }
-                this.messagesSubject.next({
-                    ...message,
-                    index: this.currentIndex++,
-                });
+                if (message.type === "startup_error") {
+                    this.handleStartupError(message as StartupErrorMessage);
+                }
+                this.pushMessage(message);
             } catch (error) {
                 console.warn("Error parsing message:", error, event);
             }
         });
     }
 
+    private processBackendLifecycle(event: any): void {
+        this.ngZone.run(() => {
+            const payload = event?.payload ?? {};
+            const previousMode = this.runModeSubject.getValue();
+            const message: BackendLifecycleMessage = {
+                type: "backend_process_state",
+                timestamp: payload.timestamp || new Date().toISOString(),
+                status: payload.status === "error" ? "error" : "exited",
+                expected: Boolean(payload.expected),
+                pid: typeof payload.pid === "number" ? payload.pid : null,
+                code: payload.code ?? null,
+                signal: payload.signal ?? null,
+                message: typeof payload.message === "string" ? payload.message : undefined,
+                index: this.currentIndex,
+            };
+
+            this.pushMessage(message);
+
+            if (message.expected) {
+                this.startupErrorPendingExit = false;
+                return;
+            }
+
+            const exitedDuringConfig = previousMode === "starting" || previousMode === "configuring";
+            if (this.startupErrorPendingExit) {
+                this.startupErrorPendingExit = false;
+                if (!exitedDuringConfig) {
+                    return;
+                }
+            }
+
+            const shouldToast = exitedDuringConfig;
+
+            if (exitedDuringConfig) {
+                this.scheduleBackendRestart();
+            } else {
+                this.runModeSubject.next("error");
+            }
+
+            if (message.status === "error") {
+                const details = message.message || "Unknown backend error";
+                this.pushLog(`Assistant process failed to start: ${details}`);
+                if (shouldToast) {
+                    this.showErrorToast(`Assistant process failed to start: ${details}`);
+                }
+                return;
+            }
+
+            const exitDetails = [
+                message.code !== null && message.code !== undefined ? `code ${message.code}` : null,
+                message.signal ? `signal ${message.signal}` : null,
+            ].filter(Boolean).join(", ");
+            const exitMessage = exitDetails
+                ? `Assistant process exited unexpectedly (${exitDetails}).`
+                : "Assistant process exited unexpectedly.";
+
+            this.pushLog(exitMessage);
+            if (shouldToast) {
+                this.showErrorToast(exitMessage);
+            }
+        });
+    }
+
     private processStderr(event: any): void {
         this.ngZone.run(() => {
-            this.messagesSubject.next({
+            this.pushMessage({
                 type: "log",
                 timestamp: new Date().toISOString(),
                 message: event.payload,
                 prefix: "error",
-                index: this.currentIndex++,
             });
         });
     }
@@ -280,14 +457,15 @@ export class TauriService {
     }
 
     public async runExe(): Promise<string[]> {
-        this.stopExe();
+        await this.stopExe();
         try {
             const output: string[] = await electronAPI.invoke("start_process", {});
             this.startReadingOutput();
             return output;
         } catch (error) {
             console.error("Error running exe:", error);
-            alert(
+            this.runModeSubject.next("error");
+            this.showErrorToast(
                 `Error starting subprocess: ${
                     error instanceof Error ? error.message : error
                 }`,
@@ -310,6 +488,9 @@ export class TauriService {
         await this.runExe();
     }
     public async send_start_signal(): Promise<void> {
+        if (this.runModeSubject.getValue() === "error") {
+            await this.runExe();
+        }
         await this.send_command({
             type: "start",
             timestamp: new Date().toISOString(),

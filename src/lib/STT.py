@@ -8,7 +8,15 @@ import pyaudio
 import speech_recognition as sr
 from pysilero_vad import SileroVoiceActivityDetector
 
-from .Logger import log, observe, show_chat_message
+from .Logger import (
+    AudioUsageStats,
+    LatencyUsageStats,
+    TextUsageStats,
+    log,
+    log_stt_usage,
+    observe,
+    show_chat_message,
+)
 from .Models import STTModel, LLMError
 
 
@@ -235,6 +243,15 @@ class STT:
         
         if self.required_word and self.required_word.lower() not in text.lower():
             return ''
+
+        log_stt_usage(
+            "speech",
+            provider=getattr(self.stt_model, "provider_name", None),
+            model_name=getattr(self.stt_model, "model_name", None),
+            latency_usage=LatencyUsageStats(response_ms=(end_time - start_time) * 1000),
+            audio_usage=AudioUsageStats(input_audio_duration_ms=audio_length * 1000),
+            text_usage=TextUsageStats(output_chars=len(text)),
+        )
 
         # print("transcription received", text)
         return text

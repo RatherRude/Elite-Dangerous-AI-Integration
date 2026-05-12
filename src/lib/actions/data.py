@@ -697,6 +697,8 @@ known_modules = [
     "Mk II Mining Multi-Limpet Controller",
     "Mk II Plasma Shock Accelerator",
     "Mk II Supercharge Optimised Frame Shift Drive (SCO)",
+    "Mk II Business Class Passenger Cabin",
+    "Mk II Economy Class Passenger Cabin",
     "Military Grade Composite",
     "Mine Launcher",
     "Mining Lance",

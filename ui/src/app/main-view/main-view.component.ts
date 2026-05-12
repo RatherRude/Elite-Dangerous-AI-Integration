@@ -54,8 +54,10 @@ import {UIService} from "../services/ui.service";
 export class MainViewComponent implements OnInit, OnDestroy {
     @ViewChild(SettingsMenuComponent) private settingsMenu?: SettingsMenuComponent;
 
+    runMode: "starting" | "configuring" | "running" | "error" = "starting";
     isLoading = true;
     isRunning = false;
+    showRuntimeView = false;
     isInCombat = false;
     isDockedAtStation = false;
     isShipIdentUnknown = false;
@@ -108,8 +110,13 @@ export class MainViewComponent implements OnInit, OnDestroy {
         // Subscribe to the running state
         this.tauri.runMode$.subscribe(
             (mode) => {
+                this.runMode = mode;
                 this.isRunning = mode === "running";
                 this.isLoading = mode === "starting";
+                this.showRuntimeView = mode === "running" || mode === "error";
+                if (mode === "error") {
+                    this.selectedTabIndex = 0;
+                }
             },
         );
 

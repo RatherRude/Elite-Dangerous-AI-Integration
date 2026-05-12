@@ -8,7 +8,15 @@ from time import time
 
 from pydantic import BaseModel
 from .Models import LLMModel, EmbeddingModel, LLMError
-from .Logger import log, observe, show_chat_message, PromptUsageStats, log_llm_usage
+from .Logger import (
+    CacheUsageStats,
+    PromptUsageStats,
+    log,
+    log_action_cache_usage,
+    log_llm_usage,
+    observe,
+    show_chat_message,
+)
 from .Config import (
     Config,
     CharacterTTSPostprocessingConfig,
@@ -127,6 +135,18 @@ class Assistant:
             self._process_active_quests(event, projected_states)
         except Exception as e:
             log('error', 'Quest processing failed', e, traceback.format_exc())
+
+    def clear_conversation_state(self):
+        self.pending = [
+            event for event in self.pending
+            if not isinstance(event, (ConversationEvent, ToolEvent))
+        ]
+        self.reply_pending = False
+
+    def reset_runtime_state(self):
+        self.pending = []
+        self.reply_pending = False
+        self.short_term_memories = []
 
     def _get_quests_path(self) -> Path:
         return Path(__file__).resolve().parent.parent / "data" / "quests.yaml"
@@ -773,6 +793,7 @@ class Assistant:
             if action_input_desc:
                 self.tts.say(
                     action_input_desc,
+                    context="assistant_acting",
                     postprocessing_layers=self._get_tts_postprocessing_layers(projected_states),
                 )
             action_result = self.action_manager.runAction(action, projected_states)
@@ -878,6 +899,12 @@ class Assistant:
                 #log('info', 'predicted_actions', predicted_actions)
                 response_text = None
                 response_actions = predicted_actions
+                log_action_cache_usage(
+                    "assistant",
+                    provider=getattr(self.llmModel, "provider_name", None),
+                    model_name=getattr(self.llmModel, "model_name", None),
+                    cache_usage=CacheUsageStats(llm_calls_saved=1),
+                )
             else:
                 start_time = time()
                     
@@ -901,6 +928,7 @@ class Assistant:
                 self.event_manager.add_assistant_speaking()
                 self.tts.say(
                     response_text,
+                    context="assistant",
                     postprocessing_layers=self._get_tts_postprocessing_layers(projected_states),
                 )
                 self.event_manager.add_conversation_event('assistant', response_text, reasons=reasons, processed_at=max_conversation_processed)
@@ -1031,6 +1059,7 @@ class Assistant:
         args = {'query': query}
         self.tts.say(
             f"Searching: {query}",
+            context="web_search",
             postprocessing_layers=self._get_tts_postprocessing_layers(projected_states),
         )
         

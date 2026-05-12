@@ -376,8 +376,19 @@ function resolveReadableAssetPath(filePath) {
 class BackendService {
   #currentProcess = null;
   #windows = [];
+  #stopRequestedPid = null;
+  #beforeQuitRegistered = false;
+  #appQuitting = false;
+  #notifyWindows(channel, payload) {
+    for (const window of this.#windows) {
+      window.webContents.send(channel, { payload });
+    }
+  }
+  #hasActiveProcess() {
+    return Boolean(this.#currentProcess && this.#currentProcess.exitCode === null && this.#currentProcess.signalCode === null);
+  }
   sendJsonLine(event, {jsonLine}) {
-    if (!this.#currentProcess || this.#currentProcess.killed) {
+    if (!this.#hasActiveProcess()) {
       throw new Error('No active process to send JSON line to');
     }
     logger.info('[stdin]', jsonLine);
@@ -392,13 +403,14 @@ class BackendService {
   }
   startProcess(mainWindow) {
     this.attachWindow(mainWindow);
-    if (this.#currentProcess && !this.#currentProcess.killed) {
+    if (this.#hasActiveProcess()) {
       logger.warn('Process is already running, stopping it first');
+      this.#stopRequestedPid = this.#currentProcess.pid ?? null;
       this.#currentProcess.kill('SIGINT');
     }
     logger.info('Starting process:', config.backend);
 
-    this.#currentProcess = spawn(config.backend, config.backend_args, {
+    const childProcess = spawn(config.backend, config.backend_args, {
       stdio: ['pipe', 'pipe', 'pipe'],
       cwd: config.backend_cwd,
       env: {
@@ -407,17 +419,63 @@ class BackendService {
         PYTHONUNBUFFERED: 1,
       }
     });
-    logger.info('Process started with PID:', this.#currentProcess.pid);
+    this.#currentProcess = childProcess;
+    logger.info('Process started with PID:', childProcess.pid);
 
-    app.on('before-quit', () => {
-      if (this.#currentProcess && !this.#currentProcess.killed) {
-        this.#currentProcess.kill('SIGINT');
+    if (!this.#beforeQuitRegistered) {
+      app.on('before-quit', () => {
+        this.#appQuitting = true;
+        if (this.#hasActiveProcess()) {
+          this.#stopRequestedPid = this.#currentProcess.pid ?? null;
+          this.#currentProcess.kill('SIGINT');
+        }
+      });
+      this.#beforeQuitRegistered = true;
+    }
+
+    let terminationNotified = false;
+    const notifyTermination = (payload) => {
+      if (terminationNotified) {
+        return;
       }
+      terminationNotified = true;
+
+      const expected = this.#stopRequestedPid === childProcess.pid || this.#appQuitting;
+      if (expected && this.#stopRequestedPid === childProcess.pid) {
+        this.#stopRequestedPid = null;
+      }
+      if (this.#currentProcess === childProcess) {
+        this.#currentProcess = null;
+      }
+
+      this.#notifyWindows('backend-lifecycle', {
+        ...payload,
+        expected,
+        pid: childProcess.pid ?? null,
+        timestamp: new Date().toISOString(),
+      });
+    };
+
+    childProcess.once('error', (error) => {
+      logger.error('Backend process failed:', error);
+      notifyTermination({
+        status: 'error',
+        message: error instanceof Error ? error.message : String(error),
+      });
     });
 
-    this.#currentProcess.stdout.setEncoding('utf8');
+    childProcess.once('close', (code, signal) => {
+      logger.info('Backend process closed:', { pid: childProcess.pid, code, signal });
+      notifyTermination({
+        status: 'exited',
+        code,
+        signal,
+      });
+    });
+
+    childProcess.stdout.setEncoding('utf8');
     let partialStdout = '';
-    this.#currentProcess.stdout.on('data', (data) => {
+    childProcess.stdout.on('data', (data) => {
       if (!data) return;
       data = partialStdout + data;
       partialStdout = '';
@@ -441,9 +499,9 @@ class BackendService {
       }
     });
 
-    this.#currentProcess.stderr.setEncoding('utf8');
+    childProcess.stderr.setEncoding('utf8');
     let partialStderr = '';
-    this.#currentProcess.stderr.on('data', (data) => {
+    childProcess.stderr.on('data', (data) => {
       if (!data) return;
       data = partialStderr + data;
       partialStderr = '';
@@ -466,18 +524,19 @@ class BackendService {
         }
       }
     });
+
     mainWindow.on('close', () => {
       this.stopProcess(mainWindow);
       // remove all stdin and stdout listeners
-      this.#currentProcess.stdout.removeAllListeners('data');
-      this.#currentProcess.stderr.removeAllListeners('data');
+      childProcess.stdout.removeAllListeners('data');
+      childProcess.stderr.removeAllListeners('data');
     });
   }
   stopProcess(mainWindow) {
     this.detachWindow(mainWindow);
-    if (this.#currentProcess && !this.#currentProcess.killed) {
+    if (this.#hasActiveProcess()) {
       logger.info('Stopping process:', this.#currentProcess.pid);
-      const pid = this.#currentProcess.pid;
+      this.#stopRequestedPid = this.#currentProcess.pid ?? null;
       this.#currentProcess.kill('SIGINT');
     }
   } 

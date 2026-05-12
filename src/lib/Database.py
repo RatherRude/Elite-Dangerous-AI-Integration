@@ -310,6 +310,18 @@ class EventStore():
         ''')
         conn.commit()
 
+    def delete_classes(self, class_names: list[str]) -> None:
+        if not class_names:
+            return
+        conn = get_connection()
+        cursor = conn.cursor()
+        placeholders = ",".join("?" for _ in class_names)
+        _ = cursor.execute(f'''
+            DELETE FROM {self.table_name}
+            WHERE class IN ({placeholders})
+        ''', class_names)
+        conn.commit()
+
 @final
 class VectorStore():
     RRF_K = 0

@@ -48,6 +48,28 @@ mat-panel-title mat-icon {
   padding: 0.5rem 1rem;
 }
 
+.state-machine-section {
+  padding-top: 0;
+}
+
+.state-machine-section p {
+  margin-bottom: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.state-machine-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.state-machine-buttons button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+}
+
 .quest-editor-section {
   padding-top: 0;
 }
