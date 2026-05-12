@@ -31,6 +31,9 @@ import {
 } from "@angular/material/expansion";
 import { ModelProviderDefinition, SettingsGrid } from "../../services/plugin-settings";
 import { SettingsGridComponent } from "../settings-grid/settings-grid.component";
+import { MatDialog } from "@angular/material/dialog";
+import { ConfirmationDialogComponent } from "../confirmation-dialog/confirmation-dialog.component";
+import { ChatService } from "../../services/chat.service";
 
 @Component({
     selector: "app-advanced-settings",
@@ -83,6 +86,8 @@ export class AdvancedSettingsComponent implements OnDestroy {
         private snackBar: MatSnackBar,
         private configBackupService: ConfigBackupService,
         private tauriService: TauriService,
+        private dialog: MatDialog,
+        private chatService: ChatService,
     ) {
         this.configSubscription = this.configService.config$.subscribe(
             (config) => {
@@ -368,5 +373,27 @@ export class AdvancedSettingsComponent implements OnDestroy {
 
     openQuestEditor(): void {
         this.questEditorOpen.emit();
+    }
+
+    async onResetStateMachine(): Promise<void> {
+        const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+            data: {
+                title: "Reset State Machine",
+                message:
+                    "Are you sure you want to reset the state machine? This clears persisted events and projection state and cannot be undone. Long-term memories and mapped system data are not affected.",
+            },
+        });
+
+        dialogRef.afterClosed().subscribe(async (result) => {
+            if (!result) {
+                return;
+            }
+
+            await this.configService.resetStateMachine();
+            this.chatService.clearChat();
+            this.snackBar.open("State machine reset", "OK", {
+                duration: 3000,
+            });
+        });
     }
 }

@@ -78,10 +78,54 @@ class Projection(ABC, Generic[StateModel]):
 class EventManager:
     @staticmethod
     def clear_history():
+        EventManager.clear_conversation_store()
+
+    @staticmethod
+    def clear_conversation_store():
+        event_store = EventStore('events', [])
+        event_store.delete_classes(["ConversationEvent", "ToolEvent"])
+
+    @staticmethod
+    def reset_state_machine_store():
         event_store = EventStore('events', [])
         event_store.delete_all()
         projection_store = KeyValueStore('projections')
         projection_store.delete_all()
+
+    def _is_conversation_history_event(self, event: Event) -> bool:
+        return isinstance(event, (ConversationEvent, ToolEvent))
+
+    def clear_conversation_history(self):
+        with self._processing_lock:
+            self.short_term_memory.delete_classes(["ConversationEvent", "ToolEvent"])
+            self.pending = [
+                event for event in self.pending
+                if not self._is_conversation_history_event(event)
+            ]
+            self.processed = [
+                event for event in self.processed
+                if not self._is_conversation_history_event(event)
+            ]
+            kept_incoming: list[Event] = []
+            while not self.incoming.empty():
+                event = self.incoming.get()
+                if not self._is_conversation_history_event(event):
+                    kept_incoming.append(event)
+            for event in kept_incoming:
+                self.incoming.put(event)
+
+    def reset_state_machine(self):
+        with self._processing_lock:
+            self.short_term_memory.delete_all()
+            self.projection_store.delete_all()
+            self.pending = []
+            self.processed = []
+            while not self.incoming.empty():
+                self.incoming.get()
+            for projection in self.projections:
+                projection.state = projection.get_default_state()
+                projection.last_processed = 0.0
+            self.save_projections()
     
     def __init__(
             self, 

@@ -11,6 +11,8 @@ import sqlite_vec
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from src.lib.Logger import ModelUsageStats, PromptUsageStats, log_llm_usage
+from src.lib.Logger import AudioUsageStats, LatencyUsageStats, TextUsageStats, log_stt_usage, log_tts_usage
+from src.lib.Logger import CacheUsageStats, log_action_cache_usage
 from src.lib.Database import ModelUsageStore, set_connection_for_testing
 from src.lib.Models import OpenAIResponsesLLMModel, _get_reasoning_tokens
 
@@ -47,6 +49,8 @@ def test_log_llm_usage_includes_provider_model_and_reasoning_tokens(
         reasoning_tokens=7,
         provider="openai",
         model_name="gpt-5",
+        response_ms=842,
+        output_chars=17,
     )
 
     log_llm_usage("assistant", usage, PromptUsageStats(system_chars=20))
@@ -62,10 +66,13 @@ def test_log_llm_usage_includes_provider_model_and_reasoning_tokens(
     assert message["type"] == "llm_usage"
     assert message["provider"] == "openai"
     assert message["model_name"] == "gpt-5"
+    assert message["schema_version"] == 2
     assert message["model_usage"]["reasoning_tokens"] == 7
     assert message["model_usage"]["provider"] == "openai"
     assert message["model_usage"]["model_name"] == "gpt-5"
     assert message["prompt_usage"]["total_prompt_chars"] == 20
+    assert message["latency_usage"]["response_ms"] == 842
+    assert message["text_usage"]["output_chars"] == 17
 
     rows, total = ModelUsageStore().get_history(usage_kind="llm")
     assert total == 1
@@ -74,6 +81,84 @@ def test_log_llm_usage_includes_provider_model_and_reasoning_tokens(
     assert rows[0]["payload"]["provider"] == "openai"
     assert rows[0]["payload"]["model_usage"]["reasoning_tokens"] == 7
     assert rows[0]["payload"]["prompt_usage"]["total_prompt_chars"] == 20
+    assert rows[0]["payload"]["latency_usage"]["response_ms"] == 842
+    assert rows[0]["payload"]["text_usage"]["output_chars"] == 17
+
+
+def test_log_stt_and_tts_usage_persist_new_metric_groups(
+    capsys, mock_connection
+) -> None:
+    _ = mock_connection
+
+    log_stt_usage(
+        "speech",
+        provider="openai",
+        model_name="gpt-4o-mini-transcribe",
+        latency_usage=LatencyUsageStats(response_ms=321),
+        audio_usage=AudioUsageStats(input_audio_duration_ms=2500),
+        text_usage=TextUsageStats(output_chars=42),
+    )
+    log_tts_usage(
+        "assistant",
+        provider="edge-tts",
+        model_name="edge-tts",
+        latency_usage=LatencyUsageStats(response_ms=555, time_to_first_byte_ms=120),
+        audio_usage=AudioUsageStats(output_audio_duration_ms=4200),
+        text_usage=TextUsageStats(input_chars=88),
+    )
+
+    output_lines = [
+        json.loads(line)
+        for line in capsys.readouterr().out.splitlines()
+        if line.strip()
+    ]
+    usage_messages = [
+        line for line in output_lines if line.get("type") in {"stt_usage", "tts_usage"}
+    ]
+
+    assert len(usage_messages) == 2
+    assert usage_messages[0]["audio_usage"]["input_audio_duration_ms"] == 2500
+    assert usage_messages[0]["text_usage"]["output_chars"] == 42
+    assert usage_messages[1]["latency_usage"]["time_to_first_byte_ms"] == 120
+    assert usage_messages[1]["audio_usage"]["output_audio_duration_ms"] == 4200
+    assert usage_messages[1]["text_usage"]["input_chars"] == 88
+
+    rows, total = ModelUsageStore().get_history(limit=10)
+    assert total == 2
+    assert rows[0]["usage_kind"] == "tts"
+    assert rows[0]["payload"]["latency_usage"]["time_to_first_byte_ms"] == 120
+    assert rows[1]["usage_kind"] == "stt"
+    assert rows[1]["payload"]["audio_usage"]["input_audio_duration_ms"] == 2500
+
+
+def test_log_action_cache_usage_persists_saved_llm_calls(
+    capsys, mock_connection
+) -> None:
+    _ = mock_connection
+
+    log_action_cache_usage(
+        "assistant",
+        provider="openai",
+        model_name="gpt-5",
+        cache_usage=CacheUsageStats(llm_calls_saved=1),
+    )
+
+    output_lines = [
+        json.loads(line)
+        for line in capsys.readouterr().out.splitlines()
+        if line.strip()
+    ]
+    message = next(
+        line for line in reversed(output_lines) if line.get("type") == "action_cache_usage"
+    )
+
+    assert message["context"] == "assistant"
+    assert message["cache_usage"]["llm_calls_saved"] == 1
+
+    rows, total = ModelUsageStore().get_history(usage_kind="llm")
+    assert total == 1
+    assert rows[0]["payload"]["type"] == "action_cache_usage"
+    assert rows[0]["payload"]["cache_usage"]["llm_calls_saved"] == 1
 
 
 def test_openai_responses_model_usage_captures_reasoning_tokens(
@@ -122,6 +207,8 @@ def test_openai_responses_model_usage_captures_reasoning_tokens(
     assert usage.reasoning_tokens == 4
     assert usage.provider == "openai"
     assert usage.model_name == "gpt-5"
+    assert usage.response_ms is not None
+    assert usage.output_chars == 2
 
 
 def test_get_reasoning_tokens_falls_back_to_usage_totals() -> None:

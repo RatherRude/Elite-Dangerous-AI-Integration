@@ -608,11 +608,10 @@
 
         <h2>Conversation History</h2>
         <div class="clear_history">
-            <p>This will clear the entire conversation history with the AI. If you change the character, you may want to reset the conversation history, so
-            the AI starts with a blank slate.</p>
+            <p>This will clear the conversation history with the AI while keeping the current game state machine intact. If you change the character, you may want to reset the conversation history, so the AI starts the conversation with a blank slate.</p>
             <button mat-stroked-button color="warn" (click)="onClearHistory()">
                 <mat-icon>delete_sweep</mat-icon>
-                Clear History
+                Clear Conversation
             </button>
         </div>
     }

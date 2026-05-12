@@ -14,6 +14,15 @@
       </mat-form-field>
 
       <mat-form-field appearance="outline">
+        <mat-label>Usage Kind</mat-label>
+        <mat-select [(ngModel)]="selectedUsageKind" (ngModelChange)="onUsageKindChange()">
+          @for (kind of usageKinds; track kind) {
+            <mat-option [value]="kind">{{ formatUsageKindLabel(kind) }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
         <mat-label>Provider</mat-label>
         <mat-select [(ngModel)]="selectedProvider" (ngModelChange)="onProviderChange()">
           <mat-option value="all">All providers</mat-option>
@@ -113,6 +122,31 @@
     </section>
 
     <section class="analytics-grid">
+      <mat-card class="analytics-card">
+        <div class="card-header compact">
+          <div>
+            <p class="card-kicker">Usage Kinds</p>
+            <h3>Call distribution by kind</h3>
+          </div>
+        </div>
+
+        <div class="bar-list">
+          @for (bar of usageKindBars; track bar.label) {
+            <div class="bar-row">
+              <div class="bar-copy">
+                <span class="bar-label">{{ bar.label }}</span>
+                <span class="bar-subtitle">{{ bar.subtitle }}</span>
+              </div>
+              <div class="bar-track">
+                <div class="bar-fill" [class]="'tone-' + bar.tone" [style.width.%]="bar.widthPct" [attr.title]="formatBreakdownBarTitle(bar)"></div>
+              </div>
+              <span class="bar-value">{{ bar.valueLabel }}</span>
+            </div>
+          }
+        </div>
+      </mat-card>
+
+      @if (hasTokenMetrics) {
       <mat-card class="analytics-card wide-card">
         <div class="card-header">
           <div>
@@ -147,7 +181,9 @@
           }
         </div>
       </mat-card>
+      }
 
+      @if (hasPromptMetrics) {
       <mat-card class="analytics-card wide-card">
         <div class="card-header">
           <div>
@@ -183,7 +219,9 @@
           }
         </div>
       </mat-card>
+      }
 
+      @if (hasTokenMetrics) {
       <mat-card class="analytics-card">
         <div class="card-header compact">
           <div>
@@ -207,7 +245,9 @@
           }
         </div>
       </mat-card>
+      }
 
+      @if (hasPromptMetrics) {
       <mat-card class="analytics-card">
         <div class="card-header compact">
           <div>
@@ -231,7 +271,9 @@
           }
         </div>
       </mat-card>
+      }
 
+      @if (hasTokenMetrics) {
       <mat-card class="analytics-card">
         <div class="card-header compact">
           <div>
@@ -255,12 +297,14 @@
           }
         </div>
       </mat-card>
+      }
 
+      @if (hasTokenMetrics) {
       <mat-card class="analytics-card">
         <div class="card-header compact">
           <div>
             <p class="card-kicker">Models</p>
-            <h3>Token share by model</h3>
+            <h3>Token share by llm model</h3>
           </div>
         </div>
 
@@ -279,6 +323,7 @@
           }
         </div>
       </mat-card>
+      }
     </section>
 
     <mat-card class="recent-card">
@@ -294,15 +339,50 @@
           <div class="recent-row">
             <div class="recent-main">
               <span class="recent-context">{{ formatContextLabel(row.context) }}</span>
+              <span class="recent-model">{{ formatUsageKindLabel($any(row.usageKind)) }}</span>
               <span class="recent-model">{{ row.provider }} / {{ row.modelName }}</span>
             </div>
 
             <div class="recent-metrics">
-              <span class="metric-pill metric-cached-input">{{ row.tokenUsage.cachedTokens | number }} cached</span>
-              <span class="metric-pill metric-live-input">{{ row.tokenUsage.liveInputTokens | number }} sent</span>
-              <span class="metric-pill metric-thinking-output">{{ row.tokenUsage.reasoningTokens | number }} thinking</span>
-              <span class="metric-pill metric-visible-output">{{ row.tokenUsage.visibleOutputTokens | number }} output</span>
-              <span class="metric-pill char-pill">{{ row.promptUsage.totalChars | number }} chars</span>
+              @if (row.tokenUsage.cachedTokens > 0) {
+                <span class="metric-pill metric-cached-input">{{ row.tokenUsage.cachedTokens | number }} cached</span>
+              }
+              @if (row.tokenUsage.liveInputTokens > 0) {
+                <span class="metric-pill metric-live-input">{{ row.tokenUsage.liveInputTokens | number }} sent</span>
+              }
+              @if (row.tokenUsage.reasoningTokens > 0) {
+                <span class="metric-pill metric-thinking-output">{{ row.tokenUsage.reasoningTokens | number }} thinking</span>
+              }
+              @if (row.tokenUsage.visibleOutputTokens > 0) {
+                <span class="metric-pill metric-visible-output">{{ row.tokenUsage.visibleOutputTokens | number }} output</span>
+              }
+              @if (row.promptUsage.totalChars > 0) {
+                <span class="metric-pill metric-live-input">{{ row.promptUsage.totalChars | number }} prompt chars</span>
+              }
+              @if (row.latencyUsage.responseMs !== null) {
+                <span class="metric-pill metric-thinking-output">{{ row.latencyUsage.responseMs | number:'1.0-0' }} ms response</span>
+              }
+              @if (row.latencyUsage.timeToFirstByteMs !== null) {
+                <span class="metric-pill metric-thinking-output">{{ row.latencyUsage.timeToFirstByteMs | number:'1.0-0' }} ms first byte</span>
+              }
+              @if (row.audioUsage.inputAudioDurationMs !== null) {
+                <span class="metric-pill metric-live-input">{{ row.audioUsage.inputAudioDurationMs | number:'1.0-0' }} ms input audio</span>
+              }
+              @if (row.audioUsage.outputAudioDurationMs !== null) {
+                <span class="metric-pill metric-visible-output">{{ row.audioUsage.outputAudioDurationMs | number:'1.0-0' }} ms output audio</span>
+              }
+              @if (row.textUsage.inputChars !== null) {
+                <span class="metric-pill metric-live-input">{{ row.textUsage.inputChars | number }} input chars</span>
+              }
+              @if (row.textUsage.outputChars !== null) {
+                <span class="metric-pill metric-visible-output">{{ row.textUsage.outputChars | number }} output chars</span>
+              }
+              @if (row.cacheUsage.llmCallsSaved > 0) {
+                <span class="metric-pill metric-cache-saved">{{ row.cacheUsage.llmCallsSaved | number }} llm saved</span>
+              }
+              @if (row.cacheUsage.llmCallsAdded > 0) {
+                <span class="metric-pill metric-thinking-output">{{ row.cacheUsage.llmCallsAdded | number }} extra llm</span>
+              }
             </div>
 
             <span class="recent-time">{{ row.timestamp | date:'medium' }}</span>

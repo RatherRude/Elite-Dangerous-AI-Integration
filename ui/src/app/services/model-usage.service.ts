@@ -15,6 +15,8 @@ export interface ModelUsageWindowQuery {
     to?: string | null;
 }
 
+export type UsageKind = "llm" | "stt" | "tts";
+
 interface PersistedModelUsageRow {
     id: number;
     timestamp: string;
@@ -52,6 +54,27 @@ export interface TokenUsageBreakdown {
     visibleOutputTokens: number;
 }
 
+export interface LatencyUsageBreakdown {
+    responseMs: number | null;
+    timeToFirstTokenMs: number | null;
+    timeToFirstByteMs: number | null;
+}
+
+export interface AudioUsageBreakdown {
+    inputAudioDurationMs: number | null;
+    outputAudioDurationMs: number | null;
+}
+
+export interface TextUsageBreakdown {
+    inputChars: number | null;
+    outputChars: number | null;
+}
+
+export interface CacheUsageBreakdown {
+    llmCallsSaved: number;
+    llmCallsAdded: number;
+}
+
 export interface ModelUsageRecord {
     id: number;
     timestamp: string;
@@ -63,6 +86,10 @@ export interface ModelUsageRecord {
     modelName: string;
     tokenUsage: TokenUsageBreakdown;
     promptUsage: PromptUsageBreakdown;
+    latencyUsage: LatencyUsageBreakdown;
+    audioUsage: AudioUsageBreakdown;
+    textUsage: TextUsageBreakdown;
+    cacheUsage: CacheUsageBreakdown;
     raw: Record<string, unknown>;
 }
 
@@ -124,7 +151,7 @@ export class ModelUsageService implements OnDestroy {
             return cached;
         }
 
-        const usageKind = query.usageKind ?? "llm";
+        const usageKind = query.usageKind;
         const allRows: ModelUsageRecord[] = [];
         const limit = 1000;
         let offset = 0;
@@ -162,7 +189,7 @@ export class ModelUsageService implements OnDestroy {
 
     private getCacheKey(query: ModelUsageWindowQuery): string {
         return JSON.stringify({
-            usageKind: query.usageKind ?? "llm",
+            usageKind: query.usageKind ?? null,
             from: query.from ?? null,
             to: query.to ?? null,
         });
@@ -220,10 +247,55 @@ export class ModelUsageService implements OnDestroy {
         };
     }
 
+    private buildLatencyUsage(
+        latencyUsage: Record<string, unknown>,
+    ): LatencyUsageBreakdown {
+        return {
+            responseMs: this.toNullableNumber(latencyUsage["response_ms"]),
+            timeToFirstTokenMs: this.toNullableNumber(
+                latencyUsage["time_to_first_token_ms"],
+            ),
+            timeToFirstByteMs: this.toNullableNumber(
+                latencyUsage["time_to_first_byte_ms"],
+            ),
+        };
+    }
+
+    private buildAudioUsage(audioUsage: Record<string, unknown>): AudioUsageBreakdown {
+        return {
+            inputAudioDurationMs: this.toNullableNumber(
+                audioUsage["input_audio_duration_ms"],
+            ),
+            outputAudioDurationMs: this.toNullableNumber(
+                audioUsage["output_audio_duration_ms"],
+            ),
+        };
+    }
+
+    private buildTextUsage(textUsage: Record<string, unknown>): TextUsageBreakdown {
+        return {
+            inputChars: this.toNullableNumber(textUsage["input_chars"]),
+            outputChars: this.toNullableNumber(textUsage["output_chars"]),
+        };
+    }
+
+    private buildCacheUsage(
+        cacheUsage: Record<string, unknown>,
+    ): CacheUsageBreakdown {
+        return {
+            llmCallsSaved: this.toNumber(cacheUsage["llm_calls_saved"]),
+            llmCallsAdded: this.toNumber(cacheUsage["llm_calls_added"]),
+        };
+    }
+
     private normalizeRow(row: PersistedModelUsageRow): ModelUsageRecord {
         const payload = this.asObject(row.payload);
         const modelUsage = this.asObject(payload["model_usage"]);
         const promptUsage = this.asObject(payload["prompt_usage"]);
+        const latencyUsage = this.asObject(payload["latency_usage"]);
+        const audioUsage = this.asObject(payload["audio_usage"]);
+        const textUsage = this.asObject(payload["text_usage"]);
+        const cacheUsage = this.asObject(payload["cache_usage"]);
 
         const normalizedPromptUsage: PromptUsageBreakdown = {
             systemChars: this.toNumber(promptUsage["system_chars"]),
@@ -265,6 +337,10 @@ export class ModelUsageService implements OnDestroy {
             ),
             tokenUsage: this.buildTokenUsage(modelUsage),
             promptUsage: normalizedPromptUsage,
+            latencyUsage: this.buildLatencyUsage(latencyUsage),
+            audioUsage: this.buildAudioUsage(audioUsage),
+            textUsage: this.buildTextUsage(textUsage),
+            cacheUsage: this.buildCacheUsage(cacheUsage),
             raw: payload,
         };
     }
@@ -278,6 +354,10 @@ export class ModelUsageService implements OnDestroy {
 
     private toNumber(value: unknown): number {
         return typeof value === "number" && Number.isFinite(value) ? value : 0;
+    }
+
+    private toNullableNumber(value: unknown): number | null {
+        return typeof value === "number" && Number.isFinite(value) ? value : null;
     }
 
     private toString(value: unknown, fallback: string): string {

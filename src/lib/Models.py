@@ -52,6 +52,116 @@ def _model_dump_compatible(value: Any) -> Any:
         return value.dict()
     return value
 
+
+def _infer_schema_type(schema: dict[str, Any]) -> str | None:
+    schema_type = schema.get("type")
+    if isinstance(schema_type, str) and schema_type:
+        return schema_type
+
+    if isinstance(schema_type, list):
+        for item in schema_type:
+            if isinstance(item, str) and item and item != "null":
+                return item
+
+    for union_key in ("anyOf", "oneOf", "allOf"):
+        options = schema.get(union_key)
+        if not isinstance(options, list):
+            continue
+
+        for option in options:
+            option_schema = _model_dump_compatible(option)
+            if not isinstance(option_schema, dict):
+                continue
+
+            inferred = _infer_schema_type(option_schema)
+            if inferred and inferred != "null":
+                return inferred
+
+    properties = schema.get("properties")
+    if isinstance(properties, dict):
+        return "object"
+
+    if "items" in schema:
+        return "array"
+
+    enum_values = schema.get("enum")
+    if isinstance(enum_values, list):
+        for value in enum_values:
+            if value is None:
+                continue
+            if isinstance(value, bool):
+                return "boolean"
+            if isinstance(value, int) and not isinstance(value, bool):
+                return "integer"
+            if isinstance(value, float):
+                return "number"
+            if isinstance(value, str):
+                return "string"
+
+    default_value = schema.get("default")
+    if default_value is not None:
+        if isinstance(default_value, bool):
+            return "boolean"
+        if isinstance(default_value, int) and not isinstance(default_value, bool):
+            return "integer"
+        if isinstance(default_value, float):
+            return "number"
+        if isinstance(default_value, str):
+            return "string"
+        if isinstance(default_value, list):
+            return "array"
+        if isinstance(default_value, dict):
+            return "object"
+
+    if any(key in schema for key in ("minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum")):
+        return "number"
+
+    return None
+
+
+def _normalize_tool_schema(schema: Any) -> Any:
+    schema = _model_dump_compatible(schema)
+
+    if isinstance(schema, list):
+        return [_normalize_tool_schema(item) for item in schema]
+
+    if not isinstance(schema, dict):
+        return schema
+
+    normalized = {key: _normalize_tool_schema(value) for key, value in schema.items()}
+
+    inferred_type = _infer_schema_type(normalized)
+    if inferred_type:
+        normalized["type"] = inferred_type
+
+    properties = normalized.get("properties")
+    if isinstance(properties, dict):
+        for value in properties.values():
+            if isinstance(value, dict):
+                value.setdefault("description", "")
+                child_type = _infer_schema_type(value)
+                if child_type:
+                    value["type"] = child_type
+
+    items = normalized.get("items")
+    if isinstance(items, dict):
+        items.setdefault("description", "")
+        item_type = _infer_schema_type(items)
+        if item_type:
+            items["type"] = item_type
+
+    return normalized
+
+
+def _normalize_tools_for_chat_template(tools: list[dict]) -> list[dict[str, Any]]:
+    normalized_tools: list[dict[str, Any]] = []
+    for tool in tools:
+        normalized_tool = _model_dump_compatible(tool)
+        if not isinstance(normalized_tool, dict):
+            continue
+        normalized_tools.append(_normalize_tool_schema(normalized_tool))
+    return normalized_tools
+
 def _get_reasoning_tokens(usage: Any) -> int | None:
     for details_name in ("output_tokens_details", "completion_tokens_details"):
         details = getattr(usage, details_name, None)
@@ -102,6 +212,7 @@ class OpenAILLMModel(LLMModel):
         self.extra_headers = extra_headers or {}
 
     def generate(self, messages: List[dict], tools: Optional[List[dict]] = None, tool_choice: Optional[Any] = None) -> tuple[str | None, List[Any] | None, ModelUsageStats]:
+        started_at = time()
         kwargs = {}
         # Special handling for specific models or providers if needed
         if self.model_name in ['gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-5.1']:
@@ -134,7 +245,10 @@ class OpenAILLMModel(LLMModel):
             **kwargs
         }
         if tools:
-            params["tools"] = tools
+            # LM Studio's embedded FunctionGemma template expects every schema node
+            # to have a direct scalar `type`. Normalize tool schemas defensively so
+            # optional or partially-specified fields do not crash prompt rendering.
+            params["tools"] = _normalize_tools_for_chat_template(tools)
             if tool_choice:
                 params["tool_choice"] = tool_choice
         
@@ -169,13 +283,33 @@ class OpenAILLMModel(LLMModel):
         
         if not completion.choices:
             log("debug", "LLM completion has no choices:", completion)
-            return (None, None, ModelUsageStats(provider=self.provider_name, model_name=self.model_name)) # Treated as "..."
+            return (
+                None,
+                None,
+                ModelUsageStats(
+                    provider=self.provider_name,
+                    model_name=self.model_name,
+                    response_ms=(time() - started_at) * 1000,
+                ),
+            ) # Treated as "..."
 
         if not hasattr(completion.choices[0], 'message') or not completion.choices[0].message:
             log("debug", "LLM completion choice has no message:", completion)
-            return (None, None, ModelUsageStats(provider=self.provider_name, model_name=self.model_name)) # Treated as "..."
-        
-        usage_metadata = ModelUsageStats(provider=self.provider_name, model_name=self.model_name)
+            return (
+                None,
+                None,
+                ModelUsageStats(
+                    provider=self.provider_name,
+                    model_name=self.model_name,
+                    response_ms=(time() - started_at) * 1000,
+                ),
+            ) # Treated as "..."
+
+        usage_metadata = ModelUsageStats(
+            provider=self.provider_name,
+            model_name=self.model_name,
+            response_ms=(time() - started_at) * 1000,
+        )
         if hasattr(completion, 'usage') and completion.usage:
             log("debug", f'LLM completion usage', completion.usage)
             usage_metadata.input_tokens = completion.usage.prompt_tokens
@@ -201,6 +335,9 @@ class OpenAILLMModel(LLMModel):
 
         if response_text is None and response_actions is None:
              return (None, None, usage_metadata)
+
+        if response_text is not None:
+            usage_metadata.output_chars = len(response_text)
 
         return (response_text, response_actions, usage_metadata)
 
@@ -361,7 +498,7 @@ class OpenAIResponsesLLMModel(LLMModel):
     def _convert_tools(self, tools: List[dict]) -> list[dict[str, Any]]:
         converted_tools: list[dict[str, Any]] = []
 
-        for raw_tool in tools:
+        for raw_tool in _normalize_tools_for_chat_template(tools):
             tool = _model_dump_compatible(raw_tool)
             if not isinstance(tool, dict):
                 continue
@@ -420,6 +557,7 @@ class OpenAIResponsesLLMModel(LLMModel):
         return tool_calls or None
 
     def generate(self, messages: List[dict], tools: Optional[List[dict]] = None, tool_choice: Optional[Any] = None) -> tuple[str | None, List[Any] | None, ModelUsageStats]:
+        started_at = time()
         params: dict[str, Any] = {
             "model": self.model_name,
             "input": self._convert_messages(messages),
@@ -463,7 +601,11 @@ class OpenAIResponsesLLMModel(LLMModel):
             log("debug", "LLM response error:", response)
             raise LLMError("LLM error: No valid response received")
 
-        usage_metadata = ModelUsageStats(provider=self.provider_name, model_name=self.model_name)
+        usage_metadata = ModelUsageStats(
+            provider=self.provider_name,
+            model_name=self.model_name,
+            response_ms=(time() - started_at) * 1000,
+        )
         if hasattr(response, 'usage') and response.usage:
             log("debug", "LLM response usage", response.usage)
             usage_metadata.input_tokens = getattr(response.usage, "input_tokens", 0)
@@ -478,6 +620,9 @@ class OpenAIResponsesLLMModel(LLMModel):
 
         if response_text is None and response_actions is None:
             return (None, None, usage_metadata)
+
+        if response_text is not None:
+            usage_metadata.output_chars = len(response_text)
 
         return (response_text, response_actions, usage_metadata)
 
@@ -509,17 +654,19 @@ class OpenAIEmbeddingModel(EmbeddingModel):
 
 class STTModel(ABC):
     model_name: str
+    provider_name: str | None
 
-    def __init__(self, model_name: str):
+    def __init__(self, model_name: str, provider_name: str | None = None):
         self.model_name = model_name
+        self.provider_name = provider_name
 
     @abstractmethod
     def transcribe(self, audio: sr.AudioData) -> str:
         pass
 
 class OpenAISTTModel(STTModel):
-    def __init__(self, base_url: str, api_key: str, model_name: str, language: Optional[str] = None, prompt: Optional[str] = None):
-        super().__init__(model_name)
+    def __init__(self, base_url: str, api_key: str, model_name: str, language: Optional[str] = None, prompt: Optional[str] = None, provider_name: str | None = None):
+        super().__init__(model_name, provider_name=provider_name)
         self.client = OpenAI(base_url=base_url, api_key=api_key)
         self.language = language
         self.prompt = prompt
@@ -563,8 +710,8 @@ class OpenAISTTModel(STTModel):
         return text
 
 class OpenAIMultiModalSTTModel(STTModel):
-    def __init__(self, base_url: str, api_key: str, model_name: str, prompt: Optional[str] = None):
-        super().__init__(model_name)
+    def __init__(self, base_url: str, api_key: str, model_name: str, prompt: Optional[str] = None, provider_name: str | None = None):
+        super().__init__(model_name, provider_name=provider_name)
         self.client = OpenAI(base_url=base_url, api_key=api_key)
         self.prompt = prompt
 
@@ -686,17 +833,19 @@ class Mp3Stream(miniaudio.StreamableSource):
 
 class TTSModel(ABC):
     model_name: str
+    provider_name: str | None
 
-    def __init__(self, model_name: str):
+    def __init__(self, model_name: str, provider_name: str | None = None):
         self.model_name = model_name
+        self.provider_name = provider_name
 
     @abstractmethod
     def synthesize(self, text: str, voice: str) -> Iterable[bytes]:
         pass
 
 class OpenAITTSModel(TTSModel):
-    def __init__(self, base_url: str, api_key: str, model_name: str, speed: float = 1.0, voice_instructions: str | None = None):
-        super().__init__(model_name)
+    def __init__(self, base_url: str, api_key: str, model_name: str, speed: float = 1.0, voice_instructions: str | None = None, provider_name: str | None = None):
+        super().__init__(model_name, provider_name=provider_name)
         self.client = OpenAI(base_url=base_url, api_key=api_key)
         self.speed = speed
         self.voice_instructions = voice_instructions
@@ -729,8 +878,8 @@ class OpenAITTSModel(TTSModel):
             raise LLMError(f'TTS {e.response.reason_phrase}: {message}', e)
 
 class EdgeTTSModel(TTSModel):
-    def __init__(self, model_name: str, speed: float = 1.0):
-        super().__init__(model_name)
+    def __init__(self, model_name: str, speed: float = 1.0, provider_name: str | None = None):
+        super().__init__(model_name, provider_name=provider_name)
         self.speed = speed
         self.prebuffer_size = 4
 
@@ -830,12 +979,25 @@ def create_stt_model(provider: str, config: dict, prefix: str = "stt") -> STTMod
     if provider == "openai" or provider == "custom" or provider == "local-ai-server":
         if provider == "openai" and not base_url:
             base_url = "https://api.openai.com/v1"
-        return OpenAISTTModel(base_url, api_key, model_name, language, prompt)
-    
+        return OpenAISTTModel(
+            base_url,
+            api_key,
+            model_name,
+            language,
+            prompt,
+            provider_name=provider,
+        )
+
     elif provider == "google-ai-studio" or provider == "custom-multi-modal":
         if provider == "google-ai-studio" and not base_url:
             base_url = "https://generativelanguage.googleapis.com/v1beta"
-        return OpenAIMultiModalSTTModel(base_url, api_key, model_name, prompt)
+        return OpenAIMultiModalSTTModel(
+            base_url,
+            api_key,
+            model_name,
+            prompt,
+            provider_name=provider,
+        )
     
     return None
 
@@ -852,9 +1014,16 @@ def create_tts_model(provider: str, config: dict, prefix: str = "tts") -> TTSMod
     if provider == "openai" or provider == "custom" or provider == "local-ai-server":
         if provider == "openai" and not base_url:
             base_url = "https://api.openai.com/v1"
-        return OpenAITTSModel(base_url, api_key, model_name, speed, voice_instructions)
-    
+        return OpenAITTSModel(
+            base_url,
+            api_key,
+            model_name,
+            speed,
+            voice_instructions,
+            provider_name=provider,
+        )
+
     elif provider == "edge-tts":
-        return EdgeTTSModel(model_name, speed)
+        return EdgeTTSModel(model_name, speed, provider_name=provider)
     
     return None
