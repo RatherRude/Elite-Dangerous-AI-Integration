@@ -130,6 +130,11 @@ function clamp(value, min, max) {
 }
 
 function normalizeOverlayOptions(opts = {}) {
+  const mode = opts.mode === 'screen'
+    ? 'desktop'
+    : ['disabled', 'desktop', 'vr', 'both'].includes(opts.mode)
+      ? opts.mode
+      : 'desktop';
   const vrHorizontalOffset = Number.isFinite(opts.vrHorizontalOffset)
     ? clamp(opts.vrHorizontalOffset, -2.0, 2.0)
     : 0;
@@ -140,7 +145,7 @@ function normalizeOverlayOptions(opts = {}) {
     ? clamp(opts.vrDistanceOffset, -0.75, 1.5)
     : 0;
   const vrTiltDegrees = Number.isFinite(opts.vrTiltDegrees)
-    ? clamp(opts.vrTiltDegrees, -45, 45)
+    ? clamp(opts.vrTiltDegrees, -90, 90)
     : 0;
   const vrCurvature = Number.isFinite(opts.vrCurvature)
     ? clamp(opts.vrCurvature, 0, 0.5)
@@ -149,7 +154,7 @@ function normalizeOverlayOptions(opts = {}) {
   return {
     alwaysOnTop: Boolean(opts.alwaysOnTop),
     screenId: Number.isInteger(opts.screenId) ? opts.screenId : -1,
-    mode: opts.mode === 'vr' ? 'vr' : 'screen',
+    mode,
     vrSizeMeters: Number.isFinite(opts.vrSizeMeters) && opts.vrSizeMeters > 0
       ? opts.vrSizeMeters
       : 0.9,
@@ -159,7 +164,6 @@ function normalizeOverlayOptions(opts = {}) {
     vrDistanceOffset,
     vrTiltDegrees,
     vrCurvature,
-    vrStreamerMode: Boolean(opts.vrStreamerMode),
   };
 }
 
@@ -594,28 +598,6 @@ function createFloatingOverlayWindow(opts) {
   return overlayWindow;
 }
 
-async function createStreamerOverlayWindow() {
-  const overlayWindow = new BrowserWindow({
-    width: 1280,
-    height: 720,
-    title: `${overlayWindowTitle} Streamer`,
-    frame: false,
-    transparent: true,
-    backgroundColor: '#00000000',
-    resizable: true,
-    show: false,
-    webPreferences: {
-      preload: overlayPreloadPath,
-    },
-  });
-
-  overlayWindow.setMenuBarVisibility(false);
-  await overlayWindow.loadURL(getOverlayUrl({ streamer: 1 }));
-  overlayWindow.show();
-
-  return overlayWindow;
-}
-
 async function createVrOverlayWindow(opts) {
   const runtimeInfo = VROverlay.getRuntimeInfo();
   if (!VROverlay.isAvailable(runtimeInfo)) {
@@ -671,14 +653,30 @@ async function createVrOverlayWindow(opts) {
 
 async function createManagedOverlay(opts) {
   const normalized = normalizeOverlayOptions(opts);
+  if (normalized.mode === 'disabled') {
+    return {
+      kind: 'disabled',
+      window: null,
+      windows: [],
+      controller: null,
+      runtimeInfo: null,
+      cleanedUp: false,
+    };
+  }
   if (normalized.mode === 'vr') {
-    const overlay = await createVrOverlayWindow(normalized);
-    if (normalized.vrStreamerMode) {
-      const streamerWindow = await createStreamerOverlayWindow();
-      overlay.streamerWindow = streamerWindow;
-      overlay.windows = [overlay.window, streamerWindow];
-    }
-    return overlay;
+    return await createVrOverlayWindow(normalized);
+  }
+  if (normalized.mode === 'both') {
+    const vrOverlay = await createVrOverlayWindow(normalized);
+    const desktopWindow = createFloatingOverlayWindow(normalized);
+    return {
+      kind: 'both',
+      window: desktopWindow,
+      windows: [desktopWindow, vrOverlay.window],
+      controller: vrOverlay.controller,
+      runtimeInfo: vrOverlay.runtimeInfo,
+      cleanedUp: false,
+    };
   }
   const overlayWindow = createFloatingOverlayWindow(normalized);
   return {

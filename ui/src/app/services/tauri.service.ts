@@ -43,7 +43,7 @@ export interface BaseMessage {
 export interface OverlayCreateOptions {
     alwaysOnTop: boolean;
     screenId?: number;
-    mode?: "screen" | "vr";
+    mode?: "disabled" | "desktop" | "vr" | "both";
     vrSizeMeters?: number;
     vrAnchor?: "head" | "world";
     vrHorizontalOffset?: number;
@@ -51,7 +51,6 @@ export interface OverlayCreateOptions {
     vrDistanceOffset?: number;
     vrTiltDegrees?: number;
     vrCurvature?: number;
-    vrStreamerMode?: boolean;
 }
 
 export interface OverlayRuntimeInfo {

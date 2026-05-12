@@ -165,7 +165,7 @@ export interface Config {
     overlay_show_avatar: boolean;
     overlay_show_hud: boolean;
     overlay_show_chat: boolean;
-    overlay_mode: "screen" | "vr";
+    overlay_mode: "disabled" | "desktop" | "vr" | "both";
     overlay_position: "left" | "right" | "left-medium" | "left-small" | "right-medium" | "right-small";
     overlay_screen_id: number;
     overlay_vr_size_meters: number;
@@ -175,7 +175,6 @@ export interface Config {
     overlay_vr_distance_offset: number;
     overlay_vr_tilt_degrees: number;
     overlay_vr_curvature: number;
-    overlay_vr_streamer_mode: boolean;
 
     enable_remote_tracing?: boolean;
 
