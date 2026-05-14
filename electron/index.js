@@ -330,11 +330,23 @@ class BackendService {
     return Boolean(this.#currentProcess && this.#currentProcess.exitCode === null && this.#currentProcess.signalCode === null);
   }
   sendJsonLine(event, {jsonLine}) {
-    if (!this.#hasActiveProcess()) {
+    const childProcess = this.#currentProcess;
+    if (!this.#hasActiveProcess() || !childProcess?.stdin?.writable) {
       throw new Error('No active process to send JSON line to');
     }
     logger.info('[stdin]', jsonLine);
-    this.#currentProcess.stdin.write(jsonLine + '\n');
+    try {
+      const written = childProcess.stdin.write(jsonLine + '\n');
+      if (!written && childProcess.stdin.destroyed) {
+        throw new Error('Backend stdin is closed');
+      }
+    } catch (error) {
+      logger.warn('Failed to write to backend stdin:', error);
+      if (this.#currentProcess === childProcess) {
+        this.#currentProcess = null;
+      }
+      throw new Error('Backend process is no longer accepting input');
+    }
     return true;
   }
   attachWindow(subWindow) {
@@ -413,6 +425,10 @@ class BackendService {
         code,
         signal,
       });
+    });
+
+    childProcess.stdin.once('error', (error) => {
+      logger.warn('Backend stdin failed:', error);
     });
 
     childProcess.stdout.setEncoding('utf8');

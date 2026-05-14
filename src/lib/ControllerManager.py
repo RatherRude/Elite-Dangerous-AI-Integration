@@ -95,6 +95,7 @@ class ControllerManager:
         if self.joystick_hotkeys_supported:
             for _event in pygame.event.get():
                 pass
+        self._prepare_macos_accessibility_check()
 
         def on_key_press(key):
             on_press(str(key))
@@ -137,6 +138,16 @@ class ControllerManager:
             self.joystick_listener_running = True
             self.joystick_listener = threading.Thread(target=capture_event, daemon=True)
             self.joystick_listener.start()
+
+    def _prepare_macos_accessibility_check(self):
+        if platform.system() != "Darwin":
+            return
+
+        try:
+            import HIServices
+            getattr(HIServices, "AXIsProcessTrusted")
+        except Exception as e:
+            logger.warning(f"Unable to prepare macOS accessibility check: {e}")
 
     def _stop_listeners(self):
         # Stop existing listeners
