@@ -3,6 +3,8 @@
     <app-gen-ui-render></app-gen-ui-render>
 </div>
 
+<div class="streamer-window-drag" *ngIf="isStreamerWindow"></div>
+
 <!-- Avatar and Chat Overlay Layer -->
 <div class="overlay-container" 
      [class.position-left]="avatarPosition === 'left'" 

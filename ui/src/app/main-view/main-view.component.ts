@@ -232,7 +232,11 @@ export class MainViewComponent implements OnInit, OnDestroy {
 
     async start(): Promise<void> {
         try {
-            if(this.config && (this.config.overlay_show_avatar || this.config.overlay_show_chat || this.config.overlay_show_hud)) {
+            if(
+                this.config
+                && this.config.overlay_mode !== "disabled"
+                && (this.config.overlay_show_avatar || this.config.overlay_show_chat || this.config.overlay_show_hud)
+            ) {
                 await this.createOverlay();
             }
 
@@ -257,14 +261,23 @@ export class MainViewComponent implements OnInit, OnDestroy {
 
     async createOverlay(): Promise<void> {
         try {
+            if (this.config?.overlay_mode === "disabled") {
+                return;
+            }
+
             const screenId = this.config?.overlay_screen_id ?? -1; // -1 for primary screen
 
             await this.tauri.createOverlay({
                 alwaysOnTop: true,
                 screenId: screenId,
-                mode: this.config?.overlay_mode ?? "screen",
+                mode: this.config?.overlay_mode ?? "desktop",
                 vrSizeMeters: this.config?.overlay_vr_size_meters ?? 0.9,
                 vrAnchor: this.config?.overlay_vr_anchor ?? "head",
+                vrHorizontalOffset: this.config?.overlay_vr_horizontal_offset ?? 0,
+                vrVerticalOffset: this.config?.overlay_vr_vertical_offset ?? 0,
+                vrDistanceOffset: this.config?.overlay_vr_distance_offset ?? 0,
+                vrTiltDegrees: this.config?.overlay_vr_tilt_degrees ?? 0,
+                vrCurvature: this.config?.overlay_vr_curvature ?? 0,
             });
         } catch (error) {
             console.error("Failed to create overlay:", error);

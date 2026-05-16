@@ -209,6 +209,11 @@ export class GeneralSettingsComponent implements OnDestroy {
         return `VR ready via ${info.selectedBackend}${runtimePath}.`;
     }
 
+    get overlayRuntimeReady(): boolean {
+        const info = this.overlayRuntimeInfo;
+        return !!info?.packageInstalled && info.available;
+    }
+
     private async loadOverlayRuntimeInfo(): Promise<void> {
         try {
             this.overlayRuntimeInfo = await this.tauriService.getOverlayRuntimeInfo();

@@ -29,6 +29,18 @@
   pointer-events: auto;
 }
 
+.streamer-window-drag {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  box-sizing: border-box;
+  height: 32px;
+  user-select: none;
+  -webkit-app-region: drag;
+}
+
 .overlay-container {
   position: relative;
   z-index: 1;
