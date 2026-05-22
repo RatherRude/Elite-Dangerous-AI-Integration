@@ -117,6 +117,11 @@ def web_search_agent(
     if not query:
         return "Please provide a query for the web search."
 
+    yield {
+        "status": "searching",
+        "query": query,
+    }
+
     # These are the tools the agent can use.
     # The functions are defined later in this file.
     tools = [
@@ -369,13 +374,15 @@ def web_search_agent(
     ]
 
     for iter in range(max_loops):
+        phase = "requesting the search agent model response"
+        function_name = None
         try:
             if iter == max_loops - 1:
                 messages.append({
                     "role": "user",
                     "content": "Maximum number of iterations reached. Please provide the best possible answer based on the information gathered so far."
                 })
-                
+
             response_text, tool_calls, model_usage = llm_model.generate(
                 messages=messages,
                 tools=tools if iter < max_loops - 1 else [],
@@ -397,12 +404,30 @@ def web_search_agent(
                 })
                 for tool_call in tool_calls:
                     function_name = tool_call.function.name
+                    phase = f"running internal tool '{function_name}'"
+                    function_args_error = None
+                    try:
+                        function_args = json.loads(tool_call.function.arguments)
+                    except Exception as e:
+                        function_args_error = e
+                        function_args = {}
+                    yield {
+                        "status": "started",
+                        "query": query,
+                        "iteration": iter + 1,
+                        "internal_tool_call_id": tool_call.id,
+                        "internal_tool_name": function_name,
+                        "arguments": function_args,
+                    }
                     function_to_call = available_functions.get(function_name)
                     if not function_to_call:
                         function_response = f"Error: function {function_name} does not exist."
+                    elif function_args_error:
+                        log('error', f"Error parsing function arguments for {function_name}: {function_args_error}")
+                        print(function_name, "error:", function_args_error, file=sys.stderr, flush=True)
+                        function_response = f"Error executing function {function_name}: {function_args_error}"
                     else:
                         try:
-                            function_args = json.loads(tool_call.function.arguments)
                             print(function_name, "request:", function_args, file=sys.stderr, flush=True)
                             # All tool functions expect (obj, projected_states)
                             function_response = function_to_call(function_args, projected_states)
@@ -412,6 +437,16 @@ def web_search_agent(
                             function_response = f"Error executing function {function_name}: {e}"
 
                     print(function_name, "result:", str(function_response), file=sys.stderr, flush=True)
+                    function_response_text = str(function_response)
+                    result_preview = function_response_text[:2000] + "..." if len(function_response_text) > 2000 else function_response_text
+                    yield {
+                        "status": "completed",
+                        "query": query,
+                        "iteration": iter + 1,
+                        "internal_tool_call_id": tool_call.id,
+                        "internal_tool_name": function_name,
+                        "result": result_preview,
+                    }
                     messages.append(
                         {
                             "tool_call_id": tool_call.id,
@@ -426,12 +461,17 @@ def web_search_agent(
 
         except Exception as e:
             log('error', f"An error occurred in the agentic loop: {e}", traceback.format_exc())
-            return "Sorry, an error occurred while processing your request."
+            error_type = type(e).__name__
+            return (
+                "Web search failed while "
+                f"{phase} on iteration {iter + 1} for query '{query}'. "
+                f"{error_type}: {e}"
+            )
 
     return "The request could not be completed within the allowed number of steps."
 
 def web_search(obj, projected_states):
-    res = web_search_agent(
+    res = yield from web_search_agent(
         obj,
         projected_states,
         prompt_generator=prompt_generator,

@@ -3,5 +3,8 @@
     <span class="timestamp">{{ msg.timestamp | date:'HH:mm:ss' }}</span>
     <span class="prefix" [style.color]="msg.display_color || getLogColor(msg.role)">{{ msg.display_name || msg.role }}</span>
     <span class="message">{{ formatMessage(msg) }}</span>
+    @if (msg.processingText) {
+      <span class="processing-text">{{ msg.processingText }}</span>
+    }
   </div>
 }

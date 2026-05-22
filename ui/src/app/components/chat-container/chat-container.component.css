@@ -18,6 +18,15 @@
   color: #e0e0e0;
 }
 
+.processing-text {
+  display: inline-block;
+  margin-left: 10px;
+  padding-left: 10px;
+  color: #ffcc80;
+  border-left: 1px solid rgba(255, 152, 0, 0.45);
+  opacity: 0.9;
+}
+
 /* Event status styling */
 .event-disabled {
   /*opacity: 0.4;*/
