@@ -119,6 +119,24 @@ def test_event_store_get_latest(event_store: EventStore) -> None:
     assert events[0].value == 4  # Latest event first
     assert events[2].value == 2
 
+def test_event_store_get_latest_skips_unknown_classes(event_store: EventStore, mock_connection: sqlite3.Connection) -> None:
+    """Test stale persisted events from removed classes do not crash history loading."""
+    event_store.delete_all()
+
+    event_store.insert_event(SampleEvent1(name="known", value=1), 1.0)
+    cursor = mock_connection.cursor()
+    cursor.execute('''
+        INSERT INTO test_events_v1 (class, data, processed_at, memorized_at, responded_at)
+        VALUES (?, ?, ?, ?, ?)
+    ''', ("RemovedEvent", '{"name": "stale"}', 2.0, None, None))
+    mock_connection.commit()
+
+    events = event_store.get_latest()
+
+    assert len(events) == 1
+    assert isinstance(events[0], SampleEvent1)
+    assert events[0].name == "known"
+
 def test_event_store_delete_all(event_store: EventStore) -> None:
     """Test deleting all events"""
     event = SampleEvent1(name="test", value=42)
