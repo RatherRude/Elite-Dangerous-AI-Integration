@@ -6,7 +6,7 @@ import {
     MatDialogRef,
 } from "@angular/material/dialog";
 import { MatButtonModule } from "@angular/material/button";
-import { PluginUpdateInfo } from "../../services/plugin-update.service";
+import { PluginUpdateInfo } from "../../services/plugin-manager.service";
 
 export interface PluginUpdateDialogData {
     plugin_updates: PluginUpdateInfo[];

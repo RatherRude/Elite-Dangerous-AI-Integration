@@ -1,3 +1,5 @@
+from abc import ABC
+from dataclasses import dataclass
 import json
 import os
 from typing import Any, Callable, TypedDict, cast
@@ -14,14 +16,25 @@ from .Event import Event
 from .PromptGenerator import PromptGenerator
 from .Assistant import Assistant
 
-class PluginSource(object):
-    type: str = ""
+@dataclass
+class GitHubPluginSource(object):
+    type: str = "github"
     repo: str = ""
     asset_name: str = ""
 
     def __init__(self, j: str) -> None:
         self.__dict__.update(cast(dict[str, str], json.loads(j)))
 
+@dataclass
+class UrlPluginSource(object):
+    type: str = "url"
+    download_url: str = ""
+    latest_manifest_url: str = ""
+
+    def __init__(self, j: str) -> None:
+        self.__dict__.update(cast(dict[str, str], json.loads(j)))
+
+@dataclass
 class PluginManifest(object):
     guid: str = ""
     name: str = ""
@@ -30,7 +43,7 @@ class PluginManifest(object):
     repository: str = ""
     description: str = ""
     entrypoint: str = ""
-    source: PluginSource | None = None
+    source: GitHubPluginSource | UrlPluginSource | None = None
 
     def __init__(self, j: str) -> None:
         self.__dict__.update(cast(dict[str, str], json.loads(j)))

@@ -23,6 +23,10 @@
           <mat-icon>play_arrow</mat-icon>
           Start AI Assistant
         </button>
+        <button mat-raised-button (click)="manage_plugins()" [disabled]="isLoading || !usageDisclaimerAccepted">
+          <mat-icon>extension</mat-icon>
+          Manage Plugins
+        </button>
       }
     </div>
   } @else {

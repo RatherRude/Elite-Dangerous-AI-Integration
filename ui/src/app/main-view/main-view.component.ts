@@ -1,9 +1,9 @@
-import { Component, OnDestroy, OnInit } from "@angular/core";
+import { Component, OnDestroy, OnInit, NgZone } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { MatProgressBarModule } from "@angular/material/progress-bar";
-import { MatDialogModule } from "@angular/material/dialog";
+import { MatDialog, MatDialogModule } from "@angular/material/dialog";
 import { TauriService } from "../services/tauri.service";
 import { LoggingService } from "../services/logging.service";
 import { LogContainerComponent } from "../components/log-container/log-container.component";
@@ -18,7 +18,8 @@ import { ChatContainerComponent } from "../components/chat-container/chat-contai
 import { ProjectionsService } from "../services/projections.service";
 import { MetricsService } from "../services/metrics.service.js";
 import { PolicyService } from "../services/policy.service.js";
-import { PluginUpdateService } from "../services/plugin-update.service";
+import { PluginManagerService } from "../services/plugin-manager.service";
+import { PluginManagerDialogComponent, PluginManifest } from "../components/plugin-manager-dialog/plugin-manager-dialog.component";
 
 @Component({
     selector: "app-main-view",
@@ -45,8 +46,10 @@ export class MainViewComponent implements OnInit, OnDestroy {
     config: any;
     private configSubscription!: Subscription;
     private inDangerSubscription!: Subscription;
+    private installed_plugin_list_subscription!: Subscription;
     private hasAutoStarted = false;
     public usageDisclaimerAccepted = false;
+    private installed_plugins_list: PluginManifest[] = []
 
     constructor(
         private tauri: TauriService,
@@ -56,7 +59,9 @@ export class MainViewComponent implements OnInit, OnDestroy {
         private projectionsService: ProjectionsService,
         private metricsService: MetricsService,
         private policyService: PolicyService,
-        private plugin_update_service: PluginUpdateService,
+        private plugin_manager_service: PluginManagerService,
+        private ngZone: NgZone,
+        private dialog: MatDialog,
     ) {
         this.policyService.usageDisclaimerAccepted$.subscribe(
             (accepted) => {
@@ -77,6 +82,12 @@ export class MainViewComponent implements OnInit, OnDestroy {
                     this.start();
                     this.hasAutoStarted = true;
                 }
+            },
+        );
+
+        this.installed_plugin_list_subscription = this.plugin_manager_service.installed_plugin_list_message$.subscribe(
+            (installed_plugins_list_message) => {
+                this.installed_plugins_list = installed_plugins_list_message?.plugins || [];
             },
         );
 
@@ -111,6 +122,9 @@ export class MainViewComponent implements OnInit, OnDestroy {
         if (this.inDangerSubscription) {
             this.inDangerSubscription.unsubscribe();
         }
+        if (this.installed_plugin_list_subscription) {
+            this.installed_plugin_list_subscription.unsubscribe();
+        }
     }
 
     acceptUsageDisclaimer() {
@@ -129,6 +143,31 @@ export class MainViewComponent implements OnInit, OnDestroy {
         } catch (error) {
             console.error("Failed to start:", error);
         }
+    }
+
+    async manage_plugins(): Promise<void> {
+        this.ngZone.run(() => {
+            const dialogRef = this.dialog.open(PluginManagerDialogComponent, {
+                width: "400px",
+                data: { installed_plugins: this.installed_plugins_list },
+            });
+
+            dialogRef.afterClosed().subscribe((result) => {
+                if (result !== false) {
+                    this.send_new_plugin_list(result as PluginManifest[]).catch((err) => {
+                        console.error("Failed to send plugin isntall/remove command", err);
+                    });
+                }
+            });
+        });
+    }
+    
+    public async send_new_plugin_list(new_plugin_list: PluginManifest[]): Promise<void> {
+        await this.tauri.send_command({
+            type: "change_installed_plugins",
+            plugins: new_plugin_list,
+            timestamp: new Date().toISOString(),
+        });
     }
 
     async stop(): Promise<void> {

@@ -380,6 +380,10 @@ if __name__ == "__main__":
                 if data.get("type") == "clear_history":
                     EventManager.clear_history()
                     #ActionManager.clear_action_cache()
+                if data.get("type") == "update_plugins":
+                    plugin_manager.update_plugins()
+                if data.get("type") == "change_installed_plugins":
+                    plugin_manager.change_installed_plugins(data["plugins"])
                 
             except json.JSONDecodeError:
                 continue

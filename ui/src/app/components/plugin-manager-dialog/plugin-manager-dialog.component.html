@@ -1,0 +1,31 @@
+<h2 mat-dialog-title>Plugin Manager</h2>
+<mat-dialog-content>
+  <p>Here you can manage your installed plugins, and install new ones.</p>
+  <mat-grid-list cols="2">
+    <mat-grid-tile>
+      <p *ngIf="is_loading">Loading plugins...</p>
+      <p *ngIf="!is_loading && plugin_list.length === 0">No plugins installed and none were discovered from the repository.</p>
+      <<table mat-table [dataSource]="plugin_list" class="mat-elevation-z8" *ngIf="!is_loading && plugin_list.length > 0" (selectionChang)="onSelectedPluginChanged($event.options)" [multiple]="false" [hideSingleSelectionIndicator]="true">
+        @for (plugin of plugin_list; track plugin) {
+          <mat-list-option [value]="plugin"><mat-checkbox [checked]="plugin[0]" (change)="onPluginsChanged($event)" (click)="$event.stopPropagation()"></mat-checkbox> {{ plugin[1].name }}</mat-list-option>
+        }
+      </table>
+    </mat-grid-tile>
+    <mat-grid-tile>
+      <mat-card *ngIf="selected_plugin !== null">
+        <mat-card-header>
+          <mat-card-title>{{ selected_plugin[1].name }}</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <p><strong>Version:</strong> {{ selected_plugin[1].version }}</p>
+          <p><strong>Description:</strong> {{ selected_plugin[1].description }}</p>
+          <p><strong>Repository:</strong> <a [href]="selected_plugin[1].repository" target="_blank">{{ selected_plugin[1].repository }}</a></p>
+        </mat-card-content>
+      </mat-card>
+    </mat-grid-tile>
+  </mat-grid-list>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancelClick()">Cancel</button>
+  <button mat-raised-button color="primary" (click)="onInstallClick()" [disabled]="!is_modified">Install/Remove selected plugins</button>
+</mat-dialog-actions> 
