@@ -15,5 +15,13 @@
     "GTK_PATH": null,
     "GIO_MODULE_DIR": null,
   },
-  "rust-analyzer.linkedProjects": ["ui/src-tauri/Cargo.toml"]
+  "rust-analyzer.linkedProjects": [
+    "ui/src-tauri/Cargo.toml"
+  ],
+  "files.exclude": {
+    "**/*.rpyc": true,
+    "**/*.rpa": true,
+    "**/*.rpymc": true,
+    "**/cache/": true
+  }
 }

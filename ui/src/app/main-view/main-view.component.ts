@@ -148,14 +148,13 @@ export class MainViewComponent implements OnInit, OnDestroy {
     async manage_plugins(): Promise<void> {
         this.ngZone.run(() => {
             const dialogRef = this.dialog.open(PluginManagerDialogComponent, {
-                width: "400px",
                 data: { installed_plugins: this.installed_plugins_list },
             });
 
             dialogRef.afterClosed().subscribe((result) => {
                 if (result !== false) {
                     this.send_new_plugin_list(result as PluginManifest[]).catch((err) => {
-                        console.error("Failed to send plugin isntall/remove command", err);
+                        console.error("Failed to send plugin install/remove command", err);
                     });
                 }
             });

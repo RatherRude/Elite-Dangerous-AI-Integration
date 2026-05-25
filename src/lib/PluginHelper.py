@@ -2,7 +2,7 @@ from abc import ABC
 from dataclasses import dataclass
 import json
 import os
-from typing import Any, Callable, TypedDict, cast
+from typing import Any, Callable, Literal, TypedDict, cast
 import openai
 from openai.types.chat import ChatCompletionMessageParam
 from requests import auth
@@ -16,37 +16,25 @@ from .Event import Event
 from .PromptGenerator import PromptGenerator
 from .Assistant import Assistant
 
-@dataclass
-class GitHubPluginSource(object):
-    type: str = "github"
-    repo: str = ""
-    asset_name: str = ""
+class GitHubPluginSource(TypedDict):
+    type: Literal["github"]
+    repo: str
+    asset_name: str
 
-    def __init__(self, j: str) -> None:
-        self.__dict__.update(cast(dict[str, str], json.loads(j)))
+class UrlPluginSource(TypedDict):
+    type: Literal["url"]
+    download_url: str
+    latest_manifest_url: str
 
-@dataclass
-class UrlPluginSource(object):
-    type: str = "url"
-    download_url: str = ""
-    latest_manifest_url: str = ""
-
-    def __init__(self, j: str) -> None:
-        self.__dict__.update(cast(dict[str, str], json.loads(j)))
-
-@dataclass
-class PluginManifest(object):
-    guid: str = ""
-    name: str = ""
-    author: str = ""
-    version: str = ""
-    repository: str = ""
-    description: str = ""
-    entrypoint: str = ""
-    source: GitHubPluginSource | UrlPluginSource | None = None
-
-    def __init__(self, j: str) -> None:
-        self.__dict__.update(cast(dict[str, str], json.loads(j)))
+class PluginManifest(TypedDict):
+    guid: str
+    name: str
+    author: str
+    version: str
+    repository: str
+    description: str
+    entrypoint: str
+    source: GitHubPluginSource | UrlPluginSource | None
 
 class PluginHelper():
     """Contains all built-inservices and managers that can be used by plugins"""

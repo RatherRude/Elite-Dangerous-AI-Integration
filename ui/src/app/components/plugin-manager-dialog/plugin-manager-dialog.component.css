@@ -5,4 +5,21 @@ mat-dialog-content {
 
 p {
   margin: 8px 0;
-} 
+}
+
+mat-selection-list {
+  overflow-y: scroll;
+  height: 100%;
+}
+
+mat-list-option[aria-selected="true"] {
+  background-color: #333;
+}
+
+mat-card {
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+

@@ -5,7 +5,7 @@
   "identifier": "com.covas-next.ui",
   "build": {
     "beforeDevCommand": "npx mkdirp ../dist/Chat && npm run start",
-    "devUrl": "http://localhost:1420",
+    "devUrl": "http://localhost:4200",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist/covas-next-ui/browser"
   },
