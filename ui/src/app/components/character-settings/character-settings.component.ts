@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, OnDestroy, QueryList, ViewChildren } from "@angular/core";
+import { AfterViewInit, Component, ElementRef, OnDestroy, QueryList, ViewChild, ViewChildren } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { DomSanitizer, SafeHtml } from "@angular/platform-browser";
 import {
@@ -109,6 +109,7 @@ interface LowHighPassPresetOption {
     styleUrl: "./character-settings.component.scss",
 })
 export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
+    @ViewChild("characterOverview") private characterOverview?: ElementRef<HTMLElement>;
     @ViewChildren("avatarPreviewSvg") private avatarPreviewSvgElements?: QueryList<ElementRef<HTMLDivElement>>;
     private readonly svgStateClasses = ["listening", "speaking", "thinking", "acting"];
     config: ConfigWithCharacters | null = null;
@@ -130,6 +131,7 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
     private avatarPreviewStateIndex = 0;
     private readonly avatarPreviewInterval = setInterval(() => this.advanceAvatarPreviewState(), 1200);
     avatarPreviewStateClass: AvatarPreviewStateClass = "";
+    highlightCharacterOverview = false;
     private localCharacterCopy: Character | null = null;
     isApplyingChange: boolean = false;
     voiceInstructionSupportedModels: string[] = this.characterService.voiceInstructionSupportedModels;
@@ -687,6 +689,17 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
             this.avatarPreviewSvgElementsSubscription.unsubscribe();
         }
         clearInterval(this.avatarPreviewInterval);
+    }
+
+    public focusActiveCharacterOverview(): void {
+        this.highlightCharacterOverview = true;
+        window.setTimeout(() => {
+            this.characterOverview?.nativeElement.focus();
+            this.characterOverview?.nativeElement.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 50);
+        window.setTimeout(() => {
+            this.highlightCharacterOverview = false;
+        }, 1600);
     }
 
     private advanceAvatarPreviewState(): void {

@@ -31,7 +31,7 @@
                 </mat-card>
             }
             @if (config) {
-                <app-general-settings></app-general-settings>
+                <app-general-settings (openSettingsTarget)="openSettingsTarget($event)"></app-general-settings>
             }
         </div>
     </mat-tab>

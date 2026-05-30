@@ -4,11 +4,56 @@
             at their default values unless you know what you are doing.</p>
 
         <mat-accordion multi>
+        <mat-expansion-panel
+            [expanded]="expandedPanels.commander"
+            (opened)="expandedPanels.commander = true"
+            (closed)="expandedPanels.commander = false">
+            <mat-expansion-panel-header>
+                <mat-panel-title>
+                    <mat-icon>badge</mat-icon>
+                    Commander and Main API Key
+                </mat-panel-title>
+            </mat-expansion-panel-header>
+
+            <mat-form-field
+                #commanderNameField
+                [class.focus-highlight]="highlightTarget === 'commander-name'">
+                <mat-label>Commander Name</mat-label>
+                <input
+                    #commanderNameInput
+                    required
+                    matInput
+                    [(ngModel)]="config.commander_name"
+                    (ngModelChange)="onConfigChange({commander_name: $event})">
+            </mat-form-field>
+
+            <p>Enter your API key from
+                <a target="_blank" rel="noopener noreferrer" href="https://platform.openai.com/api-keys">OpenAI</a>,
+                <a target="_blank" rel="noopener noreferrer" href="https://aistudio.google.com/app/apikey">Google AI Studio</a>, or
+                <a target="_blank" rel="noopener noreferrer" href="https://openrouter.ai/settings/keys">OpenRouter</a>.
+                The system will automatically detect the key type and configure settings.</p>
+            <mat-form-field>
+                <mat-label>Main API Key (OpenAI/Openrouter/Google AI Studio)</mat-label>
+                <input required matInput [type]="hideApiKey ? 'password' : 'text'" [(ngModel)]="config.api_key"
+                        (ngModelChange)="onApiKeyChange($event)"
+                        pattern="^[A-Za-z0-9_.-]+$"
+                        #apiKeyInput="ngModel">
+                <button matSuffix mat-icon-button (mousedown)="hideApiKey = false" (mouseup)="hideApiKey = true"
+                        (mouseleave)="hideApiKey = true">
+                    <mat-icon>{{ hideApiKey ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
+                <mat-hint *ngIf="apiKeyType">Detected: {{ apiKeyType }} - Advanced settings have been configured automatically</mat-hint>
+                <mat-error *ngIf="apiKeyInput.errors?.['pattern']">
+                    API key can only contain letters, numbers, underscores, dots, and hyphens
+                </mat-error>
+            </mat-form-field>
+        </mat-expansion-panel>
+
         <mat-expansion-panel>
             <mat-expansion-panel-header>
                 <mat-panel-title>
                     <mat-icon>chat_message</mat-icon>
-                    LLM Settings
+                    Main LLM Settings
                 </mat-panel-title>
             </mat-expansion-panel-header>
         <mat-form-field>
@@ -415,7 +460,7 @@
                 }
             }
         }
-         <label>
+        <label>
             <mat-slide-toggle [(ngModel)]="config.overlay_show_hud"
                               (ngModelChange)="onConfigChange({overlay_show_hud: $event})">
                 Allow Generative UI (HUD)
@@ -425,10 +470,12 @@
                 Warning: Performing UI changes creates noticeable cost!
             </span>
         </label>
-
         </mat-expansion-panel>
 
-        <mat-expansion-panel>
+        <mat-expansion-panel
+            [expanded]="expandedPanels.stt"
+            (opened)="expandedPanels.stt = true"
+            (closed)="expandedPanels.stt = false">
             <mat-expansion-panel-header>
                 <mat-panel-title>
                     <mat-icon>mic</mat-icon>
@@ -550,9 +597,85 @@
                 }
             }
         }
+        @if (config.stt_provider !== "none") {
+            <div class="provider-audio-options">
+                <p>Choose when the AI listens. We recommend using Push-to-Talk to avoid accidental activation.
+                    Voice activation should only be used wearing headphones.</p>
+                <div class="ptt-container">
+                    <mat-form-field>
+                        <mat-label>Microphone Mode</mat-label>
+                        <mat-select [value]="config.ptt_var"
+                                    (selectionChange)="onConfigChange({ptt_var: $event.value})">
+                            <mat-option value="voice_activation">Voice Detection (Use Headphones)</mat-option>
+                            <mat-option value="push_to_talk">Push-to-Talk (Recommended)</mat-option>
+                            <mat-option value="push_to_mute">Push-to-Mute</mat-option>
+                            <mat-option value="toggle">Toggle Mic On/Off</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                    @if (config.ptt_var !== 'voice_activation') {
+                        <mat-form-field (click)="onAssignPTT($event, 0)">
+                            <mat-label>Hotkey 1</mat-label>
+                            <input required matInput [value]="assigningPTTIndex === 0 ? 'Press any key...' : config.ptt_key" readonly>
+                            <button matSuffix mat-icon-button>
+                                <mat-icon>keyboard</mat-icon>
+                            </button>
+                        </mat-form-field>
+                        <mat-form-field (click)="onAssignPTT($event, 1)">
+                            <mat-label>Hotkey 2 (Optional)</mat-label>
+                            <input matInput [value]="assigningPTTIndex === 1 ? 'Press any key...' : config.ptt_key_secondary" readonly>
+                            <button matSuffix mat-icon-button>
+                                <mat-icon>keyboard</mat-icon>
+                            </button>
+                        </mat-form-field>
+                    }
+                    @if (config.ptt_var === 'toggle') {
+                        <mat-slide-toggle [(ngModel)]="config.ptt_inverted_var"
+                                          (ngModelChange)="onConfigChange({ptt_inverted_var: $event})">
+                            Start with Mic Muted
+                        </mat-slide-toggle>
+                    }
+                    @if (config.ptt_var !== 'push_to_talk') {
+                        <mat-slide-toggle [(ngModel)]="config.mute_during_response_var"
+                                            (ngModelChange)="onConfigChange({mute_during_response_var: $event})">
+                            Mute microphone during response
+                        </mat-slide-toggle>
+                    }
+                </div>
+
+                <div class="sound-devices">
+                    <mat-form-field
+                        #sttInputDeviceField
+                        class="sound-devices-input"
+                        [class.focus-highlight]="highlightTarget === 'stt-input-device'">
+                        <mat-label>Input Device</mat-label>
+                        <mat-select
+                            #sttInputDeviceSelect
+                            [(ngModel)]="config.input_device_name"
+                            (ngModelChange)="onConfigChange({input_device_name: $event})">
+                            @for (device of system?.input_device_names; track device) {
+                                <mat-option [value]="device">{{ device }}</mat-option>
+                            }
+                        </mat-select>
+                    </mat-form-field>
+                    <button
+                        mat-icon-button
+                        type="button"
+                        class="audio-refresh-button"
+                        [disabled]="isRefreshingAudioDevices"
+                        (click)="refreshAudioDevices()"
+                        aria-label="Refresh audio device list"
+                        matTooltip="Refresh audio devices">
+                        <mat-icon>refresh</mat-icon>
+                    </button>
+                </div>
+            </div>
+        }
         </mat-expansion-panel>
 
-        <mat-expansion-panel>
+        <mat-expansion-panel
+            [expanded]="expandedPanels.tts"
+            (opened)="expandedPanels.tts = true"
+            (closed)="expandedPanels.tts = false">
             <mat-expansion-panel-header>
                 <mat-panel-title>
                     <mat-icon>volume_up</mat-icon>
@@ -702,6 +825,207 @@
                 }
             }
         }
+        @if (config.tts_provider !== "none") {
+            <div class="sound-devices provider-audio-options">
+                <div class="output-device-column">
+                    <mat-form-field
+                        #ttsOutputDeviceField
+                        [class.focus-highlight]="highlightTarget === 'tts-output-device'">
+                        <mat-label>Output Device</mat-label>
+                        <mat-select
+                            #ttsOutputDeviceSelect
+                            [(ngModel)]="config.output_device_name"
+                            (ngModelChange)="onConfigChange({output_device_name: $event})">
+                            @for (device of system?.output_device_names; track device) {
+                                <mat-option [value]="device">{{ device }}</mat-option>
+                            }
+                        </mat-select>
+                    </mat-form-field>
+                    <div
+                        class="output-volume-row"
+                        [class.output-volume-boost]="config.output_volume_multiplier > 1">
+                        <span class="output-volume-label">Output level</span>
+                        <mat-slider
+                            class="output-volume-slider"
+                            min="0"
+                            max="1.5"
+                            step="0.05"
+                            discrete
+                            [displayWith]="formatOutputVolumeLabel">
+                            <input
+                                matSliderThumb
+                                [ngModel]="config.output_volume_multiplier"
+                                (ngModelChange)="onConfigChange({ output_volume_multiplier: $event })">
+                        </mat-slider>
+                    </div>
+                </div>
+                <button
+                    mat-icon-button
+                    type="button"
+                    class="audio-refresh-button"
+                    [disabled]="isRefreshingAudioDevices"
+                    (click)="refreshAudioDevices()"
+                    aria-label="Refresh audio device list"
+                    matTooltip="Refresh audio devices">
+                    <mat-icon>refresh</mat-icon>
+                </button>
+            </div>
+        }
+        </mat-expansion-panel>
+
+        <mat-expansion-panel
+            [expanded]="expandedPanels.overlay"
+            (opened)="expandedPanels.overlay = true"
+            (closed)="expandedPanels.overlay = false">
+            <mat-expansion-panel-header>
+                <mat-panel-title>
+                    <mat-icon>picture_in_picture_alt</mat-icon>
+                    Overlay
+                </mat-panel-title>
+            </mat-expansion-panel-header>
+
+            <div class="overlay-controls">
+                <div class="overlay-primary-controls">
+                    <mat-form-field
+                        #overlayModeField
+                        [class.focus-highlight]="highlightTarget === 'overlay-mode'">
+                        <mat-label>Overlay Mode</mat-label>
+                        <mat-select
+                            #overlayModeSelect
+                            [(ngModel)]="config.overlay_mode"
+                            (ngModelChange)="onConfigChange({overlay_mode: $event})">
+                            <mat-option value="disabled">Disabled</mat-option>
+                            <mat-option value="desktop">Desktop Overlay</mat-option>
+                            @if (overlayRuntimeReady) {
+                                <mat-option value="vr">VR Overlay</mat-option>
+                                <mat-option value="both">Both</mat-option>
+                            }
+                        </mat-select>
+                    </mat-form-field>
+
+                    @if (config.overlay_mode !== 'disabled') {
+                        <div class="overlay-toggle-column">
+                            <mat-slide-toggle
+                                [(ngModel)]="config.overlay_show_avatar"
+                                (ngModelChange)="onConfigChange({overlay_show_avatar: $event})">
+                                Show Avatar
+                            </mat-slide-toggle>
+
+                            <mat-slide-toggle
+                                [(ngModel)]="config.overlay_show_chat"
+                                (ngModelChange)="onConfigChange({overlay_show_chat: $event})">
+                                Show Chat
+                            </mat-slide-toggle>
+
+                            <mat-slide-toggle
+                                [(ngModel)]="config.overlay_show_hud"
+                                (ngModelChange)="onConfigChange({overlay_show_hud: $event})">
+                                Allow Generative UI (HUD)
+                            </mat-slide-toggle>
+                            <span class="generative-ui-warning">
+                                <mat-icon>warning</mat-icon>
+                                Warning: Performing UI changes creates noticeable cost!
+                            </span>
+                        </div>
+
+                        <mat-form-field>
+                            <mat-label>Avatar Position</mat-label>
+                            <mat-select [(ngModel)]="config.overlay_position"
+                                        (ngModelChange)="onConfigChange({overlay_position: $event})">
+                                <mat-option value="left">Left (Large)</mat-option>
+                                <mat-option value="left-medium">Left (Medium)</mat-option>
+                                <mat-option value="left-small">Left (Small)</mat-option>
+                                <mat-option value="right">Right (Large)</mat-option>
+                                <mat-option value="right-medium">Right (Medium)</mat-option>
+                                <mat-option value="right-small">Right (Small)</mat-option>
+                            </mat-select>
+                        </mat-form-field>
+
+                        @if (config.overlay_mode === 'desktop' || config.overlay_mode === 'both') {
+                            <mat-form-field>
+                                <mat-label>Desktop Screen</mat-label>
+                                <mat-select [(ngModel)]="config.overlay_screen_id"
+                                            (ngModelChange)="onConfigChange({overlay_screen_id: $event})">
+                                    <mat-option [value]="-1">Primary Screen</mat-option>
+                                    @for (screen of screens; track screen.id) {
+                                        <mat-option [value]="screen.id">{{ screen.label }}</mat-option>
+                                    }
+                                </mat-select>
+                            </mat-form-field>
+                        }
+                    }
+                </div>
+
+                <div class="overlay-secondary-controls">
+                    @if (overlayRuntimeReady && (config.overlay_mode === 'vr' || config.overlay_mode === 'both')) {
+                        <mat-form-field>
+                            <mat-label>VR Anchor</mat-label>
+                            <mat-select [(ngModel)]="config.overlay_vr_anchor"
+                                        (ngModelChange)="onConfigChange({overlay_vr_anchor: $event})">
+                                <mat-option value="head">Head Locked</mat-option>
+                                <mat-option value="world">World Locked</mat-option>
+                            </mat-select>
+                        </mat-form-field>
+
+                        <div class="overlay-slider-field">
+                            <label>VR Size: {{ config.overlay_vr_size_meters }} meters</label>
+                            <mat-slider min="0.1" max="3" step="0.1" discrete>
+                                <input matSliderThumb
+                                       [ngModel]="config.overlay_vr_size_meters"
+                                       (ngModelChange)="onConfigChange({overlay_vr_size_meters: $event})">
+                            </mat-slider>
+                        </div>
+
+                        <div class="overlay-slider-field">
+                            <label>Horizontal Offset: {{ config.overlay_vr_horizontal_offset }} meters</label>
+                            <mat-slider min="-2" max="2" step="0.05" discrete>
+                                <input matSliderThumb
+                                       [ngModel]="config.overlay_vr_horizontal_offset"
+                                       (ngModelChange)="onConfigChange({overlay_vr_horizontal_offset: $event})">
+                            </mat-slider>
+                        </div>
+
+                        <div class="overlay-slider-field">
+                            <label>Vertical Offset: {{ config.overlay_vr_vertical_offset }} meters</label>
+                            <mat-slider min="-1.5" max="1.5" step="0.05" discrete>
+                                <input matSliderThumb
+                                       [ngModel]="config.overlay_vr_vertical_offset"
+                                       (ngModelChange)="onConfigChange({overlay_vr_vertical_offset: $event})">
+                            </mat-slider>
+                        </div>
+
+                        <div class="overlay-slider-field">
+                            <label>Distance Offset: {{ config.overlay_vr_distance_offset }} meters</label>
+                            <mat-slider min="-0.75" max="1.5" step="0.01" discrete>
+                                <input matSliderThumb
+                                       [ngModel]="config.overlay_vr_distance_offset"
+                                       (ngModelChange)="onConfigChange({overlay_vr_distance_offset: $event})">
+                            </mat-slider>
+                        </div>
+
+                        <div class="overlay-slider-field">
+                            <label>Tilt: {{ config.overlay_vr_tilt_degrees }} degrees</label>
+                            <mat-slider min="-90" max="90" step="1" discrete>
+                                <input matSliderThumb
+                                       [ngModel]="config.overlay_vr_tilt_degrees"
+                                       (ngModelChange)="onConfigChange({overlay_vr_tilt_degrees: $event})">
+                            </mat-slider>
+                        </div>
+
+                        <div class="overlay-slider-field">
+                            <label>Curvature: {{ config.overlay_vr_curvature * 360 }} degrees</label>
+                            <mat-slider min="0" max="180" step="1" discrete>
+                                <input matSliderThumb
+                                       [ngModel]="config.overlay_vr_curvature * 360"
+                                       (ngModelChange)="onConfigChange({overlay_vr_curvature: $event / 360})">
+                            </mat-slider>
+                        </div>
+                    }
+                </div>
+            </div>
+            @if (config.overlay_mode === 'vr') {
+                <p>{{ overlayRuntimeSummary }}</p>
+            }
         </mat-expansion-panel>
 
         <mat-expansion-panel>

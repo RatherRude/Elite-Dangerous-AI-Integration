@@ -13,6 +13,22 @@ mat-slide-toggle {
   margin: 10px 0;
 }
 
+.generative-ui-warning {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  color: #ff9800;
+  margin-bottom: 0.75rem;
+}
+
+.generative-ui-warning mat-icon {
+  flex-shrink: 0;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  padding-top: 3px;
+}
+
 .permission-list {
   display: flex;
   flex-direction: column;

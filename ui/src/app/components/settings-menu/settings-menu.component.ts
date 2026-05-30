@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnDestroy, OnInit, Output } from "@angular/core";
+import { Component, EventEmitter, OnDestroy, OnInit, Output, ViewChild } from "@angular/core";
 import { MatCardModule } from "@angular/material/card";
 import { MatTabsModule } from "@angular/material/tabs";
 import {
@@ -11,11 +11,17 @@ import { MatSnackBar } from "@angular/material/snack-bar";
 import { CommonModule } from "@angular/common";
 import { PluginSettingsComponent } from "../plugin-settings/plugin-settings.component";
 import { PolicyService } from "../../services/policy.service.js";
-import { AdvancedSettingsComponent } from "../advanced-settings/advanced-settings.component";
+import {
+    AdvancedSettingsComponent,
+    AdvancedSettingsFocusTarget,
+} from "../advanced-settings/advanced-settings.component";
 import { ActionsSettingsComponent } from "../actions-settings/actions-settings.component";
 import { CharacterSettingsComponent } from "../character-settings/character-settings.component";
 import { EventReactionsSettingsComponent } from "../event-reactions-settings/event-reactions-settings.component";
-import { GeneralSettingsComponent } from "../general-settings/general-settings.component";
+import {
+    GeneralSettingsComponent,
+    GeneralSettingsTarget,
+} from "../general-settings/general-settings.component";
 import { MatOption } from "@angular/material/core";
 import { MatIcon } from "@angular/material/icon";
 import {
@@ -69,6 +75,9 @@ import { QuestsSettingsComponent } from "../quests-settings/quests-settings.comp
     styleUrls: ["./settings-menu.component.scss"],
 })
 export class SettingsMenuComponent implements OnInit, OnDestroy {
+    @ViewChild(AdvancedSettingsComponent) private advancedSettings?: AdvancedSettingsComponent;
+    @ViewChild(CharacterSettingsComponent) private characterSettings?: CharacterSettingsComponent;
+
     config: Config | null = null;
     has_plugin_settings: boolean = false;
     system: SystemInfo | null = null;
@@ -108,6 +117,36 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
         window.setTimeout(() => {
             this.highlightDisclaimerCard = false;
         }, 1500);
+    }
+
+    public openSettingsTarget(target: GeneralSettingsTarget): void {
+        switch (target) {
+            case "commander":
+                this.focusAdvancedSetting("commander-name");
+                break;
+            case "audio-input":
+                this.focusAdvancedSetting("stt-input-device");
+                break;
+            case "audio-output":
+                this.focusAdvancedSetting("tts-output-device");
+                break;
+            case "overlay":
+                this.focusAdvancedSetting("overlay-mode");
+                break;
+            case "character":
+                this.selectedIndex = 1;
+                window.setTimeout(() => {
+                    this.characterSettings?.focusActiveCharacterOverview();
+                }, 100);
+                break;
+        }
+    }
+
+    private focusAdvancedSetting(target: AdvancedSettingsFocusTarget): void {
+        this.selectedIndex = 4;
+        window.setTimeout(() => {
+            this.advancedSettings?.focusSetting(target);
+        }, 100);
     }
 
     ngOnInit() {

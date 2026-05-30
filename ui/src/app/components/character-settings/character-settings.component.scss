@@ -42,6 +42,22 @@ mat-slide-toggle {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+.character-management-section:focus {
+  outline: none;
+}
+
+.character-management-section.focus-highlight {
+  animation: character-focus-pulse 1.5s ease-in-out 1;
+  box-shadow: 0 0 0 2px rgba(63, 81, 181, 0.8), 0 0 16px rgba(63, 81, 181, 0.5);
+}
+
+@keyframes character-focus-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(63, 81, 181, 0); }
+  25% { box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.8), 0 0 12px rgba(63, 81, 181, 0.4); }
+  75% { box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.8), 0 0 12px rgba(63, 81, 181, 0.4); }
+  100% { box-shadow: 0 0 0 0 rgba(63, 81, 181, 0); }
+}
+
 .character-selector {
   display: flex;
   flex-direction: column;
