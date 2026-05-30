@@ -123,6 +123,9 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             case "commander":
                 this.focusAdvancedSetting("commander-name");
                 break;
+            case "character":
+                this.selectedIndex = 1;
+                break;
             case "audio-input":
                 this.focusAdvancedSetting("stt-input-device");
                 break;
@@ -136,7 +139,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     }
 
     private focusAdvancedSetting(target: AdvancedSettingsFocusTarget): void {
-        this.selectedIndex = 3;
+        this.selectedIndex = 4;
         window.setTimeout(() => {
             this.advancedSettings?.focusSetting(target);
         }, 100);
