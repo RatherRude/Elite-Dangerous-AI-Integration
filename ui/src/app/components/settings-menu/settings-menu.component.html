@@ -32,17 +32,6 @@
             }
             @if (config) {
                 <app-general-settings (openSettingsTarget)="openSettingsTarget($event)"></app-general-settings>
-            }
-        </div>
-    </mat-tab>
-
-    <mat-tab>
-        <ng-template mat-tab-label>
-            <mat-icon class="tab-icon">person</mat-icon>
-            Characters
-        </ng-template>
-        <div class="tab-content">
-            @if (config) {
                 <app-character-settings></app-character-settings>
             }
         </div>

@@ -1,112 +1,13 @@
 .general-dashboard {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  min-height: min(62vh, 560px);
-  padding: 20px;
-}
-
-.dashboard-hero {
-  padding: 1.25rem;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.dashboard-hero h2,
-.dashboard-hero p {
-  margin: 0;
-}
-
-.dashboard-hero h2 {
-  margin-bottom: 0.35rem;
-}
-
-.dashboard-eyebrow {
-  color: rgba(255, 255, 255, 0.62);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.summary-grid {
-  display: grid;
-  grid-template-columns: minmax(240px, 420px);
-  gap: 1rem;
-}
-
-.summary-card {
-  display: flex;
-  min-height: 92px;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  color: inherit;
-  cursor: pointer;
-  font: inherit;
-  text-align: left;
-  transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
-}
-
-.summary-card:hover,
-.summary-card:focus-visible {
-  border-color: rgba(255, 255, 255, 0.35);
-  background: rgba(255, 255, 255, 0.08);
-  outline: none;
-  transform: translateY(-1px);
-}
-
-.summary-card > mat-icon:first-child {
-  flex: 0 0 auto;
-  color: rgba(255, 255, 255, 0.72);
-}
-
-.summary-copy {
-  display: flex;
-  min-width: 0;
-  flex: 1 1 auto;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.summary-copy strong {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.summary-label,
-.summary-detail {
-  color: rgba(255, 255, 255, 0.62);
-  font-size: 0.8rem;
-}
-
-.summary-action {
-  flex: 0 0 auto;
-  color: rgba(255, 255, 255, 0.46);
-}
-
-.summary-avatar {
-  width: 48px;
-  height: 48px;
-  flex: 0 0 auto;
-  border-radius: 50%;
-  object-fit: cover;
-  background: rgba(0, 0, 0, 0.24);
-}
-
-.character-card {
-  grid-column: span 1;
+  padding: 20px 20px 0;
 }
 
 .launcher-info-line {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-top: auto;
   padding: 0.6rem 0.75rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;

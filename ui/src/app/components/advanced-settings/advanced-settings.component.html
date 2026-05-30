@@ -873,161 +873,6 @@
         }
         </mat-expansion-panel>
 
-        <mat-expansion-panel
-            [expanded]="expandedPanels.overlay"
-            (opened)="expandedPanels.overlay = true"
-            (closed)="expandedPanels.overlay = false">
-            <mat-expansion-panel-header>
-                <mat-panel-title>
-                    <mat-icon>picture_in_picture_alt</mat-icon>
-                    Overlay
-                </mat-panel-title>
-            </mat-expansion-panel-header>
-
-            <div class="overlay-controls">
-                <div class="overlay-primary-controls">
-                    <mat-form-field
-                        #overlayModeField
-                        [class.focus-highlight]="highlightTarget === 'overlay-mode'">
-                        <mat-label>Overlay Mode</mat-label>
-                        <mat-select
-                            #overlayModeSelect
-                            [(ngModel)]="config.overlay_mode"
-                            (ngModelChange)="onConfigChange({overlay_mode: $event})">
-                            <mat-option value="disabled">Disabled</mat-option>
-                            <mat-option value="desktop">Desktop Overlay</mat-option>
-                            @if (overlayRuntimeReady) {
-                                <mat-option value="vr">VR Overlay</mat-option>
-                                <mat-option value="both">Both</mat-option>
-                            }
-                        </mat-select>
-                    </mat-form-field>
-
-                    @if (config.overlay_mode !== 'disabled') {
-                        <div class="overlay-toggle-column">
-                            <mat-slide-toggle
-                                [(ngModel)]="config.overlay_show_avatar"
-                                (ngModelChange)="onConfigChange({overlay_show_avatar: $event})">
-                                Show Avatar
-                            </mat-slide-toggle>
-
-                            <mat-slide-toggle
-                                [(ngModel)]="config.overlay_show_chat"
-                                (ngModelChange)="onConfigChange({overlay_show_chat: $event})">
-                                Show Chat
-                            </mat-slide-toggle>
-
-                            <mat-slide-toggle
-                                [(ngModel)]="config.overlay_show_hud"
-                                (ngModelChange)="onConfigChange({overlay_show_hud: $event})">
-                                Allow Generative UI (HUD)
-                            </mat-slide-toggle>
-                            <span class="generative-ui-warning">
-                                <mat-icon>warning</mat-icon>
-                                Warning: Performing UI changes creates noticeable cost!
-                            </span>
-                        </div>
-
-                        <mat-form-field>
-                            <mat-label>Avatar Position</mat-label>
-                            <mat-select [(ngModel)]="config.overlay_position"
-                                        (ngModelChange)="onConfigChange({overlay_position: $event})">
-                                <mat-option value="left">Left (Large)</mat-option>
-                                <mat-option value="left-medium">Left (Medium)</mat-option>
-                                <mat-option value="left-small">Left (Small)</mat-option>
-                                <mat-option value="right">Right (Large)</mat-option>
-                                <mat-option value="right-medium">Right (Medium)</mat-option>
-                                <mat-option value="right-small">Right (Small)</mat-option>
-                            </mat-select>
-                        </mat-form-field>
-
-                        @if (config.overlay_mode === 'desktop' || config.overlay_mode === 'both') {
-                            <mat-form-field>
-                                <mat-label>Desktop Screen</mat-label>
-                                <mat-select [(ngModel)]="config.overlay_screen_id"
-                                            (ngModelChange)="onConfigChange({overlay_screen_id: $event})">
-                                    <mat-option [value]="-1">Primary Screen</mat-option>
-                                    @for (screen of screens; track screen.id) {
-                                        <mat-option [value]="screen.id">{{ screen.label }}</mat-option>
-                                    }
-                                </mat-select>
-                            </mat-form-field>
-                        }
-                    }
-                </div>
-
-                <div class="overlay-secondary-controls">
-                    @if (overlayRuntimeReady && (config.overlay_mode === 'vr' || config.overlay_mode === 'both')) {
-                        <mat-form-field>
-                            <mat-label>VR Anchor</mat-label>
-                            <mat-select [(ngModel)]="config.overlay_vr_anchor"
-                                        (ngModelChange)="onConfigChange({overlay_vr_anchor: $event})">
-                                <mat-option value="head">Head Locked</mat-option>
-                                <mat-option value="world">World Locked</mat-option>
-                            </mat-select>
-                        </mat-form-field>
-
-                        <div class="overlay-slider-field">
-                            <label>VR Size: {{ config.overlay_vr_size_meters }} meters</label>
-                            <mat-slider min="0.1" max="3" step="0.1" discrete>
-                                <input matSliderThumb
-                                       [ngModel]="config.overlay_vr_size_meters"
-                                       (ngModelChange)="onConfigChange({overlay_vr_size_meters: $event})">
-                            </mat-slider>
-                        </div>
-
-                        <div class="overlay-slider-field">
-                            <label>Horizontal Offset: {{ config.overlay_vr_horizontal_offset }} meters</label>
-                            <mat-slider min="-2" max="2" step="0.05" discrete>
-                                <input matSliderThumb
-                                       [ngModel]="config.overlay_vr_horizontal_offset"
-                                       (ngModelChange)="onConfigChange({overlay_vr_horizontal_offset: $event})">
-                            </mat-slider>
-                        </div>
-
-                        <div class="overlay-slider-field">
-                            <label>Vertical Offset: {{ config.overlay_vr_vertical_offset }} meters</label>
-                            <mat-slider min="-1.5" max="1.5" step="0.05" discrete>
-                                <input matSliderThumb
-                                       [ngModel]="config.overlay_vr_vertical_offset"
-                                       (ngModelChange)="onConfigChange({overlay_vr_vertical_offset: $event})">
-                            </mat-slider>
-                        </div>
-
-                        <div class="overlay-slider-field">
-                            <label>Distance Offset: {{ config.overlay_vr_distance_offset }} meters</label>
-                            <mat-slider min="-0.75" max="1.5" step="0.01" discrete>
-                                <input matSliderThumb
-                                       [ngModel]="config.overlay_vr_distance_offset"
-                                       (ngModelChange)="onConfigChange({overlay_vr_distance_offset: $event})">
-                            </mat-slider>
-                        </div>
-
-                        <div class="overlay-slider-field">
-                            <label>Tilt: {{ config.overlay_vr_tilt_degrees }} degrees</label>
-                            <mat-slider min="-90" max="90" step="1" discrete>
-                                <input matSliderThumb
-                                       [ngModel]="config.overlay_vr_tilt_degrees"
-                                       (ngModelChange)="onConfigChange({overlay_vr_tilt_degrees: $event})">
-                            </mat-slider>
-                        </div>
-
-                        <div class="overlay-slider-field">
-                            <label>Curvature: {{ config.overlay_vr_curvature * 360 }} degrees</label>
-                            <mat-slider min="0" max="180" step="1" discrete>
-                                <input matSliderThumb
-                                       [ngModel]="config.overlay_vr_curvature * 360"
-                                       (ngModelChange)="onConfigChange({overlay_vr_curvature: $event / 360})">
-                            </mat-slider>
-                        </div>
-                    }
-                </div>
-            </div>
-            @if (config.overlay_mode === 'vr') {
-                <p>{{ overlayRuntimeSummary }}</p>
-            }
-        </mat-expansion-panel>
-
         <mat-expansion-panel>
             <mat-expansion-panel-header>
                 <mat-panel-title>
@@ -1190,6 +1035,161 @@
                 }
             }
         }
+        </mat-expansion-panel>
+
+        <mat-expansion-panel
+            [expanded]="expandedPanels.overlay"
+            (opened)="expandedPanels.overlay = true"
+            (closed)="expandedPanels.overlay = false">
+            <mat-expansion-panel-header>
+                <mat-panel-title>
+                    <mat-icon>picture_in_picture_alt</mat-icon>
+                    Overlay
+                </mat-panel-title>
+            </mat-expansion-panel-header>
+
+            <div class="overlay-controls">
+                <div class="overlay-primary-controls">
+                    <mat-form-field
+                        #overlayModeField
+                        [class.focus-highlight]="highlightTarget === 'overlay-mode'">
+                        <mat-label>Overlay Mode</mat-label>
+                        <mat-select
+                            #overlayModeSelect
+                            [(ngModel)]="config.overlay_mode"
+                            (ngModelChange)="onConfigChange({overlay_mode: $event})">
+                            <mat-option value="disabled">Disabled</mat-option>
+                            <mat-option value="desktop">Desktop Overlay</mat-option>
+                            @if (overlayRuntimeReady) {
+                                <mat-option value="vr">VR Overlay</mat-option>
+                                <mat-option value="both">Both</mat-option>
+                            }
+                        </mat-select>
+                    </mat-form-field>
+
+                    @if (config.overlay_mode !== 'disabled') {
+                        <div class="overlay-toggle-column">
+                            <mat-slide-toggle
+                                [(ngModel)]="config.overlay_show_avatar"
+                                (ngModelChange)="onConfigChange({overlay_show_avatar: $event})">
+                                Show Avatar
+                            </mat-slide-toggle>
+
+                            <mat-slide-toggle
+                                [(ngModel)]="config.overlay_show_chat"
+                                (ngModelChange)="onConfigChange({overlay_show_chat: $event})">
+                                Show Chat
+                            </mat-slide-toggle>
+
+                            <mat-slide-toggle
+                                [(ngModel)]="config.overlay_show_hud"
+                                (ngModelChange)="onConfigChange({overlay_show_hud: $event})">
+                                Allow Generative UI (HUD)
+                            </mat-slide-toggle>
+                            <span class="generative-ui-warning">
+                                <mat-icon>warning</mat-icon>
+                                Warning: Performing UI changes creates noticeable cost!
+                            </span>
+                        </div>
+
+                        <mat-form-field>
+                            <mat-label>Avatar Position</mat-label>
+                            <mat-select [(ngModel)]="config.overlay_position"
+                                        (ngModelChange)="onConfigChange({overlay_position: $event})">
+                                <mat-option value="left">Left (Large)</mat-option>
+                                <mat-option value="left-medium">Left (Medium)</mat-option>
+                                <mat-option value="left-small">Left (Small)</mat-option>
+                                <mat-option value="right">Right (Large)</mat-option>
+                                <mat-option value="right-medium">Right (Medium)</mat-option>
+                                <mat-option value="right-small">Right (Small)</mat-option>
+                            </mat-select>
+                        </mat-form-field>
+
+                        @if (config.overlay_mode === 'desktop' || config.overlay_mode === 'both') {
+                            <mat-form-field>
+                                <mat-label>Desktop Screen</mat-label>
+                                <mat-select [(ngModel)]="config.overlay_screen_id"
+                                            (ngModelChange)="onConfigChange({overlay_screen_id: $event})">
+                                    <mat-option [value]="-1">Primary Screen</mat-option>
+                                    @for (screen of screens; track screen.id) {
+                                        <mat-option [value]="screen.id">{{ screen.label }}</mat-option>
+                                    }
+                                </mat-select>
+                            </mat-form-field>
+                        }
+                    }
+                </div>
+
+                <div class="overlay-secondary-controls">
+                    @if (overlayRuntimeReady && (config.overlay_mode === 'vr' || config.overlay_mode === 'both')) {
+                        <mat-form-field>
+                            <mat-label>VR Anchor</mat-label>
+                            <mat-select [(ngModel)]="config.overlay_vr_anchor"
+                                        (ngModelChange)="onConfigChange({overlay_vr_anchor: $event})">
+                                <mat-option value="head">Head Locked</mat-option>
+                                <mat-option value="world">World Locked</mat-option>
+                            </mat-select>
+                        </mat-form-field>
+
+                        <div class="overlay-slider-field">
+                            <label>VR Size: {{ config.overlay_vr_size_meters }} meters</label>
+                            <mat-slider min="0.1" max="3" step="0.1" discrete>
+                                <input matSliderThumb
+                                       [ngModel]="config.overlay_vr_size_meters"
+                                       (ngModelChange)="onConfigChange({overlay_vr_size_meters: $event})">
+                            </mat-slider>
+                        </div>
+
+                        <div class="overlay-slider-field">
+                            <label>Horizontal Offset: {{ config.overlay_vr_horizontal_offset }} meters</label>
+                            <mat-slider min="-2" max="2" step="0.05" discrete>
+                                <input matSliderThumb
+                                       [ngModel]="config.overlay_vr_horizontal_offset"
+                                       (ngModelChange)="onConfigChange({overlay_vr_horizontal_offset: $event})">
+                            </mat-slider>
+                        </div>
+
+                        <div class="overlay-slider-field">
+                            <label>Vertical Offset: {{ config.overlay_vr_vertical_offset }} meters</label>
+                            <mat-slider min="-1.5" max="1.5" step="0.05" discrete>
+                                <input matSliderThumb
+                                       [ngModel]="config.overlay_vr_vertical_offset"
+                                       (ngModelChange)="onConfigChange({overlay_vr_vertical_offset: $event})">
+                            </mat-slider>
+                        </div>
+
+                        <div class="overlay-slider-field">
+                            <label>Distance Offset: {{ config.overlay_vr_distance_offset }} meters</label>
+                            <mat-slider min="-0.75" max="1.5" step="0.01" discrete>
+                                <input matSliderThumb
+                                       [ngModel]="config.overlay_vr_distance_offset"
+                                       (ngModelChange)="onConfigChange({overlay_vr_distance_offset: $event})">
+                            </mat-slider>
+                        </div>
+
+                        <div class="overlay-slider-field">
+                            <label>Tilt: {{ config.overlay_vr_tilt_degrees }} degrees</label>
+                            <mat-slider min="-90" max="90" step="1" discrete>
+                                <input matSliderThumb
+                                       [ngModel]="config.overlay_vr_tilt_degrees"
+                                       (ngModelChange)="onConfigChange({overlay_vr_tilt_degrees: $event})">
+                            </mat-slider>
+                        </div>
+
+                        <div class="overlay-slider-field">
+                            <label>Curvature: {{ config.overlay_vr_curvature * 360 }} degrees</label>
+                            <mat-slider min="0" max="180" step="1" discrete>
+                                <input matSliderThumb
+                                       [ngModel]="config.overlay_vr_curvature * 360"
+                                       (ngModelChange)="onConfigChange({overlay_vr_curvature: $event / 360})">
+                            </mat-slider>
+                        </div>
+                    }
+                </div>
+            </div>
+            @if (config.overlay_mode === 'vr') {
+                <p>{{ overlayRuntimeSummary }}</p>
+            }
         </mat-expansion-panel>
 
         @if (config && (config.commander_name || config.api_key)) {

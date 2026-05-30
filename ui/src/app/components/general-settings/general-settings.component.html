@@ -1,28 +1,5 @@
 <div class="general-dashboard">
     @if (config) {
-        <section class="dashboard-hero">
-            <div>
-                <p class="dashboard-eyebrow">Current Configuration</p>
-                <h2>General</h2>
-                <p>Quick view of the core settings COVAS:NEXT will use when it starts.</p>
-            </div>
-        </section>
-
-        <div class="summary-grid">
-            <button
-                type="button"
-                class="summary-card character-card"
-                (click)="openTarget('character')"
-                matTooltip="Open Character settings">
-                <img [src]="avatarUrl" [alt]="characterName + ' avatar'" class="summary-avatar">
-                <span class="summary-copy">
-                    <span class="summary-label">Character</span>
-                    <strong>{{ characterName }}</strong>
-                </span>
-                <mat-icon class="summary-action">chevron_right</mat-icon>
-            </button>
-        </div>
-
         <div class="launcher-info-line" aria-label="General settings quick links">
             <button
                 type="button"

@@ -76,7 +76,6 @@ import { QuestsSettingsComponent } from "../quests-settings/quests-settings.comp
 })
 export class SettingsMenuComponent implements OnInit, OnDestroy {
     @ViewChild(AdvancedSettingsComponent) private advancedSettings?: AdvancedSettingsComponent;
-    @ViewChild(CharacterSettingsComponent) private characterSettings?: CharacterSettingsComponent;
 
     config: Config | null = null;
     has_plugin_settings: boolean = false;
@@ -133,17 +132,11 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             case "overlay":
                 this.focusAdvancedSetting("overlay-mode");
                 break;
-            case "character":
-                this.selectedIndex = 1;
-                window.setTimeout(() => {
-                    this.characterSettings?.focusActiveCharacterOverview();
-                }, 100);
-                break;
         }
     }
 
     private focusAdvancedSetting(target: AdvancedSettingsFocusTarget): void {
-        this.selectedIndex = 4;
+        this.selectedIndex = 3;
         window.setTimeout(() => {
             this.advancedSettings?.focusSetting(target);
         }, 100);
