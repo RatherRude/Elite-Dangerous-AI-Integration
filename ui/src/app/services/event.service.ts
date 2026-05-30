@@ -7,6 +7,7 @@ export interface EventMessage extends BaseMessage {
     event:
         | GameEvent
         | ToolEvent
+        | ToolProcessingEvent
         | StatusEvent
         | ConversationEvent
         | ExternalEvent
@@ -39,6 +40,16 @@ export interface ToolEvent {
     text: (string | undefined)[];
     timestamp: string;
     kind: "tool";
+    processed_at: number;
+}
+
+export interface ToolProcessingEvent {
+    tool_call_id: string;
+    name: string;
+    content: any;
+    text?: string;
+    timestamp: string;
+    kind: "tool_processing";
     processed_at: number;
 }
 

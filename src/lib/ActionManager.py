@@ -1,7 +1,8 @@
 from hashlib import md5
+from collections.abc import Iterator
 import json
 import random
-from typing import Callable, Literal
+from typing import Any, Callable, Literal
 
 from openai.types.chat import ChatCompletionMessageFunctionToolCall
 from pydantic import BaseModel
@@ -79,7 +80,12 @@ class ActionManager:
         return None
     
 
-    def runAction(self, tool_call: ChatCompletionMessageFunctionToolCall, projected_states: ProjectedStates):
+    def runAction(
+        self,
+        tool_call: ChatCompletionMessageFunctionToolCall,
+        projected_states: ProjectedStates,
+        processing_callback: Callable[[str, str, object], None] | None = None,
+    ):
         """get function response and fetch matching python function, then call function using arguments provided"""
         function_result = None
 
@@ -91,6 +97,17 @@ class ActionManager:
 
             try:
                 function_result = function_to_call(function_args, projected_states)
+                if isinstance(function_result, Iterator):
+                    final_result: Any = None
+                    while True:
+                        try:
+                            processing_result = next(function_result)
+                        except StopIteration as stop:
+                            final_result = stop.value
+                            break
+                        if processing_callback:
+                            processing_callback(tool_call.id, function_name, processing_result)
+                    function_result = final_result
             except Exception as e:
                 log("debug", "An error occurred during function:", e, traceback.format_exc())
                 function_result = "ERROR: " + repr(e)
@@ -107,7 +124,7 @@ class ActionManager:
     # register function
     def registerAction(
         self, name, description, parameters, 
-        method: Callable[[dict, dict], str], 
+        method: Callable[[dict, dict], object], 
         action_type="ship", 
         permission: str | None = None,
         input_template: Callable[[dict, dict], str] | None = None, 

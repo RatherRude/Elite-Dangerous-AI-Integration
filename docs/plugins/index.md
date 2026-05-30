@@ -8,6 +8,7 @@ COVAS:NEXT offers an extensive plugin API, which allows 3rd parties to extend th
 |--------|-------------|----------|
 | **Parakeet** | Free, local STT Plugin (Multilingual) | [Releases](https://github.com/COVAS-Labs/plugin-parakeet-stt/releases) |
 | **Supertonic** | Free, local TTS Plugin (Multilingual) | [Releases](https://github.com/COVAS-Labs/plugin-supertonic-tts/releases) |
+| **Pocket-TTS** | Free, local TTS Plugin with basic voice cloning | [Releases](https://github.com/COVAS-Labs/plugin-pocket-tts/releases) |
 | **Gemma** | Free, local Embedding Plugin (Multilingual) | [Releases](https://github.com/COVAS-Labs/plugin-gemma-embedding/releases) |
 | **Elevenlabs** | Paid, Cloud STT&TTS Plugin (Multilingual) | [Releases](https://github.com/COVAS-Labs/plugin-elevenlabs/releases) |
 

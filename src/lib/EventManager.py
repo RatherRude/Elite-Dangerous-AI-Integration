@@ -10,7 +10,7 @@ from pydantic import BaseModel, ValidationError
 
 from .Database import EventStore, KeyValueStore, VectorStore
 from .EDJournal import *
-from .Event import Event, EventClasses, GameEvent, ConversationEvent, MemoryEvent, PluginEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent, QuestEvent
+from .Event import Event, EventClasses, GameEvent, ConversationEvent, MemoryEvent, PluginEvent, StatusEvent, ToolEvent, ToolProcessingEvent, ExternalEvent, ProjectedEvent, QuestEvent
 from .Logger import log, show_chat_message
 
 import threading
@@ -83,7 +83,7 @@ class EventManager:
     @staticmethod
     def clear_conversation_store():
         event_store = EventStore('events', [])
-        event_store.delete_classes(["ConversationEvent", "ToolEvent"])
+        event_store.delete_classes(["ConversationEvent", "ToolEvent", "ToolProcessingEvent"])
 
     @staticmethod
     def reset_state_machine_store():
@@ -93,11 +93,11 @@ class EventManager:
         projection_store.delete_all()
 
     def _is_conversation_history_event(self, event: Event) -> bool:
-        return isinstance(event, (ConversationEvent, ToolEvent))
+        return isinstance(event, (ConversationEvent, ToolEvent, ToolProcessingEvent))
 
     def clear_conversation_history(self):
         with self._processing_lock:
-            self.short_term_memory.delete_classes(["ConversationEvent", "ToolEvent"])
+            self.short_term_memory.delete_classes(["ConversationEvent", "ToolEvent", "ToolProcessingEvent"])
             self.pending = [
                 event for event in self.pending
                 if not self._is_conversation_history_event(event)
@@ -286,6 +286,10 @@ class EventManager:
 
     def add_tool_call(self, request: list[dict[str, Any]], results: list[dict[str, Any]], text: list[str] | None = None):
         event = ToolEvent(request=request, results=results, text=text)
+        self.incoming.put(event)
+
+    def add_tool_processing(self, tool_call_id: str, name: str, content: object, text: str | None = None):
+        event = ToolProcessingEvent(tool_call_id=tool_call_id, name=name, content=content, text=text)
         self.incoming.put(event)
 
     def add_memory_event(self, model_name: str, last_processed_at: float, content: str, metadata: dict, embedding: list[float]):

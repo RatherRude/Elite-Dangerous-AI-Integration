@@ -1,6 +1,7 @@
 import copy
 import json
 import traceback
+from collections.abc import Iterator
 from pathlib import Path
 from datetime import datetime
 from openai.types.chat import ChatCompletion, ChatCompletionMessageToolCall
@@ -796,7 +797,11 @@ class Assistant:
                     context="assistant_acting",
                     postprocessing_layers=self._get_tts_postprocessing_layers(projected_states),
                 )
-            action_result = self.action_manager.runAction(action, projected_states)
+            action_result = self.action_manager.runAction(
+                action,
+                projected_states,
+                processing_callback=self.event_manager.add_tool_processing,
+            )
             action_results.append(action_result)
 
             self.event_manager.add_tool_call([action.model_dump()], [action_result], [action_input_desc] if action_input_desc else None)
@@ -1057,18 +1062,6 @@ class Assistant:
 
         method = action_descriptor.get('method')
         args = {'query': query}
-        self.tts.say(
-            f"Searching: {query}",
-            context="web_search",
-            postprocessing_layers=self._get_tts_postprocessing_layers(projected_states),
-        )
-        
-        try:
-            result_content = method(args, projected_states)
-        except Exception as e:
-            log('error', f"Error executing {action_name}", e)
-            result_content = f"Error: {e}"
-
         request = [{
             "id": f"call_{int(datetime.now().timestamp())}",
             "type": "function",
@@ -1077,7 +1070,26 @@ class Assistant:
                 "arguments": json.dumps(args)
             }
         }]
+        self.tts.say(
+            f"Searching: {query}",
+            context="web_search",
+            postprocessing_layers=self._get_tts_postprocessing_layers(projected_states),
+        )
         
+        try:
+            result_content = method(args, projected_states)
+            if isinstance(result_content, Iterator):
+                while True:
+                    try:
+                        processing_result = next(result_content)
+                    except StopIteration as stop:
+                        result_content = stop.value
+                        break
+                    self.event_manager.add_tool_processing(request[0]['id'], action_name, processing_result)
+        except Exception as e:
+            log('error', f"Error executing {action_name}", e)
+            result_content = f"Error: {e}"
+
         results = [{
             "tool_call_id": request[0]['id'],
             "role": "tool",

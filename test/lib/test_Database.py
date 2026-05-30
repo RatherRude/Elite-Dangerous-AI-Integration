@@ -12,6 +12,7 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 from src.lib.Database import EventStore, KeyValueStore, ModelUsageStore, VectorStore, set_connection_for_testing
+from src.lib.Event import ToolProcessingEvent
 import sqlite_vec
 
 # Test event classes
@@ -102,6 +103,29 @@ def test_event_store_insert(event_store: EventStore) -> None:
     assert isinstance(events[0], SampleEvent1)
     assert events[0].name == "test"
     assert events[0].value == 42
+
+def test_event_store_round_trips_tool_processing_event(mock_connection: sqlite3.Connection) -> None:
+    _ = mock_connection
+    event_store = EventStore("test_events", [ToolProcessingEvent])
+    event_store.delete_all()
+
+    event = ToolProcessingEvent(
+        tool_call_id="call_test",
+        name="testAction",
+        content={"status": "working"},
+        text="Working",
+    )
+    event_store.insert_event(event, 123.0)
+
+    events = event_store.get_latest(1)
+
+    assert len(events) == 1
+    assert isinstance(events[0], ToolProcessingEvent)
+    assert events[0].kind == "tool_processing"
+    assert events[0].tool_call_id == "call_test"
+    assert events[0].name == "testAction"
+    assert events[0].content == {"status": "working"}
+    assert events[0].text == "Working"
 
 def test_event_store_get_latest(event_store: EventStore) -> None:
     """Test retrieving latest events with limit"""

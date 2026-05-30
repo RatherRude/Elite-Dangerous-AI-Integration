@@ -2,6 +2,9 @@ name: Build and Test Executable on linux
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
 jobs:
   pyinstaller-build:
     name: Build Executable
@@ -210,3 +213,48 @@ jobs:
             python --version
             chmod +x ./dist/Chat/Chat
             python e2e/test_ChatExecutable.py
+
+  draft-release:
+    name: Add Linux Artifacts to Draft Release
+    needs: [flatpak-bundle, e2e-and-scan]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    concurrency:
+      group: release-${{ github.ref }}
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    steps:
+      - name: Download Flatpak artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: COVAS_NEXT_FLATPAK_v${{ github.sha }}_linux
+          path: release-assets
+
+      - name: Create or update draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+
+          ensure_draft_release() {
+            if gh release view "$TAG" >/dev/null 2>&1; then
+              if [ "$(gh release view "$TAG" --json isDraft --jq '.isDraft')" != "true" ]; then
+                echo "Release $TAG already exists and is not a draft. Refusing to attach assets."
+                exit 1
+              fi
+              return
+            fi
+
+            gh release create "$TAG" --draft --title "$TAG" --notes "Draft release for $TAG" || {
+              gh release view "$TAG" >/dev/null
+              if [ "$(gh release view "$TAG" --json isDraft --jq '.isDraft')" != "true" ]; then
+                echo "Release $TAG already exists and is not a draft. Refusing to attach assets."
+                exit 1
+              fi
+            }
+          }
+
+          ensure_draft_release
+          gh release upload "$TAG" release-assets/* --clobber

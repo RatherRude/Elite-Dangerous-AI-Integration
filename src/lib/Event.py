@@ -14,6 +14,7 @@ EventKind = Literal[
     'assistant_acting',
     'assistant_completed',
     'tool',
+    'tool_processing',
     'status',
     'projected',
     'external',
@@ -109,6 +110,15 @@ class ToolEvent(Event[Literal['tool']]):
 
 
 @dataclass(kw_only=True)
+class ToolProcessingEvent(Event[Literal['tool_processing']]):
+    tool_call_id: str
+    name: str
+    content: object
+    text: str | None = None
+    kind: Literal['tool_processing'] = 'tool_processing'
+
+
+@dataclass(kw_only=True)
 class MemoryEvent(Event[Literal['memory']]):
     content: str
     metadata: dict[str, object]
@@ -125,6 +135,7 @@ EventLike = (
     | PluginEvent
     | ConversationEvent
     | ToolEvent
+    | ToolProcessingEvent
     | MemoryEvent
 )
 
@@ -132,6 +143,7 @@ EventClasses: list[type[Event]] = [
     GameEvent,
     ConversationEvent,
     ToolEvent,
+    ToolProcessingEvent,
     StatusEvent,
     ProjectedEvent,
     ExternalEvent,

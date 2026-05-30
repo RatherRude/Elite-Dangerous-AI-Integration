@@ -74,7 +74,7 @@ class GenUIManager:
             "code": code,
         })
     
-    def generate(self, instruction: str | None, projected_states: ProjectedStates, undo: bool = False) -> str:
+    def generate(self, instruction: str | None, projected_states: ProjectedStates, undo: bool = False):
         """
         Generate or modify UI components, or undo the latest saved version.
         
@@ -127,7 +127,7 @@ class GenUIManager:
             # 1. LLM code generation
             # 2. SSR validation with QuickJS
             # 3. Review loop with approval/rejection
-            new_code, html_output = generate_ui_code(
+            new_code, html_output = yield from generate_ui_code(
                 instruction=instruction,
                 state=state_values,
                 current_code=self.current_code,
