@@ -22,7 +22,7 @@
   display: flex;
   flex-direction: column;
   gap: 0px;
-  padding: 20px;
+  padding-top: 16px;
 }
 
 :not(.avatar-option) mat-form-field {
@@ -36,7 +36,7 @@ mat-slide-toggle {
 /* Character Management Styles */
 .character-management-section {
   margin-bottom: 0;
-  padding: 16px;
+  padding-bottom: 16px;
   border-radius: 0;
   background-color: transparent;
   box-shadow: none;
