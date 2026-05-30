@@ -1,13 +1,6 @@
 <div class="general-dashboard">
     @if (config) {
-        <mat-slide-toggle
-            class="general-display-toggle"
-            [(ngModel)]="showLegacyGeneralSettings"
-            matTooltip="Toggle between the new compact view and the old General settings layout">
-            Old
-        </mat-slide-toggle>
-
-        @if (!showLegacyGeneralSettings) {
+        @if (useCompactGeneralSettings) {
             <div class="launcher-info-line" aria-label="General settings quick links">
                 <button
                     type="button"

@@ -11,16 +11,6 @@
   flex-direction: column;
 }
 
-.general-display-toggle {
-  position: absolute;
-  top: 0;
-  right: 0;
-  z-index: 1;
-  margin: 0;
-  transform: scale(0.86);
-  transform-origin: top right;
-}
-
 mat-form-field {
   width: 100%;
 }
@@ -33,7 +23,6 @@ mat-slide-toggle {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding-right: 5rem;
   overflow-x: auto;
 }
 

@@ -71,7 +71,7 @@ export class GeneralSettingsComponent implements OnDestroy {
     avatarUrl = "assets/cn_avatar_default.png";
     sanitizedAvatarPreviewSvg: SafeHtml | null = null;
     avatarPreviewStateClass: AvatarPreviewStateClass = "";
-    showLegacyGeneralSettings = false;
+    useCompactGeneralSettings = false;
     private configSubscription: Subscription;
     private systemSubscription: Subscription;
     private screensSubscription?: Subscription;
@@ -80,6 +80,7 @@ export class GeneralSettingsComponent implements OnDestroy {
     private avatarMimePrimary: string | null = null;
     private avatarSvgText: string | null = null;
     private avatarSvgFetchSeq = 0;
+    private hasCapturedInitialGeneralMode = false;
     private readonly svgStateClasses = ["listening", "speaking", "thinking", "acting"];
     private readonly avatarPreviewStateClasses: readonly AvatarPreviewStateClass[] = ["", "listening", "thinking", "speaking", "acting"];
     private avatarPreviewStateIndex = 0;
@@ -99,6 +100,10 @@ export class GeneralSettingsComponent implements OnDestroy {
         this.configSubscription = this.configService.config$.subscribe(
             (config) => {
                 this.config = config;
+                if (config && !this.hasCapturedInitialGeneralMode) {
+                    this.useCompactGeneralSettings = !!config.commander_name?.trim() && !!config.api_key?.trim();
+                    this.hasCapturedInitialGeneralMode = true;
+                }
                 this.assigningPTTIndex = null;
             },
         );
