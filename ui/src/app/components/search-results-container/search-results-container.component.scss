@@ -123,6 +123,26 @@
   font-style: italic;
 }
 
+.search-error {
+  color: #ff8a80;
+
+  pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: monospace;
+    background: rgba(255, 82, 82, 0.08);
+    border: 1px solid rgba(255, 82, 82, 0.2);
+    border-radius: 4px;
+    padding: 0.75rem;
+  }
+}
+
+.search-error-title {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
 .results-footer {
   text-align: right;
 }
