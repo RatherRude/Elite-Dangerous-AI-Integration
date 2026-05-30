@@ -274,6 +274,9 @@ class EventStore():
         events = []
         for row in rows:
             instance = instantiate_class_by_name(self.event_classes, row[0], json.loads(row[1]))
+            if instance is None:
+                log("warn", "Skipping unknown event class from history:", row[0])
+                continue
             instance.processed_at = row[2]
             instance.memorized_at = row[3]
             instance.responded_at = row[4]
