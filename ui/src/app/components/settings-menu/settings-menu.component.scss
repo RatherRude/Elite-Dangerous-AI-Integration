@@ -25,6 +25,13 @@
   padding: 20px;
 }
 
+.general-character-panel {
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
 mat-form-field {
   width: 100%;
 }

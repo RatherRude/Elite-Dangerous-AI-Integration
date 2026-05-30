@@ -31,8 +31,10 @@
                 </mat-card>
             }
             @if (config) {
-                <app-general-settings (openSettingsTarget)="openSettingsTarget($event)"></app-general-settings>
-                <app-character-settings></app-character-settings>
+                <section class="general-character-panel">
+                    <app-general-settings (openSettingsTarget)="openSettingsTarget($event)"></app-general-settings>
+                    <app-character-settings></app-character-settings>
+                </section>
             }
         </div>
     </mat-tab>

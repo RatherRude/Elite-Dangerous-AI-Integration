@@ -35,11 +35,11 @@ mat-slide-toggle {
 
 /* Character Management Styles */
 .character-management-section {
-  margin-bottom: 20px;
-  padding: 20px;
-  border-radius: 8px;
-  background-color: rgba(255, 255, 255, 0.05);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 0;
+  padding: 16px;
+  border-radius: 0;
+  background-color: transparent;
+  box-shadow: none;
 }
 
 .character-management-section:focus {
