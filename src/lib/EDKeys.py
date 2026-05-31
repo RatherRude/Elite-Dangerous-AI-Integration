@@ -12,7 +12,13 @@ import threading
 from .Logger import log
 from .UI import emit_message
 from .Config import get_asset_path
-from .directinput import PressKey, ReleaseKey
+from .directinput import (
+    PressKey,
+    PressMouseButton,
+    ReleaseKey,
+    ReleaseMouseButton,
+    ScrollMouseWheel,
+)
 
 """
 Description:  Pulls the keybindings for specific controls from the ED Key Bindings file, this class also
@@ -30,6 +36,17 @@ class EDKeys:
         self.key_mod_delay = 0.010
         self.key_default_delay = 0.200
         self.key_repeat_delay = 0.100
+        self.mouse_button_map = {
+            "Mouse_1": "left",
+            "Mouse_2": "right",
+            "Mouse_3": "middle",
+            "Mouse_4": "x1",
+            "Mouse_5": "x2",
+        }
+        self.mouse_wheel_map = {
+            "Pos_Mouse_ZAxis": 1,
+            "Neg_Mouse_ZAxis": -1,
+        }
 
         if platform.system() == "Windows":
             self.keymap: dict[str, int] = json.load(open(get_asset_path("keymap.json")))
@@ -209,55 +226,13 @@ class EDKeys:
         bindings_root = bindings_tree.getroot()
 
         for item in bindings_root:
-            key = None
-            mods = []
-            hold = None
-            if len(item) < 2:
+            selected_binding = self._select_binding(item)
+            if selected_binding is None:
                 continue
-            # Check primary
-            primary_binding_found = False
-            if (
-                item[0].tag == "Primary"
-                and item[0].attrib["Device"].strip() == "Keyboard"
-            ):
-                key = item[0].attrib["Key"]
-                for modifier in item[0]:
-                    if modifier.tag == "Modifier":
-                        mods.append(modifier.attrib["Key"])
-                    elif modifier.tag == "Hold":
-                        hold = True
-                primary_binding_found = True
-            # Check secondary (and prefer secondary)
-            prefer_secondary = (
-                not self.prefer_primary_bindings or not primary_binding_found
-            )
-            if (
-                prefer_secondary
-                and item[1].tag == "Secondary"
-                and item[1].attrib["Device"].strip() == "Keyboard"
-            ):
-                key = item[1].attrib["Key"]
-                mods = []
-                hold = None
-                for modifier in item[1]:
-                    if modifier.tag == "Modifier":
-                        mods.append(modifier.attrib["Key"])
-                    elif modifier.tag == "Hold":
-                        hold = True
-            # Prepare final binding
-            if len(item) > 2:
-                if item[2].tag == "ToggleOn" and item[2].attrib.get("Value") == "0":
-                    continue
+
             binding: None | dict[str, Any] = None
             try:
-                if key is not None:
-                    binding = {}
-                    binding["key"] = self.keymap[key]
-                    binding["mods"] = []
-                    for mod in mods:
-                        binding["mods"].append(self.keymap[mod])
-                    if hold is not None:
-                        binding["hold"] = True
+                binding = self._prepare_binding(selected_binding)
             except KeyError:
                 unsupported_keys.add(item.tag)
                 print(
@@ -275,6 +250,84 @@ class EDKeys:
             return {}
         else:
             return direct_input_keys
+
+    def _select_binding(self, item) -> Any | None:
+        binding_elements = [
+            binding
+            for binding in item
+            if binding.tag in ("Primary", "Secondary")
+            and binding.attrib.get("Device", "").strip() in ("Keyboard", "Mouse")
+            and binding.attrib.get("Key")
+        ]
+
+        if not binding_elements:
+            return None
+
+        keyboard_binding = self._select_preferred_binding(
+            [
+                binding
+                for binding in binding_elements
+                if binding.attrib.get("Device", "").strip() == "Keyboard"
+            ]
+        )
+        if keyboard_binding is not None:
+            return keyboard_binding
+
+        return self._select_preferred_binding(
+            [
+                binding
+                for binding in binding_elements
+                if binding.attrib.get("Device", "").strip() == "Mouse"
+            ]
+        )
+
+    def _select_preferred_binding(self, bindings: list[Any]) -> Any | None:
+        if not bindings:
+            return None
+
+        preferred_order = (
+            ["Primary", "Secondary"]
+            if self.prefer_primary_bindings
+            else ["Secondary", "Primary"]
+        )
+        for tag in preferred_order:
+            for binding in bindings:
+                if binding.tag == tag:
+                    return binding
+
+        return bindings[0]
+
+    def _prepare_binding(self, selected_binding) -> dict[str, Any]:
+        key = selected_binding.attrib["Key"]
+        device = selected_binding.attrib["Device"].strip()
+        mods = []
+        hold = None
+        for modifier in selected_binding:
+            if (
+                modifier.tag == "Modifier"
+                and modifier.attrib.get("Device", "").strip() == "Keyboard"
+            ):
+                mods.append(modifier.attrib["Key"])
+            elif modifier.tag == "Hold":
+                hold = True
+
+        binding: dict[str, Any] = {"mods": [self.keymap[mod] for mod in mods]}
+
+        if device == "Keyboard":
+            binding["key"] = self.keymap[key]
+        elif key in self.mouse_button_map:
+            binding["type"] = "mouse_button"
+            binding["button"] = self.mouse_button_map[key]
+        elif key in self.mouse_wheel_map:
+            binding["type"] = "mouse_wheel"
+            binding["clicks"] = self.mouse_wheel_map[key]
+        else:
+            raise KeyError(key)
+
+        if hold is not None:
+            binding["hold"] = True
+
+        return binding
 
     def get_latest_keybinds(self):
         path_bindings = os.path.join(self.appdata_path + "/", "Options", "Bindings")
@@ -384,9 +437,9 @@ class EDKeys:
         binding = self.keys.get(key_name)
         if binding is None:
             raise Exception(
-                f"Unable to retrieve keybinding for {key_name}. Advise user to check game settings for keyboard bindings."
+                f"Unable to retrieve keybinding for {key_name}. Advise user to check game settings for keyboard or mouse bindings."
             )
-        if not "key" in binding:
+        if "key" not in binding and "type" not in binding:
             raise Exception(f"Unsupported key {key_name}.")
 
         for i in range(repeat):
@@ -395,7 +448,7 @@ class EDKeys:
                     PressKey(mod)
                     sleep(self.key_mod_delay)
 
-                PressKey(binding["key"])
+                self._press_binding(binding)
 
             if state is None:
                 if hold:
@@ -407,7 +460,7 @@ class EDKeys:
                 sleep(0.1)
 
             if state is None or state == 0:
-                ReleaseKey(binding["key"])
+                self._release_binding(binding)
 
                 for mod in binding["mods"]:
                     sleep(self.key_mod_delay)
@@ -417,6 +470,20 @@ class EDKeys:
                 sleep(repeat_delay)
             else:
                 sleep(self.key_repeat_delay)
+
+    def _press_binding(self, binding: dict[str, Any]) -> None:
+        if "key" in binding:
+            PressKey(binding["key"])
+        elif binding.get("type") == "mouse_button":
+            PressMouseButton(binding["button"])
+        elif binding.get("type") == "mouse_wheel":
+            ScrollMouseWheel(binding["clicks"])
+
+    def _release_binding(self, binding: dict[str, Any]) -> None:
+        if "key" in binding:
+            ReleaseKey(binding["key"])
+        elif binding.get("type") == "mouse_button":
+            ReleaseMouseButton(binding["button"])
 
     def _watch_bindings_thread(self):
         """Thread that monitors for changes in the keybindings file"""

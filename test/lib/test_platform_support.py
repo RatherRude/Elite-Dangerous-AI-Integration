@@ -147,3 +147,25 @@ def test_directinput_press_and_release_key_uses_pynput_on_macos(monkeypatch):
 
     assert mock_keyboard.press.call_count == 1
     assert mock_keyboard.release.call_count == 1
+
+
+def test_directinput_mouse_button_emulation_uses_pynput_on_macos(monkeypatch):
+    monkeypatch.setattr('platform.system', lambda: 'Darwin')
+    mock_mouse = MagicMock()
+    monkeypatch.setattr(directinput, 'pynput_mouse', mock_mouse)
+
+    directinput.PressMouseButton('left')
+    directinput.ReleaseMouseButton('left')
+
+    assert mock_mouse.press.call_count == 1
+    assert mock_mouse.release.call_count == 1
+
+
+def test_directinput_mouse_wheel_uses_pynput_on_macos(monkeypatch):
+    monkeypatch.setattr('platform.system', lambda: 'Darwin')
+    mock_mouse = MagicMock()
+    monkeypatch.setattr(directinput, 'pynput_mouse', mock_mouse)
+
+    directinput.ScrollMouseWheel(-1)
+
+    mock_mouse.scroll.assert_called_once_with(0, -1)

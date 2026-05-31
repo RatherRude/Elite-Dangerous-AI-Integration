@@ -9,9 +9,40 @@ import platform
 from typing import final
 
 from pynput.keyboard import Controller, KeyCode  # pyright: ignore[reportMissingModuleSource]
+from pynput.mouse import Button, Controller as MouseController  # pyright: ignore[reportMissingModuleSource]
 
 SendInput = ctypes.windll.user32.SendInput if 'windll' in dir(ctypes) else None
 pynput_keyboard = Controller()
+pynput_mouse = MouseController()
+
+MOUSEEVENTF_LEFTDOWN = 0x0002
+MOUSEEVENTF_LEFTUP = 0x0004
+MOUSEEVENTF_RIGHTDOWN = 0x0008
+MOUSEEVENTF_RIGHTUP = 0x0010
+MOUSEEVENTF_MIDDLEDOWN = 0x0020
+MOUSEEVENTF_MIDDLEUP = 0x0040
+MOUSEEVENTF_XDOWN = 0x0080
+MOUSEEVENTF_XUP = 0x0100
+MOUSEEVENTF_WHEEL = 0x0800
+XBUTTON1 = 0x0001
+XBUTTON2 = 0x0002
+WHEEL_DELTA = 120
+
+WINDOWS_MOUSE_BUTTONS = {
+    "left": (MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, 0),
+    "right": (MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, 0),
+    "middle": (MOUSEEVENTF_MIDDLEDOWN, MOUSEEVENTF_MIDDLEUP, 0),
+    "x1": (MOUSEEVENTF_XDOWN, MOUSEEVENTF_XUP, XBUTTON1),
+    "x2": (MOUSEEVENTF_XDOWN, MOUSEEVENTF_XUP, XBUTTON2),
+}
+
+PYNPUT_MOUSE_BUTTONS = {
+    "left": Button.left,
+    "right": Button.right,
+    "middle": Button.middle,
+    "x1": Button.x1,
+    "x2": Button.x2,
+}
 
 # C struct redefinitions
 
@@ -59,6 +90,14 @@ class Input(ctypes.Structure):
 
 # Actual Functions
 
+def _send_mouse_input(flags: int, mouse_data: int = 0):
+    assert SendInput is not None
+    extra = ctypes.c_ulong(0)
+    ii_ = Input_I()
+    ii_.mi = MouseInput(0, 0, mouse_data, flags, 0, ctypes.pointer(extra))
+    x = Input(ctypes.c_ulong(0), ii_)
+    SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
+
 def PressKey(keyCode: int | str):
     if platform.system() == 'Windows':
         assert SendInput is not None
@@ -94,6 +133,26 @@ def ReleaseKey(keyCode: int | str):
         SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
     else:
         pynput_keyboard.release(KeyCode.from_vk(keyCode) if isinstance(keyCode, int) else KeyCode.from_char(keyCode))
+
+def PressMouseButton(button: str):
+    if platform.system() == 'Windows':
+        down_flag, _, mouse_data = WINDOWS_MOUSE_BUTTONS[button]
+        _send_mouse_input(down_flag, mouse_data)
+    else:
+        pynput_mouse.press(PYNPUT_MOUSE_BUTTONS[button])
+
+def ReleaseMouseButton(button: str):
+    if platform.system() == 'Windows':
+        _, up_flag, mouse_data = WINDOWS_MOUSE_BUTTONS[button]
+        _send_mouse_input(up_flag, mouse_data)
+    else:
+        pynput_mouse.release(PYNPUT_MOUSE_BUTTONS[button])
+
+def ScrollMouseWheel(clicks: int):
+    if platform.system() == 'Windows':
+        _send_mouse_input(MOUSEEVENTF_WHEEL, clicks * WHEEL_DELTA)
+    else:
+        pynput_mouse.scroll(0, clicks)
 
 def PressAndReleaseKey(hexKeyCode: int | str):
     PressKey(hexKeyCode)

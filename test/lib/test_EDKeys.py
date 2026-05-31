@@ -9,15 +9,24 @@ def mock_directinput(monkeypatch):
     """Mock DirectInput related functionality"""
     mock_press = MagicMock()
     mock_release = MagicMock()
+    mock_press_mouse = MagicMock()
+    mock_release_mouse = MagicMock()
+    mock_scroll_mouse = MagicMock()
     
     monkeypatch.setattr('src.lib.EDKeys.PressKey', mock_press)
     monkeypatch.setattr('src.lib.EDKeys.ReleaseKey', mock_release)
+    monkeypatch.setattr('src.lib.EDKeys.PressMouseButton', mock_press_mouse)
+    monkeypatch.setattr('src.lib.EDKeys.ReleaseMouseButton', mock_release_mouse)
+    monkeypatch.setattr('src.lib.EDKeys.ScrollMouseWheel', mock_scroll_mouse)
     
     monkeypatch.setattr('platform.system', lambda: 'Windows')
     
     return {
         'PressKey': mock_press,
-        'ReleaseKey': mock_release
+        'ReleaseKey': mock_release,
+        'PressMouseButton': mock_press_mouse,
+        'ReleaseMouseButton': mock_release_mouse,
+        'ScrollMouseWheel': mock_scroll_mouse,
     }
 
 @pytest.fixture
@@ -39,6 +48,22 @@ def binds_file(tmp_path):
             <Primary Device="Keyboard" Key="Key_Q"/>
             <Secondary Device="Keyboard" Key="Key_E"/>
         </CycleNextTarget>
+        <HumanoidPrimaryFireButton>
+            <Primary Device="Mouse" Key="Mouse_1" />
+            <Secondary Device="{NoDevice}" Key="" />
+        </HumanoidPrimaryFireButton>
+        <HumanoidItemWheelButton_YUp>
+            <Primary Device="{NoDevice}" Key="" />
+            <Secondary Device="Mouse" Key="Pos_Mouse_ZAxis" />
+        </HumanoidItemWheelButton_YUp>
+        <KeyboardPrimaryMouseSecondary>
+            <Primary Device="Keyboard" Key="Key_Q" />
+            <Secondary Device="Mouse" Key="Mouse_2" />
+        </KeyboardPrimaryMouseSecondary>
+        <MousePrimaryKeyboardSecondary>
+            <Primary Device="Mouse" Key="Mouse_2" />
+            <Secondary Device="Keyboard" Key="Key_G" />
+        </MousePrimaryKeyboardSecondary>
         <InvalidBinding>
             <Primary Device="Keyboard" Key="Key_Invalid"/>
         </InvalidBinding>
@@ -127,3 +152,43 @@ def test_cycle_next_target_binding_respects_preference(mock_directinput, binds_f
 
     assert binding['key'] == expected_key
     assert binding['mods'] == []
+
+def test_get_bindings_loads_mouse_buttons_and_wheel(mock_directinput, binds_file):
+    """Mouse buttons and wheel axes should be loaded from Elite bindings."""
+    keys = EDKeys(binds_file)
+
+    assert keys.keys['HumanoidPrimaryFireButton'] == {
+        'type': 'mouse_button',
+        'button': 'left',
+        'mods': [],
+    }
+    assert keys.keys['HumanoidItemWheelButton_YUp'] == {
+        'type': 'mouse_wheel',
+        'clicks': 1,
+        'mods': [],
+    }
+
+def test_keyboard_bindings_are_preferred_over_mouse_bindings(mock_directinput, binds_file):
+    """Keyboard bindings should win when a control has both keyboard and mouse assigned."""
+    keys = EDKeys(binds_file)
+
+    assert keys.keys['KeyboardPrimaryMouseSecondary']['key'] == 16
+    assert keys.keys['MousePrimaryKeyboardSecondary']['key'] == 34
+
+def test_send_mouse_button_supports_press_and_release_state(mock_directinput, binds_file):
+    """Mouse button bindings should support held press and release calls."""
+    keys = EDKeys(binds_file)
+
+    keys.send('HumanoidPrimaryFireButton', state=1)
+    keys.send('HumanoidPrimaryFireButton', state=0)
+
+    mock_directinput["PressMouseButton"].assert_called_once_with('left')
+    mock_directinput["ReleaseMouseButton"].assert_called_once_with('left')
+
+def test_send_mouse_wheel_scrolls_once(mock_directinput, binds_file):
+    """Mouse wheel bindings should emit scroll events."""
+    keys = EDKeys(binds_file)
+
+    keys.send('HumanoidItemWheelButton_YUp')
+
+    mock_directinput["ScrollMouseWheel"].assert_called_once_with(1)
