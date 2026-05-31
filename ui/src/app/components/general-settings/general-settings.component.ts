@@ -71,6 +71,7 @@ export class GeneralSettingsComponent implements OnDestroy {
     avatarUrl = "assets/cn_avatar_default.png";
     sanitizedAvatarPreviewSvg: SafeHtml | null = null;
     avatarPreviewStateClass: AvatarPreviewStateClass = "";
+    canUseCompactGeneralSettings = false;
     useCompactGeneralSettings = false;
     private configSubscription: Subscription;
     private systemSubscription: Subscription;
@@ -101,7 +102,8 @@ export class GeneralSettingsComponent implements OnDestroy {
             (config) => {
                 this.config = config;
                 if (config && !this.hasCapturedInitialGeneralMode) {
-                    this.useCompactGeneralSettings = !!config.commander_name?.trim() && !!config.api_key?.trim();
+                    this.canUseCompactGeneralSettings = !!config.commander_name?.trim() && !!config.api_key?.trim();
+                    this.useCompactGeneralSettings = this.canUseCompactGeneralSettings;
                     this.hasCapturedInitialGeneralMode = true;
                 }
                 this.assigningPTTIndex = null;
@@ -181,20 +183,28 @@ export class GeneralSettingsComponent implements OnDestroy {
         return this.activeCharacter?.name?.trim() || "Not set";
     }
 
-    get activeEventCount(): number {
+    get eventReactionCounts(): { on: number; off: number; hidden: number } {
         const events = this.activeCharacter?.event_reactions;
+        const counts = { on: 0, off: 0, hidden: 0 };
         if (!events) {
-            return 0;
+            return counts;
         }
-        return Object.values(events).filter((state) => state === "on").length;
+
+        for (const state of Object.values(events)) {
+            if (state === "on") {
+                counts.on += 1;
+            } else if (state === "hidden") {
+                counts.hidden += 1;
+            } else {
+                counts.off += 1;
+            }
+        }
+
+        return counts;
     }
 
     get avatarPreviewUsesInlineSvg(): boolean {
         return this.avatarMimePrimary === "image/svg+xml";
-    }
-
-    get activeEventLabel(): string {
-        return this.activeEventCount === 1 ? "1 active event" : `${this.activeEventCount} active events`;
     }
 
     private advanceAvatarPreviewState(): void {

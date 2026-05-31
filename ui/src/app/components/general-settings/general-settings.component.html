@@ -42,14 +42,24 @@
                     <span>Overlay</span>
                     <strong>{{ overlayModeLabel }}</strong>
                 </button>
+                @if (canUseCompactGeneralSettings) {
+                    <button
+                        type="button"
+                        class="info-chip info-chip-icon"
+                        matTooltip="Show more general settings"
+                        aria-label="Show more general settings"
+                        (click)="useCompactGeneralSettings = false">
+                        <mat-icon>add</mat-icon>
+                    </button>
+                }
             </div>
 
-            <button
-                type="button"
-                class="minimal-character-display"
-                (click)="openTarget('character')"
-                matTooltip="Open Character settings">
-                <span class="minimal-character-avatar">
+            <div class="minimal-character-display">
+                <button
+                    type="button"
+                    class="minimal-character-avatar"
+                    (click)="openTarget('character')"
+                    matTooltip="Open Character settings">
                     @if (avatarPreviewUsesInlineSvg) {
                         <span
                             #generalAvatarSvg
@@ -65,10 +75,23 @@
                             class="minimal-avatar-image"
                             [ngClass]="avatarPreviewStateClass">
                     }
-                </span>
+                </button>
                 <strong>{{ characterName }}</strong>
-                <span>{{ activeEventLabel }}</span>
-            </button>
+                <span class="minimal-event-stats" aria-label="Character event reaction counts">
+                    <span matTooltip="Events this character reacts to">
+                        <mat-icon>volume_up</mat-icon>
+                        {{ eventReactionCounts.on }}
+                    </span>
+                    <span matTooltip="Events this character can see but does not react to">
+                        <mat-icon>visibility</mat-icon>
+                        {{ eventReactionCounts.off }}
+                    </span>
+                    <span matTooltip="Events hidden from this character">
+                        <mat-icon>close</mat-icon>
+                        {{ eventReactionCounts.hidden }}
+                    </span>
+                </span>
+            </div>
         } @else {
         <div class="legacy-general-settings">
             <mat-form-field>
@@ -323,6 +346,18 @@
                     <p>{{ overlayRuntimeSummary }}</p>
                 }
             </div>
+            @if (canUseCompactGeneralSettings) {
+                <button
+                    mat-stroked-button
+                    type="button"
+                    class="general-view-collapse-button"
+                    matTooltip="Show less general settings"
+                    aria-label="Show less general settings"
+                    (click)="useCompactGeneralSettings = true">
+                    <mat-icon>remove</mat-icon>
+                    Show less
+                </button>
+            }
         </div>
         }
     }

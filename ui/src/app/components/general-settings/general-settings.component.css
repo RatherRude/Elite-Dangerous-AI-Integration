@@ -11,6 +11,15 @@
   flex-direction: column;
 }
 
+.general-view-collapse-button {
+  align-self: center;
+  margin-top: 0.5rem;
+}
+
+.general-view-collapse-button mat-icon {
+  margin-right: 0.25rem;
+}
+
 mat-form-field {
   width: 100%;
 }
@@ -46,6 +55,14 @@ mat-slide-toggle {
 .info-chip:focus-visible {
   background: rgba(255, 255, 255, 0.08);
   outline: none;
+}
+
+.info-chip-icon {
+  flex: 0 0 auto;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0.35rem;
 }
 
 .info-chip mat-icon {
@@ -85,42 +102,63 @@ mat-slide-toggle {
   flex-direction: column;
   gap: 0.25rem;
   margin: 0.5rem 0 1rem;
-  border: 0;
-  background: transparent;
   color: inherit;
-  cursor: pointer;
-  font: inherit;
   text-align: center;
 }
 
-.minimal-character-display:hover,
-.minimal-character-display:focus-visible {
-  outline: none;
-}
-
-.minimal-character-display:hover .minimal-character-avatar,
-.minimal-character-display:focus-visible .minimal-character-avatar {
-  border-color: rgba(255, 255, 255, 0.4);
-}
-
 .minimal-character-display strong {
+  cursor: default;
   font-size: 1rem;
   font-weight: 600;
 }
 
 .minimal-character-display span {
   color: rgba(255, 255, 255, 0.62);
+  cursor: default;
   font-size: 0.8rem;
 }
 
-.minimal-character-avatar {
+.minimal-event-stats {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+}
+
+.minimal-event-stats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.minimal-event-stats mat-icon {
+  width: 16px;
+  height: 16px;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 16px;
+}
+
+.minimal-character-display .minimal-character-avatar {
   width: 112px;
   height: 112px;
+  padding: 0;
   overflow: hidden;
+  border: 0;
   border-radius: 12px;
-  border: 1px solid transparent;
   background: rgba(0, 0, 0, 0.24);
+  cursor: pointer;
   transition: border-color 160ms ease;
+}
+
+.minimal-character-display .minimal-character-avatar,
+.minimal-character-display .minimal-character-avatar * {
+  cursor: pointer;
+}
+
+.minimal-character-display .minimal-character-avatar:hover,
+.minimal-character-display .minimal-character-avatar:focus-visible {
+  outline: 1px solid rgba(255, 255, 255, 0.4);
+  outline-offset: 2px;
 }
 
 .minimal-avatar-image {
