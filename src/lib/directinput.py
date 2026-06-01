@@ -36,14 +36,6 @@ WINDOWS_MOUSE_BUTTONS = {
     "x2": (MOUSEEVENTF_XDOWN, MOUSEEVENTF_XUP, XBUTTON2),
 }
 
-PYNPUT_MOUSE_BUTTONS = {
-    "left": Button.left,
-    "right": Button.right,
-    "middle": Button.middle,
-    "x1": Button.x1,
-    "x2": Button.x2,
-}
-
 # C struct redefinitions
 
 PUL = ctypes.POINTER(ctypes.c_ulong)
@@ -98,6 +90,12 @@ def _send_mouse_input(flags: int, mouse_data: int = 0):
     x = Input(ctypes.c_ulong(0), ii_)
     SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
 
+def _get_pynput_mouse_button(button: str):
+    pynput_button = getattr(Button, button, None)
+    if pynput_button is None:
+        raise KeyError(f"Unsupported mouse button {button} on this platform.")
+    return pynput_button
+
 def PressKey(keyCode: int | str):
     if platform.system() == 'Windows':
         assert SendInput is not None
@@ -139,14 +137,14 @@ def PressMouseButton(button: str):
         down_flag, _, mouse_data = WINDOWS_MOUSE_BUTTONS[button]
         _send_mouse_input(down_flag, mouse_data)
     else:
-        pynput_mouse.press(PYNPUT_MOUSE_BUTTONS[button])
+        pynput_mouse.press(_get_pynput_mouse_button(button))
 
 def ReleaseMouseButton(button: str):
     if platform.system() == 'Windows':
         _, up_flag, mouse_data = WINDOWS_MOUSE_BUTTONS[button]
         _send_mouse_input(up_flag, mouse_data)
     else:
-        pynput_mouse.release(PYNPUT_MOUSE_BUTTONS[button])
+        pynput_mouse.release(_get_pynput_mouse_button(button))
 
 def ScrollMouseWheel(clicks: int):
     if platform.system() == 'Windows':

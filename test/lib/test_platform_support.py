@@ -1,4 +1,5 @@
 import pytest
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 from src.lib.Config import assign_ptt, get_ed_appdata_path
@@ -159,6 +160,18 @@ def test_directinput_mouse_button_emulation_uses_pynput_on_macos(monkeypatch):
 
     assert mock_mouse.press.call_count == 1
     assert mock_mouse.release.call_count == 1
+
+
+def test_directinput_extra_mouse_buttons_are_looked_up_lazily(monkeypatch):
+    monkeypatch.setattr('platform.system', lambda: 'Darwin')
+    mock_mouse = MagicMock()
+    monkeypatch.setattr(directinput, 'pynput_mouse', mock_mouse)
+    fake_left_button = object()
+    monkeypatch.setattr(directinput, 'Button', SimpleNamespace(left=fake_left_button))
+
+    directinput.PressMouseButton('left')
+
+    mock_mouse.press.assert_called_once_with(fake_left_button)
 
 
 def test_directinput_mouse_wheel_uses_pynput_on_macos(monkeypatch):
