@@ -1383,8 +1383,8 @@ def get_visuals(obj, projected_states):
 
 def target_subsystem_thread(current_subsystem: str, current_event_id: str, desired_subsystem: str):
     if not current_subsystem:
-        keys.send('CycleNextSubsystem')
-        log('debug', 'CycleNextSubsystem key sent first time')
+        keys.send('CyclePreviousSubsystem')
+        log('debug', 'CyclePreviousSubsystem key sent first time')
         new_state = event_manager.wait_for_condition('Target', lambda s: s.Subsystem)
         if not new_state:
             show_chat_message('info', 'No subsystems found on target')
@@ -1393,8 +1393,8 @@ def target_subsystem_thread(current_subsystem: str, current_event_id: str, desir
         current_event_id = new_state.EventID
     subsystem_loop = False
     while current_subsystem != desired_subsystem:
-        keys.send('CycleNextSubsystem')
-        log('debug', 'CycleNextSubsystem key sent')
+        keys.send('CyclePreviousSubsystem')
+        log('debug', 'CyclePreviousSubsystem key sent')
         new_state = event_manager.wait_for_condition('Target', lambda s: s.EventID != current_event_id)
         if not new_state.Subsystem:
             show_chat_message('info', 'Target lost, abort cycle')

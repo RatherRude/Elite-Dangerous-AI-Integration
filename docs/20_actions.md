@@ -457,7 +457,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     <details>
     <summary>Required Keyboard Binds</summary>
 
-    - CycleNextSubsystem
+    - CyclePreviousSubsystem
     </details>
 
 17. **Charge ECM**

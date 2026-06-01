@@ -88,7 +88,7 @@ class EDKeys:
             "TargetWingman2",
             "SelectTargetsTarget",
             "WingNavLock",
-            "CycleNextSubsystem",
+            "CyclePreviousSubsystem",
             "CycleFireGroupNext",
             "CycleFireGroupPrevious",
             "PlayerHUDModeToggle",
