@@ -1,8 +1,23 @@
-.settings-grid {
+.general-dashboard {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 0px;
-  padding: 20px;
+  gap: 1rem;
+  min-height: 260px;
+}
+
+.legacy-general-settings {
+  display: flex;
+  flex-direction: column;
+}
+
+.general-view-collapse-button {
+  align-self: center;
+  margin-top: 0.5rem;
+}
+
+.general-view-collapse-button mat-icon {
+  margin-right: 0.25rem;
 }
 
 mat-form-field {
@@ -13,7 +28,177 @@ mat-slide-toggle {
   margin: 10px 0;
 }
 
-.ptt-container, .overlay-controls {
+.launcher-info-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  overflow-x: auto;
+}
+
+.info-chip {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 25%;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.45rem;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  white-space: nowrap;
+}
+
+.info-chip:hover,
+.info-chip:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+
+.info-chip-icon {
+  flex: 0 0 auto;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0.35rem;
+}
+
+.info-chip mat-icon {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 18px;
+}
+
+.info-chip span,
+.info-chip small {
+  flex: 0 0 auto;
+  color: rgba(255, 255, 255, 0.56);
+  font-size: 0.75rem;
+}
+
+.info-chip strong {
+  min-width: 0;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 900px) {
+  .info-chip {
+    max-width: none;
+  }
+}
+
+.minimal-character-display {
+  display: flex;
+  align-items: center;
+  align-self: center;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0.5rem 0 1rem;
+  color: inherit;
+  text-align: center;
+}
+
+.minimal-character-display strong {
+  cursor: default;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.minimal-character-display span {
+  color: rgba(255, 255, 255, 0.62);
+  cursor: default;
+  font-size: 0.8rem;
+}
+
+.minimal-event-stats {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+}
+
+.minimal-event-stats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.minimal-event-stats mat-icon {
+  width: 16px;
+  height: 16px;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 16px;
+}
+
+.minimal-character-display .minimal-character-avatar {
+  width: 112px;
+  height: 112px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.24);
+  cursor: pointer;
+  transition: border-color 160ms ease;
+}
+
+.minimal-character-display .minimal-character-avatar,
+.minimal-character-display .minimal-character-avatar * {
+  cursor: pointer;
+}
+
+.minimal-character-display .minimal-character-avatar:hover,
+.minimal-character-display .minimal-character-avatar:focus-visible {
+  outline: 1px solid rgba(255, 255, 255, 0.4);
+  outline-offset: 2px;
+}
+
+.minimal-avatar-image {
+  display: block;
+  width: 200%;
+  height: 200%;
+  transform: translate(0, 0);
+}
+
+.minimal-avatar-image.listening {
+  transform: translate(0, 0);
+}
+
+.minimal-avatar-image.speaking {
+  transform: translate(-50%, 0);
+}
+
+.minimal-avatar-image.thinking {
+  transform: translate(0, -50%);
+}
+
+.minimal-avatar-image.acting {
+  transform: translate(-50%, -50%);
+}
+
+.minimal-avatar-svg {
+  width: 100%;
+  height: 100%;
+  transform: none;
+}
+
+.minimal-avatar-svg ::ng-deep svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ptt-container,
+.overlay-primary-controls,
+.overlay-secondary-controls {
   display: flex;
   gap: 1rem;
 }
@@ -24,9 +209,14 @@ mat-slide-toggle {
   flex-wrap: wrap;
 }
 
-.overlay-controls {
-  align-items: center;
-  justify-content: center;
+.ptt-container mat-form-field {
+  flex: 1 1 14rem;
+  margin: 0;
+}
+
+.ptt-container mat-slide-toggle {
+  flex: 1 1 14rem;
+  padding-bottom: 1rem;
 }
 
 .sound-devices {
@@ -36,19 +226,15 @@ mat-slide-toggle {
   gap: 1rem;
 }
 
-.audio-refresh-button {
-  flex: 0 0 auto;
-  margin-top: 0.25rem;
-}
-
 .sound-devices > .sound-devices-input,
 .sound-devices > .output-device-column {
   flex: 1 1 0;
   min-width: 0;
 }
 
-div.output-device-column .mat-mdc-form-field-subscript-wrapper {
-    display: none !important;
+.audio-refresh-button {
+  flex: 0 0 auto;
+  margin-top: 0.25rem;
 }
 
 .output-device-column {
@@ -56,6 +242,10 @@ div.output-device-column .mat-mdc-form-field-subscript-wrapper {
   flex-direction: column;
   gap: 0.2rem;
   width: 100%;
+}
+
+div.output-device-column .mat-mdc-form-field-subscript-wrapper {
+  display: none !important;
 }
 
 .output-volume-row {
@@ -91,13 +281,13 @@ div.output-device-column .mat-mdc-form-field-subscript-wrapper {
 .output-volume-slider ::ng-deep .mat-mdc-focus-indicator {
   top: -10px;
 }
+
 .output-volume-slider ::ng-deep .mdc-slider__thumb-knob {
   width: 14px;
   height: 14px;
   top: 15px;
 }
 
-/* Red accent when gain is above 1.0 (boost) */
 .output-volume-boost .output-volume-slider {
   --mdc-slider-handle-color: #c62828;
   --mdc-slider-focus-handle-color: #c62828;
@@ -115,14 +305,50 @@ div.output-device-column .mat-mdc-form-field-subscript-wrapper {
   border-color: #c62828;
 }
 
-.ptt-container mat-form-field {
+.overlay-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.overlay-primary-controls,
+.overlay-secondary-controls {
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.overlay-primary-controls mat-form-field,
+.overlay-secondary-controls mat-form-field {
   flex: 1 1 14rem;
   margin: 0;
 }
 
-.ptt-container mat-slide-toggle {
+.overlay-toggle-column {
+  display: flex;
+  flex: 1 1 10rem;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.overlay-toggle-column mat-slide-toggle {
+  margin: 0;
+}
+
+.overlay-slider-field {
+  display: flex;
   flex: 1 1 14rem;
-  padding-bottom: 1rem;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.overlay-slider-field label {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.overlay-slider-field mat-slider {
+  width: 100%;
 }
 
 ul {

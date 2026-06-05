@@ -68,9 +68,14 @@ export interface BackendLifecycleMessage extends BaseMessage {
 export interface OverlayCreateOptions {
     alwaysOnTop: boolean;
     screenId?: number;
-    mode?: "screen" | "vr";
+    mode?: "disabled" | "desktop" | "vr" | "both";
     vrSizeMeters?: number;
     vrAnchor?: "head" | "world";
+    vrHorizontalOffset?: number;
+    vrVerticalOffset?: number;
+    vrDistanceOffset?: number;
+    vrTiltDegrees?: number;
+    vrCurvature?: number;
 }
 
 export interface OverlayRuntimeInfo {

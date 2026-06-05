@@ -1,6 +1,7 @@
-import { Component, EventEmitter, OnDestroy, Output } from "@angular/core";
+import { Component, ElementRef, EventEmitter, OnDestroy, Output, ViewChild } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import {
+    MatError,
     MatFormField,
     MatFormFieldModule,
     MatHint,
@@ -21,7 +22,10 @@ import { MatButtonModule } from "@angular/material/button";
 import { Character, CharacterService } from "../../services/character.service.js";
 import { ConfigBackupService } from "../../services/config-backup.service";
 import { MatIcon } from "@angular/material/icon";
-import { TauriService } from "../../services/tauri.service";
+import {
+    OverlayRuntimeInfo,
+    TauriService,
+} from "../../services/tauri.service";
 import {
     MatAccordion,
     MatExpansionModule,
@@ -34,6 +38,17 @@ import { SettingsGridComponent } from "../settings-grid/settings-grid.component"
 import { MatDialog } from "@angular/material/dialog";
 import { ConfirmationDialogComponent } from "../confirmation-dialog/confirmation-dialog.component";
 import { ChatService } from "../../services/chat.service";
+import { MatSliderModule } from "@angular/material/slider";
+import { MatTooltipModule } from "@angular/material/tooltip";
+import { ScreenInfo } from "../../models/screen-info";
+
+export type AdvancedSettingsFocusTarget =
+    | "commander-name"
+    | "stt-input-device"
+    | "tts-output-device"
+    | "overlay-mode";
+
+type AdvancedSettingsPanel = "commander" | "stt" | "tts" | "overlay";
 
 @Component({
     selector: "app-advanced-settings",
@@ -50,6 +65,7 @@ import { ChatService } from "../../services/chat.service";
         MatSelect,
         MatOption,
         MatHint,
+        MatError,
         MatOptgroup,
         MatIcon,
         MatAccordion,
@@ -58,21 +74,45 @@ import { ChatService } from "../../services/chat.service";
         MatExpansionPanelHeader,
         MatExpansionPanelTitle,
         SettingsGridComponent,
+        MatSliderModule,
+        MatTooltipModule,
     ],
     templateUrl: "./advanced-settings.component.html",
     styleUrl: "./advanced-settings.component.css",
 })
 export class AdvancedSettingsComponent implements OnDestroy {
     @Output() questEditorOpen = new EventEmitter<void>();
+    @ViewChild("commanderNameInput") private commanderNameInput?: ElementRef<HTMLInputElement>;
+    @ViewChild("commanderNameField", { read: ElementRef }) private commanderNameField?: ElementRef<HTMLElement>;
+    @ViewChild("sttInputDeviceField", { read: ElementRef }) private sttInputDeviceField?: ElementRef<HTMLElement>;
+    @ViewChild("sttInputDeviceSelect") private sttInputDeviceSelect?: MatSelect;
+    @ViewChild("ttsOutputDeviceField", { read: ElementRef }) private ttsOutputDeviceField?: ElementRef<HTMLElement>;
+    @ViewChild("ttsOutputDeviceSelect") private ttsOutputDeviceSelect?: MatSelect;
+    @ViewChild("overlayModeField", { read: ElementRef }) private overlayModeField?: ElementRef<HTMLElement>;
+    @ViewChild("overlayModeSelect") private overlayModeSelect?: MatSelect;
     
     config: Config | null = null;
     system: SystemInfo | null = null;
     character: Character | null = null;
+    screens: ScreenInfo[] = [];
+    overlayRuntimeInfo: OverlayRuntimeInfo | null = null;
     configSubscription: Subscription;
     systemSubscription: Subscription;
     characterSubscription: Subscription;
     pluginProvidersSubscription: Subscription;
+    screensSubscription: Subscription;
     voiceInstructionSupportedModels: string[] = this.characterService.voiceInstructionSupportedModels;
+    hideApiKey = true;
+    apiKeyType: string | null = null;
+    assigningPTTIndex: number | null = null;
+    isRefreshingAudioDevices = false;
+    highlightTarget: AdvancedSettingsFocusTarget | null = null;
+    expandedPanels: Record<AdvancedSettingsPanel, boolean> = {
+        commander: false,
+        stt: false,
+        tts: false,
+        overlay: false,
+    };
 
     // Plugin model providers grouped by kind
     pluginLLMProviders: ModelProviderDefinition[] = [];
@@ -92,6 +132,7 @@ export class AdvancedSettingsComponent implements OnDestroy {
         this.configSubscription = this.configService.config$.subscribe(
             (config) => {
                 this.config = config;
+                this.assigningPTTIndex = null;
             },
         );
         this.systemSubscription = this.configService.system$.subscribe(
@@ -112,6 +153,12 @@ export class AdvancedSettingsComponent implements OnDestroy {
                 this.pluginEmbeddingProviders = providers.filter(p => p.kind === 'embedding');
             }
         );
+        this.screensSubscription = this.configService.screens$.subscribe(
+            (screens) => {
+                this.screens = screens ?? [];
+            },
+        );
+        void this.loadOverlayRuntimeInfo();
     }
     ngOnDestroy() {
         // Unsubscribe from the config observable to prevent memory leaks
@@ -126,6 +173,59 @@ export class AdvancedSettingsComponent implements OnDestroy {
         }
         if (this.pluginProvidersSubscription) {
             this.pluginProvidersSubscription.unsubscribe();
+        }
+        if (this.screensSubscription) {
+            this.screensSubscription.unsubscribe();
+        }
+    }
+
+    public focusSetting(target: AdvancedSettingsFocusTarget): void {
+        const panel = this.getPanelForTarget(target);
+        this.expandedPanels[panel] = true;
+        this.highlightTarget = target;
+
+        window.setTimeout(() => {
+            this.focusTarget(target);
+        }, 250);
+
+        window.setTimeout(() => {
+            if (this.highlightTarget === target) {
+                this.highlightTarget = null;
+            }
+        }, 1700);
+    }
+
+    private getPanelForTarget(target: AdvancedSettingsFocusTarget): AdvancedSettingsPanel {
+        switch (target) {
+            case "commander-name":
+                return "commander";
+            case "stt-input-device":
+                return "stt";
+            case "tts-output-device":
+                return "tts";
+            case "overlay-mode":
+                return "overlay";
+        }
+    }
+
+    private focusTarget(target: AdvancedSettingsFocusTarget): void {
+        switch (target) {
+            case "commander-name":
+                this.commanderNameInput?.nativeElement.focus();
+                this.commanderNameField?.nativeElement.scrollIntoView({ behavior: "smooth", block: "center" });
+                break;
+            case "stt-input-device":
+                this.sttInputDeviceSelect?.focus();
+                this.sttInputDeviceField?.nativeElement.scrollIntoView({ behavior: "smooth", block: "center" });
+                break;
+            case "tts-output-device":
+                this.ttsOutputDeviceSelect?.focus();
+                this.ttsOutputDeviceField?.nativeElement.scrollIntoView({ behavior: "smooth", block: "center" });
+                break;
+            case "overlay-mode":
+                this.overlayModeSelect?.focus();
+                this.overlayModeField?.nativeElement.scrollIntoView({ behavior: "smooth", block: "center" });
+                break;
         }
     }
 
@@ -201,6 +301,106 @@ export class AdvancedSettingsComponent implements OnDestroy {
     }
     updateTTSPrompt(prompt: string) {
         this.characterService.setCharacterProperty("tts_prompt", prompt);
+    }
+
+    async onApiKeyChange(apiKey: string) {
+        if (!this.config) return;
+
+        await this.onConfigChange({ api_key: apiKey });
+
+        let providerChanges: Partial<Config> = {};
+
+        if (apiKey.startsWith("AQ") || apiKey.startsWith("AIzaS")) {
+            this.apiKeyType = "Google AI Studio";
+            providerChanges = {
+                llm_provider: "google-ai-studio",
+                agent_llm_provider: "google-ai-studio",
+                stt_provider: "google-ai-studio",
+                vision_provider: "google-ai-studio",
+                tts_provider: "edge-tts",
+                vision_var: true,
+                embedding_provider: "google-ai-studio",
+            };
+        } else if (apiKey.startsWith("sk-or-v1")) {
+            this.apiKeyType = "OpenRouter";
+            providerChanges = {
+                llm_provider: "openrouter",
+                agent_llm_provider: "openrouter",
+                stt_provider: "none",
+                vision_provider: "none",
+                tts_provider: "edge-tts",
+                vision_var: false,
+                embedding_provider: "none",
+            };
+        } else if (apiKey.startsWith("sk-")) {
+            this.apiKeyType = "OpenAI";
+            providerChanges = {
+                llm_provider: "openai",
+                agent_llm_provider: "openai",
+                stt_provider: "openai",
+                vision_provider: "openai",
+                tts_provider: "edge-tts",
+                vision_var: true,
+                embedding_provider: "openai",
+            };
+        } else {
+            this.apiKeyType = null;
+            return;
+        }
+
+        await this.onConfigChange(providerChanges);
+    }
+
+    async onAssignPTT(e: Event, index: number) {
+        e.preventDefault();
+        this.assigningPTTIndex = index;
+        await this.configService.assignPTT(index);
+    }
+
+    formatOutputVolumeLabel = (value: number): string => value.toFixed(2);
+
+    async refreshAudioDevices() {
+        this.isRefreshingAudioDevices = true;
+
+        try {
+            await this.configService.refreshSystemInfo();
+        } catch (error) {
+            console.error("Error refreshing audio devices:", error);
+            this.snackBar.open("Error refreshing audio devices", "OK", {
+                duration: 5000,
+            });
+        } finally {
+            this.isRefreshingAudioDevices = false;
+        }
+    }
+
+    get overlayRuntimeSummary(): string {
+        const info = this.overlayRuntimeInfo;
+        if (!info) {
+            return "Checking VR runtime support...";
+        }
+        if (!info.packageInstalled) {
+            return "The optional electron-vr package is not installed yet.";
+        }
+        if (!info.available) {
+            return `VR bridge loaded, but no runtime is ready. Backend: ${info.selectedBackend}.`;
+        }
+        const runtimePath = info.openvrRuntimePath ? ` (${info.openvrRuntimePath})` : "";
+        return `VR ready via ${info.selectedBackend}${runtimePath}.`;
+    }
+
+    get overlayRuntimeReady(): boolean {
+        const info = this.overlayRuntimeInfo;
+        return !!info?.packageInstalled && info.available;
+    }
+
+    private async loadOverlayRuntimeInfo(): Promise<void> {
+        try {
+            this.overlayRuntimeInfo = await this.tauriService.getOverlayRuntimeInfo();
+        } catch (error) {
+            console.error("Error loading overlay runtime info:", error);
+            this.overlayRuntimeInfo = null;
+        }
     }
 
     parseFloat(value: string): number {

@@ -547,7 +547,7 @@ class GenUIAgent:
         return response, tools
 
     @observe()
-    def iterate_genui(self, current_code: str, state: Dict, instruction: str, state_schema: Optional[Dict] = None) -> tuple[str, str]:
+    def iterate_genui(self, current_code: str, state: Dict, instruction: str, state_schema: Optional[Dict] = None):
         """
         Main entry point. Takes instructions and ensures valid output.
         
@@ -585,6 +585,10 @@ class GenUIAgent:
         ]
 
         print(f"--- Agent Task: {instruction} ---")
+        yield {
+            "status": "generating",
+            "instruction": instruction,
+        }
         _log_genui(
             "info",
             "Starting generation run",
@@ -597,9 +601,21 @@ class GenUIAgent:
         for attempt in range(self.max_retries):
             print(f"Attempt {attempt + 1}/{self.max_retries} generating...")
             _log_genui("info", f"Attempt {attempt + 1}/{self.max_retries} started")
+            yield {
+                "status": "attempt_started",
+                "instruction": instruction,
+                "attempt": attempt + 1,
+                "max_attempts": self.max_retries,
+            }
 
             for _step in range(self.max_tool_steps):
                 _log_genui("debug", f"Attempt {attempt + 1} step {_step + 1}/{self.max_tool_steps} requesting LLM action")
+                yield {
+                    "status": "thinking",
+                    "instruction": instruction,
+                    "attempt": attempt + 1,
+                    "step": _step + 1,
+                }
                 response_text, tool_calls = self._call_llm(messages, tools=GENUI_TOOLS)
 
                 if tool_calls:
@@ -623,6 +639,16 @@ class GenUIAgent:
                         except json.JSONDecodeError:
                             func_args = {}
 
+                        yield {
+                            "status": "started",
+                            "instruction": instruction,
+                            "attempt": attempt + 1,
+                            "step": _step + 1,
+                            "internal_tool_call_id": tool_call.id,
+                            "internal_tool_name": func_name,
+                            "arguments": func_args,
+                        }
+
                         tool_result = self._run_generation_tool(
                             func_name=func_name,
                             func_args=func_args,
@@ -631,6 +657,9 @@ class GenUIAgent:
                             state_schema=state_schema,
                         )
                         working_components = tool_result["components"]
+                        result_preview = str(tool_result["content"])
+                        if len(result_preview) > 2000:
+                            result_preview = result_preview[:2000] + "..."
 
                         if func_name == "validate":
                             last_validation = tool_result["validation"]
@@ -644,6 +673,16 @@ class GenUIAgent:
                                     f"Validation failed on attempt {attempt + 1} step {_step + 1}",
                                     _preview_for_log(last_validation["result"]),
                                 )
+
+                        yield {
+                            "status": "completed",
+                            "instruction": instruction,
+                            "attempt": attempt + 1,
+                            "step": _step + 1,
+                            "internal_tool_call_id": tool_call.id,
+                            "internal_tool_name": func_name,
+                            "result": result_preview,
+                        }
 
                         messages.append({
                             "tool_call_id": tool_call.id,
@@ -664,10 +703,20 @@ class GenUIAgent:
                     if review_result["approved"]:
                         print(f"Review: APPROVED - {review_result['reason']}")
                         _log_genui("info", "Review approved", _preview_for_log(review_result["reason"]))
+                        yield {
+                            "status": "review_approved",
+                            "instruction": instruction,
+                            "reason": review_result["reason"],
+                        }
                         return current_code, html_output
 
                     print(f"Review: REJECTED - {review_result['reason']}")
                     _log_genui("warn", "Review rejected", _preview_for_log(review_result["reason"]))
+                    yield {
+                        "status": "review_rejected",
+                        "instruction": instruction,
+                        "reason": review_result["reason"],
+                    }
                     messages.append({
                         "role": "user",
                         "content": (
@@ -1229,7 +1278,7 @@ def generate_ui_code(
     agent.max_retries = max_retries
     agent.validator = get_validator()
     
-    final_code, html_output = agent.iterate_genui(current_code, state, instruction, state_schema)
+    final_code, html_output = yield from agent.iterate_genui(current_code, state, instruction, state_schema)
     
     # Save to store
     # Simple versioning: increment major version if we could parse it, else 1.0

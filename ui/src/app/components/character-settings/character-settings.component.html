@@ -2,7 +2,11 @@
     @if (config && activeCharacter) {
         <div [class.editing-active]="editMode">
             <!-- Character Management Section -->
-            <div class="character-management-section">
+            <div
+                #characterOverview
+                class="character-management-section"
+                [class.focus-highlight]="highlightCharacterOverview"
+                tabindex="-1">
                 <div class="character-selector">
                     <mat-form-field appearance="fill">
                         <mat-label>Select Character</mat-label>
@@ -606,10 +610,12 @@
             </div>
         </div>
 
-        <h2>Conversation History</h2>
         <div class="clear_history">
-            <p>This will clear the conversation history with the AI while keeping the current game state machine intact. If you change the character, you may want to reset the conversation history, so the AI starts the conversation with a blank slate.</p>
-            <button mat-stroked-button color="warn" (click)="onClearHistory()">
+            <button
+                mat-raised-button
+                color="warn"
+                matTooltip="Clear current conversation history. Useful after changing character so the AI starts with a blank slate."
+                (click)="onClearHistory()">
                 <mat-icon>delete_sweep</mat-icon>
                 Clear Conversation
             </button>

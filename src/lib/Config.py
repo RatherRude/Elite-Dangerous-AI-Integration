@@ -874,11 +874,16 @@ class Config(TypedDict):
     overlay_show_avatar: bool
     overlay_show_hud: bool
     overlay_show_chat: bool
-    overlay_mode: Literal['screen', 'vr']
+    overlay_mode: Literal['disabled', 'desktop', 'vr', 'both']
     overlay_position: Literal['left', 'right', 'left-medium', 'left-small', 'right-medium', 'right-small']
     overlay_screen_id: int
     overlay_vr_size_meters: float
     overlay_vr_anchor: Literal['head', 'world']
+    overlay_vr_horizontal_offset: float
+    overlay_vr_vertical_offset: float
+    overlay_vr_distance_offset: float
+    overlay_vr_tilt_degrees: float
+    overlay_vr_curvature: float
     
     enable_remote_tracing: bool
 
@@ -1219,6 +1224,14 @@ def migrate(data: dict) -> dict:
         data.setdefault('overlay_vr_size_meters', 0.9)
         data.setdefault('overlay_vr_anchor', 'head')
 
+    if data['config_version'] < 17:
+        data['config_version'] = 17
+        if data.get('overlay_mode') == 'screen':
+            data['overlay_mode'] = 'desktop'
+        if data.get('overlay_mode') == 'vr' and data.get('overlay_vr_streamer_mode'):
+            data['overlay_mode'] = 'both'
+        data.pop('overlay_vr_streamer_mode', None)
+
     return data
 
 
@@ -1321,7 +1334,7 @@ def getDefaultCharacter(config: Config) -> Character:
 
 def load_config() -> Config:
     defaults: Config = {
-        'config_version': 16,
+        'config_version': 17,
         'commander_name': "",
         'characters': [],
         'active_character_index': 0,  # -1 means using the default legacy character
@@ -1394,11 +1407,16 @@ def load_config() -> Config:
         "overlay_show_avatar": True,
         "overlay_show_hud": False,
         "overlay_show_chat": True,
-        "overlay_mode": "screen",
+        "overlay_mode": "desktop",
         "overlay_position": "right",
         "overlay_screen_id": -1,  # -1 means primary screen
         "overlay_vr_size_meters": 0.9,
         "overlay_vr_anchor": "head",
+        "overlay_vr_horizontal_offset": 0.0,
+        "overlay_vr_vertical_offset": 0.0,
+        "overlay_vr_distance_offset": 0.0,
+        "overlay_vr_tilt_degrees": 0.0,
+        "overlay_vr_curvature": 0.0,
         
         "enable_remote_tracing": False,
         

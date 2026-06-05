@@ -1,5 +1,14 @@
-import { Component, OnDestroy } from "@angular/core";
+import { Component, ElementRef, EventEmitter, OnDestroy, Output, ViewChild } from "@angular/core";
 import { CommonModule } from "@angular/common";
+import { DomSanitizer, SafeHtml } from "@angular/platform-browser";
+import { MatIcon } from "@angular/material/icon";
+import {
+    Config,
+    ConfigService,
+    SystemInfo,
+} from "../../services/config.service.js";
+import { Subscription } from "rxjs";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import {
     MatError,
     MatFormField,
@@ -7,26 +16,25 @@ import {
     MatHint,
     MatLabel,
 } from "@angular/material/form-field";
-import { MatIcon } from "@angular/material/icon";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatOption, MatSelect } from "@angular/material/select";
-import {
-    Config,
-    ConfigService,
-    SystemInfo,
-} from "../../services/config.service.js";
-import {
-    OverlayRuntimeInfo,
-    TauriService,
-} from "../../services/tauri.service";
-import { Subscription } from "rxjs";
+import { OverlayRuntimeInfo, TauriService } from "../../services/tauri.service";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { FormsModule } from "@angular/forms";
 import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
 import { MatSliderModule } from "@angular/material/slider";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { ScreenInfo } from "../../models/screen-info";
+import { Character, CharacterService } from "../../services/character.service";
+import { combineLatest } from "rxjs";
+
+export type GeneralSettingsTarget =
+    | "commander"
+    | "character"
+    | "audio-input"
+    | "audio-output"
+    | "overlay";
+type AvatarPreviewStateClass = "" | "listening" | "thinking" | "speaking" | "acting";
 
 @Component({
     selector: "app-general-settings",
@@ -45,20 +53,39 @@ import { ScreenInfo } from "../../models/screen-info";
         MatOption,
         MatHint,
         MatError,
-        MatSliderModule,
         MatTooltipModule,
+        MatSliderModule,
     ],
     templateUrl: "./general-settings.component.html",
     styleUrls: ["./general-settings.component.css"],
 })
 export class GeneralSettingsComponent implements OnDestroy {
+    @Output() openSettingsTarget = new EventEmitter<GeneralSettingsTarget>();
+    @ViewChild("generalAvatarSvg") private generalAvatarSvg?: ElementRef<HTMLDivElement>;
+
     config: Config | null = null;
     system: SystemInfo | null = null;
     screens: ScreenInfo[] = [];
     overlayRuntimeInfo: OverlayRuntimeInfo | null = null;
+    activeCharacter: Character | null = null;
+    avatarUrl = "assets/cn_avatar_default.png";
+    sanitizedAvatarPreviewSvg: SafeHtml | null = null;
+    avatarPreviewStateClass: AvatarPreviewStateClass = "";
+    canUseCompactGeneralSettings = false;
+    useCompactGeneralSettings = false;
     private configSubscription: Subscription;
     private systemSubscription: Subscription;
     private screensSubscription?: Subscription;
+    private characterSubscription: Subscription;
+    private avatarMimeSubscription: Subscription;
+    private avatarMimePrimary: string | null = null;
+    private avatarSvgText: string | null = null;
+    private avatarSvgFetchSeq = 0;
+    private hasCapturedInitialGeneralMode = false;
+    private readonly svgStateClasses = ["listening", "speaking", "thinking", "acting"];
+    private readonly avatarPreviewStateClasses: readonly AvatarPreviewStateClass[] = ["", "listening", "thinking", "speaking", "acting"];
+    private avatarPreviewStateIndex = 0;
+    private readonly avatarPreviewInterval = setInterval(() => this.advanceAvatarPreviewState(), 1200);
     hideApiKey = true;
     apiKeyType: string | null = null;
     assigningPTTIndex: number | null = null;
@@ -68,10 +95,17 @@ export class GeneralSettingsComponent implements OnDestroy {
         private configService: ConfigService,
         private tauriService: TauriService,
         private snackBar: MatSnackBar,
+        private characterService: CharacterService,
+        private sanitizer: DomSanitizer,
     ) {
         this.configSubscription = this.configService.config$.subscribe(
             (config) => {
                 this.config = config;
+                if (config && !this.hasCapturedInitialGeneralMode) {
+                    this.canUseCompactGeneralSettings = !!config.commander_name?.trim() && !!config.api_key?.trim();
+                    this.useCompactGeneralSettings = this.canUseCompactGeneralSettings;
+                    this.hasCapturedInitialGeneralMode = true;
+                }
                 this.assigningPTTIndex = null;
             },
         );
@@ -85,33 +119,177 @@ export class GeneralSettingsComponent implements OnDestroy {
                 this.screens = screens ?? [];
             }
         );
+        this.characterSubscription = this.characterService.character$.subscribe(
+            (character) => {
+                this.activeCharacter = character;
+            },
+        );
+        this.avatarMimeSubscription = combineLatest([this.characterService.avatarUrl$, this.characterService.avatarMime$]).subscribe(
+            ([avatarUrl, mime]) => {
+                this.avatarUrl = avatarUrl || this.characterService.getAvatarUrl();
+                this.avatarMimePrimary = mime;
+                this.avatarSvgText = null;
+                this.refreshAvatarPreviewSvg();
+            },
+        );
         void this.loadOverlayRuntimeInfo();
     }
 
     ngOnDestroy() {
-        // Unsubscribe from the config observable to prevent memory leaks
-        if (this.configSubscription) {
-            this.configSubscription.unsubscribe();
+        this.configSubscription.unsubscribe();
+        this.systemSubscription.unsubscribe();
+        this.screensSubscription?.unsubscribe();
+        this.characterSubscription.unsubscribe();
+        this.avatarMimeSubscription.unsubscribe();
+        clearInterval(this.avatarPreviewInterval);
+    }
+
+    openTarget(target: GeneralSettingsTarget): void {
+        this.openSettingsTarget.emit(target);
+    }
+
+    get commanderName(): string {
+        return this.config?.commander_name?.trim() || "Not set";
+    }
+
+    get inputDeviceName(): string {
+        return this.config?.input_device_name?.trim() || "Default input device";
+    }
+
+    get outputDeviceName(): string {
+        return this.config?.output_device_name?.trim() || "Default output device";
+    }
+
+    get overlayModeLabel(): string {
+        switch (this.config?.overlay_mode) {
+            case "desktop":
+                return "Desktop Overlay";
+            case "vr":
+                return "VR Overlay";
+            case "both":
+                return "Desktop + VR Overlay";
+            case "disabled":
+            default:
+                return "Disabled";
         }
-        if (this.systemSubscription) {
-            this.systemSubscription.unsubscribe();
+    }
+
+    get outputLevelLabel(): string {
+        const multiplier = this.config?.output_volume_multiplier ?? 1;
+        return `${Math.round(multiplier * 100)}%`;
+    }
+
+    get characterName(): string {
+        return this.activeCharacter?.name?.trim() || "Not set";
+    }
+
+    get eventReactionCounts(): { on: number; off: number; hidden: number } {
+        const events = this.activeCharacter?.event_reactions;
+        const counts = { on: 0, off: 0, hidden: 0 };
+        if (!events) {
+            return counts;
         }
-        if (this.screensSubscription) {
-            this.screensSubscription.unsubscribe();
+
+        for (const state of Object.values(events)) {
+            if (state === "on") {
+                counts.on += 1;
+            } else if (state === "hidden") {
+                counts.hidden += 1;
+            } else {
+                counts.off += 1;
+            }
+        }
+
+        return counts;
+    }
+
+    get avatarPreviewUsesInlineSvg(): boolean {
+        return this.avatarMimePrimary === "image/svg+xml";
+    }
+
+    private advanceAvatarPreviewState(): void {
+        this.avatarPreviewStateIndex = (this.avatarPreviewStateIndex + 1) % this.avatarPreviewStateClasses.length;
+        this.avatarPreviewStateClass = this.avatarPreviewStateClasses[this.avatarPreviewStateIndex];
+        this.updateSanitizedAvatarSvg();
+        setTimeout(() => this.applyAvatarPreviewSvgStateClass());
+    }
+
+    private refreshAvatarPreviewSvg(): void {
+        if (!this.avatarPreviewUsesInlineSvg || !this.avatarUrl) {
+            this.avatarSvgFetchSeq += 1;
+            this.sanitizedAvatarPreviewSvg = null;
+            return;
+        }
+        void this.loadAvatarPreviewSvg(this.avatarUrl);
+    }
+
+    private async loadAvatarPreviewSvg(url: string): Promise<void> {
+        const seq = ++this.avatarSvgFetchSeq;
+        try {
+            const res = await fetch(url);
+            const text = await res.text();
+            if (seq !== this.avatarSvgFetchSeq || url !== this.avatarUrl || !this.avatarPreviewUsesInlineSvg) {
+                return;
+            }
+            this.avatarSvgText = text;
+            this.updateSanitizedAvatarSvg();
+            setTimeout(() => this.applyAvatarPreviewSvgStateClass());
+        } catch (err) {
+            console.error("General settings: failed to load SVG avatar preview", err);
+            if (seq === this.avatarSvgFetchSeq) {
+                this.sanitizedAvatarPreviewSvg = null;
+            }
+        }
+    }
+
+    private updateSanitizedAvatarSvg(): void {
+        if (!this.avatarSvgText || !this.avatarPreviewUsesInlineSvg) {
+            return;
+        }
+        const safe = this.stripScriptsFromSvg(this.syncSvgRootClass(this.avatarSvgText, this.avatarPreviewStateClass));
+        this.sanitizedAvatarPreviewSvg = this.sanitizer.bypassSecurityTrustHtml(safe);
+    }
+
+    private syncSvgRootClass(svg: string, stateClass: AvatarPreviewStateClass): string {
+        return svg.replace(/<svg\b([^>]*)>/i, (_m, attrs: string) => {
+            const classMatch = attrs.match(/\sclass\s*=\s*(["'])(.*?)\1/i);
+            const preservedClasses = classMatch?.[2]
+                .split(/\s+/)
+                .filter(Boolean)
+                .filter((className) => !this.svgStateClasses.includes(className)) ?? [];
+            const nextAttrs = attrs.replace(/\sclass\s*=\s*(["']).*?\1/i, "").trim();
+            const nextClasses = stateClass ? [...preservedClasses, stateClass] : preservedClasses;
+            const classAttr = nextClasses.length > 0 ? ` class="${nextClasses.join(" ")}"` : "";
+            return nextAttrs ? `<svg ${nextAttrs}${classAttr}>` : `<svg${classAttr}>`;
+        });
+    }
+
+    private stripScriptsFromSvg(svg: string): string {
+        return svg.replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "");
+    }
+
+    private applyAvatarPreviewSvgStateClass(): void {
+        if (!this.avatarPreviewUsesInlineSvg) {
+            return;
+        }
+        const svg = this.generalAvatarSvg?.nativeElement.querySelector("svg");
+        if (!svg) {
+            return;
+        }
+        svg.classList.remove(...this.svgStateClasses);
+        if (this.avatarPreviewStateClass) {
+            svg.classList.add(this.avatarPreviewStateClass);
         }
     }
 
     async onApiKeyChange(apiKey: string) {
         if (!this.config) return;
 
-        // Update the API key in config first
         await this.onConfigChange({ api_key: apiKey });
 
-        // Detect API key type
         let providerChanges: Partial<Config> = {};
 
         if (apiKey.startsWith("AQ") || apiKey.startsWith("AIzaS")) {
-            // Google AI Studio
             this.apiKeyType = "Google AI Studio";
             providerChanges = {
                 llm_provider: "google-ai-studio",
@@ -123,7 +301,6 @@ export class GeneralSettingsComponent implements OnDestroy {
                 embedding_provider: "google-ai-studio",
             };
         } else if (apiKey.startsWith("sk-or-v1")) {
-            // OpenRouter
             this.apiKeyType = "OpenRouter";
             providerChanges = {
                 llm_provider: "openrouter",
@@ -135,7 +312,6 @@ export class GeneralSettingsComponent implements OnDestroy {
                 embedding_provider: "none",
             };
         } else if (apiKey.startsWith("sk-")) {
-            // OpenAI
             this.apiKeyType = "OpenAI";
             providerChanges = {
                 llm_provider: "openai",
@@ -147,12 +323,10 @@ export class GeneralSettingsComponent implements OnDestroy {
                 embedding_provider: "openai",
             };
         } else {
-            // Unknown key type
             this.apiKeyType = null;
-            return; // Don't update providers if key type is unknown
+            return;
         }
 
-        // Update providers based on detected key type
         await this.onConfigChange(providerChanges);
     }
 
@@ -207,6 +381,11 @@ export class GeneralSettingsComponent implements OnDestroy {
         }
         const runtimePath = info.openvrRuntimePath ? ` (${info.openvrRuntimePath})` : "";
         return `VR ready via ${info.selectedBackend}${runtimePath}.`;
+    }
+
+    get overlayRuntimeReady(): boolean {
+        const info = this.overlayRuntimeInfo;
+        return !!info?.packageInstalled && info.available;
     }
 
     private async loadOverlayRuntimeInfo(): Promise<void> {

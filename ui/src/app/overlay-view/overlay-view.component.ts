@@ -46,6 +46,7 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
   readonly avatarBaseWidth = 250;
   avatarShow: boolean = true;
   chatShow: boolean = true;
+  isStreamerWindow: boolean = false;
   private isInitialized: boolean = false;
 
   constructor(
@@ -58,6 +59,8 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     private eventService: EventService,
     private sanitizer: DomSanitizer,
   ) {
+    this.isStreamerWindow = this.getStreamerWindowFlag();
+
     // Subscribe to run mode changes
     this.subscriptions.push(
       pngTuberService.runMode$.subscribe((mode)=>{
@@ -147,6 +150,17 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     // Make sure the background is transparent
     document.body.style.backgroundColor = "transparent";
     document.documentElement.style.backgroundColor = "transparent";
+  }
+
+  private getStreamerWindowFlag(): boolean {
+    if (new URLSearchParams(window.location.search).get("streamer") === "1") {
+      return true;
+    }
+    const queryIndex = window.location.hash.indexOf("?");
+    if (queryIndex === -1) {
+      return false;
+    }
+    return new URLSearchParams(window.location.hash.slice(queryIndex + 1)).get("streamer") === "1";
   }
   
   ngAfterViewInit() {

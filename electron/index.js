@@ -82,30 +82,88 @@ const config = isDevelopment ? {
   backend_args: [],
 }
 
-function getOverlayPlacement(vrAnchor) {
+function getOverlayUrl(opts = {}) {
+  const overlayUrl = new URL(config.overlay);
+  if (overlayUrl.hash) {
+    const [hashPath, hashQuery = ''] = overlayUrl.hash.split('?');
+    const hashParams = new URLSearchParams(hashQuery);
+    for (const [key, value] of Object.entries(opts)) {
+      hashParams.set(key, String(value));
+    }
+    overlayUrl.hash = `${hashPath}?${hashParams.toString()}`;
+  } else {
+    for (const [key, value] of Object.entries(opts)) {
+      overlayUrl.searchParams.set(key, String(value));
+    }
+  }
+  return overlayUrl.toString();
+}
+
+function getPitchRotation(tiltDegrees = 0) {
+  const radians = tiltDegrees * Math.PI / 180;
+  const halfRadians = radians / 2;
+  return { x: Math.sin(halfRadians), y: 0, z: 0, w: Math.cos(halfRadians) };
+}
+
+function getOverlayPlacement(vrAnchor, vrSizeMeters, horizontalOffset = 0, verticalOffset = 0, distanceOffset = 0, tiltDegrees = 0) {
+  const rotation = getPitchRotation(tiltDegrees);
   if (vrAnchor === 'world') {
+    const distance = Math.max(0.1, 2.0 + distanceOffset);
+    const widthOffset = 0.5;
+    const heightOffset = (720 / 1280) / 2;
     return {
       mode: 'world',
-      position: { x: 0, y: 1.4, z: -2.0 },
-      rotation: { x: 0, y: 0, z: 0, w: 1 },
+      position: { x: horizontalOffset - widthOffset, y: 1.4 + verticalOffset - heightOffset, z: -distance },
+      rotation,
     };
   }
+  const distance = Math.max(0.1, 1.1 + distanceOffset);
   return {
     mode: 'head',
-    position: { x: 0, y: 0, z: -1.1 },
-    rotation: { x: 0, y: 0, z: 0, w: 1 },
+    position: { x: horizontalOffset, y: verticalOffset, z: -distance },
+    rotation,
   };
 }
 
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
 function normalizeOverlayOptions(opts = {}) {
+  const mode = opts.mode === 'screen'
+    ? 'desktop'
+    : ['disabled', 'desktop', 'vr', 'both'].includes(opts.mode)
+      ? opts.mode
+      : 'desktop';
+  const vrHorizontalOffset = Number.isFinite(opts.vrHorizontalOffset)
+    ? clamp(opts.vrHorizontalOffset, -2.0, 2.0)
+    : 0;
+  const vrVerticalOffset = Number.isFinite(opts.vrVerticalOffset)
+    ? clamp(opts.vrVerticalOffset, -1.5, 1.5)
+    : 0;
+  const vrDistanceOffset = Number.isFinite(opts.vrDistanceOffset)
+    ? clamp(opts.vrDistanceOffset, -0.75, 1.5)
+    : 0;
+  const vrTiltDegrees = Number.isFinite(opts.vrTiltDegrees)
+    ? clamp(opts.vrTiltDegrees, -90, 90)
+    : 0;
+  const vrCurvature = Number.isFinite(opts.vrCurvature)
+    ? clamp(opts.vrCurvature, 0, 0.5)
+    : 0;
+
   return {
     alwaysOnTop: Boolean(opts.alwaysOnTop),
     screenId: Number.isInteger(opts.screenId) ? opts.screenId : -1,
-    mode: opts.mode === 'vr' ? 'vr' : 'screen',
+    mode,
     vrSizeMeters: Number.isFinite(opts.vrSizeMeters) && opts.vrSizeMeters > 0
       ? opts.vrSizeMeters
       : 0.9,
     vrAnchor: opts.vrAnchor === 'world' ? 'world' : 'head',
+    vrHorizontalOffset,
+    vrVerticalOffset,
+    vrDistanceOffset,
+    vrTiltDegrees,
+    vrCurvature,
   };
 }
 
@@ -646,8 +704,9 @@ async function createVrOverlayWindow(opts) {
     name: 'COVAS_NEXT_Overlay',
     frameRate: 60,
     sizeMeters: opts.vrSizeMeters,
+    curvature: opts.vrCurvature,
     visible: true,
-    placement: getOverlayPlacement(opts.vrAnchor),
+    placement: getOverlayPlacement(opts.vrAnchor, opts.vrSizeMeters, opts.vrHorizontalOffset, opts.vrVerticalOffset, opts.vrDistanceOffset, opts.vrTiltDegrees),
   });
 
   if (!vrOverlay) {
@@ -660,6 +719,7 @@ async function createVrOverlayWindow(opts) {
   return {
     kind: 'vr',
     window: overlayWindow,
+    windows: [overlayWindow],
     controller: vrOverlay,
     runtimeInfo,
     cleanedUp: false,
@@ -668,12 +728,36 @@ async function createVrOverlayWindow(opts) {
 
 async function createManagedOverlay(opts) {
   const normalized = normalizeOverlayOptions(opts);
-  if (normalized.mode === 'vr') {
-    return createVrOverlayWindow(normalized);
+  if (normalized.mode === 'disabled') {
+    return {
+      kind: 'disabled',
+      window: null,
+      windows: [],
+      controller: null,
+      runtimeInfo: null,
+      cleanedUp: false,
+    };
   }
+  if (normalized.mode === 'vr') {
+    return await createVrOverlayWindow(normalized);
+  }
+  if (normalized.mode === 'both') {
+    const vrOverlay = await createVrOverlayWindow(normalized);
+    const desktopWindow = createFloatingOverlayWindow(normalized);
+    return {
+      kind: 'both',
+      window: desktopWindow,
+      windows: [desktopWindow, vrOverlay.window],
+      controller: vrOverlay.controller,
+      runtimeInfo: vrOverlay.runtimeInfo,
+      cleanedUp: false,
+    };
+  }
+  const overlayWindow = createFloatingOverlayWindow(normalized);
   return {
     kind: 'screen',
-    window: createFloatingOverlayWindow(normalized),
+    window: overlayWindow,
+    windows: [overlayWindow],
     controller: null,
     runtimeInfo: null,
     cleanedUp: false,
@@ -685,7 +769,9 @@ function disposeOverlay(overlay, backend, closeWindow = true) {
     return;
   }
   overlay.cleanedUp = true;
-  backend.detachWindow(overlay.window);
+  for (const window of overlay.windows ?? [overlay.window]) {
+    backend.detachWindow(window);
+  }
   if (overlay.controller) {
     try {
       overlay.controller.destroy();
@@ -693,8 +779,12 @@ function disposeOverlay(overlay, backend, closeWindow = true) {
       logger.warn('Failed to destroy VR overlay controller:', error);
     }
   }
-  if (closeWindow && overlay.window && !overlay.window.isDestroyed()) {
-    overlay.window.close();
+  if (closeWindow) {
+    for (const window of overlay.windows ?? [overlay.window]) {
+      if (window && !window.isDestroyed()) {
+        window.close();
+      }
+    }
   }
 }
 
@@ -735,13 +825,15 @@ app.whenReady().then(async ()=>{
     if (floatingOverlay.runtimeInfo) {
       logger.info('VR overlay runtime info:', floatingOverlay.runtimeInfo);
     }
-    backend.attachWindow(floatingOverlay.window);
-    activeOverlay.window.on('closed', () => {
-      disposeOverlay(activeOverlay, backend, false);
-      if (floatingOverlay === activeOverlay) {
-        floatingOverlay = null;
-      }
-    });
+    for (const window of floatingOverlay.windows ?? [floatingOverlay.window]) {
+      backend.attachWindow(window);
+      window.on('closed', () => {
+        disposeOverlay(activeOverlay, backend);
+        if (floatingOverlay === activeOverlay) {
+          floatingOverlay = null;
+        }
+      });
+    }
   });
   ipcMain.handle('destroy_floating_overlay', async (event) => {
     if (floatingOverlay) {
