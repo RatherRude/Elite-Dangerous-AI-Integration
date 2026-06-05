@@ -95,7 +95,7 @@
   aspect-ratio: 1;
   grid-area: pngtuber;
   /* Default fallback image - now handled dynamically in TypeScript based on position */
-  background-image: url('../../assets/cn_avatar_default.png');
+  background-image: url('../../assets/cn_avatar_default.svg');
   background-size: 200%;
   background-position: 0% 0%;
   background-repeat: no-repeat;

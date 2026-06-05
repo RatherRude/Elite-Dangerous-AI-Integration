@@ -36,7 +36,7 @@ export type GeneralSettingsTarget =
     | "audio-output"
     | "overlay"
     | "actions";
-type AvatarPreviewStateClass = "" | "listening" | "thinking" | "speaking" | "acting";
+type AvatarPreviewStateClass = "listening" | "thinking" | "speaking" | "acting";
 type PreflightChecklistItem = "commander" | "input" | "output" | "overlay" | "actions" | "covas";
 
 @Component({
@@ -97,9 +97,9 @@ export class GeneralSettingsComponent implements OnDestroy {
     keybindsData: KeybindsMessages | null = null;
     pluginSTTProviders: ModelProviderDefinition[] = [];
     pluginTTSProviders: ModelProviderDefinition[] = [];
-    avatarUrl = "assets/cn_avatar_default.png";
+    avatarUrl = "assets/cn_avatar_default.svg";
     sanitizedAvatarPreviewSvg: SafeHtml | null = null;
-    avatarPreviewStateClass: AvatarPreviewStateClass = "";
+    avatarPreviewStateClass: AvatarPreviewStateClass = "listening";
     private configSubscription: Subscription;
     private systemSubscription: Subscription;
     private screensSubscription?: Subscription;
@@ -113,9 +113,9 @@ export class GeneralSettingsComponent implements OnDestroy {
     private avatarSvgFetchSeq = 0;
     private preflightListResizeObserver?: ResizeObserver;
     private readonly svgStateClasses = ["listening", "speaking", "thinking", "acting"];
-    private readonly avatarPreviewStateClasses: readonly AvatarPreviewStateClass[] = ["", "listening", "thinking", "speaking", "acting"];
+    private readonly avatarPreviewStateClasses: readonly AvatarPreviewStateClass[] = ["listening", "thinking", "acting", "speaking"];
     private avatarPreviewStateIndex = 0;
-    private readonly avatarPreviewInterval = setInterval(() => this.advanceAvatarPreviewState(), 1200);
+    private readonly avatarPreviewInterval = setInterval(() => this.advanceAvatarPreviewState(), 3000);
     hideApiKey = true;
     apiKeyType: string | null = null;
     assigningPTTIndex: number | null = null;
@@ -170,7 +170,7 @@ export class GeneralSettingsComponent implements OnDestroy {
         this.avatarMimeSubscription = combineLatest([this.characterService.avatarUrl$, this.characterService.avatarMime$]).subscribe(
             ([avatarUrl, mime]) => {
                 this.avatarUrl = avatarUrl || this.characterService.getAvatarUrl();
-                this.avatarMimePrimary = mime;
+                this.avatarMimePrimary = mime ?? this.characterService.getAvatarMime();
                 this.avatarSvgText = null;
                 this.refreshAvatarPreviewSvg();
             },
@@ -377,7 +377,8 @@ export class GeneralSettingsComponent implements OnDestroy {
     }
 
     get avatarPreviewUsesInlineSvg(): boolean {
-        return this.avatarMimePrimary === "image/svg+xml";
+        const mime = this.avatarMimePrimary ?? this.characterService.getAvatarMime();
+        return mime === "image/svg+xml";
     }
 
     private advanceAvatarPreviewState(): void {

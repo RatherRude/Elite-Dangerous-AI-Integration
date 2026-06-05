@@ -131,6 +131,8 @@ export interface ResetCharacterEventsMessage extends BaseCommand {
     providedIn: "root",
 })
 export class CharacterService {
+    static readonly DEFAULT_AVATAR_URL = "assets/cn_avatar_default.svg";
+    static readonly DEFAULT_AVATAR_MIME = "image/svg+xml";
     private characterSubject = new BehaviorSubject<Character | null>(null);
     public character$ = this.characterSubject.asObservable();
     private activeCharacterIndex: number | null = null;
@@ -330,12 +332,23 @@ export class CharacterService {
             this.currentAvatarUrl = null;
             this.avatarUrlSubject.next(null);
             this.revokeAvatarUrl(previousAvatarUrl);
-            this.avatarMimeSubject.next(null);
+            this.avatarMimeSubject.next(CharacterService.DEFAULT_AVATAR_MIME);
         }
     }
 
     public getAvatarUrl(): string {
-        return this.currentAvatarUrl || 'assets/cn_avatar_default.png';
+        return this.currentAvatarUrl || CharacterService.DEFAULT_AVATAR_URL;
+    }
+
+    public getAvatarMime(): string | null {
+        const mime = this.avatarMimeSubject.getValue();
+        if (mime) {
+            return mime;
+        }
+        if (!this.currentAvatarUrl) {
+            return CharacterService.DEFAULT_AVATAR_MIME;
+        }
+        return null;
     }
 
     private revokeAvatarUrl(url: string | null): void {
