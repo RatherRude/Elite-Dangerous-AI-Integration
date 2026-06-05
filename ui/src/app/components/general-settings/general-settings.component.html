@@ -13,7 +13,7 @@
                             (mouseenter)="setActivePreflightItem('commander')"
                             (focusin)="setActivePreflightItem('commander')">
                             <mat-icon class="preflight-kind-icon">badge</mat-icon>
-                            <mat-icon class="preflight-status-icon">{{ commanderReady ? 'check_circle' : 'error' }}</mat-icon>
+                            <mat-icon class="preflight-status-icon">{{ commanderReady ? 'check' : 'priority_high' }}</mat-icon>
                             <span class="preflight-category-copy">
                                 <span>CMDR Info</span>
                                 <strong>{{ commanderName }}</strong>
@@ -29,7 +29,7 @@
                             (mouseenter)="setActivePreflightItem('input')"
                             (focusin)="setActivePreflightItem('input')">
                             <mat-icon class="preflight-kind-icon">mic</mat-icon>
-                            <mat-icon class="preflight-status-icon">{{ soundInputReady ? 'check_circle' : 'error' }}</mat-icon>
+                            <mat-icon class="preflight-status-icon">{{ soundInputReady ? 'check' : 'priority_high' }}</mat-icon>
                             <span class="preflight-category-copy">
                                 <span>Sound Input</span>
                                 <strong>{{ soundInputSummary }}</strong>
@@ -45,7 +45,7 @@
                             (mouseenter)="setActivePreflightItem('output')"
                             (focusin)="setActivePreflightItem('output')">
                             <mat-icon class="preflight-kind-icon">volume_up</mat-icon>
-                            <mat-icon class="preflight-status-icon">{{ soundOutputReady ? 'check_circle' : 'error' }}</mat-icon>
+                            <mat-icon class="preflight-status-icon">{{ soundOutputReady ? 'check' : 'priority_high' }}</mat-icon>
                             <span class="preflight-category-copy">
                                 <span>Sound Output</span>
                                 <strong>{{ soundOutputSummary }}</strong>
@@ -59,7 +59,7 @@
                             (mouseenter)="setActivePreflightItem('overlay')"
                             (focusin)="setActivePreflightItem('overlay')">
                             <mat-icon class="preflight-kind-icon">picture_in_picture_alt</mat-icon>
-                            <mat-icon class="preflight-status-icon">check_circle</mat-icon>
+                            <mat-icon class="preflight-status-icon">check</mat-icon>
                             <span class="preflight-category-copy">
                                 <span>Overlay</span>
                                 <strong>{{ overlayModeLabel }}</strong>
@@ -75,7 +75,7 @@
                             (mouseenter)="setActivePreflightItem('actions')"
                             (focusin)="setActivePreflightItem('actions')">
                             <mat-icon class="preflight-kind-icon">bolt</mat-icon>
-                            <mat-icon class="preflight-status-icon">{{ actionsReady ? 'check_circle' : 'error' }}</mat-icon>
+                            <mat-icon class="preflight-status-icon">{{ actionsReady ? 'check' : 'priority_high' }}</mat-icon>
                             <span class="preflight-category-copy">
                                 <span>Actions</span>
                                 <strong>{{ actionSummary }}</strong>
@@ -89,7 +89,7 @@
                             (mouseenter)="setActivePreflightItem('covas')"
                             (focusin)="setActivePreflightItem('covas')">
                             <mat-icon class="preflight-kind-icon">smart_toy</mat-icon>
-                            <mat-icon class="preflight-status-icon">check_circle</mat-icon>
+                            <mat-icon class="preflight-status-icon">check</mat-icon>
                             <span class="preflight-category-copy">
                                 <span>Character</span>
                                 <strong>{{ characterName }}</strong>

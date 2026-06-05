@@ -79,10 +79,18 @@ mat-slide-toggle {
 }
 
 .preflight-status-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex: 0 0 auto;
-  width: 24px;
-  height: 24px;
-  font-size: 24px;
+  width: 26px;
+  height: 26px;
+  border: 2px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .preflight-item.ready .preflight-status-icon {
