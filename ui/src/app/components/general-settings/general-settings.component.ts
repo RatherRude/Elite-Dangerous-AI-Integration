@@ -8,7 +8,7 @@ import {
     KeybindsMessages,
     SystemInfo,
 } from "../../services/config.service.js";
-import { Subscription } from "rxjs";
+import { combineLatest, Subscription } from "rxjs";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import {
     MatError,
@@ -27,7 +27,6 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatSliderModule } from "@angular/material/slider";
 import { ScreenInfo } from "../../models/screen-info";
 import { Character, CharacterService } from "../../services/character.service";
-import { combineLatest } from "rxjs";
 import { ModelProviderDefinition } from "../../services/plugin-settings";
 
 export type GeneralSettingsTarget =
@@ -101,8 +100,6 @@ export class GeneralSettingsComponent implements OnDestroy {
     avatarUrl = "assets/cn_avatar_default.png";
     sanitizedAvatarPreviewSvg: SafeHtml | null = null;
     avatarPreviewStateClass: AvatarPreviewStateClass = "";
-    canUseCompactGeneralSettings = false;
-    useCompactGeneralSettings = false;
     private configSubscription: Subscription;
     private systemSubscription: Subscription;
     private screensSubscription?: Subscription;
@@ -115,7 +112,6 @@ export class GeneralSettingsComponent implements OnDestroy {
     private avatarSvgText: string | null = null;
     private avatarSvgFetchSeq = 0;
     private preflightListResizeObserver?: ResizeObserver;
-    private hasCapturedInitialGeneralMode = false;
     private readonly svgStateClasses = ["listening", "speaking", "thinking", "acting"];
     private readonly avatarPreviewStateClasses: readonly AvatarPreviewStateClass[] = ["", "listening", "thinking", "speaking", "acting"];
     private avatarPreviewStateIndex = 0;
@@ -137,11 +133,6 @@ export class GeneralSettingsComponent implements OnDestroy {
         this.configSubscription = this.configService.config$.subscribe(
             (config) => {
                 this.config = config;
-                if (config && !this.hasCapturedInitialGeneralMode) {
-                    this.canUseCompactGeneralSettings = !!config.commander_name?.trim() && !!config.api_key?.trim();
-                    this.useCompactGeneralSettings = this.canUseCompactGeneralSettings;
-                    this.hasCapturedInitialGeneralMode = true;
-                }
                 this.assigningPTTIndex = null;
             },
         );
@@ -232,11 +223,6 @@ export class GeneralSettingsComponent implements OnDestroy {
             default:
                 return "Disabled";
         }
-    }
-
-    get outputLevelLabel(): string {
-        const multiplier = this.config?.output_volume_multiplier ?? 1;
-        return `${Math.round(multiplier * 100)}%`;
     }
 
     get activeCharacterIndex(): number {
