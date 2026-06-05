@@ -245,7 +245,9 @@ export class GeneralSettingsComponent implements OnDestroy {
         if (!this.keybindsData) {
             return false;
         }
-        return this.keybindsData.missing.length === 0 && this.keybindsData.collisions.length === 0;
+        return this.actionIssueCounts.missing === 0
+            && this.actionIssueCounts.conflicts === 0
+            && this.actionIssueCounts.unsupported === 0;
     }
 
     get soundInputSummary(): string {
@@ -263,12 +265,50 @@ export class GeneralSettingsComponent implements OnDestroy {
             return "Checking keybinds";
         }
         if (this.actionsReady) {
-            return "All binds ready";
+            return "Ready";
         }
 
-        const missing = this.keybindsData.missing.length;
-        const conflicts = this.keybindsData.collisions.length;
-        return `${missing} missing / ${conflicts} conflicts`;
+        const counts = this.actionIssueCounts;
+        const parts: string[] = [];
+        if (counts.missing > 0) {
+            parts.push(`${counts.missing} missing`);
+        }
+        if (counts.conflicts > 0) {
+            parts.push(`${counts.conflicts} conflicts`);
+        }
+        if (counts.unsupported > 0) {
+            parts.push(`${counts.unsupported} unsupported`);
+        }
+        return parts.join(" / ");
+    }
+
+    get actionIssueCounts(): { missing: number; conflicts: number; unsupported: number } {
+        return {
+            missing: this.keybindsData?.missing.length ?? 0,
+            conflicts: this.keybindsData?.collisions.length ?? 0,
+            unsupported: this.keybindsData?.unsupported.length ?? 0,
+        };
+    }
+
+    get enabledActionTypes(): string[] {
+        if (!this.config?.tools_var) {
+            return [];
+        }
+
+        const enabledTypes: string[] = [];
+        if (this.config.game_actions_var) {
+            enabledTypes.push("Game actions");
+        }
+        if (this.config.web_search_actions_var) {
+            enabledTypes.push("Web actions");
+        }
+        if (this.config.ui_actions_var) {
+            enabledTypes.push("UI actions");
+        }
+        if (this.config.overlay_show_hud) {
+            enabledTypes.push("Allow Gen UI");
+        }
+        return enabledTypes;
     }
 
     get characterPrompt(): string {

@@ -187,6 +187,21 @@ mat-slide-toggle {
   gap: 0.4rem;
 }
 
+.preflight-issue-section,
+.preflight-action-types {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.85rem;
+}
+
+.preflight-action-types ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
 .covas-character-panel {
   position: relative;
   display: grid;

@@ -431,24 +431,46 @@
 
                             @case ('actions') {
                                 @if (keybindsData) {
+                                    <div class="preflight-keybind-summary">
+                                        <span>{{ actionIssueCounts.missing }} missing binds</span>
+                                        <span>{{ actionIssueCounts.conflicts }} conflicts</span>
+                                        <span>{{ actionIssueCounts.unsupported }} unsupported</span>
+                                    </div>
+
                                     @if (actionsReady) {
-                                        <p class="preflight-helper-text">All required game action keybinds are available and no conflicts were detected.</p>
-                                    } @else {
-                                        <div class="preflight-keybind-summary">
-                                            <span>{{ keybindsData.missing.length }} missing binds</span>
-                                            <span>{{ keybindsData.collisions.length }} conflicts</span>
-                                        </div>
-                                        @if (keybindsData.missing.length > 0) {
-                                            <p class="preflight-helper-text"><strong>Missing:</strong> {{ keybindsData.missing.join(', ') }}</p>
-                                        }
-                                        @if (keybindsData.collisions.length > 0) {
-                                            <div class="preflight-collision-list">
-                                                @for (collision of keybindsData.collisions; track $index) {
-                                                    <span>{{ collision[0] }} / {{ collision[1] }}</span>
-                                                }
-                                            </div>
-                                        }
+                                        <p class="preflight-helper-text">Ready. All required game action keybinds are available, supported, and conflict-free.</p>
                                     }
+                                    @if (keybindsData.missing.length > 0) {
+                                        <p class="preflight-helper-text"><strong>Missing:</strong> {{ keybindsData.missing.join(', ') }}</p>
+                                    }
+                                    @if (keybindsData.collisions.length > 0) {
+                                        <div class="preflight-issue-section">
+                                            <strong>Conflicts:</strong>
+                                            <div class="preflight-collision-list">
+                                            @for (collision of keybindsData.collisions; track $index) {
+                                                <span>{{ collision[0] }} / {{ collision[1] }}</span>
+                                            }
+                                            </div>
+                                        </div>
+                                    }
+                                    @if (keybindsData.unsupported.length > 0) {
+                                        <p class="preflight-helper-text"><strong>Unsupported:</strong> {{ keybindsData.unsupported.join(', ') }}</p>
+                                    }
+
+                                    @if (enabledActionTypes.length > 0) {
+                                        <div class="preflight-action-types">
+                                            <strong>Enabled action types:</strong>
+                                            <ul>
+                                                @for (type of enabledActionTypes; track type) {
+                                                    <li>{{ type }}</li>
+                                                }
+                                            </ul>
+                                        </div>
+                                    } @else if (!config.tools_var) {
+                                        <p class="preflight-helper-text">Actions are disabled.</p>
+                                    } @else {
+                                        <p class="preflight-helper-text">No action types are currently enabled.</p>
+                                        }
                                 } @else {
                                     <p class="preflight-helper-text">Waiting for keybind validation from the backend.</p>
                                 }
