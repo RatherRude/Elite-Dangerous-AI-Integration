@@ -1,97 +1,538 @@
 <div class="general-dashboard">
     @if (config) {
         @if (useCompactGeneralSettings) {
-            <div class="launcher-info-line" aria-label="General settings quick links">
-                <button
-                    type="button"
-                    class="info-chip"
-                    (click)="openTarget('commander')"
-                    matTooltip="Open Commander and Main API Key settings">
-                    <mat-icon>badge</mat-icon>
-                    <span>CMDR</span>
-                    <strong>{{ commanderName }}</strong>
-                </button>
+            <section class="preflight-shell" aria-labelledby="ai-preflight-heading">
+                <h2 id="ai-preflight-heading" class="preflight-heading">AI Preflight Checklist</h2>
+                <div class="preflight-layout">
+                    <div #preflightList class="preflight-list">
+                        <button
+                            type="button"
+                            class="preflight-item"
+                            [class.ready]="commanderReady"
+                            [class.needs-attention]="!commanderReady"
+                            [class.active]="activePreflightItem === 'commander'"
+                            (mouseenter)="setActivePreflightItem('commander')"
+                            (focusin)="setActivePreflightItem('commander')">
+                            <mat-icon class="preflight-kind-icon">badge</mat-icon>
+                            <mat-icon class="preflight-status-icon">{{ commanderReady ? 'check_circle' : 'error' }}</mat-icon>
+                            <span class="preflight-category-copy">
+                                <span>CMDR Info</span>
+                                <strong>{{ commanderName }}</strong>
+                            </span>
+                        </button>
 
-                <button
-                    type="button"
-                    class="info-chip"
-                    (click)="openTarget('audio-input')"
-                    matTooltip="Open STT settings">
-                    <mat-icon>mic</mat-icon>
-                    <span>Input</span>
-                    <strong>{{ inputDeviceName }}</strong>
-                </button>
+                        <button
+                            type="button"
+                            class="preflight-item"
+                            [class.ready]="soundInputReady"
+                            [class.needs-attention]="!soundInputReady"
+                            [class.active]="activePreflightItem === 'input'"
+                            (mouseenter)="setActivePreflightItem('input')"
+                            (focusin)="setActivePreflightItem('input')">
+                            <mat-icon class="preflight-kind-icon">mic</mat-icon>
+                            <mat-icon class="preflight-status-icon">{{ soundInputReady ? 'check_circle' : 'error' }}</mat-icon>
+                            <span class="preflight-category-copy">
+                                <span>Sound Input</span>
+                                <strong>{{ soundInputSummary }}</strong>
+                            </span>
+                        </button>
 
-                <button
-                    type="button"
-                    class="info-chip"
-                    (click)="openTarget('audio-output')"
-                    matTooltip="Open TTS settings">
-                    <mat-icon>volume_up</mat-icon>
-                    <span>Output</span>
-                    <strong>{{ outputDeviceName }}</strong>
-                    <small>{{ outputLevelLabel }}</small>
-                </button>
+                        <button
+                            type="button"
+                            class="preflight-item"
+                            [class.ready]="soundOutputReady"
+                            [class.needs-attention]="!soundOutputReady"
+                            [class.active]="activePreflightItem === 'output'"
+                            (mouseenter)="setActivePreflightItem('output')"
+                            (focusin)="setActivePreflightItem('output')">
+                            <mat-icon class="preflight-kind-icon">volume_up</mat-icon>
+                            <mat-icon class="preflight-status-icon">{{ soundOutputReady ? 'check_circle' : 'error' }}</mat-icon>
+                            <span class="preflight-category-copy">
+                                <span>Sound Output</span>
+                                <strong>{{ soundOutputSummary }}</strong>
+                            </span>
+                        </button>
 
-                <button
-                    type="button"
-                    class="info-chip"
-                    (click)="openTarget('overlay')"
-                    matTooltip="Open Overlay settings">
-                    <mat-icon>picture_in_picture_alt</mat-icon>
-                    <span>Overlay</span>
-                    <strong>{{ overlayModeLabel }}</strong>
-                </button>
-                @if (canUseCompactGeneralSettings) {
-                    <button
-                        type="button"
-                        class="info-chip info-chip-icon"
-                        matTooltip="Show more general settings"
-                        aria-label="Show more general settings"
-                        (click)="useCompactGeneralSettings = false">
-                        <mat-icon>add</mat-icon>
-                    </button>
-                }
-            </div>
+                        <button
+                            type="button"
+                            class="preflight-item ready"
+                            [class.active]="activePreflightItem === 'overlay'"
+                            (mouseenter)="setActivePreflightItem('overlay')"
+                            (focusin)="setActivePreflightItem('overlay')">
+                            <mat-icon class="preflight-kind-icon">picture_in_picture_alt</mat-icon>
+                            <mat-icon class="preflight-status-icon">check_circle</mat-icon>
+                            <span class="preflight-category-copy">
+                                <span>Overlay</span>
+                                <strong>{{ overlayModeLabel }}</strong>
+                            </span>
+                        </button>
 
-            <div class="minimal-character-display">
-                <button
-                    type="button"
-                    class="minimal-character-avatar"
-                    (click)="openTarget('character')"
-                    matTooltip="Open Character settings">
-                    @if (avatarPreviewUsesInlineSvg) {
-                        <span
-                            #generalAvatarSvg
-                            class="minimal-avatar-svg"
-                            [ngClass]="avatarPreviewStateClass"
-                            [innerHTML]="sanitizedAvatarPreviewSvg"
-                            [attr.aria-label]="characterName + ' avatar'"
-                            role="img"></span>
-                    } @else {
-                        <img
-                            [src]="avatarUrl"
-                            [alt]="characterName + ' avatar'"
-                            class="minimal-avatar-image"
-                            [ngClass]="avatarPreviewStateClass">
-                    }
-                </button>
-                <strong>{{ characterName }}</strong>
-                <span class="minimal-event-stats" aria-label="Character event reaction counts">
-                    <span matTooltip="Events this character reacts to">
-                        <mat-icon>volume_up</mat-icon>
-                        {{ eventReactionCounts.on }}
-                    </span>
-                    <span matTooltip="Events this character can see but does not react to">
-                        <mat-icon>visibility</mat-icon>
-                        {{ eventReactionCounts.off }}
-                    </span>
-                    <span matTooltip="Events hidden from this character">
-                        <mat-icon>close</mat-icon>
-                        {{ eventReactionCounts.hidden }}
-                    </span>
-                </span>
-            </div>
+                        <button
+                            type="button"
+                            class="preflight-item"
+                            [class.ready]="actionsReady"
+                            [class.needs-attention]="!actionsReady"
+                            [class.active]="activePreflightItem === 'actions'"
+                            (mouseenter)="setActivePreflightItem('actions')"
+                            (focusin)="setActivePreflightItem('actions')">
+                            <mat-icon class="preflight-kind-icon">bolt</mat-icon>
+                            <mat-icon class="preflight-status-icon">{{ actionsReady ? 'check_circle' : 'error' }}</mat-icon>
+                            <span class="preflight-category-copy">
+                                <span>Action</span>
+                                <strong>{{ actionSummary }}</strong>
+                            </span>
+                        </button>
+
+                        <button
+                            type="button"
+                            class="preflight-item ready"
+                            [class.active]="activePreflightItem === 'covas'"
+                            (mouseenter)="setActivePreflightItem('covas')"
+                            (focusin)="setActivePreflightItem('covas')">
+                            <mat-icon class="preflight-kind-icon">smart_toy</mat-icon>
+                            <mat-icon class="preflight-status-icon">check_circle</mat-icon>
+                            <span class="preflight-category-copy">
+                                <span>COVAS</span>
+                                <strong>{{ characterName }}</strong>
+                            </span>
+                        </button>
+                    </div>
+
+                    <div class="preflight-detail" [style.height.px]="preflightListHeight || null">
+                        <div class="preflight-detail-body">
+                        @switch (activePreflightItem) {
+                            @case ('commander') {
+                                <mat-form-field>
+                                    <mat-label>Commander Name</mat-label>
+                                    <input required matInput [(ngModel)]="config.commander_name"
+                                           (ngModelChange)="onConfigChange({commander_name: $event})">
+                                </mat-form-field>
+
+                                <p class="preflight-helper-text">Enter your API key from
+                                    <a target="_blank" rel="noopener noreferrer" href="https://platform.openai.com/api-keys">OpenAI</a>,
+                                    <a target="_blank" rel="noopener noreferrer" href="https://aistudio.google.com/app/apikey">Google AI Studio</a>, or
+                                    <a target="_blank" rel="noopener noreferrer" href="https://openrouter.ai/settings/keys">OpenRouter</a>.
+                                    The system will automatically detect the key type and configure settings.</p>
+                                <mat-form-field>
+                                    <mat-label>Main API Key (OpenAI/Openrouter/Google AI Studio)</mat-label>
+                                    <input required matInput [type]="hideApiKey ? 'password' : 'text'" [(ngModel)]="config.api_key"
+                                           (ngModelChange)="onApiKeyChange($event)"
+                                           pattern="^[A-Za-z0-9_.-]+$"
+                                           #preflightApiKeyInput="ngModel">
+                                    <button matSuffix mat-icon-button (mousedown)="hideApiKey = false" (mouseup)="hideApiKey = true"
+                                            (mouseleave)="hideApiKey = true">
+                                        <mat-icon>{{ hideApiKey ? 'visibility_off' : 'visibility' }}</mat-icon>
+                                    </button>
+                                    <mat-hint *ngIf="apiKeyType">Detected: {{ apiKeyType }} - Advanced settings have been configured automatically</mat-hint>
+                                    <mat-error *ngIf="preflightApiKeyInput.errors?.['pattern']">
+                                        API key can only contain letters, numbers, underscores, dots, and hyphens
+                                    </mat-error>
+                                </mat-form-field>
+                            }
+
+                            @case ('input') {
+                                <mat-form-field>
+                                    <mat-label>STT Provider</mat-label>
+                                    <mat-select [(ngModel)]="config.stt_provider"
+                                                (ngModelChange)="onConfigChange({stt_provider: $event})">
+                                        <mat-option value="openai">OpenAI</mat-option>
+                                        <mat-option value="google-ai-studio">Google AI Studio (Multi-Modal)</mat-option>
+                                        <mat-option value="local-ai-server">Local AIServer</mat-option>
+                                        <mat-option value="custom">Custom</mat-option>
+                                        <mat-option value="custom-multi-modal">Custom Multi-Modal</mat-option>
+                                        <mat-option value="none">None</mat-option>
+                                        @if (pluginSTTProviders.length > 0) {
+                                            <mat-optgroup label="Plugins">
+                                                @for (provider of pluginSTTProviders; track provider.id) {
+                                                    <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                                                }
+                                            </mat-optgroup>
+                                        }
+                                    </mat-select>
+                                </mat-form-field>
+
+                                @if (config.stt_provider !== "none") {
+                                    <p class="preflight-helper-text">Choose when the AI listens. Push-to-Talk is recommended to avoid accidental activation.</p>
+                                    <div class="ptt-container">
+                                        <mat-form-field>
+                                            <mat-label>Microphone Mode</mat-label>
+                                            <mat-select [value]="config.ptt_var"
+                                                        (selectionChange)="onConfigChange({ptt_var: $event.value})">
+                                                <mat-option value="voice_activation">Voice Detection (Use Headphones)</mat-option>
+                                                <mat-option value="push_to_talk">Push-to-Talk (Recommended)</mat-option>
+                                                <mat-option value="push_to_mute">Push-to-Mute</mat-option>
+                                                <mat-option value="toggle">Toggle Mic On/Off</mat-option>
+                                            </mat-select>
+                                        </mat-form-field>
+                                        @if (config.ptt_var !== 'voice_activation') {
+                                            <mat-form-field (click)="onAssignPTT($event, 0)">
+                                                <mat-label>Hotkey 1</mat-label>
+                                                <input required matInput [value]="assigningPTTIndex === 0 ? 'Press any key...' : config.ptt_key" readonly>
+                                                <button matSuffix mat-icon-button>
+                                                    <mat-icon>keyboard</mat-icon>
+                                                </button>
+                                            </mat-form-field>
+                                            <mat-form-field (click)="onAssignPTT($event, 1)">
+                                                <mat-label>Hotkey 2 (Optional)</mat-label>
+                                                <input matInput [value]="assigningPTTIndex === 1 ? 'Press any key...' : config.ptt_key_secondary" readonly>
+                                                <button matSuffix mat-icon-button>
+                                                    <mat-icon>keyboard</mat-icon>
+                                                </button>
+                                            </mat-form-field>
+                                        }
+                                        @if (config.ptt_var === 'toggle') {
+                                            <mat-slide-toggle [(ngModel)]="config.ptt_inverted_var"
+                                                              (ngModelChange)="onConfigChange({ptt_inverted_var: $event})">
+                                                Start with Mic Muted
+                                            </mat-slide-toggle>
+                                        }
+                                        @if (config.ptt_var !== 'push_to_talk') {
+                                            <mat-slide-toggle [(ngModel)]="config.mute_during_response_var"
+                                                              (ngModelChange)="onConfigChange({mute_during_response_var: $event})">
+                                                Mute microphone during response
+                                            </mat-slide-toggle>
+                                        }
+                                    </div>
+                                    <div class="sound-devices">
+                                        <mat-form-field class="sound-devices-input">
+                                            <mat-label>Input Device</mat-label>
+                                            <mat-select [(ngModel)]="config.input_device_name"
+                                                        (ngModelChange)="onConfigChange({input_device_name: $event})">
+                                                @for (device of system?.input_device_names; track device) {
+                                                    <mat-option [value]="device">{{ device }}</mat-option>
+                                                }
+                                            </mat-select>
+                                        </mat-form-field>
+                                        <button
+                                            mat-icon-button
+                                            type="button"
+                                            class="audio-refresh-button"
+                                            [disabled]="isRefreshingAudioDevices"
+                                            (click)="refreshAudioDevices()"
+                                            aria-label="Refresh audio device list"
+                                            matTooltip="Refresh audio devices">
+                                            <mat-icon>refresh</mat-icon>
+                                        </button>
+                                    </div>
+                                } @else {
+                                    <p class="preflight-helper-text">STT is disabled.</p>
+                                }
+                            }
+
+                            @case ('output') {
+                                <mat-form-field>
+                                    <mat-label>TTS Provider</mat-label>
+                                    <mat-select [(ngModel)]="config.tts_provider"
+                                                (ngModelChange)="onConfigChange({tts_provider: $event})">
+                                        <mat-option value="openai">OpenAI</mat-option>
+                                        <mat-option value="edge-tts">Edge TTS</mat-option>
+                                        <mat-option value="local-ai-server">Local AIServer</mat-option>
+                                        <mat-option value="custom">Custom</mat-option>
+                                        <mat-option value="none">None</mat-option>
+                                        @if (pluginTTSProviders.length > 0) {
+                                            <mat-optgroup label="Plugins">
+                                                @for (provider of pluginTTSProviders; track provider.id) {
+                                                    <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                                                }
+                                            </mat-optgroup>
+                                        }
+                                    </mat-select>
+                                </mat-form-field>
+
+                                @if (config.tts_provider !== "none") {
+                                    <div class="sound-devices">
+                                        <div class="output-device-column">
+                                            <mat-form-field>
+                                                <mat-label>Output Device</mat-label>
+                                                <mat-select [(ngModel)]="config.output_device_name"
+                                                            (ngModelChange)="onConfigChange({output_device_name: $event})">
+                                                    @for (device of system?.output_device_names; track device) {
+                                                        <mat-option [value]="device">{{ device }}</mat-option>
+                                                    }
+                                                </mat-select>
+                                            </mat-form-field>
+                                            <div
+                                                class="output-volume-row"
+                                                [class.output-volume-boost]="config.output_volume_multiplier > 1">
+                                                <span class="output-volume-label">Output level</span>
+                                                <mat-slider
+                                                    class="output-volume-slider"
+                                                    min="0"
+                                                    max="1.5"
+                                                    step="0.05"
+                                                    discrete
+                                                    [displayWith]="formatOutputVolumeLabel">
+                                                    <input
+                                                        matSliderThumb
+                                                        [ngModel]="config.output_volume_multiplier"
+                                                        (ngModelChange)="onConfigChange({ output_volume_multiplier: $event })">
+                                                </mat-slider>
+                                            </div>
+                                        </div>
+                                        <button
+                                            mat-icon-button
+                                            type="button"
+                                            class="audio-refresh-button"
+                                            [disabled]="isRefreshingAudioDevices"
+                                            (click)="refreshAudioDevices()"
+                                            aria-label="Refresh audio device list"
+                                            matTooltip="Refresh audio devices">
+                                            <mat-icon>refresh</mat-icon>
+                                        </button>
+                                    </div>
+                                } @else {
+                                    <p class="preflight-helper-text">TTS is disabled.</p>
+                                }
+                            }
+
+                            @case ('overlay') {
+                                <div class="overlay-controls">
+                                    <div class="overlay-primary-controls">
+                                        <mat-form-field>
+                                            <mat-label>Overlay Mode</mat-label>
+                                            <mat-select [(ngModel)]="config.overlay_mode"
+                                                        (ngModelChange)="onConfigChange({overlay_mode: $event})">
+                                                <mat-option value="disabled">Disabled</mat-option>
+                                                <mat-option value="desktop">Desktop Overlay</mat-option>
+                                                @if (overlayRuntimeReady) {
+                                                    <mat-option value="vr">VR Overlay</mat-option>
+                                                    <mat-option value="both">Both</mat-option>
+                                                }
+                                            </mat-select>
+                                        </mat-form-field>
+
+                                        @if (config.overlay_mode !== 'disabled') {
+                                            <div class="overlay-toggle-column">
+                                                <mat-slide-toggle
+                                                    [(ngModel)]="config.overlay_show_avatar"
+                                                    (ngModelChange)="onConfigChange({overlay_show_avatar: $event})">
+                                                    Show Avatar
+                                                </mat-slide-toggle>
+
+                                                <mat-slide-toggle
+                                                    [(ngModel)]="config.overlay_show_chat"
+                                                    (ngModelChange)="onConfigChange({overlay_show_chat: $event})">
+                                                    Show Chat
+                                                </mat-slide-toggle>
+                                            </div>
+
+                                            <mat-form-field>
+                                                <mat-label>Avatar Position</mat-label>
+                                                <mat-select [(ngModel)]="config.overlay_position"
+                                                            (ngModelChange)="onConfigChange({overlay_position: $event})">
+                                                    <mat-option value="left">Left (Large)</mat-option>
+                                                    <mat-option value="left-medium">Left (Medium)</mat-option>
+                                                    <mat-option value="left-small">Left (Small)</mat-option>
+                                                    <mat-option value="right">Right (Large)</mat-option>
+                                                    <mat-option value="right-medium">Right (Medium)</mat-option>
+                                                    <mat-option value="right-small">Right (Small)</mat-option>
+                                                </mat-select>
+                                            </mat-form-field>
+
+                                            @if (config.overlay_mode === 'desktop' || config.overlay_mode === 'both') {
+                                                <mat-form-field>
+                                                    <mat-label>Desktop Screen</mat-label>
+                                                    <mat-select [(ngModel)]="config.overlay_screen_id"
+                                                                (ngModelChange)="onConfigChange({overlay_screen_id: $event})">
+                                                        <mat-option [value]="-1">Primary Screen</mat-option>
+                                                        @for (screen of screens; track screen.id) {
+                                                            <mat-option [value]="screen.id">{{ screen.label }}</mat-option>
+                                                        }
+                                                    </mat-select>
+                                                </mat-form-field>
+                                            }
+                                        }
+                                    </div>
+
+                                    <div class="overlay-secondary-controls">
+                                        @if (overlayRuntimeReady && (config.overlay_mode === 'vr' || config.overlay_mode === 'both')) {
+                                            <mat-form-field>
+                                                <mat-label>VR Anchor</mat-label>
+                                                <mat-select [(ngModel)]="config.overlay_vr_anchor"
+                                                            (ngModelChange)="onConfigChange({overlay_vr_anchor: $event})">
+                                                    <mat-option value="head">Head Locked</mat-option>
+                                                    <mat-option value="world">World Locked</mat-option>
+                                                </mat-select>
+                                            </mat-form-field>
+
+                                            <div class="overlay-slider-field">
+                                                <label>VR Size: {{ config.overlay_vr_size_meters }} meters</label>
+                                                <mat-slider min="0.1" max="3" step="0.1" discrete>
+                                                    <input matSliderThumb
+                                                           [ngModel]="config.overlay_vr_size_meters"
+                                                           (ngModelChange)="onConfigChange({overlay_vr_size_meters: $event})">
+                                                </mat-slider>
+                                            </div>
+
+                                            <div class="overlay-slider-field">
+                                                <label>Horizontal Offset: {{ config.overlay_vr_horizontal_offset }} meters</label>
+                                                <mat-slider min="-2" max="2" step="0.05" discrete>
+                                                    <input matSliderThumb
+                                                           [ngModel]="config.overlay_vr_horizontal_offset"
+                                                           (ngModelChange)="onConfigChange({overlay_vr_horizontal_offset: $event})">
+                                                </mat-slider>
+                                            </div>
+
+                                            <div class="overlay-slider-field">
+                                                <label>Vertical Offset: {{ config.overlay_vr_vertical_offset }} meters</label>
+                                                <mat-slider min="-1.5" max="1.5" step="0.05" discrete>
+                                                    <input matSliderThumb
+                                                           [ngModel]="config.overlay_vr_vertical_offset"
+                                                           (ngModelChange)="onConfigChange({overlay_vr_vertical_offset: $event})">
+                                                </mat-slider>
+                                            </div>
+
+                                            <div class="overlay-slider-field">
+                                                <label>Distance Offset: {{ config.overlay_vr_distance_offset }} meters</label>
+                                                <mat-slider min="-0.75" max="1.5" step="0.01" discrete>
+                                                    <input matSliderThumb
+                                                           [ngModel]="config.overlay_vr_distance_offset"
+                                                           (ngModelChange)="onConfigChange({overlay_vr_distance_offset: $event})">
+                                                </mat-slider>
+                                            </div>
+
+                                            <div class="overlay-slider-field">
+                                                <label>Tilt: {{ config.overlay_vr_tilt_degrees }} degrees</label>
+                                                <mat-slider min="-90" max="90" step="1" discrete>
+                                                    <input matSliderThumb
+                                                           [ngModel]="config.overlay_vr_tilt_degrees"
+                                                           (ngModelChange)="onConfigChange({overlay_vr_tilt_degrees: $event})">
+                                                </mat-slider>
+                                            </div>
+
+                                            <div class="overlay-slider-field">
+                                                <label>Curvature: {{ config.overlay_vr_curvature * 360 }} degrees</label>
+                                                <mat-slider min="0" max="180" step="1" discrete>
+                                                    <input matSliderThumb
+                                                           [ngModel]="config.overlay_vr_curvature * 360"
+                                                           (ngModelChange)="onConfigChange({overlay_vr_curvature: $event / 360})">
+                                                </mat-slider>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                                @if (config.overlay_mode === 'vr') {
+                                    <p class="preflight-helper-text">{{ overlayRuntimeSummary }}</p>
+                                }
+                            }
+
+                            @case ('actions') {
+                                @if (keybindsData) {
+                                    @if (actionsReady) {
+                                        <p class="preflight-helper-text">All required game action keybinds are available and no conflicts were detected.</p>
+                                    } @else {
+                                        <div class="preflight-keybind-summary">
+                                            <span>{{ keybindsData.missing.length }} missing binds</span>
+                                            <span>{{ keybindsData.collisions.length }} conflicts</span>
+                                        </div>
+                                        @if (keybindsData.missing.length > 0) {
+                                            <p class="preflight-helper-text"><strong>Missing:</strong> {{ keybindsData.missing.join(', ') }}</p>
+                                        }
+                                        @if (keybindsData.collisions.length > 0) {
+                                            <div class="preflight-collision-list">
+                                                @for (collision of keybindsData.collisions; track $index) {
+                                                    <span>{{ collision[0] }} / {{ collision[1] }}</span>
+                                                }
+                                            </div>
+                                        }
+                                    }
+                                } @else {
+                                    <p class="preflight-helper-text">Waiting for keybind validation from the backend.</p>
+                                }
+                            }
+
+                            @case ('covas') {
+                                <mat-form-field class="covas-character-select">
+                                    <mat-label>Active Character</mat-label>
+                                    <mat-select [ngModel]="activeCharacterIndex"
+                                                (ngModelChange)="onCharacterSelect($event)">
+                                        @for (character of characterList; track $index) {
+                                            <mat-option [value]="$index">{{ character.name || ('Character ' + ($index + 1)) }}</mat-option>
+                                        }
+                                    </mat-select>
+                                </mat-form-field>
+
+                                <div class="covas-character-panel">
+                                    <div class="covas-avatar-wrap">
+                                        <div class="minimal-character-avatar">
+                                            @if (avatarPreviewUsesInlineSvg) {
+                                                <span
+                                                    #generalAvatarSvg
+                                                    class="minimal-avatar-svg"
+                                                    [ngClass]="avatarPreviewStateClass"
+                                                    [innerHTML]="sanitizedAvatarPreviewSvg"
+                                                    [attr.aria-label]="characterName + ' avatar'"
+                                                    role="img"></span>
+                                            } @else {
+                                                <img
+                                                    [src]="avatarUrl"
+                                                    [alt]="characterName + ' avatar'"
+                                                    class="minimal-avatar-image"
+                                                    [ngClass]="avatarPreviewStateClass">
+                                            }
+                                        </div>
+                                        <span class="covas-character-name">{{ characterName }}</span>
+                                    </div>
+                                    <p class="covas-prompt-bubble">{{ characterPrompt }}</p>
+                                </div>
+
+                                <div class="covas-event-summary">
+                                    <span class="minimal-event-stats" aria-label="Character event reaction counts">
+                                        <span matTooltip="Events this character reacts to">
+                                            <mat-icon>volume_up</mat-icon>
+                                            {{ eventReactionCounts.on }}
+                                        </span>
+                                        <span matTooltip="Events this character can see but does not react to">
+                                            <mat-icon>visibility</mat-icon>
+                                            {{ eventReactionCounts.off }}
+                                        </span>
+                                        <span matTooltip="Events hidden from this character">
+                                            <mat-icon>close</mat-icon>
+                                            {{ eventReactionCounts.hidden }}
+                                        </span>
+                                    </span>
+                                </div>
+                            }
+                        }
+                        </div>
+
+                        <div class="preflight-detail-footer">
+                            @switch (activePreflightItem) {
+                                @case ('commander') {
+                                    <button mat-button type="button" class="preflight-advanced-link" (click)="openTarget('commander')">
+                                        Go to advanced settings
+                                    </button>
+                                }
+                                @case ('input') {
+                                    <button mat-button type="button" class="preflight-advanced-link" (click)="openTarget('audio-input')">
+                                        Go to advanced settings
+                                    </button>
+                                }
+                                @case ('output') {
+                                    <button mat-button type="button" class="preflight-advanced-link" (click)="openTarget('audio-output')">
+                                        Go to advanced settings
+                                    </button>
+                                }
+                                @case ('overlay') {
+                                    <button mat-button type="button" class="preflight-advanced-link" (click)="openTarget('overlay')">
+                                        Go to advanced settings
+                                    </button>
+                                }
+                                @case ('actions') {
+                                    <button mat-button type="button" class="preflight-advanced-link" (click)="openTarget('actions')">
+                                        Go to action settings
+                                    </button>
+                                }
+                                @case ('covas') {
+                                    <button mat-button type="button" class="preflight-advanced-link" (click)="openTarget('character')">
+                                        Go to character settings
+                                    </button>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+            </section>
         } @else {
         <div class="legacy-general-settings">
             <mat-form-field>

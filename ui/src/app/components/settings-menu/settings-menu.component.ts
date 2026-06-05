@@ -135,6 +135,9 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             case "overlay":
                 this.focusAdvancedSetting("overlay-mode");
                 break;
+            case "actions":
+                this.selectedIndex = 3;
+                break;
         }
     }
 
