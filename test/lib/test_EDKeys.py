@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 import os
 from src.lib.EDKeys import EDKeys
+from src.lib import directinput
 
 # Mock for directinput module
 @pytest.fixture
@@ -192,3 +193,21 @@ def test_send_mouse_wheel_scrolls_once(mock_directinput, binds_file):
     keys.send('HumanoidItemWheelButton_YUp')
 
     mock_directinput["ScrollMouseWheel"].assert_called_once_with(1)
+def test_pynput_enter_uses_special_key(monkeypatch):
+    """macOS Enter should use pynput's special Key.enter from the macOS keymap."""
+    mock_press = MagicMock()
+
+    monkeypatch.setattr('platform.system', lambda: 'Darwin')
+    monkeypatch.setattr(directinput.pynput_keyboard, 'press', mock_press)
+
+    directinput.PressKey('Key.enter')
+
+    mock_press.assert_called_once_with(directinput.Key.enter)
+
+def test_macos_keymap_uses_pynput_special_keys(monkeypatch, binds_file):
+    monkeypatch.setattr('platform.system', lambda: 'Darwin')
+
+    keys = EDKeys(binds_file)
+
+    assert keys.keymap['Key_Enter'] == 'Key.enter'
+    assert keys.keymap['Key_LeftShift'] == 'Key.shift_l'

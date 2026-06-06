@@ -8,7 +8,7 @@ import time
 import platform
 from typing import final
 
-from pynput.keyboard import Controller, KeyCode  # pyright: ignore[reportMissingModuleSource]
+from pynput.keyboard import Controller, Key, KeyCode  # pyright: ignore[reportMissingModuleSource]
 from pynput.mouse import Button, Controller as MouseController  # pyright: ignore[reportMissingModuleSource]
 
 SendInput = ctypes.windll.user32.SendInput if 'windll' in dir(ctypes) else None
@@ -35,6 +35,13 @@ WINDOWS_MOUSE_BUTTONS = {
     "x1": (MOUSEEVENTF_XDOWN, MOUSEEVENTF_XUP, XBUTTON1),
     "x2": (MOUSEEVENTF_XDOWN, MOUSEEVENTF_XUP, XBUTTON2),
 }
+
+def _to_pynput_key(keyCode: int | str):
+    if isinstance(keyCode, int):
+        return KeyCode.from_vk(keyCode)
+    if keyCode.startswith("Key."):
+        return getattr(Key, keyCode.removeprefix("Key."))
+    return KeyCode.from_char(keyCode)
 
 # C struct redefinitions
 
@@ -112,7 +119,7 @@ def PressKey(keyCode: int | str):
         x = Input(ctypes.c_ulong(1), ii_)
         SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
     else:
-        pynput_keyboard.press(KeyCode.from_vk(keyCode) if isinstance(keyCode, int) else KeyCode.from_char(keyCode))
+        pynput_keyboard.press(_to_pynput_key(keyCode))
 
 def ReleaseKey(keyCode: int | str):
     if platform.system() == 'Windows':
@@ -130,7 +137,7 @@ def ReleaseKey(keyCode: int | str):
         x = Input(ctypes.c_ulong(1), ii_)
         SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
     else:
-        pynput_keyboard.release(KeyCode.from_vk(keyCode) if isinstance(keyCode, int) else KeyCode.from_char(keyCode))
+        pynput_keyboard.release(_to_pynput_key(keyCode))
 
 def PressMouseButton(button: str):
     if platform.system() == 'Windows':
@@ -157,4 +164,3 @@ def PressAndReleaseKey(hexKeyCode: int | str):
     time.sleep(0.1)
     ReleaseKey(hexKeyCode)
     time.sleep(0.5)
-
