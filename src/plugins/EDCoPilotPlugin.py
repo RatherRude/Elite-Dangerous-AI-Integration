@@ -6,7 +6,7 @@ from typing import Any, override, Optional, Iterable, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
-from lib.PluginHelper import PluginHelper, TTSModel, LLMModel, STTModel, EmbeddingModel
+from lib.PluginHelper import PluginHelper, TTSModel, LLMModel, STTModel, EmbeddingModel, PluginEvent
 from lib.PluginSettingDefinitions import (
     PluginSettings, 
     SettingsGrid, 
@@ -167,7 +167,7 @@ class EDCoPilotPlugin(PluginBase):
                                 readonly=False,
                                 placeholder=None,
                                 
-                                content="EDCoPilot does not share the contents of its UI, nor any other data. You can use it for its UI, but it adds zero functionality or knowledge to the AI. The EDCoPilot integration prevents both applications from talking at the same time and allows COVAS:NEXT to control EDCoPilot's UI."
+                                content="EDCoPilot does not share the contents of its UI or any search data, eventhough COVAS:NEXT has rudimentary control over EDCoPilot's UI. The EDCoPilot integration prevents both applications from talking over each other and allows them to reuse their TTS services."
                             ),
                             ToggleSetting(
                                 key="enabled",
@@ -205,7 +205,7 @@ class EDCoPilotPlugin(PluginBase):
                             ),
                             ToggleSetting(
                                 key="read_commentary",
-                                label="Read out EDCoPilot Commentary",
+                                label="Read out EDCoPilot commentary",
                                 type="toggle",
                                 readonly=False,
                                 placeholder=None,
@@ -215,6 +215,14 @@ class EDCoPilotPlugin(PluginBase):
                                 key="voice",
                                 label="EDCoPilot Voice",
                                 type="text",
+                            ),
+                            ToggleSetting(
+                                key="react_to_commentary",
+                                label="React to EDCoPilot commentary",
+                                type="toggle",
+                                readonly=False,
+                                placeholder=None,
+                                default_value=False
                             )
                         ]
                     ),
@@ -309,9 +317,10 @@ class EDCoPilotPlugin(PluginBase):
                         enabled_game_events.append(event)
                     if state == "hidden":
                         disabled_events.append(event)
+            read_commentary = self.settings.get("read_commentary", False)
             
             return self.provider.publish(
-                ConfigurationUpdated(is_dominant=not is_edcopilot_dominant, enabled_game_events=enabled_game_events)
+                ConfigurationUpdated(is_dominant=not is_edcopilot_dominant, enabled_game_events=enabled_game_events, is_voicing_edcopilot=read_commentary)
             )
 
     def output_commander(self, message: str):
@@ -352,7 +361,14 @@ class EDCoPilotPlugin(PluginBase):
                 event = self.client.pending_events.get()
                 if isinstance(event, SpeakingPhraseEvent) and event.reason != 'covas':
                     log('info', 'eedcopilot', event)
-                    if read_commentary:
+                    self._helper.dispatch_event(PluginEvent(
+                        kind="plugin",
+                        plugin_event_name="EdCoPilotEvent",
+                        plugin_event_content={
+                            "text": event.text
+                        }
+                    ))
+                    if read_commentary and event.duration == 0:
                         self._helper._assistant.tts.say(event.text, voice=voice, postprocessing=post_processing)
             time.sleep(0.1)
         # return
@@ -392,6 +408,8 @@ class EDCoPilotPlugin(PluginBase):
         self.event_listener_thread = threading.Thread(target=self.process_edcopilot_events)
         self.event_listener_thread.daemon = True
         self.event_listener_thread.start()
+        should_reply_to_edcp = self.settings.get("react_to_commentary", False)
+        self._helper.register_event("EdCoPilotEvent", lambda event: should_reply_to_edcp, lambda event: "Received EdCoPilot Message: "+event.plugin_event_content.get("text", '-'))
 
 
         # Register actions if enabled
