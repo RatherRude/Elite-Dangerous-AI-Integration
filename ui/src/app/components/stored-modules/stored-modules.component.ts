@@ -27,14 +27,9 @@ export class StoredModulesComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.subscriptions.push(
-      (this.projectionsService.getProjection('StoredModules') || this.projectionsService.projections$)
-        .subscribe((value: any) => {
-          if (value && value.event === 'StoredModules') {
-            this.storedModules = value;
-          } else if (value && value['StoredModules']) {
-            this.storedModules = value['StoredModules'];
-          }
-        })
+      this.projectionsService.storedModules$.subscribe(storedModules => {
+        this.storedModules = storedModules;
+      })
     );
   }
 

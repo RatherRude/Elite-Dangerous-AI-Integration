@@ -46,6 +46,7 @@ export class ProjectionsService {
     private loadoutSubject = new BehaviorSubject<any>(null);
     private shipyardSubject = new BehaviorSubject<any>(null);
     private storedShipsSubject = new BehaviorSubject<any>(null);
+    private storedModulesSubject = new BehaviorSubject<any>(null);
     private marketSubject = new BehaviorSubject<any>(null);
     private outfittingSubject = new BehaviorSubject<any>(null);
 
@@ -81,6 +82,7 @@ export class ProjectionsService {
     public loadout$ = this.loadoutSubject.asObservable();
     public shipyard$ = this.shipyardSubject.asObservable();
     public storedShips$ = this.storedShipsSubject.asObservable();
+    public storedModules$ = this.storedModulesSubject.asObservable();
     public market$ = this.marketSubject.asObservable();
     public outfitting$ = this.outfittingSubject.asObservable();
 
@@ -117,6 +119,7 @@ export class ProjectionsService {
         'Loadout': this.loadoutSubject,
         'Shipyard': this.shipyardSubject,
         'StoredShips': this.storedShipsSubject,
+        'StoredModules': this.storedModulesSubject,
         'Market': this.marketSubject,
         'Outfitting': this.outfittingSubject,
     };
@@ -294,6 +297,10 @@ export class ProjectionsService {
 
     public getStoredShipsValue(): any | null {
         return this.storedShipsSubject.getValue();
+    }
+
+    public getStoredModulesValue(): any | null {
+        return this.storedModulesSubject.getValue();
     }
 
     public getMarketValue(): any | null {
