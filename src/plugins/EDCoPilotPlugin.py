@@ -350,7 +350,7 @@ class EDCoPilotPlugin(PluginBase):
         while True:
             if not self.client.pending_events.empty():
                 event = self.client.pending_events.get()
-                if isinstance(event, SpeakingPhraseEvent):
+                if isinstance(event, SpeakingPhraseEvent) and event.reason != 'covas':
                     log('info', 'eedcopilot', event)
                     if read_commentary:
                         self._helper._assistant.tts.say(event.text, voice=voice, postprocessing=post_processing)
