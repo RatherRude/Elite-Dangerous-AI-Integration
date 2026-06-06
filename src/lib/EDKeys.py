@@ -49,9 +49,13 @@ class EDKeys:
         }
 
         if platform.system() == "Windows":
-            self.keymap: dict[str, int] = json.load(open(get_asset_path("keymap.json")))
+            self.keymap: dict[str, int | str] = json.load(open(get_asset_path("keymap.json")))
+        elif platform.system() == "Darwin":
+            self.keymap: dict[str, int | str] = json.load(
+                open(get_asset_path("keymap_pynput_macos.json"))
+            )
         else:
-            self.keymap: dict[str, int] = json.load(
+            self.keymap: dict[str, int | str] = json.load(
                 open(get_asset_path("keymap_pynput.json"))
             )
 
