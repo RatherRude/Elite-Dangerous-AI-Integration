@@ -12,17 +12,25 @@ const isDevelopment = process.env.NODE_ENV === 'development';
 const isLinux = process.platform === 'linux';
 const overlayPreloadPath = path.join(import.meta.dirname, 'preload.js');
 const overlayWindowTitle = 'COVAS:NEXT Overlay';
+let loggerShuttingDown = false;
 
 // electron-vr needs shared image transport for efficient offscreen texture forwarding.
 app.commandLine.appendSwitch('enable-features', 'SharedImages');
 
 function logMethod (args, method) {
+  if (loggerShuttingDown) {
+    return;
+  }
   if (args.length >= 2) {
     for (let i = 1; i < args.length; i++) {
       args[0] = `${args[0]} %j`
     }
   }
   method.apply(this, args)
+}
+
+function disableLoggerForShutdown() {
+  loggerShuttingDown = true;
 }
 
 const transport = {
@@ -45,6 +53,10 @@ const logger = pino({
   level: 'debug',
   transport: transport,
   hooks: {logMethod}
+});
+
+app.on('before-quit', () => {
+  disableLoggerForShutdown();
 });
 
 // delete old tauri log files
@@ -606,11 +618,11 @@ function createMainWindow() {
 
   // Handle window close
   mainWindow.once('close', (event) => {
+    disableLoggerForShutdown();
     // Prevent the window from closing immediately
     event.preventDefault();
     // If the user confirms, then close the window
     ipcMain.handleOnce('window-close-ready', () => {
-      logger.info('Main window close handler done, stopping process');
       mainWindow.close();
     });
     // Call renderer close handler
@@ -969,6 +981,8 @@ app.whenReady().then(async ()=>{
       floatingOverlay = null;
     }
     backend.stopProcess(mainWindow);
-    process.exit(0);
+    if (process.platform !== 'darwin') {
+      app.quit();
+    }
   });
 });

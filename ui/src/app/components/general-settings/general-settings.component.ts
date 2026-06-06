@@ -5,9 +5,10 @@ import { MatIcon } from "@angular/material/icon";
 import {
     Config,
     ConfigService,
+    KeybindsMessages,
     SystemInfo,
 } from "../../services/config.service.js";
-import { Subscription } from "rxjs";
+import { combineLatest, Subscription } from "rxjs";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import {
     MatError,
@@ -17,7 +18,7 @@ import {
     MatLabel,
 } from "@angular/material/form-field";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
-import { MatOption, MatSelect } from "@angular/material/select";
+import { MatOptgroup, MatOption, MatSelect } from "@angular/material/select";
 import { OverlayRuntimeInfo, TauriService } from "../../services/tauri.service";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { FormsModule } from "@angular/forms";
@@ -26,15 +27,17 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatSliderModule } from "@angular/material/slider";
 import { ScreenInfo } from "../../models/screen-info";
 import { Character, CharacterService } from "../../services/character.service";
-import { combineLatest } from "rxjs";
+import { ModelProviderDefinition } from "../../services/plugin-settings";
 
 export type GeneralSettingsTarget =
     | "commander"
     | "character"
     | "audio-input"
     | "audio-output"
-    | "overlay";
-type AvatarPreviewStateClass = "" | "listening" | "thinking" | "speaking" | "acting";
+    | "overlay"
+    | "actions";
+type AvatarPreviewStateClass = "listening" | "thinking" | "speaking" | "acting";
+type PreflightChecklistItem = "commander" | "input" | "output" | "overlay" | "actions" | "covas";
 
 @Component({
     selector: "app-general-settings",
@@ -51,6 +54,7 @@ type AvatarPreviewStateClass = "" | "listening" | "thinking" | "speaking" | "act
         MatSlideToggle,
         MatSelect,
         MatOption,
+        MatOptgroup,
         MatHint,
         MatError,
         MatTooltipModule,
@@ -62,34 +66,62 @@ type AvatarPreviewStateClass = "" | "listening" | "thinking" | "speaking" | "act
 export class GeneralSettingsComponent implements OnDestroy {
     @Output() openSettingsTarget = new EventEmitter<GeneralSettingsTarget>();
     @ViewChild("generalAvatarSvg") private generalAvatarSvg?: ElementRef<HTMLDivElement>;
+    @ViewChild("preflightList") set preflightListRef(ref: ElementRef<HTMLElement> | undefined) {
+        this.preflightListResizeObserver?.disconnect();
+        this.preflightListResizeObserver = undefined;
+
+        if (!ref) {
+            this.preflightListHeight = 0;
+            return;
+        }
+
+        const updateHeight = () => {
+            this.preflightListHeight = ref.nativeElement.offsetHeight;
+        };
+        updateHeight();
+
+        if (typeof ResizeObserver === "undefined") {
+            return;
+        }
+
+        this.preflightListResizeObserver = new ResizeObserver(updateHeight);
+        this.preflightListResizeObserver.observe(ref.nativeElement);
+    }
 
     config: Config | null = null;
     system: SystemInfo | null = null;
     screens: ScreenInfo[] = [];
     overlayRuntimeInfo: OverlayRuntimeInfo | null = null;
     activeCharacter: Character | null = null;
-    avatarUrl = "assets/cn_avatar_default.png";
+    characterList: Character[] = [];
+    keybindsData: KeybindsMessages | null = null;
+    pluginSTTProviders: ModelProviderDefinition[] = [];
+    pluginTTSProviders: ModelProviderDefinition[] = [];
+    avatarUrl = "assets/cn_avatar_default.svg";
     sanitizedAvatarPreviewSvg: SafeHtml | null = null;
-    avatarPreviewStateClass: AvatarPreviewStateClass = "";
-    canUseCompactGeneralSettings = false;
-    useCompactGeneralSettings = false;
+    avatarPreviewStateClass: AvatarPreviewStateClass = "listening";
     private configSubscription: Subscription;
     private systemSubscription: Subscription;
     private screensSubscription?: Subscription;
     private characterSubscription: Subscription;
+    private characterListSubscription: Subscription;
+    private keybindsSubscription: Subscription;
+    private pluginProvidersSubscription: Subscription;
     private avatarMimeSubscription: Subscription;
     private avatarMimePrimary: string | null = null;
     private avatarSvgText: string | null = null;
     private avatarSvgFetchSeq = 0;
-    private hasCapturedInitialGeneralMode = false;
+    private preflightListResizeObserver?: ResizeObserver;
     private readonly svgStateClasses = ["listening", "speaking", "thinking", "acting"];
-    private readonly avatarPreviewStateClasses: readonly AvatarPreviewStateClass[] = ["", "listening", "thinking", "speaking", "acting"];
+    private readonly avatarPreviewStateClasses: readonly AvatarPreviewStateClass[] = ["listening", "thinking", "acting", "speaking"];
     private avatarPreviewStateIndex = 0;
-    private readonly avatarPreviewInterval = setInterval(() => this.advanceAvatarPreviewState(), 1200);
+    private readonly avatarPreviewInterval = setInterval(() => this.advanceAvatarPreviewState(), 3000);
     hideApiKey = true;
     apiKeyType: string | null = null;
     assigningPTTIndex: number | null = null;
     isRefreshingAudioDevices = false;
+    activePreflightItem: PreflightChecklistItem = "commander";
+    preflightListHeight = 0;
 
     constructor(
         private configService: ConfigService,
@@ -101,11 +133,6 @@ export class GeneralSettingsComponent implements OnDestroy {
         this.configSubscription = this.configService.config$.subscribe(
             (config) => {
                 this.config = config;
-                if (config && !this.hasCapturedInitialGeneralMode) {
-                    this.canUseCompactGeneralSettings = !!config.commander_name?.trim() && !!config.api_key?.trim();
-                    this.useCompactGeneralSettings = this.canUseCompactGeneralSettings;
-                    this.hasCapturedInitialGeneralMode = true;
-                }
                 this.assigningPTTIndex = null;
             },
         );
@@ -124,10 +151,26 @@ export class GeneralSettingsComponent implements OnDestroy {
                 this.activeCharacter = character;
             },
         );
+        this.characterListSubscription = this.characterService.characterList$.subscribe(
+            (characters) => {
+                this.characterList = characters ?? [];
+            },
+        );
+        this.keybindsSubscription = this.configService.keybinds$.subscribe(
+            (keybindsData) => {
+                this.keybindsData = keybindsData;
+            },
+        );
+        this.pluginProvidersSubscription = this.configService.plugin_model_providers$.subscribe(
+            (providers) => {
+                this.pluginSTTProviders = providers.filter((provider) => provider.kind === "stt");
+                this.pluginTTSProviders = providers.filter((provider) => provider.kind === "tts");
+            },
+        );
         this.avatarMimeSubscription = combineLatest([this.characterService.avatarUrl$, this.characterService.avatarMime$]).subscribe(
             ([avatarUrl, mime]) => {
                 this.avatarUrl = avatarUrl || this.characterService.getAvatarUrl();
-                this.avatarMimePrimary = mime;
+                this.avatarMimePrimary = mime ?? this.characterService.getAvatarMime();
                 this.avatarSvgText = null;
                 this.refreshAvatarPreviewSvg();
             },
@@ -140,12 +183,20 @@ export class GeneralSettingsComponent implements OnDestroy {
         this.systemSubscription.unsubscribe();
         this.screensSubscription?.unsubscribe();
         this.characterSubscription.unsubscribe();
+        this.characterListSubscription.unsubscribe();
+        this.keybindsSubscription.unsubscribe();
+        this.pluginProvidersSubscription.unsubscribe();
         this.avatarMimeSubscription.unsubscribe();
+        this.preflightListResizeObserver?.disconnect();
         clearInterval(this.avatarPreviewInterval);
     }
 
     openTarget(target: GeneralSettingsTarget): void {
         this.openSettingsTarget.emit(target);
+    }
+
+    setActivePreflightItem(item: PreflightChecklistItem): void {
+        this.activePreflightItem = item;
     }
 
     get commanderName(): string {
@@ -174,9 +225,94 @@ export class GeneralSettingsComponent implements OnDestroy {
         }
     }
 
-    get outputLevelLabel(): string {
-        const multiplier = this.config?.output_volume_multiplier ?? 1;
-        return `${Math.round(multiplier * 100)}%`;
+    get activeCharacterIndex(): number {
+        return this.config?.active_character_index ?? 0;
+    }
+
+    get commanderReady(): boolean {
+        return !!this.config?.commander_name?.trim() && !!this.config?.api_key?.trim();
+    }
+
+    get soundInputReady(): boolean {
+        return !!this.config && this.config.stt_provider !== "none" && !!this.config.input_device_name?.trim();
+    }
+
+    get soundOutputReady(): boolean {
+        return !!this.config && this.config.tts_provider !== "none" && !!this.config.output_device_name?.trim();
+    }
+
+    get actionsReady(): boolean {
+        if (!this.keybindsData) {
+            return false;
+        }
+        return this.actionIssueCounts.missing === 0
+            && this.actionIssueCounts.conflicts === 0
+            && this.actionIssueCounts.unsupported === 0;
+    }
+
+    get soundInputSummary(): string {
+        const provider = this.providerLabel(this.config?.stt_provider, this.pluginSTTProviders);
+        return `${provider} / ${this.inputDeviceName}`;
+    }
+
+    get soundOutputSummary(): string {
+        const provider = this.providerLabel(this.config?.tts_provider, this.pluginTTSProviders);
+        return `${provider} / ${this.outputDeviceName}`;
+    }
+
+    get actionSummary(): string {
+        if (!this.keybindsData) {
+            return "Checking keybinds";
+        }
+        if (this.actionsReady) {
+            return "Ready";
+        }
+
+        const counts = this.actionIssueCounts;
+        const parts: string[] = [];
+        if (counts.missing > 0) {
+            parts.push(`${counts.missing} missing`);
+        }
+        if (counts.conflicts > 0) {
+            parts.push(`${counts.conflicts} conflicts`);
+        }
+        if (counts.unsupported > 0) {
+            parts.push(`${counts.unsupported} unsupported`);
+        }
+        return parts.join(" / ");
+    }
+
+    get actionIssueCounts(): { missing: number; conflicts: number; unsupported: number } {
+        return {
+            missing: this.keybindsData?.missing.length ?? 0,
+            conflicts: this.keybindsData?.collisions.length ?? 0,
+            unsupported: this.keybindsData?.unsupported.length ?? 0,
+        };
+    }
+
+    get enabledActionTypes(): string[] {
+        if (!this.config?.tools_var) {
+            return [];
+        }
+
+        const enabledTypes: string[] = [];
+        if (this.config.game_actions_var) {
+            enabledTypes.push("Game actions");
+        }
+        if (this.config.web_search_actions_var) {
+            enabledTypes.push("Web actions");
+        }
+        if (this.config.ui_actions_var) {
+            enabledTypes.push("UI actions");
+        }
+        if (this.config.overlay_show_hud) {
+            enabledTypes.push("Allow Gen UI");
+        }
+        return enabledTypes;
+    }
+
+    get characterPrompt(): string {
+        return this.activeCharacter?.character?.trim() || "No character prompt configured yet.";
     }
 
     get characterName(): string {
@@ -203,8 +339,46 @@ export class GeneralSettingsComponent implements OnDestroy {
         return counts;
     }
 
+    isPluginProvider(provider: string | undefined | null): boolean {
+        return provider?.startsWith("plugin:") ?? false;
+    }
+
+    providerLabel(provider: string | undefined | null, pluginProviders: ModelProviderDefinition[] = []): string {
+        if (!provider) {
+            return "Not set";
+        }
+        if (this.isPluginProvider(provider)) {
+            const match = pluginProviders.find(
+                (pluginProvider) => provider === `plugin:${pluginProvider.plugin_guid}:${pluginProvider.id}`,
+            );
+            return match?.label ?? "Plugin";
+        }
+
+        switch (provider) {
+            case "openai":
+                return "OpenAI";
+            case "openrouter":
+                return "OpenRouter";
+            case "google-ai-studio":
+                return "Google AI Studio";
+            case "edge-tts":
+                return "Edge TTS";
+            case "local-ai-server":
+                return "Local AIServer";
+            case "custom":
+                return "Custom";
+            case "custom-multi-modal":
+                return "Custom Multi-Modal";
+            case "none":
+                return "None";
+            default:
+                return provider;
+        }
+    }
+
     get avatarPreviewUsesInlineSvg(): boolean {
-        return this.avatarMimePrimary === "image/svg+xml";
+        const mime = this.avatarMimePrimary ?? this.characterService.getAvatarMime();
+        return mime === "image/svg+xml";
     }
 
     private advanceAvatarPreviewState(): void {
@@ -334,6 +508,17 @@ export class GeneralSettingsComponent implements OnDestroy {
         e.preventDefault();
         this.assigningPTTIndex = index;
         await this.configService.assignPTT(index);
+    }
+
+    async onCharacterSelect(index: number) {
+        try {
+            await this.characterService.setActiveCharacter(index);
+        } catch (error) {
+            console.error("Error selecting character:", error);
+            this.snackBar.open("Error selecting character", "OK", {
+                duration: 5000,
+            });
+        }
     }
 
     formatOutputVolumeLabel = (value: number): string => value.toFixed(2);

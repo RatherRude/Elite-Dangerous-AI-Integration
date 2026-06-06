@@ -34,11 +34,11 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
 
   // Collapsible sections state
   sectionsCollapsed = {
-    materials: false,
-    shipLocker: false,
+    materials: true,
+    shipLocker: true,
     engineers: true,
     onFootEngineers: true,
-    colonisation: false,
+    colonisation: true,
     cargo: true,
     fleetCarriers: true,
     storedModules: true,

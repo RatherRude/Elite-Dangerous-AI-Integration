@@ -222,14 +222,17 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
   }
 
   private effectiveAvatarMimePrimary(): string | null {
-    if (!this.currentAvatarUrl) {
-      return null;
-    }
-    const mime = this.scriptedAvatarUrl ? this.scriptedAvatarMime : this.baseAvatarMime;
+    const mime = this.scriptedAvatarUrl
+      ? this.scriptedAvatarMime
+      : (this.baseAvatarMime ?? (!this.scriptedAvatarUrl ? this.characterService.getAvatarMime() : null));
     if (!mime) {
       return null;
     }
     return mime.trim().toLowerCase().split(";")[0]?.trim() ?? null;
+  }
+
+  private effectiveAvatarUrl(): string | null {
+    return this.currentAvatarUrl ?? (this.scriptedAvatarUrl ? null : this.characterService.getAvatarUrl());
   }
 
   private setAvatarDisplayFromPosition(position: Config['overlay_position'] | string): void {
@@ -253,7 +256,7 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
       if (!this.avatarShow) {
         return;
       }
-      const url = this.currentAvatarUrl;
+      const url = this.effectiveAvatarUrl();
       if (this.avatarUsesInlineSvg && url) {
         void this.loadInlineSvg(url);
         return;
@@ -269,14 +272,9 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     if (!this.avatarShow || !el) {
       return;
     }
-    if (this.currentAvatarUrl) {
-      el.style.backgroundImage = `url('${this.currentAvatarUrl}')`;
-    } else {
-      const defaultAvatar =
-        this.avatarPosition === "left"
-          ? "assets/cn_avatar_default_flipped.png"
-          : "assets/cn_avatar_default.png";
-      el.style.backgroundImage = `url('${defaultAvatar}')`;
+    const url = this.effectiveAvatarUrl();
+    if (url) {
+      el.style.backgroundImage = `url('${url}')`;
     }
   }
 
@@ -287,7 +285,7 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
       const text = await res.text();
       if (
         seq !== this.svgFetchSeq ||
-        url !== this.currentAvatarUrl ||
+        url !== this.effectiveAvatarUrl() ||
         this.effectiveAvatarMimePrimary() !== "image/svg+xml"
       ) {
         return;

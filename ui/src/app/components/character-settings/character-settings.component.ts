@@ -64,7 +64,7 @@ interface PromptSettings {
 }
 
 type VoiceEffectPresetKey = "distortion" | "chorus" | "reverb" | "glitch" | "time_pitch";
-type AvatarPreviewStateClass = "" | "listening" | "thinking" | "speaking" | "acting";
+type AvatarPreviewStateClass = "listening" | "thinking" | "speaking" | "acting";
 type VoiceEffectConfig =
     | CharacterTTSDistortionConfig
     | CharacterTTSChorusConfig
@@ -127,10 +127,10 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
     private avatarUrlPrimary: string | null = null;
     private avatarSvgFetchSeq = 0;
     sanitizedAvatarPreviewSvg: SafeHtml | null = null;
-    private readonly avatarPreviewStateClasses: readonly AvatarPreviewStateClass[] = ["", "listening", "thinking", "speaking", "acting"];
+    private readonly avatarPreviewStateClasses: readonly AvatarPreviewStateClass[] = ["listening", "thinking", "acting", "speaking"];
     private avatarPreviewStateIndex = 0;
-    private readonly avatarPreviewInterval = setInterval(() => this.advanceAvatarPreviewState(), 1200);
-    avatarPreviewStateClass: AvatarPreviewStateClass = "";
+    private readonly avatarPreviewInterval = setInterval(() => this.advanceAvatarPreviewState(), 3000);
+    avatarPreviewStateClass: AvatarPreviewStateClass = "listening";
     highlightCharacterOverview = false;
     private localCharacterCopy: Character | null = null;
     isApplyingChange: boolean = false;
@@ -661,7 +661,7 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
         this.avatarMimeSubscription = combineLatest([this.characterService.avatarUrl$, this.characterService.avatarMime$]).subscribe(
             ([avatarUrl, mime]) => {
                 this.avatarUrlPrimary = avatarUrl;
-                this.avatarMimePrimary = mime;
+                this.avatarMimePrimary = mime ?? this.characterService.getAvatarMime();
                 this.refreshAvatarPreviewSvg();
             },
         );
@@ -709,12 +709,13 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
     }
 
     private refreshAvatarPreviewSvg(): void {
-        if (!this.avatarPreviewUsesInlineSvg || !this.avatarUrlPrimary) {
+        const url = this.avatarUrlPrimary ?? this.characterService.getAvatarUrl();
+        if (!this.avatarPreviewUsesInlineSvg || !url) {
             this.avatarSvgFetchSeq += 1;
             this.sanitizedAvatarPreviewSvg = null;
             return;
         }
-        void this.loadAvatarPreviewSvg(this.avatarUrlPrimary);
+        void this.loadAvatarPreviewSvg(url);
     }
 
     private async loadAvatarPreviewSvg(url: string): Promise<void> {
@@ -722,7 +723,7 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
         try {
             const res = await fetch(url);
             const text = await res.text();
-            if (seq !== this.avatarSvgFetchSeq || url !== this.avatarUrlPrimary || !this.avatarPreviewUsesInlineSvg) {
+            if (seq !== this.avatarSvgFetchSeq || url !== (this.avatarUrlPrimary ?? this.characterService.getAvatarUrl()) || !this.avatarPreviewUsesInlineSvg) {
                 return;
             }
             const safe = this.stripScriptsFromSvg(this.syncSvgRootClass(text, this.avatarPreviewStateClass));
@@ -773,7 +774,7 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
     /** PNG/WebP sprite sheet preview uses 200% + clip; SVG is one graphic. */
     get avatarPreviewUsesSpriteSheet(): boolean {
         if (!this.activeCharacter?.avatar) {
-            return true;
+            return false;
         }
         const mime = this.avatarMimePrimary;
         if (!mime) {
