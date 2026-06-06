@@ -14,7 +14,7 @@ from src.lib.Logger import ModelUsageStats, PromptUsageStats, log_llm_usage
 from src.lib.Logger import AudioUsageStats, LatencyUsageStats, TextUsageStats, log_stt_usage, log_tts_usage
 from src.lib.Logger import CacheUsageStats, log_action_cache_usage
 from src.lib.Database import ModelUsageStore, set_connection_for_testing
-from src.lib.Models import OpenAIResponsesLLMModel, _get_reasoning_tokens
+from src.lib.Models import GoogleAIStudioLLMModel, OpenAIResponsesLLMModel, create_llm_model, _get_reasoning_tokens
 
 
 @pytest.fixture
@@ -233,3 +233,128 @@ def test_get_reasoning_tokens_falls_back_to_response_usage_totals() -> None:
     )
 
     assert _get_reasoning_tokens(usage) == 106
+
+
+def test_create_llm_model_routes_google_ai_studio_and_translates_messages(
+    monkeypatch,
+) -> None:
+    response = SimpleNamespace(
+        usage_metadata=SimpleNamespace(
+            prompt_token_count=12,
+            candidates_token_count=8,
+            tool_use_prompt_token_count=3,
+            total_token_count=28,
+            cached_content_token_count=3,
+            thoughts_token_count=None,
+        ),
+        text=None,
+        candidates=[
+            SimpleNamespace(
+                content=SimpleNamespace(
+                    parts=[
+                        SimpleNamespace(
+                            function_call=SimpleNamespace(
+                                id="call_2",
+                                name="lookup_system",
+                                args={"system": "Achenar"},
+                            ),
+                            thought_signature=None,
+                        )
+                    ]
+                )
+            )
+        ],
+    )
+    client = SimpleNamespace(
+        models=SimpleNamespace(
+            generate_content=MagicMock(return_value=response),
+            list=MagicMock(return_value=[]),
+        )
+    )
+
+    monkeypatch.setattr("src.lib.Models.google_genai.Client", lambda **kwargs: client)
+
+    model = create_llm_model(
+        "google-ai-studio",
+        {
+            "api_key": "test-key",
+            "llm_model_name": "gemini-2.5-flash",
+            "llm_reasoning_effort": "medium",
+        },
+    )
+
+    assert isinstance(model, GoogleAIStudioLLMModel)
+
+    text, tool_calls, usage = model.generate(
+        [
+            {"role": "system", "content": "You are a ship computer."},
+            {"role": "user", "content": "Find Achenar."},
+            {
+                "role": "assistant",
+                "content": None,
+                "tool_calls": [
+                    {
+                        "id": "call_1",
+                        "type": "function",
+                        "function": {
+                            "name": "lookup_system",
+                            "arguments": '{"system":"Sol"}',
+                        },
+                    }
+                ],
+            },
+            {
+                "role": "tool",
+                "name": "lookup_system",
+                "tool_call_id": "call_1",
+                "content": '{"system":"Sol","status":"permit locked"}',
+            },
+        ],
+        tools=[
+            {
+                "type": "function",
+                "function": {
+                    "name": "lookup_system",
+                    "description": "Find a star system by name.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "system": {"type": "string"},
+                        },
+                        "required": ["system"],
+                    },
+                },
+            }
+        ],
+        tool_choice={"type": "function", "function": {"name": "lookup_system"}},
+    )
+
+    assert text is None
+    assert tool_calls is not None
+    assert len(tool_calls) == 1
+    assert tool_calls[0].id == "call_2"
+    assert tool_calls[0].function.name == "lookup_system"
+    assert json.loads(tool_calls[0].function.arguments) == {"system": "Achenar"}
+    assert usage.input_tokens == 15
+    assert usage.output_tokens == 8
+    assert usage.total_tokens == 28
+    assert usage.cached_tokens == 3
+    assert usage.reasoning_tokens == 5
+    assert usage.provider == "google-ai-studio"
+    assert usage.model_name == "gemini-2.5-flash"
+
+    generate_kwargs = client.models.generate_content.call_args.kwargs
+    assert generate_kwargs["model"] == "gemini-2.5-flash"
+    assert len(generate_kwargs["contents"]) == 3
+    assert generate_kwargs["contents"][0].role == "user"
+    assert generate_kwargs["contents"][0].parts[0].text == "Find Achenar."
+    assert generate_kwargs["contents"][1].role == "model"
+    assert generate_kwargs["contents"][1].parts[0].function_call.name == "lookup_system"
+    assert generate_kwargs["contents"][2].role == "user"
+    assert generate_kwargs["contents"][2].parts[0].function_response.name == "lookup_system"
+    assert generate_kwargs["contents"][2].parts[0].function_response.id == "call_1"
+    assert generate_kwargs["config"].system_instruction == "You are a ship computer."
+    assert generate_kwargs["config"].thinking_config.thinking_level == "MEDIUM"
+    assert generate_kwargs["config"].tool_config.function_calling_config.allowed_function_names == [
+        "lookup_system"
+    ]

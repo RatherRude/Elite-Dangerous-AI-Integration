@@ -3,6 +3,7 @@ from typing import Any, List, Optional, Generator, Iterable
 import io
 import base64
 import json
+from urllib.parse import unquote, urlparse
 import speech_recognition as sr
 import soundfile as sf
 import numpy as np
@@ -17,6 +18,15 @@ from openai import OpenAI, APIStatusError
 from openai.types.chat import ChatCompletion, ChatCompletionMessageFunctionToolCall, ChatCompletionMessageToolCall
 from openai.types import CreateEmbeddingResponse
 from .Logger import log, ModelUsageStats
+
+try:
+    from google import genai as google_genai
+    from google.genai import errors as google_genai_errors
+    from google.genai import types as google_genai_types
+except ImportError:
+    google_genai = None
+    google_genai_errors = None
+    google_genai_types = None
 
 class LLMError(Exception):
     def __init__(self, message: str, original_error: Exception | None = None):
@@ -163,6 +173,10 @@ def _normalize_tools_for_chat_template(tools: list[dict]) -> list[dict[str, Any]
     return normalized_tools
 
 def _get_reasoning_tokens(usage: Any) -> int | None:
+    reasoning_tokens = getattr(usage, "thoughts_token_count", None)
+    if reasoning_tokens is not None:
+        return int(reasoning_tokens)
+
     for details_name in ("output_tokens_details", "completion_tokens_details"):
         details = getattr(usage, details_name, None)
         if details is None:
@@ -175,6 +189,8 @@ def _get_reasoning_tokens(usage: Any) -> int | None:
     prompt_tokens = getattr(usage, "prompt_tokens", None)
     completion_tokens = getattr(usage, "completion_tokens", None)
     total_tokens = getattr(usage, "total_tokens", None)
+    if total_tokens is None:
+        total_tokens = getattr(usage, "total_token_count", None)
     if (
         prompt_tokens is not None
         and completion_tokens is not None
@@ -182,6 +198,25 @@ def _get_reasoning_tokens(usage: Any) -> int | None:
     ):
         fallback_reasoning_tokens = (
             int(total_tokens) - int(prompt_tokens) - int(completion_tokens)
+        )
+        if fallback_reasoning_tokens >= 0:
+            return fallback_reasoning_tokens
+
+    prompt_token_count = getattr(usage, "prompt_token_count", None)
+    response_token_count = getattr(usage, "response_token_count", None)
+    if response_token_count is None:
+        response_token_count = getattr(usage, "candidates_token_count", None)
+    tool_use_prompt_token_count = getattr(usage, "tool_use_prompt_token_count", None) or 0
+    if (
+        prompt_token_count is not None
+        and response_token_count is not None
+        and total_tokens is not None
+    ):
+        fallback_reasoning_tokens = (
+            int(total_tokens)
+            - int(prompt_token_count)
+            - int(response_token_count)
+            - int(tool_use_prompt_token_count)
         )
         if fallback_reasoning_tokens >= 0:
             return fallback_reasoning_tokens
@@ -200,6 +235,35 @@ def _get_reasoning_tokens(usage: Any) -> int | None:
             return fallback_reasoning_tokens
 
     return None
+
+
+def _get_google_ai_studio_input_tokens(usage: Any) -> int:
+    prompt_token_count = getattr(usage, "prompt_token_count", None)
+    if prompt_token_count is None:
+        return int(getattr(usage, "input_tokens", 0) or 0)
+
+    tool_use_prompt_token_count = getattr(usage, "tool_use_prompt_token_count", None) or 0
+    return int(prompt_token_count) + int(tool_use_prompt_token_count)
+
+
+def _get_google_ai_studio_output_tokens(usage: Any) -> int:
+    response_token_count = getattr(usage, "response_token_count", None)
+    if response_token_count is not None:
+        return int(response_token_count)
+
+    candidates_token_count = getattr(usage, "candidates_token_count", None)
+    if candidates_token_count is not None:
+        return int(candidates_token_count)
+
+    return int(getattr(usage, "output_tokens", 0) or 0)
+
+
+def _get_google_ai_studio_total_tokens(usage: Any) -> int:
+    total_token_count = getattr(usage, "total_token_count", None)
+    if total_token_count is not None:
+        return int(total_token_count)
+
+    return int(getattr(usage, "total_tokens", 0) or 0)
 
 class OpenAILLMModel(LLMModel):
     def __init__(self, base_url: str, api_key: str, model_name: str, temperature: float, reasoning_effort: Optional[str] = None, extra_body: Optional[dict] = None, extra_headers: Optional[dict] = None, provider_name: str | None = None):
@@ -633,6 +697,538 @@ class OpenAIResponsesLLMModel(LLMModel):
         except Exception as e:
             raise e
 
+class GoogleAIStudioLLMModel(LLMModel):
+    def __init__(self, base_url: str, api_key: str, model_name: str, temperature: float, reasoning_effort: Optional[str] = None, extra_body: Optional[dict] = None, extra_headers: Optional[dict] = None, provider_name: str | None = None):
+        super().__init__(model_name, provider_name=provider_name)
+        if google_genai is None or google_genai_types is None:
+            raise LLMError("google-genai package is required for Google AI Studio support")
+
+        self.base_url = base_url
+        self.temperature = temperature
+        self.reasoning_effort = reasoning_effort
+        self.extra_body = extra_body or {}
+        self.extra_headers = extra_headers or {}
+
+        client_kwargs: dict[str, Any] = {
+            "api_key": api_key,
+        }
+        http_options = self._build_http_options()
+        if http_options is not None:
+            client_kwargs["http_options"] = http_options
+
+        self.client = google_genai.Client(**client_kwargs)
+
+    def _has_message_content(self, content: Any) -> bool:
+        if content is None:
+            return False
+        if isinstance(content, str):
+            return content != ""
+        if isinstance(content, list):
+            return len(content) > 0
+        return True
+
+    def _stringify_content(self, content: Any) -> str:
+        if content is None:
+            return ""
+        if isinstance(content, str):
+            return content
+        try:
+            return json.dumps(content)
+        except TypeError:
+            return str(content)
+
+    def _normalize_base_url(self, base_url: str) -> tuple[str | None, str | None]:
+        if not base_url:
+            return (None, None)
+
+        parsed = urlparse(base_url)
+        if not parsed.scheme or not parsed.netloc:
+            return (base_url, None)
+
+        normalized_base_url = f"{parsed.scheme}://{parsed.netloc}"
+        normalized_path = parsed.path.strip("/")
+        if normalized_path in {"v1", "v1alpha", "v1beta"}:
+            return (normalized_base_url, normalized_path)
+        if normalized_path == "":
+            return (normalized_base_url, None)
+        return (base_url, None)
+
+    def _build_http_options(self) -> Any:
+        if google_genai_types is None:
+            return None
+
+        http_options: dict[str, Any] = {}
+        normalized_base_url, api_version = self._normalize_base_url(self.base_url)
+        if normalized_base_url:
+            http_options["base_url"] = normalized_base_url
+        if api_version:
+            http_options["api_version"] = api_version
+        if self.extra_headers:
+            http_options["headers"] = self.extra_headers
+        if self.extra_body:
+            http_options["extra_body"] = self.extra_body
+
+        if not http_options:
+            return None
+
+        return google_genai_types.HttpOptions(**http_options)
+
+    def _build_thinking_config(self) -> Any:
+        if google_genai_types is None:
+            return None
+
+        if self.reasoning_effort in [None, "", "default"]:
+            return None
+        if self.reasoning_effort in ["disabled", "none"]:
+            return google_genai_types.ThinkingConfig(thinking_budget=0)
+
+        thinking_level = str(self.reasoning_effort).upper()
+        if thinking_level not in {"MINIMAL", "LOW", "MEDIUM", "HIGH"}:
+            return None
+
+        return google_genai_types.ThinkingConfig(thinking_level=thinking_level)
+
+    def _system_content_to_text(self, content: Any) -> str:
+        if isinstance(content, str):
+            return content
+        if isinstance(content, list):
+            text_parts = [self._system_content_to_text(part) for part in content]
+            return "\n".join(part for part in text_parts if part)
+        if isinstance(content, dict):
+            part_type = content.get("type")
+            if part_type in {"text", "input_text"}:
+                return str(content.get("text", ""))
+            if part_type in {"image_url", "input_image", "input_audio", "input_file"}:
+                return self._stringify_content(content)
+        return self._stringify_content(content)
+
+    def _extract_system_instruction(self, messages: List[dict]) -> str | None:
+        instructions: list[str] = []
+
+        for raw_message in messages:
+            message = _model_dump_compatible(raw_message)
+            if not isinstance(message, dict):
+                continue
+
+            if message.get("role") not in {"system", "developer"}:
+                continue
+
+            content = message.get("content")
+            if self._has_message_content(content):
+                instructions.append(self._system_content_to_text(content))
+
+        system_instruction = "\n\n".join(part for part in instructions if part)
+        return system_instruction or None
+
+    def _decode_data_url(self, data_url: str) -> tuple[str, bytes] | None:
+        if not data_url.startswith("data:") or "," not in data_url:
+            return None
+
+        header, encoded_data = data_url.split(",", 1)
+        mime_type = header[5:].split(";", 1)[0] or "application/octet-stream"
+        if ";base64" not in header:
+            return (mime_type, encoded_data.encode("utf-8"))
+
+        return (mime_type, base64.b64decode(encoded_data))
+
+    def _guess_audio_mime_type(self, audio_format: str) -> str:
+        normalized_format = audio_format.lower()
+        if normalized_format in {"wav", "wave"}:
+            return "audio/wav"
+        if normalized_format == "mp3":
+            return "audio/mpeg"
+        return f"audio/{normalized_format}"
+
+    def _convert_image_part(self, part: dict[str, Any]) -> Any:
+        if google_genai_types is None:
+            return None
+
+        image_value = part.get("image_url")
+        image_url: str | None = None
+        if isinstance(image_value, dict):
+            image_url = image_value.get("url")
+        elif isinstance(image_value, str):
+            image_url = image_value
+
+        if not image_url:
+            return google_genai_types.Part.from_text(text=self._stringify_content(part))
+
+        decoded_data = self._decode_data_url(image_url)
+        if decoded_data is not None:
+            mime_type, image_bytes = decoded_data
+            return google_genai_types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
+
+        parsed = urlparse(image_url)
+        if parsed.scheme == "file":
+            file_path = unquote(parsed.path)
+            try:
+                import mimetypes
+
+                with open(file_path, "rb") as file_handle:
+                    file_bytes = file_handle.read()
+                mime_type = mimetypes.guess_type(file_path)[0] or "application/octet-stream"
+                return google_genai_types.Part.from_bytes(data=file_bytes, mime_type=mime_type)
+            except Exception:
+                return google_genai_types.Part.from_text(text=image_url)
+
+        if image_url.startswith("gs://"):
+            return google_genai_types.Part.from_uri(file_uri=image_url)
+
+        return google_genai_types.Part.from_text(text=image_url)
+
+    def _convert_audio_part(self, part: dict[str, Any]) -> Any:
+        if google_genai_types is None:
+            return None
+
+        audio_value = part.get("input_audio")
+        if not isinstance(audio_value, dict):
+            return google_genai_types.Part.from_text(text=self._stringify_content(part))
+
+        audio_data = audio_value.get("data")
+        audio_format = str(audio_value.get("format", "wav"))
+        if not isinstance(audio_data, str):
+            return google_genai_types.Part.from_text(text=self._stringify_content(part))
+
+        audio_bytes = base64.b64decode(audio_data)
+        return google_genai_types.Part.from_bytes(
+            data=audio_bytes,
+            mime_type=self._guess_audio_mime_type(audio_format),
+        )
+
+    def _convert_file_part(self, part: dict[str, Any]) -> Any:
+        if google_genai_types is None:
+            return None
+
+        file_value = part.get("input_file")
+        if not isinstance(file_value, dict):
+            return google_genai_types.Part.from_text(text=self._stringify_content(part))
+
+        file_uri = file_value.get("file_uri") or file_value.get("url")
+        mime_type = file_value.get("mime_type")
+        if isinstance(file_uri, str):
+            if mime_type:
+                return google_genai_types.Part.from_uri(file_uri=file_uri, mime_type=str(mime_type))
+            return google_genai_types.Part.from_uri(file_uri=file_uri)
+
+        file_data = file_value.get("data")
+        if isinstance(file_data, str) and isinstance(mime_type, str):
+            return google_genai_types.Part.from_bytes(
+                data=base64.b64decode(file_data),
+                mime_type=mime_type,
+            )
+
+        return google_genai_types.Part.from_text(text=self._stringify_content(part))
+
+    def _convert_content_part(self, part: Any) -> Any:
+        if google_genai_types is None:
+            return None
+
+        part = _model_dump_compatible(part)
+        if not isinstance(part, dict):
+            return google_genai_types.Part.from_text(text=str(part))
+
+        part_type = part.get("type")
+        if part_type in {"text", "input_text", None}:
+            return google_genai_types.Part.from_text(text=str(part.get("text", "")))
+        if part_type in {"image_url", "input_image"}:
+            return self._convert_image_part(part)
+        if part_type == "input_audio":
+            return self._convert_audio_part(part)
+        if part_type == "input_file":
+            return self._convert_file_part(part)
+
+        return google_genai_types.Part.from_text(text=self._stringify_content(part))
+
+    def _convert_message_content(self, content: Any) -> list[Any]:
+        if google_genai_types is None:
+            return []
+
+        if isinstance(content, list):
+            return [self._convert_content_part(part) for part in content]
+        if isinstance(content, dict):
+            return [self._convert_content_part(content)]
+        return [google_genai_types.Part.from_text(text=self._stringify_content(content))]
+
+    def _parse_function_arguments(self, arguments: Any) -> dict[str, Any]:
+        if isinstance(arguments, dict):
+            return arguments
+        if isinstance(arguments, str):
+            try:
+                parsed_arguments = json.loads(arguments)
+                if isinstance(parsed_arguments, dict):
+                    return parsed_arguments
+            except json.JSONDecodeError:
+                return {"value": arguments}
+        return {}
+
+    def _convert_assistant_tool_call(self, tool_call: Any) -> Any:
+        if google_genai_types is None:
+            return None
+
+        tool_call = _model_dump_compatible(tool_call)
+        if not isinstance(tool_call, dict):
+            return None
+
+        function_data = _model_dump_compatible(tool_call.get("function"))
+        if not isinstance(function_data, dict):
+            return None
+
+        part_kwargs: dict[str, Any] = {
+            "function_call": google_genai_types.FunctionCall(
+                id=str(tool_call.get("id") or f"call_{uuid4().hex}"),
+                name=str(function_data.get("name", "")),
+                args=self._parse_function_arguments(function_data.get("arguments")),
+            )
+        }
+
+        thought_signature = tool_call.get("extra_content", {}).get("google", {}).get("thought_signature")
+        if isinstance(thought_signature, str) and thought_signature not in {"", "skip_thought_signature_validator"}:
+            try:
+                part_kwargs["thought_signature"] = base64.b64decode(thought_signature)
+            except Exception:
+                pass
+
+        return google_genai_types.Part(**part_kwargs)
+
+    def _convert_tool_result(self, content: Any) -> dict[str, Any]:
+        if isinstance(content, dict):
+            return content
+        if isinstance(content, list):
+            return {"result": content}
+        if isinstance(content, str):
+            stripped_content = content.strip()
+            if stripped_content.startswith("{"):
+                try:
+                    parsed_content = json.loads(stripped_content)
+                    if isinstance(parsed_content, dict):
+                        return parsed_content
+                except json.JSONDecodeError:
+                    pass
+            return {"result": content}
+        return {"result": content}
+
+    def _convert_messages(self, messages: List[dict]) -> list[Any]:
+        if google_genai_types is None:
+            return []
+
+        converted_messages: list[Any] = []
+
+        for raw_message in messages:
+            message = _model_dump_compatible(raw_message)
+            if not isinstance(message, dict):
+                continue
+
+            role = message.get("role")
+            content = message.get("content")
+
+            if role in {"system", "developer"}:
+                continue
+
+            if role == "user" and self._has_message_content(content):
+                converted_messages.append(
+                    google_genai_types.Content(
+                        role="user",
+                        parts=self._convert_message_content(content),
+                    )
+                )
+                continue
+
+            if role == "assistant":
+                assistant_parts: list[Any] = []
+                if self._has_message_content(content):
+                    assistant_parts.extend(self._convert_message_content(content))
+                for tool_call in message.get("tool_calls") or []:
+                    converted_tool_call = self._convert_assistant_tool_call(tool_call)
+                    if converted_tool_call is not None:
+                        assistant_parts.append(converted_tool_call)
+                if assistant_parts:
+                    converted_messages.append(
+                        google_genai_types.Content(role="model", parts=assistant_parts)
+                    )
+                continue
+
+            if role == "tool":
+                function_response = google_genai_types.Part.from_function_response(
+                    name=str(message.get("name") or "tool"),
+                    response=self._convert_tool_result(message.get("content", "")),
+                )
+                function_response_id = message.get("tool_call_id") or message.get("call_id")
+                if function_response_id:
+                    function_response.function_response.id = str(function_response_id)
+                converted_messages.append(
+                    google_genai_types.Content(role="user", parts=[function_response])
+                )
+
+        return converted_messages
+
+    def _convert_tools(self, tools: List[dict]) -> list[Any] | None:
+        if google_genai_types is None:
+            return None
+
+        function_declarations: list[Any] = []
+        for raw_tool in tools:
+            tool = _model_dump_compatible(raw_tool)
+            if not isinstance(tool, dict):
+                continue
+            if tool.get("type") != "function":
+                continue
+
+            function_data = _model_dump_compatible(tool.get("function"))
+            if not isinstance(function_data, dict):
+                continue
+
+            declaration_kwargs: dict[str, Any] = {
+                "name": function_data.get("name"),
+                "description": function_data.get("description"),
+            }
+            if function_data.get("parameters") is not None:
+                declaration_kwargs["parameters_json_schema"] = function_data.get("parameters")
+            function_declarations.append(
+                google_genai_types.FunctionDeclaration(
+                    **{k: v for k, v in declaration_kwargs.items() if v is not None}
+                )
+            )
+
+        if not function_declarations:
+            return None
+
+        return [google_genai_types.Tool(function_declarations=function_declarations)]
+
+    def _convert_tool_choice_config(self, tool_choice: Any) -> dict[str, Any]:
+        if google_genai_types is None or tool_choice is None:
+            return {}
+
+        tool_choice = _model_dump_compatible(tool_choice)
+        function_calling_config_kwargs: dict[str, Any] = {}
+
+        if tool_choice == "none":
+            function_calling_config_kwargs["mode"] = "NONE"
+        elif tool_choice == "auto":
+            return {}
+        elif isinstance(tool_choice, dict) and tool_choice.get("type") == "function":
+            function_data = _model_dump_compatible(tool_choice.get("function"))
+            if isinstance(function_data, dict) and function_data.get("name"):
+                function_calling_config_kwargs["mode"] = "ANY"
+                function_calling_config_kwargs["allowed_function_names"] = [
+                    str(function_data.get("name"))
+                ]
+        elif tool_choice in {"required", "any"}:
+            function_calling_config_kwargs["mode"] = "ANY"
+        else:
+            return {}
+
+        return {
+            "tool_config": google_genai_types.ToolConfig(
+                function_calling_config=google_genai_types.FunctionCallingConfig(
+                    **function_calling_config_kwargs
+                )
+            )
+        }
+
+    def _extract_tool_calls(self, response: Any) -> list[ChatCompletionMessageFunctionToolCall] | None:
+        candidates = getattr(response, "candidates", None) or []
+        if not candidates:
+            return None
+
+        content = getattr(candidates[0], "content", None)
+        parts = getattr(content, "parts", None) or []
+        tool_calls: list[ChatCompletionMessageFunctionToolCall] = []
+
+        for part in parts:
+            function_call = getattr(part, "function_call", None)
+            if function_call is None:
+                continue
+
+            tool_call: dict[str, Any] = {
+                "type": "function",
+                "id": str(getattr(function_call, "id", None) or f"call_{uuid4().hex}"),
+                "function": {
+                    "name": str(getattr(function_call, "name", "") or ""),
+                    "arguments": json.dumps(getattr(function_call, "args", None) or {}),
+                },
+            }
+
+            thought_signature = getattr(part, "thought_signature", None)
+            if thought_signature:
+                tool_call["extra_content"] = {
+                    "google": {
+                        "thought_signature": base64.b64encode(thought_signature).decode("utf-8")
+                    }
+                }
+
+            tool_calls.append(ChatCompletionMessageFunctionToolCall.model_validate(tool_call))
+
+        return tool_calls or None
+
+    def generate(self, messages: List[dict], tools: Optional[List[dict]] = None, tool_choice: Optional[Any] = None) -> tuple[str | None, List[Any] | None, ModelUsageStats]:
+        if google_genai_types is None:
+            raise LLMError("google-genai package is required for Google AI Studio support")
+
+        contents = self._convert_messages(messages)
+        config_kwargs: dict[str, Any] = {
+            "temperature": self.temperature,
+        }
+
+        system_instruction = self._extract_system_instruction(messages)
+        if system_instruction:
+            config_kwargs["system_instruction"] = system_instruction
+
+        thinking_config = self._build_thinking_config()
+        if thinking_config is not None:
+            config_kwargs["thinking_config"] = thinking_config
+
+        if tools:
+            converted_tools = self._convert_tools(tools)
+            if converted_tools:
+                config_kwargs["tools"] = converted_tools
+                config_kwargs.update(self._convert_tool_choice_config(tool_choice))
+
+        config = google_genai_types.GenerateContentConfig(**config_kwargs)
+
+        try:
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=contents,
+                config=config,
+            )
+        except Exception as e:
+            if google_genai_errors is not None and isinstance(e, google_genai_errors.APIError):
+                log("debug", "LLM AI Studio error:", e.code, e.status, e.message, getattr(e, "details", None))
+                status = e.status or str(e.code)
+                message = e.message or getattr(e, "details", None) or "Unknown error"
+                raise LLMError(f"LLM {status}: {message}", e)
+            raise LLMError(f"LLM Error: {str(e)}", e)
+
+        usage_metadata = ModelUsageStats(provider=self.provider_name, model_name=self.model_name)
+        usage = getattr(response, "usage_metadata", None)
+        if usage:
+            log("debug", "LLM AI Studio usage", usage)
+            usage_metadata.input_tokens = _get_google_ai_studio_input_tokens(usage)
+            usage_metadata.output_tokens = _get_google_ai_studio_output_tokens(usage)
+            usage_metadata.total_tokens = _get_google_ai_studio_total_tokens(usage)
+            usage_metadata.cached_tokens = getattr(usage, "cached_content_token_count", 0) or 0
+            usage_metadata.reasoning_tokens = _get_reasoning_tokens(usage)
+
+        response_text = getattr(response, "text", None) or None
+        response_actions = self._extract_tool_calls(response)
+
+        if response_text is None and response_actions is None:
+            return (None, None, usage_metadata)
+
+        return (response_text, response_actions, usage_metadata)
+
+    def list_models(self) -> List[str]:
+        try:
+            models = self.client.models.list()
+            model_names: list[str] = []
+            for model in models:
+                model_name = getattr(model, "name", None) or getattr(model, "display_name", None)
+                if isinstance(model_name, str) and model_name:
+                    model_names.append(model_name.removeprefix("models/"))
+            return model_names
+        except Exception as e:
+            raise e
+
 class OpenAIEmbeddingModel(EmbeddingModel):
     def __init__(self, base_url: str, api_key: str, model_name: str, extra_headers: Optional[dict] = None, extra_body: Optional[dict] = None):
         super().__init__(model_name)
@@ -923,6 +1519,18 @@ def create_llm_model(provider: str, config: dict, prefix: str = "llm") -> LLMMod
 
     if provider == "openai":
         return OpenAIResponsesLLMModel(
+            base_url=base_url,
+            api_key=api_key,
+            model_name=model_name,
+            temperature=temperature,
+            reasoning_effort=reasoning_effort,
+            extra_body=extra_body,
+            extra_headers=extra_headers,
+            provider_name=provider,
+        )
+
+    if provider == "google-ai-studio":
+        return GoogleAIStudioLLMModel(
             base_url=base_url,
             api_key=api_key,
             model_name=model_name,
