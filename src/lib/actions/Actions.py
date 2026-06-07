@@ -1268,6 +1268,8 @@ def format_image(image, query=""):
     image.save(buffered, format="JPEG")
     image_data = buffered.getvalue()
     base64_image = base64.b64encode(image_data).decode('utf-8')
+    if not query:
+        query = "Describe the image"
 
     return [
         {
