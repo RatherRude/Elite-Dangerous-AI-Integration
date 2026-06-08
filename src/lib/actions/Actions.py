@@ -15,6 +15,7 @@ from .actions_ui import register_ui_actions
 from .actions_genui import register_genui_actions
 
 from ..Logger import log, show_chat_message
+from ..Screenshot import get_windows_game_window_handle, screenshot_game_window, set_game_window_active
 from ..EDKeys import EDKeys
 from ..EventManager import EventManager
 from ..ActionManager import ActionManager
@@ -1364,67 +1365,18 @@ def get_game_window_handle():
     global handle
     if platform.system() != 'Windows':
         return None
-    import win32gui
 
     if not handle:
-        handle = win32gui.FindWindow(0, "Elite - Dangerous (CLIENT)")
+        handle = get_windows_game_window_handle()
     return handle
 
 
 def setGameWindowActive():
-    if platform.system() != 'Windows':
-        return None
-    handle = get_game_window_handle()
-    import win32gui
-
-    if handle:
-        try:
-            win32gui.SetForegroundWindow(handle)  # give focus to ED
-            sleep(.15)
-            log("debug", "Set game window as active")
-        except:
-            log("warn", "Failed to set game window as active")
-    else:
-        log("info", "Unable to find Elite game window")
+    set_game_window_active()
 
 
 def screenshot(new_height: int = 720):
-    if platform.system() != 'Windows':
-        return None
-    handle = get_game_window_handle()
-    import win32gui
-    import pyautogui
-    from PIL import Image
-    if handle:
-        setGameWindowActive()
-        x, y, x1, y1 = win32gui.GetClientRect(handle)
-        x, y = win32gui.ClientToScreen(handle, (x, y))
-        x1, y1 = win32gui.ClientToScreen(handle, (x1, y1))
-        width = x1 - x
-        height = y1 - y
-        im = pyautogui.screenshot(region=(x, y, width, height))
-
-        # Convert the screenshot to a PIL image
-        im = im.convert("RGB")
-
-        # Resize to height 720 while maintaining aspect ratio
-        aspect_ratio = width / height
-        new_width = int(new_height * aspect_ratio)
-        im = im.resize((new_width, new_height), Image.Resampling.LANCZOS)
-
-        # Crop the center to a 16:9 aspect ratio
-        target_aspect_ratio = 16 / 9
-        target_width = int(new_height * target_aspect_ratio)
-        left = (new_width - target_width) / 2
-        top = 0
-        right = left + target_width
-        bottom = new_height
-        im = im.crop((left, top, right, bottom))
-
-        return im
-    else:
-        log("warn", 'Window not found!')
-        return None
+    return screenshot_game_window(new_height)
 
 
 def format_image(image, query=""):

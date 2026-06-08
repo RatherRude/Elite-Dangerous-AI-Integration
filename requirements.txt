@@ -50,6 +50,7 @@ pygame==2.6.0
 PyGetWindow==0.0.9
 pyinstaller==6.11.1
 pyinstaller-hooks-contrib==2024.10
+pyobjc-framework-Quartz==12.1 ; sys_platform == "darwin"
 PyMsgBox==1.0.9
 pynput==1.7.7
 pyperclip==1.9.0

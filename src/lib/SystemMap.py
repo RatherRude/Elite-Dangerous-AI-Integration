@@ -14,14 +14,16 @@ class SystemMap:
         self.screen_reader = screen_reader
         self.ed_keys = ed_keys
         self.categories = ["ORBITAL PORTS", "INSTALLATIONS", "LANDFALL PLANETS", "PLANETARY PORTS", "SURFACE SETTLEMENTS", "ODYSSEY SETTLEMENTS", "FLEET CARRIERS"]
-        self.wait_time = 0.1
+        self.wait_time = 0.5
 
     def run(self, category="LANDFALL PLANETS", entry="HIP 58412 8 D") -> ScreenReadResult:
         log("debug", "Navigating system map", category, entry)
         self.ed_keys.send("UI_Down")
         time.sleep(self.wait_time)
+        time.sleep(self.wait_time)
+        time.sleep(self.wait_time)
         back = self.screen_reader.read_selected_area()
-        if not back.detection.icon_template == 'exit':
+        if not back.detection or not back.detection.icon_template == 'exit':
             raise Exception(f"Unexpected ScreenReader Result: {str(back)}")
 
         self.ed_keys.send("UI_Up")
@@ -44,7 +46,7 @@ class SystemMap:
         while not match:
             selection = self.screen_reader.read_selected_area()
             log("info", selection)
-            if selection.detection.icon_template == 'exit':
+            if not selection.detection or selection.detection.icon_template == 'exit':
                 raise Exception(f"Unexpected ScreenReader Result Exit: {str(selection)}")
             for line in selection.ocr_lines:
                 if entry.replace(" ", "").upper() == line.text.replace(" ", "").upper():

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import math
-import platform
 from dataclasses import dataclass
 from time import sleep
 from typing import final
@@ -11,6 +10,7 @@ import cv2
 import numpy as np
 
 from .Logger import log
+from .Screenshot import screenshot_game_window, set_game_window_active
 
 
 @dataclass(frozen=True)
@@ -429,14 +429,14 @@ class ScreenReader:
         self,
         sample_colors: list[str] | None = None,
         *,
-        saturation_tolerance: float = 0.12,
+        saturation_tolerance: float = 0.25,
         candidate_value_tolerance: float = 0.10,
-        border_px: int = 8,
+        border_px: int = 4,
         border_required: float | None = None,
         content_required: float | None = None,
         hue_tolerance_deg: float = 10.0,
-        min_width: int = 40,
-        min_height: int = 40,
+        min_width: int = 20,
+        min_height: int = 20,
     ):
         self.profiles = build_profiles(
             sample_colors or ["69d9da", "fe8101"],
@@ -472,11 +472,11 @@ class ScreenReader:
         if image is None:
             image = self.get_screen()
         if image is None:
-            return ScreenReadResult(detection=None, ocr_lines=[])
+            raise Exception("Unable to capture screen for OCR")
 
         detection = self.detect_selected_area(image)
         if detection is None:
-            return ScreenReadResult(detection=None, ocr_lines=[])
+            raise Exception("No selected area detected")
 
         return ScreenReadResult(detection=detection, ocr_lines=self.read_detection_text(image, detection))
 
@@ -519,56 +519,15 @@ class ScreenReader:
         return cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
 
     def get_game_window_handle(self):
-        if platform.system() != "Windows":
-            return None
-        import win32gui
+        from .Screenshot import get_windows_game_window_handle
 
-        return win32gui.FindWindow(0, "Elite - Dangerous (CLIENT)")
+        return get_windows_game_window_handle()
 
     def setGameWindowActive(self):
-        if platform.system() != "Windows":
-            return None
-        handle = self.get_game_window_handle()
-        import win32gui
-
-        if handle:
-            try:
-                win32gui.SetForegroundWindow(handle)
-                sleep(0.15)
-                log("debug", "Set game window as active")
-            except Exception:
-                log("error", "Failed to set game window as active")
-        else:
-            log("info", "Unable to find Elite game window")
+        set_game_window_active()
 
     def screenshot(self, new_height: int = 1080):
-        if platform.system() != "Windows":
-            return None
-        handle = self.get_game_window_handle()
-        import pyautogui
-        import win32gui
-        from PIL import Image
-
-        if not handle:
-            log("error", "Window not found!")
-            return None
-
-        self.setGameWindowActive()
-        x, y, x1, y1 = win32gui.GetClientRect(handle)
-        x, y = win32gui.ClientToScreen(handle, (x, y))
-        x1, y1 = win32gui.ClientToScreen(handle, (x1, y1))
-        width = x1 - x
-        height = y1 - y
-        im = pyautogui.screenshot(region=(x, y, width, height)).convert("RGB")
-
-        aspect_ratio = width / height
-        new_width = int(new_height * aspect_ratio)
-        im = im.resize((new_width, new_height), Image.Resampling.LANCZOS)
-
-        target_aspect_ratio = 16 / 9
-        target_width = int(new_height * target_aspect_ratio)
-        left = (new_width - target_width) / 2
-        return im.crop((left, 0, left + target_width, new_height))
+        return screenshot_game_window(new_height)
 
 
 if __name__ == "__main__":
