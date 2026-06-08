@@ -84,7 +84,46 @@ EXIT_ICON_TEMPLATE = tuple(
         "####################.",
     )
 )
-EXIT_ICON_MATCH_REQUIRED = 0.35
+ORRERY_ICON_TEMPLATE = tuple(
+    row.replace(" ", "")
+    for row in (
+        "...............................",
+        "...............................",
+        "...............................",
+        "...........####.####...........",
+        ".........##..........#.........",
+        "........#.............#........",
+        ".......#...............####....",
+        "......#.........###....####....",
+        ".....#......#######.....###....",
+        ".....#.....#....####....###....",
+        "....#.....#.........#.....#....",
+        "....#................#.........",
+        ".........#...........#.........",
+        "...#.....#....###..........#...",
+        "...#.....#....####.........#...",
+        "...#.....#....####.........#...",
+        ".........#....###..........#...",
+        "....#....#.................#...",
+        "....#..........................",
+        "....##....#.........#.....#....",
+        "....###....#....####......#....",
+        "....####.......####......#.....",
+        "....####........###............",
+        "......#........................",
+        "........#.............#........",
+        ".........##.........##.........",
+        "...........#########...........",
+        "...............................",
+        "...............................",
+        "...............................",
+    )
+)
+ICON_TEMPLATES: dict[str, tuple[tuple[str, ...], float]] = {
+    "exit": (EXIT_ICON_TEMPLATE, 0.35),
+    "orrery": (ORRERY_ICON_TEMPLATE, 0.35),
+}
+EXIT_ICON_MATCH_REQUIRED = ICON_TEMPLATES["exit"][1]
 
 
 def parse_hex_color(value: str) -> tuple[int, int, int]:
@@ -154,16 +193,20 @@ def circular_mean_hue_deg(hue: np.ndarray) -> float:
 
 
 def binary_template(rows: tuple[str, ...]) -> np.ndarray:
-    return np.array([[1.0 if char == "#" else 0.0 for char in row] for row in rows], dtype=np.float32)
+    width = max(len(row) for row in rows)
+    normalized_rows = tuple(row.ljust(width, ".") for row in rows)
+    return np.array([[1.0 if char == "#" else 0.0 for char in row] for row in normalized_rows], dtype=np.float32)
 
 
-def match_exit_icon_template(
+def match_binary_icon_template(
     roi_hsv: np.ndarray,
+    template_rows: tuple[str, ...],
     *,
     hue_deg: float,
     hue_tolerance_deg: float,
     border_px: int,
     max_size: int = 80,
+    match_required: float = 0.35,
 ) -> float | None:
     height, width = roi_hsv.shape[:2]
     if width > max_size or height > max_size or abs(width - height) > 8:
@@ -172,7 +215,7 @@ def match_exit_icon_template(
         return None
 
     inner = roi_hsv[border_px : height - border_px, border_px : width - border_px]
-    template = binary_template(EXIT_ICON_TEMPLATE)
+    template = binary_template(template_rows)
     if inner.shape[0] < template.shape[0] or inner.shape[1] < template.shape[1]:
         return None
 
@@ -190,9 +233,59 @@ def match_exit_icon_template(
         return None
 
     score = float(result.max())
-    if score < EXIT_ICON_MATCH_REQUIRED:
+    if score < match_required:
         return None
     return score
+
+
+def match_exit_icon_template(
+    roi_hsv: np.ndarray,
+    *,
+    hue_deg: float,
+    hue_tolerance_deg: float,
+    border_px: int,
+    max_size: int = 80,
+) -> float | None:
+    template_rows, match_required = ICON_TEMPLATES["exit"]
+    return match_binary_icon_template(
+        roi_hsv,
+        template_rows,
+        hue_deg=hue_deg,
+        hue_tolerance_deg=hue_tolerance_deg,
+        border_px=border_px,
+        max_size=max_size,
+        match_required=match_required,
+    )
+
+
+def identify_icon_template(
+    roi_hsv: np.ndarray,
+    *,
+    hue_deg: float,
+    hue_tolerance_deg: float,
+    border_px: int,
+    max_size: int = 80,
+) -> tuple[str | None, float | None]:
+    best_name: str | None = None
+    best_score: float | None = None
+
+    for template_name, (template_rows, match_required) in ICON_TEMPLATES.items():
+        score = match_binary_icon_template(
+            roi_hsv,
+            template_rows,
+            hue_deg=hue_deg,
+            hue_tolerance_deg=hue_tolerance_deg,
+            border_px=border_px,
+            max_size=max_size,
+            match_required=match_required,
+        )
+        if score is None:
+            continue
+        if best_score is None or score > best_score:
+            best_name = template_name
+            best_score = score
+
+    return best_name, best_score
 
 
 def border_mask(height: int, width: int, border_px: int) -> np.ndarray:
@@ -296,7 +389,7 @@ def find_detection(
             if content_match < required_content:
                 continue
 
-            icon_match = match_exit_icon_template(
+            icon_template, icon_match = identify_icon_template(
                 roi_hsv,
                 hue_deg=hue_deg,
                 hue_tolerance_deg=hue_tolerance_deg,
@@ -313,7 +406,7 @@ def find_detection(
                 hue_deg=hue_deg,
                 border_match=border_match,
                 content_match=content_match,
-                icon_template="exit" if icon_match is not None else None,
+                icon_template=icon_template,
                 icon_match=icon_match,
             )
             if best is None or detection.area > best.area:

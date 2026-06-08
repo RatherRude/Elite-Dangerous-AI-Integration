@@ -10,7 +10,7 @@ import openai
 import requests
 from pydantic import BaseModel
 
-from .actions_web import register_web_actions, lookup_plot_target, ensure_in_system_plot_target
+from .actions_web import register_web_actions, lookup_plot_target, ensure_in_system_plot_target, ResolvedPlotTarget
 from .actions_ui import register_ui_actions
 from .actions_genui import register_genui_actions
 
@@ -517,22 +517,59 @@ def _parse_plot_target_args(args: dict[str, Any]) -> tuple[str | None, str | Non
     return clean(args.get('system')), clean(args.get('station')), clean(args.get('body'))
 
 
-def _plot_in_system(
-    resolved_target,
-    projected_states: ProjectedStates,
-    sys_map_key: str = "SystemMapOpen",
-) -> str:
+def _navigate_system_map_target(resolved_target: ResolvedPlotTarget) -> None:
     from ..ScreenReader import ScreenReader
     from ..SystemMap import SystemMap
 
     ensure_in_system_plot_target(resolved_target)
     category = resolved_target.system_map_category or "LANDFALL PLANETS"
+    SystemMap(ScreenReader(), keys).run(category=category, entry=resolved_target.name)
+
+
+def _select_orrery_from_galaxy_map(screen_reader, max_steps: int = 30) -> None:
+    keys.send('UI_Right')
+    sleep(0.1)
+    keys.send('UI_Right')
+    sleep(0.1)
+
+    for _ in range(max_steps):
+        selection = screen_reader.read_selected_area()
+        detection = selection.detection
+        if detection is not None and detection.icon_template == 'orrery':
+            keys.send('UI_Select')
+            sleep(0.1)
+            return
+        keys.send('UI_Down')
+        sleep(0.1)
+
+    raise Exception("Could not find orrery icon in galaxy map system list")
+
+
+def _plot_in_system_from_galaxy_map(resolved_target: ResolvedPlotTarget, projected_states: ProjectedStates) -> None:
+    from ..ScreenReader import ScreenReader
+
+    screen_reader = ScreenReader()
+    _select_orrery_from_galaxy_map(screen_reader)
+
+    try:
+        event_manager.wait_for_condition('CurrentStatus', lambda s: s.GuiFocus == "SystemMap", 4)
+    except TimeoutError:
+        raise Exception("Failed to open system map from galaxy map orrery view")
+
+    sleep(3)
+    _navigate_system_map_target(resolved_target)
+
+
+def _plot_in_system(
+    resolved_target: ResolvedPlotTarget,
+    projected_states: ProjectedStates,
+    sys_map_key: str = "SystemMapOpen",
+) -> str:
     current_gui = _ensure_system_map_open(projected_states, sys_map_key)
     if current_gui != "SystemMap":
         sleep(3)
 
-    system_map = SystemMap(ScreenReader(), keys)
-    system_map.run(category=category, entry=resolved_target.name)
+    _navigate_system_map_target(resolved_target)
 
     if current_gui != "SystemMap":
         keys.send(sys_map_key)
@@ -594,8 +631,12 @@ def _plot_galaxy_route(
     details: dict[str, Any] | None,
     projected_states: ProjectedStates,
     galaxymap_key: str = "GalaxyMapOpen",
+    resolved_target: ResolvedPlotTarget | None = None,
 ) -> str:
     current_gui = _ensure_galaxy_map_open(projected_states, galaxymap_key)
+    keep_galaxy_map_open = (
+        resolved_target is not None and resolved_target.target_type in ('station', 'body')
+    )
 
     collisions = keys.get_collisions('UI_Up')
     if 'CamTranslateForward' in collisions:
@@ -654,12 +695,18 @@ def _plot_galaxy_route(
         )
         jump_amount = len(data.NavRoute) if data else 0
 
-        if current_gui != "GalaxyMap":
+        if not keep_galaxy_map_open and current_gui != "GalaxyMap":
             keys.send(galaxymap_key)
 
         prefix = f"Best location found: {json.dumps(details)}. " if details else ""
         distance_text = f"Distance: {distance_ly} LY, " if distance_ly > 0 else ""
-        return prefix + f"Route to {system_name} successfully plotted ({distance_text}Jumps: {jump_amount})"
+        message = prefix + f"Route to {system_name} successfully plotted ({distance_text}Jumps: {jump_amount})"
+
+        if keep_galaxy_map_open and resolved_target is not None:
+            _plot_in_system_from_galaxy_map(resolved_target, projected_states)
+            message += f" In-system navigation to {resolved_target.name} configured."
+
+        return message
     except TimeoutError:
         return f"Failed to plot a route to {system_name}"
 
@@ -690,7 +737,13 @@ def plot_to_target(args, projected_states, galaxymap_key="GalaxyMapOpen"):
         if resolved.target_type in ('station', 'body') and _systems_match(resolved.system_name, current_system):
             return _plot_in_system(resolved, projected_states)
 
-        return _plot_galaxy_route(resolved.system_name, resolved.details, projected_states, galaxymap_key)
+        return _plot_galaxy_route(
+            resolved.system_name,
+            resolved.details,
+            projected_states,
+            galaxymap_key,
+            resolved_target=resolved,
+        )
 
     if system:
         nav_route = get_state_dict(projected_states, 'NavInfo').get('NavRoute', [])
