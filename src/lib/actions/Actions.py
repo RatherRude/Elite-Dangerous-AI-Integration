@@ -10,7 +10,7 @@ import openai
 import requests
 from pydantic import BaseModel
 
-from .actions_web import register_web_actions
+from .actions_web import register_web_actions, lookup_plot_target, ensure_in_system_plot_target
 from .actions_ui import register_ui_actions
 from .actions_genui import register_genui_actions
 
@@ -503,28 +503,227 @@ def calculate_navigation_distance_and_timing(current_system: str, target_system:
     return distance_ly, zoom_wait_time
 
 
-def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
-    # Trigger the GUI open
-    setGameWindowActive()
+def _systems_match(system_a: str, system_b: str) -> bool:
+    return system_a.strip().casefold() == system_b.strip().casefold()
+
+
+def _parse_plot_target_args(args: dict[str, Any]) -> tuple[str | None, str | None, str | None]:
+    def clean(value: Any) -> str | None:
+        if value is None:
+            return None
+        text = str(value).strip()
+        return text or None
+
+    return clean(args.get('system')), clean(args.get('station')), clean(args.get('body'))
+
+
+def _plot_in_system(
+    resolved_target,
+    projected_states: ProjectedStates,
+    sys_map_key: str = "SystemMapOpen",
+) -> str:
+    from ..ScreenReader import ScreenReader
+    from ..SystemMap import SystemMap
+
+    ensure_in_system_plot_target(resolved_target)
+    category = resolved_target.system_map_category or "LANDFALL PLANETS"
+    current_gui = _ensure_system_map_open(projected_states, sys_map_key)
+    if current_gui != "SystemMap":
+        sleep(3)
+
+    system_map = SystemMap(ScreenReader(), keys)
+    system_map.run(category=category, entry=resolved_target.name)
+
+    if current_gui != "SystemMap":
+        keys.send(sys_map_key)
+
+    return (
+        f"Best location found: {json.dumps(resolved_target.details)}. "
+        f"In-system navigation to {resolved_target.name} completed."
+    )
+
+
+def _ensure_system_map_open(projected_states: ProjectedStates, sys_map_key: str = "SystemMapOpen") -> str:
     current_gui = get_state_dict(projected_states, 'CurrentStatus').get('GuiFocus', '')
 
-    if 'start_navigation' in args and args['start_navigation']:
-        nav_route = get_state_dict(projected_states, 'NavInfo').get('NavRoute', [])
-        if nav_route and nav_route[-1].get('StarSystem') == args.get('system_name'):
-            return f"The route to {args['system_name']} is already set"
+    if current_gui in ['SAA', 'FSS', 'Codex']:
+        raise Exception('System map can not be opened currently, the active GUI needs to be closed first')
+
+    if current_gui == 'SystemMap':
+        return current_gui
+
+    keys.send(sys_map_key)
+    try:
+        event_manager.wait_for_condition('CurrentStatus', lambda s: s.GuiFocus == "SystemMap", 4)
+    except TimeoutError:
+        keys.send("UI_Back", repeat=10, repeat_delay=0.05)
+        keys.send(sys_map_key)
+        try:
+            event_manager.wait_for_condition('CurrentStatus', lambda s: s.GuiFocus == "SystemMap", 4)
+        except TimeoutError:
+            raise Exception("System map can not be opened currently, the current GUI needs to be closed first")
+
+    return current_gui
+
+
+def _ensure_galaxy_map_open(projected_states: ProjectedStates, galaxymap_key: str) -> str:
+    current_gui = get_state_dict(projected_states, 'CurrentStatus').get('GuiFocus', '')
 
     if current_gui in ['SAA', 'FSS', 'Codex']:
         raise Exception('Galaxy map can not be opened currently, the active GUI needs to be closed first')
 
     if current_gui == 'GalaxyMap':
-        if not 'system_name' in args:
-            return "Galaxy map is already open"
-    else:
-        keys.send(galaxymap_key)
+        return current_gui
 
+    keys.send(galaxymap_key)
     try:
         event_manager.wait_for_condition('CurrentStatus', lambda s: s.GuiFocus == "GalaxyMap", 4)
+    except TimeoutError:
+        keys.send("UI_Back", repeat=10, repeat_delay=0.05)
+        keys.send(galaxymap_key)
+        try:
+            event_manager.wait_for_condition('CurrentStatus', lambda s: s.GuiFocus == "GalaxyMap", 5)
+        except TimeoutError:
+            raise Exception("Galaxy map can not be opened currently, the current GUI needs to be closed first")
 
+    return current_gui
+
+
+def _plot_galaxy_route(
+    system_name: str,
+    details: dict[str, Any] | None,
+    projected_states: ProjectedStates,
+    galaxymap_key: str = "GalaxyMapOpen",
+) -> str:
+    current_gui = _ensure_galaxy_map_open(projected_states, galaxymap_key)
+
+    collisions = keys.get_collisions('UI_Up')
+    if 'CamTranslateForward' in collisions:
+        raise Exception(
+            "Unable to enter system name due to a collision between the 'UI Panel Up' and 'Galaxy Cam Translate Forward' keys. "
+            + "Please change the keybinding for 'Galaxy Cam Translate' to Shift + WASD under General Controls > Galaxy Map.")
+
+    collisions = keys.get_collisions('UI_Right')
+    if 'CamTranslateRight' in collisions:
+        raise Exception(
+            "Unable to enter system name due to a collision between the 'UI Panel Right' and 'Galaxy Cam Translate Right' keys. "
+            + "Please change the keybinding for 'Galaxy Cam Translate' to Shift + WASD under General Controls > Galaxy Map.")
+
+    keys.send('CamZoomIn')
+    sleep(0.05)
+
+    keys.send('UI_Up')
+    sleep(.05)
+    if current_gui == "GalaxyMap":
+        keys.send('UI_Left', repeat=3)
+        sleep(.05)
+        keys.send('UI_Right')
+        sleep(.05)
+        keys.send('UI_Up')
+        sleep(.05)
+    keys.send('UI_Select')
+    sleep(.05)
+
+    typewrite(system_name, interval=0.02)
+    sleep(0.05)
+
+    keys.send_key('Down', 'Key_Enter')
+    sleep(0.05)
+    keys.send_key('Up', 'Key_Enter')
+
+    sleep(0.05)
+    keys.send('UI_Right')
+    sleep(.5)
+    keys.send('UI_Select')
+
+    current_system = get_state_dict(projected_states, 'Location').get('StarSystem', 'Unknown')
+    distance_ly, zoom_wait_time = calculate_navigation_distance_and_timing(current_system, system_name)
+    log('info', 'zoom_wait_time', zoom_wait_time)
+
+    sleep(0.05)
+    keys.send('CamZoomOut')
+    sleep(zoom_wait_time)
+    keys.send('UI_Select', hold=1)
+    sleep(0.05)
+
+    try:
+        data = event_manager.wait_for_condition(
+            'NavInfo',
+            lambda s: s.NavRoute and len(s.NavRoute) > 0 and s.NavRoute[-1].StarSystem.lower() == system_name.lower(),
+            zoom_wait_time,
+        )
+        jump_amount = len(data.NavRoute) if data else 0
+
+        if current_gui != "GalaxyMap":
+            keys.send(galaxymap_key)
+
+        prefix = f"Best location found: {json.dumps(details)}. " if details else ""
+        distance_text = f"Distance: {distance_ly} LY, " if distance_ly > 0 else ""
+        return prefix + f"Route to {system_name} successfully plotted ({distance_text}Jumps: {jump_amount})"
+    except TimeoutError:
+        return f"Failed to plot a route to {system_name}"
+
+
+def plot_to_target(args, projected_states, galaxymap_key="GalaxyMapOpen"):
+    setGameWindowActive()
+    system, station, body = _parse_plot_target_args(args)
+    if not any((system, station, body)):
+        raise Exception("At least one of system, station, or body must be provided.")
+
+    resolved = lookup_plot_target(
+        system=system,
+        station=station,
+        body=body,
+        projected_states=projected_states,
+    )
+    current_system = get_state_dict(projected_states, 'Location').get('StarSystem', 'Unknown')
+
+    if resolved:
+        nav_route = get_state_dict(projected_states, 'NavInfo').get('NavRoute', [])
+        if nav_route and _systems_match(nav_route[-1].get('StarSystem', ''), resolved.system_name):
+            if resolved.target_type == 'system' or not _systems_match(resolved.system_name, current_system):
+                return f"The route to {resolved.system_name} is already set"
+
+        if resolved.target_type == 'system' and _systems_match(resolved.system_name, current_system):
+            return f"Already in {resolved.system_name}."
+
+        if resolved.target_type in ('station', 'body') and _systems_match(resolved.system_name, current_system):
+            return _plot_in_system(resolved, projected_states)
+
+        return _plot_galaxy_route(resolved.system_name, resolved.details, projected_states, galaxymap_key)
+
+    if system:
+        nav_route = get_state_dict(projected_states, 'NavInfo').get('NavRoute', [])
+        if nav_route and _systems_match(nav_route[-1].get('StarSystem', ''), system):
+            return f"The route to {system} is already set"
+        if _systems_match(system, current_system):
+            return f"Already in {system}."
+        return _plot_galaxy_route(system, None, projected_states, galaxymap_key)
+
+    raise Exception(
+        f"Could not resolve plot target from station={station!r}, body={body!r}, system={system!r}."
+    )
+
+
+def galaxy_map_open_or_close(args, projected_states, galaxymap_key="GalaxyMapOpen"):
+    setGameWindowActive()
+    current_gui = get_state_dict(projected_states, 'CurrentStatus').get('GuiFocus', '')
+
+    if args.get('desired_state') == "close":
+        if current_gui == 'GalaxyMap':
+            keys.send(galaxymap_key)
+            return "Galaxy map has been closed."
+        return "Galaxy map is not open, nothing to close."
+
+    if current_gui in ['SAA', 'FSS', 'Codex']:
+        raise Exception('Galaxy map can not be opened currently, the active GUI needs to be closed first')
+
+    if current_gui == 'GalaxyMap':
+        return "Galaxy map is already open"
+
+    keys.send(galaxymap_key)
+    try:
+        event_manager.wait_for_condition('CurrentStatus', lambda s: s.GuiFocus == "GalaxyMap", 4)
     except TimeoutError:
         keys.send("UI_Back", repeat=10, repeat_delay=0.05)
         keys.send(galaxymap_key)
@@ -533,90 +732,15 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
         except TimeoutError:
             return "Galaxy map can not be opened currently, the current GUI needs to be closed first"
 
-    if 'system_name' in args:
-
-        # Check if UI keys have a collision with CamTranslate
-        collisions = keys.get_collisions('UI_Up')
-        if 'CamTranslateForward' in collisions:
-            raise Exception(
-                "Unable to enter system name due to a collision between the 'UI Panel Up' and 'Galaxy Cam Translate Forward' keys. "
-                + "Please change the keybinding for 'Galaxy Cam Translate' to Shift + WASD under General Controls > Galaxy Map.")
-
-        collisions = keys.get_collisions('UI_Right')
-        if 'CamTranslateRight' in collisions:
-            raise Exception(
-                "Unable to enter system name due to a collision between the 'UI Panel Right' and 'Galaxy Cam Translate Right' keys. "
-                + "Please change the keybinding for 'Galaxy Cam Translate' to Shift + WASD under General Controls > Galaxy Map.")
-
-        keys.send('CamZoomIn')
-        sleep(0.05)
-
-        keys.send('UI_Up')
-        sleep(.05)
-        if current_gui == "GalaxyMap":
-            keys.send('UI_Left', repeat=3)
-            sleep(.05)
-            keys.send('UI_Right')
-            sleep(.05)
-            keys.send('UI_Up')
-            sleep(.05)
-        keys.send('UI_Select')
-        sleep(.05)
-
-        # type in the System name
-        typewrite(args['system_name'], interval=0.02)
-        sleep(0.05)
-
-        # send enter key
-        keys.send_key('Down', 'Key_Enter')
-        sleep(0.05)
-        keys.send_key('Up', 'Key_Enter')
-
-        sleep(0.05)
-        keys.send('UI_Right')
-        sleep(.5)
-        keys.send('UI_Select')
-
-        if 'start_navigation' in args and args['start_navigation']:
-            # Get current location from projected states and calculate distance/timing
-            current_system = get_state_dict(projected_states, 'Location').get('StarSystem', 'Unknown')
-            target_system = args['system_name']
-
-            distance_ly, zoom_wait_time = calculate_navigation_distance_and_timing(current_system, target_system)
-            log('info', 'zoom_wait_time', zoom_wait_time)
-            # Continue with the navigation logic
-            sleep(0.05)
-            keys.send('CamZoomOut')
-            sleep(zoom_wait_time)
-            keys.send('UI_Select', hold=1)
-
-            sleep(0.05)
-
-            try:
-                data = event_manager.wait_for_condition('NavInfo',
-                                                        lambda s: s.NavRoute and len(s.NavRoute) > 0 and s.NavRoute[-1].StarSystem.lower() == args['system_name'].lower(), zoom_wait_time)
-                jumpAmount = len(data.NavRoute) if data else 0  # amount of jumps to do
-
-                if not current_gui == "GalaxyMap":  # if we are already in the galaxy map we don't want to close it
-                    keys.send(galaxymap_key)
-
-                return (f"Best location found: {json.dumps(args['details'])}. " if 'details' in args else '') + f"Route to {args['system_name']} successfully plotted ({f'Distance: {distance_ly} LY, ' if distance_ly > 0 else ''}Jumps: {jumpAmount})"
-
-            except TimeoutError:
-                return f"Failed to plot a route to {args['system_name']}"
-
-        return f"The galaxy map has opened. It is now zoomed in on \"{args['system_name']}\". No route was plotted yet, only the commander can do that."
-
     return "Galaxy map opened"
 
 
-def galaxy_map_close(args, projected_states, galaxymap_key="GalaxyMapOpen"):
-    if get_state_dict(projected_states, 'CurrentStatus').get('GuiFocus') == 'GalaxyMap':
-        keys.send(galaxymap_key)
-    else:
-        return "Galaxy map is already closed"
+def plot_to_target_buggy(args, projected_states):
+    return plot_to_target(args, projected_states, "GalaxyMapOpen_Buggy")
 
-    return "Galaxy map closed"
+
+def galaxy_map_open_or_close_buggy(args, projected_states):
+    return galaxy_map_open_or_close(args, projected_states, "GalaxyMapOpen_Buggy")
 
 
 def system_map_open_or_close(args, projected_states, sys_map_key='SystemMapOpen'):
@@ -1066,16 +1190,6 @@ def recall_dismiss_ship_buggy(args, projected_states):
     return "Remote ship has been recalled or dismissed."
 
 
-def galaxy_map_open_buggy(args, projected_states) -> Any | Literal['Galaxy map is already closed', 'Galaxy map closed']:
-    setGameWindowActive()
-    if args['desired_state'] == "open":
-        response = galaxy_map_open(args, projected_states, "GalaxyMapOpen_Buggy")
-    else:
-        response = galaxy_map_close(args, projected_states, "GalaxyMapOpen_Buggy")
-
-    return response
-
-
 def system_map_open_buggy(args, projected_states):
     setGameWindowActive()
     current_gui = get_state_dict(projected_states, 'CurrentStatus').get('GuiFocus', '')
@@ -1161,7 +1275,7 @@ def battery_humanoid(args, projected_states):
     return "Battery used."
 
 
-def galaxy_map_open_humanoid(args, projected_states):
+def galaxy_map_open_or_close_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('GalaxyMapOpen_Humanoid')
     return "Galaxy map opened or closed."
@@ -1619,33 +1733,43 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "pips to systems": {"power_category": ["Systems"], "pips": [2]},
     })
 
-    actionManager.registerAction('galaxyMapOpen', "Open galaxy map. If asked, also focus on a system or start a navigation route. Navigation closes map, no further close required.", {
+    actionManager.registerAction('plotToTarget', "Plot a navigation route to a system, station, or body. Uses Spansh to resolve the target, then plots via the galaxy map or navigates in the current system map when already there.", {
         "type": "object",
         "properties": {
-            "system_name": {
+            "system": {
                 "type": "string",
-                "description": "System to display or plot to",
+                "description": "Target system name",
             },
-            "start_navigation": {
-                "type": "boolean",
-                "description": "Start navigation route to the system",
-            }
+            "station": {
+                "type": "string",
+                "description": "Target station name",
+            },
+            "body": {
+                "type": "string",
+                "description": "Target body name",
+            },
         },
-    }, galaxy_map_open, 'ship', permission='galaxyMapOpen', cache_prefill={
-        "galaxy map": {},
-        "open galaxy map": {},
-        "galmap": {},
+    }, plot_to_target, 'ship', permission='plotToTarget', cache_prefill={
         "navigation": {},
-        "star map": {},
-        "show galaxy map": {},
-        "nav map": {},
     })
 
-    actionManager.registerAction('galaxyMapClose', "Close galaxy map", {
+    actionManager.registerAction('galaxyMapOpenOrClose', "Open or close the galaxy map", {
         "type": "object",
-        "properties": {},
-    }, galaxy_map_close, 'ship', permission='galaxyMapClose', cache_prefill={
-        "close galaxy map": {},
+        "properties": {
+            "desired_state": {
+                "type": "string",
+                "enum": ["open", "close"],
+                "description": "Desired state for the galaxy map: open or close.",
+            },
+        },
+    }, galaxy_map_open_or_close, 'ship', permission='galaxyMapOpenOrClose', cache_prefill={
+        "galaxy map": {"desired_state": "open"},
+        "open galaxy map": {"desired_state": "open"},
+        "close galaxy map": {"desired_state": "close"},
+        "galmap": {"desired_state": "open"},
+        "star map": {"desired_state": "open"},
+        "show galaxy map": {"desired_state": "open"},
+        "nav map": {"desired_state": "open"},
     })
 
     actionManager.registerAction('systemMapOpenOrClose', "Open or close system map", {
@@ -2277,7 +2401,31 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "ship pickup": {},
     })
 
-    actionManager.registerAction('galaxyMapOpenOrCloseBuggy', "Open galaxy map. If asked, also focus on a system or start a navigation route", {
+    actionManager.registerAction('plotToTargetBuggy', "Plot a navigation route to a system, station, or body from the SRV.", {
+        "type": "object",
+        "properties": {
+            "system": {
+                "type": "string",
+                "description": "Target system name",
+            },
+            "station": {
+                "type": "string",
+                "description": "Target station name",
+            },
+            "body": {
+                "type": "string",
+                "description": "Target body name",
+            },
+        },
+    }, plot_to_target_buggy, 'buggy', permission='plotToTargetBuggy', cache_prefill={
+        "navigation": {},
+        "plot route": {},
+        "set course": {},
+        "plot course": {},
+        "navigate to": {},
+    })
+
+    actionManager.registerAction('galaxyMapOpenOrCloseBuggy', "Open or close the galaxy map from the SRV.", {
         "type": "object",
         "properties": {
             "desired_state": {
@@ -2285,21 +2433,12 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
                 "enum": ["open", "close"],
                 "description": "Open or close galaxy map",
             },
-            "system_name": {
-                "type": "string",
-                "description": "System to display or plot to.",
-            },
-            "start_navigation": {
-                "type": "boolean",
-                "description": "Start navigation route to the system",
-            }
         },
-    }, galaxy_map_open_buggy, 'buggy', permission='galaxyMapOpenOrCloseBuggy', cache_prefill={
+    }, galaxy_map_open_or_close_buggy, 'buggy', permission='galaxyMapOpenOrCloseBuggy', cache_prefill={
         "galaxy map": {"desired_state": "open"},
         "open galaxy map": {"desired_state": "open"},
         "close galaxy map": {"desired_state": "close"},
         "galmap": {"desired_state": "open"},
-        "navigation": {"desired_state": "open"},
         "star map": {"desired_state": "open"},
         "nav map": {"desired_state": "open"},
     })
@@ -2462,7 +2601,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
     actionManager.registerAction('galaxyMapOpenOrCloseHumanoid', "Open or Close Galaxy Map", {
         "type": "object",
         "properties": {}
-    }, galaxy_map_open_humanoid, 'humanoid', permission='galaxyMapOpenOrCloseHumanoid', cache_prefill={
+    }, galaxy_map_open_or_close_humanoid, 'humanoid', permission='galaxyMapOpenOrCloseHumanoid', cache_prefill={
         "galaxy map": {},
         "open galaxy map": {},
         "galmap": {},

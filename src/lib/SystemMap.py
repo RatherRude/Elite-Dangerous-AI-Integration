@@ -7,7 +7,6 @@ from .EDKeys import EDKeys
 from .Logger import log
 from .ScreenReader import ScreenReader, ScreenReadResult
 from .Config import get_ed_appdata_path, load_config
-from .actions.Actions import screenshot, setGameWindowActive
 
 
 class SystemMap:
@@ -18,11 +17,7 @@ class SystemMap:
         self.wait_time = 0.1
 
     def run(self, category="LANDFALL PLANETS", entry="HIP 58412 8 D") -> ScreenReadResult:
-        log("debug", "Opening system map")
-        setGameWindowActive()
-        time.sleep(self.wait_time)
-        self.ed_keys.send("SystemMapOpen")
-        time.sleep(3)
+        log("debug", "Navigating system map", category, entry)
         self.ed_keys.send("UI_Down")
         time.sleep(self.wait_time)
         back = self.screen_reader.read_selected_area()
@@ -43,7 +38,6 @@ class SystemMap:
             self.ed_keys.send("UI_Down")
             time.sleep(self.wait_time)
 
-
         self.ed_keys.send("UI_Select")
         time.sleep(self.wait_time)
         match = None
@@ -58,7 +52,7 @@ class SystemMap:
             if not match:
                 self.ed_keys.send("UI_Down")
                 time.sleep(self.wait_time)
-        log("info", "AAAAAAAAAAAAAAYAaYAYA", match)
+        log("info", "System map target matched", match)
         self.ed_keys.send("UI_Select")
         time.sleep(self.wait_time)
         self.ed_keys.send("UI_Select", hold=3)
@@ -74,6 +68,8 @@ if __name__ == "__main__":
             prefer_primary_bindings=config.get("prefer_primary_bindings", False),
         )
 
+        ed_keys.send("SystemMapOpen")
+        time.sleep(3)
         system_map = SystemMap(screen_reader, ed_keys)
         res = system_map.run()
         log("info", res)
