@@ -20,8 +20,6 @@ class SystemMap:
         log("debug", "Navigating system map", category, entry)
         self.ed_keys.send("UI_Down")
         time.sleep(self.wait_time)
-        time.sleep(self.wait_time)
-        time.sleep(self.wait_time)
         back = self.screen_reader.read_selected_area()
         if not back.detection or not back.detection.icon_template == 'exit':
             raise Exception(f"Unexpected ScreenReader Result: {str(back)}")

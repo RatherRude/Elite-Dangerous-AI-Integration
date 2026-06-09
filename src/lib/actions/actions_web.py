@@ -2736,6 +2736,10 @@ def _plot_candidates_from_systems(query: str, projected_states: Any) -> list[Res
 
 def _plot_candidates_from_stations(query: str, projected_states: Any) -> list[ResolvedPlotTarget]:
     request_body = prepare_station_request(_plot_search_obj(query), projected_states)
+
+    # delete the distance sorting to ensure we get the best name matches even if they are farther away, we'll sort by distance in the results processing instead
+    request_body["sort"] = []
+
     data = _spansh_post(SPANSH_STATIONS_URL, request_body)
     candidates: list[ResolvedPlotTarget] = []
 
@@ -2747,6 +2751,8 @@ def _plot_candidates_from_stations(query: str, projected_states: Any) -> list[Re
             continue
         distance = station.get("distance")
         distance_value = float(distance) if distance is not None else None
+        if name != query:
+            continue
         candidates.append(ResolvedPlotTarget(
             target_type="station",
             name=name,

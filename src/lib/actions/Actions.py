@@ -533,10 +533,27 @@ def _select_orrery_from_galaxy_map(screen_reader, max_steps: int = 30) -> None:
     keys.send('UI_Right')
     sleep(0.1)
 
-    for _ in range(max_steps):
+    selection = screen_reader.read_selected_area()
+    detection = selection.detection
+    if detection is not None and detection.icon_template != 'info':
+        raise Exception(f"Unexpected ScreenReader Result: {str(selection)}")
+
+    for _ in range(8):
+        keys.send('UI_Down')
+        sleep(0.1)
+
+    for _ in range(10):
         selection = screen_reader.read_selected_area()
         detection = selection.detection
         if detection is not None and detection.icon_template == 'orrery':
+            keys.send('UI_Select')
+            sleep(0.1)
+            return
+        if detection is not None and detection.icon_template == 'target':
+            keys.send('UI_Up')
+            sleep(0.1)
+            keys.send('UI_Up')
+            sleep(0.1)
             keys.send('UI_Select')
             sleep(0.1)
             return
