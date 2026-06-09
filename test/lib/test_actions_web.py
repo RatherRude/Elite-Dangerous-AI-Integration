@@ -198,9 +198,11 @@ def test_ensure_in_system_plot_target_rejects_unlandable_body() -> None:
 
 def test_plot_candidates_from_bodies_skips_non_planets_and_requests_ten_results(monkeypatch) -> None:
     captured_sizes: list[int] = []
+    captured_names: list[str] = []
 
     def fake_prepare_body_request(obj, projected_states):
         captured_sizes.append(obj["size"])
+        captured_names.append(obj["name"])
         return {"filters": {}, "size": obj["size"], "page": 0}
 
     def fake_post(url: str, request_body: dict) -> dict:
@@ -229,6 +231,7 @@ def test_plot_candidates_from_bodies_skips_non_planets_and_requests_ten_results(
     candidates = actions_web._plot_candidates_from_bodies("Earth", {"Location": {"StarSystem": "Sol"}})
 
     assert captured_sizes == [10]
+    assert captured_names == ["Eart?"]
     assert len(candidates) == 1
     assert candidates[0].name == "Earth"
     assert candidates[0].is_landable is False
@@ -239,6 +242,17 @@ def test_plot_search_query_prefers_station_then_body_then_system() -> None:
     assert actions_web.plot_search_query(body="Earth", system="Sol") == "Earth"
     assert actions_web.plot_search_query(system="Sol") == "Sol"
     assert actions_web.plot_search_query() is None
+
+
+def test_spansh_plot_search_name_disables_fuzzy_matching() -> None:
+    assert actions_web.spansh_plot_search_name("Earth") == "Eart?"
+    assert actions_web.spansh_plot_search_name("Sol") == "So?"
+    assert actions_web.spansh_plot_search_name("A") == "?"
+    assert actions_web.spansh_plot_search_name("") == ""
+    assert actions_web._plot_search_obj("Jameson Memorial") == {
+        "name": "Jameson Memoria?",
+        "size": actions_web.PLOT_TARGET_SEARCH_SIZE,
+    }
 
 
 def test_resolve_plot_target_queries_all_spansh_endpoints(monkeypatch) -> None:
