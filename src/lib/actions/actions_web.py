@@ -2700,8 +2700,15 @@ def _plot_target_details(
     return details
 
 
+def spansh_plot_search_name(query: str) -> str:
+    query = str(query).strip()
+    if not query:
+        return query
+    return query[:-1] + "?"
+
+
 def _plot_search_obj(query: str) -> dict[str, Any]:
-    return {"name": query, "size": PLOT_TARGET_SEARCH_SIZE}
+    return {"name": spansh_plot_search_name(query), "size": PLOT_TARGET_SEARCH_SIZE}
 
 
 def _plot_candidate_score(query: str, candidate_name: str) -> float:
@@ -2738,7 +2745,7 @@ def _plot_candidates_from_stations(query: str, projected_states: Any) -> list[Re
     request_body = prepare_station_request(_plot_search_obj(query), projected_states)
 
     # delete the distance sorting to ensure we get the best name matches even if they are farther away, we'll sort by distance in the results processing instead
-    request_body["sort"] = []
+    # request_body["sort"] = []
 
     data = _spansh_post(SPANSH_STATIONS_URL, request_body)
     candidates: list[ResolvedPlotTarget] = []
