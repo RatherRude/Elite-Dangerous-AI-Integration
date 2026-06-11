@@ -149,6 +149,13 @@
   justify-content: center;
 }
 
+.hud-accent-fab {
+  --mdc-fab-container-color: var(--hud-accent-color, #d27d00);
+  --mat-fab-foreground-color: #fff;
+  background-color: var(--hud-accent-color, #d27d00);
+  color: #fff;
+}
+
 app-chat-container.small {
   max-height: 4em;
   overflow-y: auto;

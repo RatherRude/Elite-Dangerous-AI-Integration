@@ -3,16 +3,14 @@
   <div class="station-content">
     
 
-    <!-- Station Facilities Section -->
     <div class="station-section">
-      <div class="section-header" (click)="toggleSection('stationFacilities')">
+      <div class="section-header">
         <h3>Station Facilities</h3>
         @if (market?.StarSystem) {
           <div class="section-subtitle">{{ market?.StarSystem }}</div>
         }
-        <mat-icon class="collapse-icon">{{ sectionsCollapsed.stationFacilities ? 'expand_more' : 'expand_less' }}</mat-icon>
       </div>
-      <div class="section-content" [class.collapsed]="sectionsCollapsed.stationFacilities">
+      <div class="section-content">
         <!-- Station services buttons -->
         <div class="station-services">
           <button mat-button [class.active]="selectedStationService === 'market'" (click)="showStationService('market')">
