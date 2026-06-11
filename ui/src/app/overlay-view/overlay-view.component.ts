@@ -403,8 +403,17 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
         return "#FF9800";
       case "npc_message":
         return "#2196F3";
+      case "plugin":
+        return "#9C27B0";
       default:
         return "inherit";
     }
+  }
+
+  public getDisplayName(msg: ChatMessage): string {
+    if (msg.role?.toLowerCase() === "plugin") {
+      return msg.plugin_event_name === "EdCoPilotEvent" ? "EDCoPilot" : msg.plugin_event_name || "plugin";
+    }
+    return msg.display_name || msg.role;
   }
 }
