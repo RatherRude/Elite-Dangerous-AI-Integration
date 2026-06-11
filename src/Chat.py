@@ -34,6 +34,7 @@ from lib.Config import (
     get_ed_journals_path,
     get_system_info,
     load_config,
+    load_hud_color_matrix,
     save_config,
     update_config,
     update_event_config,
@@ -1100,6 +1101,7 @@ if __name__ == "__main__":
         # Wait for start signal on stdin
         startup_phase = "config_load"
         config = load_config()
+        load_hud_color_matrix(config)
         emit_message("config", config=config)
         system = get_system_info()
         emit_message("system", system=system)

@@ -193,6 +193,10 @@ h1, h2, h3, h4, h5, h6,
   border-color: rgba(255, 157, 0, 0.28) !important;
 }
 
+.mat-mdc-tab-header-pagination-disabled {
+  display: none !important;
+}
+
 .mat-mdc-tab .mdc-tab__text-label {
   color: var(--hud-orange) !important;
   text-shadow: var(--hud-glow);
@@ -273,11 +277,13 @@ h1, h2, h3, h4, h5, h6,
 .mat-expansion-panel-header:hover,
 .mat-expansion-panel-header.mat-expanded:focus,
 .mat-expansion-panel-header.mat-expanded:hover {
-  background: rgba(255, 255, 255, 0.055) !important;
+  background: rgba(255, 157, 0, 0.16) !important;
 }
 
 .mat-expansion-panel.mat-expanded .mat-expansion-panel-header {
-  border-bottom-color: rgba(255, 157, 0, 0.22);
+  background: var(--hud-orange) !important;
+  border-bottom-color: rgba(0, 0, 0, 0.32);
+  box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.22), 0 0 12px rgba(255, 157, 0, 0.28);
 }
 
 .mat-expansion-panel-header-title,
@@ -303,9 +309,22 @@ h1, h2, h3, h4, h5, h6,
   color: var(--hud-orange) !important;
 }
 
+.mat-expansion-panel.mat-expanded .mat-expansion-panel-header-title,
+.mat-expansion-panel.mat-expanded .mat-expansion-panel-header-description,
+.mat-expansion-panel.mat-expanded .mat-expansion-panel-header-title mat-icon,
+.mat-expansion-panel.mat-expanded .mat-expansion-panel-header-description mat-icon {
+  color: #160800 !important;
+  text-shadow: none;
+}
+
 .mat-expansion-indicator::after {
   color: var(--hud-orange) !important;
   border-color: var(--hud-orange) !important;
+}
+
+.mat-expansion-panel.mat-expanded .mat-expansion-indicator::after {
+  color: #160800 !important;
+  border-color: #160800 !important;
 }
 
 .mat-expansion-panel-body {

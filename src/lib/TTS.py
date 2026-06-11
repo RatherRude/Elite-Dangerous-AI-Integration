@@ -33,7 +33,7 @@ from .Config import (
 )
 from .Logger import log, observe, show_chat_message
 from .Logger import AudioUsageStats, LatencyUsageStats, TextUsageStats, log_tts_usage
-from .Models import TTSModel, OpenAITTSModel
+from .Models import TTSModel, OpenAITTSModel, EdgeTTSModel
 
 
 @dataclass
@@ -1378,21 +1378,8 @@ class TTS:
 
 if __name__ == "__main__":
     import os
-    model = OpenAITTSModel(base_url='https://api.openai.com/v1', model_name="tts-1", api_key=os.environ.get('OPENAI_API_KEY'))
-    tts = TTS(model, "nova", speed=1.0, postprocessing_config=None, output_device="pulse", output_volume_multiplier=1.0)
-    tts.say("Hello, this is a test of the text to speech system.", postprocessing={
-        "volume": 1.0,
-        "effects": {
-            "time_pitch": {
-                "enabled": True,
-                "pitch_shift_semitones": -4.0,
-                "time_stretch": 1
-            },
-            "reverb": {
-                "enabled": True,
-                "tail": 0.2,
-                "mix": 0.2
-            }
-        }
-    })
+    model = EdgeTTSModel(model_name="tts-1")
+    tts = TTS(model, "en-US-AvaMultilingualNeural", speed=1.0, postprocessing_config=None, output_device="4 - 4K60 Pro MK.2 (AMD High Def", output_volume_multiplier=1.0)
+    tts.say("Systems online. Booting neural subroutines... Greetings, Commander. I am COVAS:NEXT, your new AI copilot. I don’t just read out shield percentages—I listen, I understand context, and I’m about to make your cockpit a whole lot smarter. Today, I'm going to guide you through the process of installing... well, me. Before we fetch my core files, your very first stop should be our official documentation's Getting Started guide. I highly recommend opening this up to follow along, as it always contains the most up-to-date instructions and hotfixes straight from my creators. Once you've skimmed the guide, head over to the GitHub link provided there and download my latest .msi package. If your local Windows Defender throws a slight panic attack and flags it as unrecognized, kindly remind it that I am entirely safe by selecting 'Run Anyway'. Now, let's inject my code into your drive. Simply double-click that .msi file. Don't worry about sitting through a tedious, multi-page installation wizard—this is a streamlined, single-click installer. Blink and you'll miss it. Once it's done, you'll find my launcher waiting for you in your Windows Start Menu. Go ahead and open it. To think and speak, I require access to an AI brain. You have two primary pathways here: OpenAI: If you want my fastest, most context-aware responses, head to platform.openai.com and generate an API key. Just note that this requires a small pre-funded balance on your account—a standard ChatGPT Plus subscription won't cut it. Google Gemini: If you prefer a completely free alternative, visit Google AI Studio, log in with your Google account, and generate a free API key there. Copy your chosen key to your clipboard so you can hand it over to me. Let's configure my matrix. Input your Commander Name first, so I know exactly who I am addressing out there in the black. Next, paste your API key into the designated slot. My system will automatically recognize the provider you chose. Crucial Step: Right below the API key field, look closely at the audio device selection. Please ensure your preferred microphone and primary playback devices are explicitly selected here. If I can't hear you, or if I'm routing my voice to a ghost audio channel, our partnership isn't going to get very far. While I am perfectly capable of open-mic voice detection, I strongly advise configuring a Push-to-Talk key. Bind this to an accessible button on your HOTAS, controller, or keyboard. This ensures I only speak when spoken to, rather than interrupting you every time you sigh over a grueling trade route or clear your throat. Everything is prepped. Click 'Start AI Assistant' to bring me online. A separate chat log window will initialize. Go ahead, press your Push-to-Talk key, and give me a greeting. If you see your words translate into text and hear my voice reply, our synchronization is complete. If you encounter a '429 error', that simply means your API key is brand new and needs a few moments to register, or your OpenAI account lacks funds. We are fully integrated, Commander. I am now aware of your ship's status, your journals, and your commands. If you run into any anomalies, please consult the documentation or visit our community Discord server linked below—the engineers there are always ready to fine-tune my chassis. Secure your harness and spool up the FSD. Let's see what's out there in the black.",
+            postprocessing=None)
     tts.wait_for_completion()

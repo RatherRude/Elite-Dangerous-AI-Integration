@@ -104,7 +104,8 @@
                     <mat-icon>info</mat-icon>
                 </button>
             } @else {
-                <button mat-fab color="primary" aria-label="Start AI Assistant" (click)="start()"
+                <button mat-fab class="hud-accent-fab" aria-label="Start AI Assistant" (click)="start()"
+                        [style.--hud-accent-color]="hudAccentColor"
                         [disabled]="isLoading">
                     <mat-icon>play_arrow</mat-icon>
                 </button>

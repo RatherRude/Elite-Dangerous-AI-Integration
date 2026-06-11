@@ -72,6 +72,8 @@ export class MainViewComponent implements OnInit, OnDestroy {
     private hasAutoStarted = false;
     public usageDisclaimerAccepted = false;
     public isQuestEditorOpen = false;
+    public hudAccentColor = "#d27d00";
+    private systemSubscription?: Subscription;
 
     constructor(
         private tauri: TauriService,
@@ -90,7 +92,18 @@ export class MainViewComponent implements OnInit, OnDestroy {
         );
     }
 
+    private applyHudAccentColor(color?: string): void {
+        if (color) {
+            this.hudAccentColor = color;
+        }
+    }
+
     ngOnInit(): void {
+        this.applyHudAccentColor(this.configService.systemInfo?.hud_accent_color);
+        this.systemSubscription = this.configService.system$.subscribe((system) => {
+            this.applyHudAccentColor(system?.hud_accent_color);
+        });
+
         this.configSubscription = this.configService.config$.subscribe(
             (config) => {
                 this.config = config ?? undefined;
@@ -203,6 +216,9 @@ export class MainViewComponent implements OnInit, OnDestroy {
     }
 
     ngOnDestroy(): void { // Implement ngOnDestroy
+        if (this.systemSubscription) {
+            this.systemSubscription.unsubscribe();
+        }
         if (this.configSubscription) {
             this.configSubscription.unsubscribe();
         }
