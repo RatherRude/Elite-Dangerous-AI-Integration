@@ -51,7 +51,7 @@
   flex-direction: column;
   position: relative;
   z-index: 1;
-  background: linear-gradient(180deg, rgba(255, 157, 0, 0.11), rgba(5, 2, 0, 0.9));
+  /*background: linear-gradient(180deg, rgba(255, 157, 0, 0.11), rgba(5, 2, 0, 0.9));*/
   backdrop-filter: blur(12px) saturate(1.15);
   -webkit-backdrop-filter: blur(12px) saturate(1.15);
   border: 0;
