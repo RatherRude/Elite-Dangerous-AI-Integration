@@ -103,8 +103,12 @@
 
             <mat-form-field>
                 <mat-label>Override LLM API Key</mat-label>
-                <input matInput type="password" [(ngModel)]="config.llm_api_key"
+                <input matInput [type]="hideLlmApiKey ? 'password' : 'text'" [(ngModel)]="config.llm_api_key"
                         (ngModelChange)="onConfigChange({llm_api_key: $event})">
+                <button matSuffix mat-icon-button (mousedown)="hideLlmApiKey = false" (mouseup)="hideLlmApiKey = true"
+                        (mouseleave)="hideLlmApiKey = true">
+                    <mat-icon>{{ hideLlmApiKey ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
             </mat-form-field>
         }
         @if (config.llm_provider === "openrouter")
@@ -136,8 +140,12 @@
 
             <mat-form-field>
                 <mat-label>Override LLM API Key</mat-label>
-                <input matInput type="password" [(ngModel)]="config.llm_api_key"
+                <input matInput [type]="hideLlmApiKey ? 'password' : 'text'" [(ngModel)]="config.llm_api_key"
                         (ngModelChange)="onConfigChange({llm_api_key: $event})">
+                <button matSuffix mat-icon-button (mousedown)="hideLlmApiKey = false" (mouseup)="hideLlmApiKey = true"
+                        (mouseleave)="hideLlmApiKey = true">
+                    <mat-icon>{{ hideLlmApiKey ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
             </mat-form-field>
 
             <label>
@@ -176,8 +184,12 @@
 
             <mat-form-field>
                 <mat-label>Override LLM API Key</mat-label>
-                <input matInput type="password" [(ngModel)]="config.llm_api_key"
+                <input matInput [type]="hideLlmApiKey ? 'password' : 'text'" [(ngModel)]="config.llm_api_key"
                         (ngModelChange)="onConfigChange({llm_api_key: $event})">
+                <button matSuffix mat-icon-button (mousedown)="hideLlmApiKey = false" (mouseup)="hideLlmApiKey = true"
+                        (mouseleave)="hideLlmApiKey = true">
+                    <mat-icon>{{ hideLlmApiKey ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
             </mat-form-field>
         }
         @if (config.llm_provider === "local-ai-server")
@@ -237,8 +249,12 @@
 
             <mat-form-field>
                 <mat-label>Override LLM API Key</mat-label>
-                <input matInput type="password" [(ngModel)]="config.llm_api_key"
+                <input matInput [type]="hideLlmApiKey ? 'password' : 'text'" [(ngModel)]="config.llm_api_key"
                         (ngModelChange)="onConfigChange({llm_api_key: $event})">
+                <button matSuffix mat-icon-button (mousedown)="hideLlmApiKey = false" (mouseup)="hideLlmApiKey = true"
+                        (mouseleave)="hideLlmApiKey = true">
+                    <mat-icon>{{ hideLlmApiKey ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
             </mat-form-field>
 
 
@@ -323,8 +339,12 @@
 
             <mat-form-field>
                 <mat-label>Override Agent LLM API Key</mat-label>
-                <input matInput type="password" [(ngModel)]="config.agent_llm_api_key"
+                <input matInput [type]="hideAgentLlmApiKey ? 'password' : 'text'" [(ngModel)]="config.agent_llm_api_key"
                         (ngModelChange)="onConfigChange({agent_llm_api_key: $event})">
+                <button matSuffix mat-icon-button (mousedown)="hideAgentLlmApiKey = false" (mouseup)="hideAgentLlmApiKey = true"
+                        (mouseleave)="hideAgentLlmApiKey = true">
+                    <mat-icon>{{ hideAgentLlmApiKey ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
             </mat-form-field>
         }
         @if (config.agent_llm_provider === "openrouter")
@@ -356,8 +376,12 @@
 
             <mat-form-field>
                 <mat-label>Override Agent LLM API Key</mat-label>
-                <input matInput type="password" [(ngModel)]="config.agent_llm_api_key"
+                <input matInput [type]="hideAgentLlmApiKey ? 'password' : 'text'" [(ngModel)]="config.agent_llm_api_key"
                         (ngModelChange)="onConfigChange({agent_llm_api_key: $event})">
+                <button matSuffix mat-icon-button (mousedown)="hideAgentLlmApiKey = false" (mouseup)="hideAgentLlmApiKey = true"
+                        (mouseleave)="hideAgentLlmApiKey = true">
+                    <mat-icon>{{ hideAgentLlmApiKey ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
             </mat-form-field>
         }
         @if (config.agent_llm_provider === "google-ai-studio")
@@ -389,8 +413,12 @@
 
             <mat-form-field>
                 <mat-label>Override Agent LLM API Key</mat-label>
-                <input matInput type="password" [(ngModel)]="config.agent_llm_api_key"
+                <input matInput [type]="hideAgentLlmApiKey ? 'password' : 'text'" [(ngModel)]="config.agent_llm_api_key"
                         (ngModelChange)="onConfigChange({agent_llm_api_key: $event})">
+                <button matSuffix mat-icon-button (mousedown)="hideAgentLlmApiKey = false" (mouseup)="hideAgentLlmApiKey = true"
+                        (mouseleave)="hideAgentLlmApiKey = true">
+                    <mat-icon>{{ hideAgentLlmApiKey ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
             </mat-form-field>
         }
         @if (config.agent_llm_provider === "local-ai-server")
@@ -443,8 +471,12 @@
 
             <mat-form-field>
                 <mat-label>Override Agent LLM API Key</mat-label>
-                <input matInput type="password" [(ngModel)]="config.agent_llm_api_key"
+                <input matInput [type]="hideAgentLlmApiKey ? 'password' : 'text'" [(ngModel)]="config.agent_llm_api_key"
                         (ngModelChange)="onConfigChange({agent_llm_api_key: $event})">
+                <button matSuffix mat-icon-button (mousedown)="hideAgentLlmApiKey = false" (mouseup)="hideAgentLlmApiKey = true"
+                        (mouseleave)="hideAgentLlmApiKey = true">
+                    <mat-icon>{{ hideAgentLlmApiKey ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
             </mat-form-field>
         }
         @if (isPluginProvider(config.agent_llm_provider)) {
@@ -514,8 +546,12 @@
             </mat-form-field>
             <mat-form-field>
                 <mat-label>Override STT API Key</mat-label>
-                <input matInput type="password" [(ngModel)]="config.stt_api_key"
+                <input matInput [type]="hideSttApiKey ? 'password' : 'text'" [(ngModel)]="config.stt_api_key"
                         (ngModelChange)="onConfigChange({stt_api_key: $event})">
+                <button matSuffix mat-icon-button (mousedown)="hideSttApiKey = false" (mouseup)="hideSttApiKey = true"
+                        (mouseleave)="hideSttApiKey = true">
+                    <mat-icon>{{ hideSttApiKey ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
             </mat-form-field>
         }
         @if (config.stt_provider === "google-ai-studio") {
@@ -526,8 +562,12 @@
             </mat-form-field>
             <mat-form-field>
                 <mat-label>Override STT API Key</mat-label>
-                <input matInput type="password" [(ngModel)]="config.stt_api_key"
+                <input matInput [type]="hideSttApiKey ? 'password' : 'text'" [(ngModel)]="config.stt_api_key"
                         (ngModelChange)="onConfigChange({stt_api_key: $event})">
+                <button matSuffix mat-icon-button (mousedown)="hideSttApiKey = false" (mouseup)="hideSttApiKey = true"
+                        (mouseleave)="hideSttApiKey = true">
+                    <mat-icon>{{ hideSttApiKey ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
             </mat-form-field>
         }
         @if (config.stt_provider === "local-ai-server") {
@@ -560,8 +600,12 @@
             </mat-form-field>
             <mat-form-field>
                 <mat-label>Override STT API Key</mat-label>
-                <input matInput type="password" [(ngModel)]="config.stt_api_key"
+                <input matInput [type]="hideSttApiKey ? 'password' : 'text'" [(ngModel)]="config.stt_api_key"
                         (ngModelChange)="onConfigChange({stt_api_key: $event})">
+                <button matSuffix mat-icon-button (mousedown)="hideSttApiKey = false" (mouseup)="hideSttApiKey = true"
+                        (mouseleave)="hideSttApiKey = true">
+                    <mat-icon>{{ hideSttApiKey ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
             </mat-form-field>
         }
         @if (config.stt_provider === "custom-multi-modal") {
@@ -577,8 +621,12 @@
             </mat-form-field>
             <mat-form-field>
                 <mat-label>Override STT API Key</mat-label>
-                <input matInput type="password" [(ngModel)]="config.stt_api_key"
+                <input matInput [type]="hideSttApiKey ? 'password' : 'text'" [(ngModel)]="config.stt_api_key"
                         (ngModelChange)="onConfigChange({stt_api_key: $event})">
+                <button matSuffix mat-icon-button (mousedown)="hideSttApiKey = false" (mouseup)="hideSttApiKey = true"
+                        (mouseleave)="hideSttApiKey = true">
+                    <mat-icon>{{ hideSttApiKey ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
             </mat-form-field>
         }
         @if (config.stt_provider === "none") {
@@ -730,8 +778,12 @@
             </mat-form-field>
             <mat-form-field>
                 <mat-label>Override TTS API Key</mat-label>
-                <input matInput type="password" [(ngModel)]="config.tts_api_key"
+                <input matInput [type]="hideTtsApiKey ? 'password' : 'text'" [(ngModel)]="config.tts_api_key"
                         (ngModelChange)="onConfigChange({tts_api_key: $event})">
+                <button matSuffix mat-icon-button (mousedown)="hideTtsApiKey = false" (mouseup)="hideTtsApiKey = true"
+                        (mouseleave)="hideTtsApiKey = true">
+                    <mat-icon>{{ hideTtsApiKey ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
             </mat-form-field>
 
             @if (!voiceInstructionSupportedModels.includes(config.tts_model_name)) {
@@ -805,8 +857,12 @@
             </mat-form-field>
             <mat-form-field>
                 <mat-label>Override TTS API Key</mat-label>
-                <input matInput type="password" [(ngModel)]="config.tts_api_key"
+                <input matInput [type]="hideTtsApiKey ? 'password' : 'text'" [(ngModel)]="config.tts_api_key"
                         (ngModelChange)="onConfigChange({tts_api_key: $event})">
+                <button matSuffix mat-icon-button (mousedown)="hideTtsApiKey = false" (mouseup)="hideTtsApiKey = true"
+                        (mouseleave)="hideTtsApiKey = true">
+                    <mat-icon>{{ hideTtsApiKey ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
             </mat-form-field>
         }
         @if (config.tts_provider === "none") {
@@ -900,8 +956,12 @@
                 </mat-form-field>
                 <mat-form-field>
                     <mat-label>Override Vision API Key</mat-label>
-                    <input matInput type="password" [(ngModel)]="config.vision_api_key"
+                    <input matInput [type]="hideVisionApiKey ? 'password' : 'text'" [(ngModel)]="config.vision_api_key"
                             (ngModelChange)="onConfigChange({vision_api_key: $event})">
+                    <button matSuffix mat-icon-button (mousedown)="hideVisionApiKey = false" (mouseup)="hideVisionApiKey = true"
+                            (mouseleave)="hideVisionApiKey = true">
+                        <mat-icon>{{ hideVisionApiKey ? 'visibility_off' : 'visibility' }}</mat-icon>
+                    </button>
                 </mat-form-field>
             }
 
@@ -913,8 +973,12 @@
                 </mat-form-field>
                 <mat-form-field>
                     <mat-label>Override Vision API Key</mat-label>
-                    <input matInput type="password" [(ngModel)]="config.vision_api_key"
+                    <input matInput [type]="hideVisionApiKey ? 'password' : 'text'" [(ngModel)]="config.vision_api_key"
                             (ngModelChange)="onConfigChange({vision_api_key: $event})">
+                    <button matSuffix mat-icon-button (mousedown)="hideVisionApiKey = false" (mouseup)="hideVisionApiKey = true"
+                            (mouseleave)="hideVisionApiKey = true">
+                        <mat-icon>{{ hideVisionApiKey ? 'visibility_off' : 'visibility' }}</mat-icon>
+                    </button>
                 </mat-form-field>
             }
 
@@ -931,8 +995,12 @@
                 </mat-form-field>
                 <mat-form-field>
                     <mat-label>Override Vision API Key</mat-label>
-                    <input matInput type="password" [(ngModel)]="config.vision_api_key"
+                    <input matInput [type]="hideVisionApiKey ? 'password' : 'text'" [(ngModel)]="config.vision_api_key"
                             (ngModelChange)="onConfigChange({vision_api_key: $event})">
+                    <button matSuffix mat-icon-button (mousedown)="hideVisionApiKey = false" (mouseup)="hideVisionApiKey = true"
+                            (mouseleave)="hideVisionApiKey = true">
+                        <mat-icon>{{ hideVisionApiKey ? 'visibility_off' : 'visibility' }}</mat-icon>
+                    </button>
                 </mat-form-field>
             }
         }
@@ -976,8 +1044,12 @@
                 </mat-form-field>
                 <mat-form-field>
                     <mat-label>Override Embedding API Key</mat-label>
-                    <input matInput type="password" [(ngModel)]="config.embedding_api_key"
+                    <input matInput [type]="hideEmbeddingApiKey ? 'password' : 'text'" [(ngModel)]="config.embedding_api_key"
                             (ngModelChange)="onConfigChange({embedding_api_key: $event})">
+                    <button matSuffix mat-icon-button (mousedown)="hideEmbeddingApiKey = false" (mouseup)="hideEmbeddingApiKey = true"
+                            (mouseleave)="hideEmbeddingApiKey = true">
+                        <mat-icon>{{ hideEmbeddingApiKey ? 'visibility_off' : 'visibility' }}</mat-icon>
+                    </button>
                 </mat-form-field>
             }
 
@@ -989,8 +1061,12 @@
                 </mat-form-field>
                 <mat-form-field>
                     <mat-label>Override Embedding API Key</mat-label>
-                    <input matInput type="password" [(ngModel)]="config.embedding_api_key"
+                    <input matInput [type]="hideEmbeddingApiKey ? 'password' : 'text'" [(ngModel)]="config.embedding_api_key"
                             (ngModelChange)="onConfigChange({embedding_api_key: $event})">
+                    <button matSuffix mat-icon-button (mousedown)="hideEmbeddingApiKey = false" (mouseup)="hideEmbeddingApiKey = true"
+                            (mouseleave)="hideEmbeddingApiKey = true">
+                        <mat-icon>{{ hideEmbeddingApiKey ? 'visibility_off' : 'visibility' }}</mat-icon>
+                    </button>
                 </mat-form-field>
             }
 
@@ -1007,8 +1083,12 @@
                 </mat-form-field>
                 <mat-form-field>
                     <mat-label>Override Embedding API Key</mat-label>
-                    <input matInput type="password" [(ngModel)]="config.embedding_api_key"
+                    <input matInput [type]="hideEmbeddingApiKey ? 'password' : 'text'" [(ngModel)]="config.embedding_api_key"
                             (ngModelChange)="onConfigChange({embedding_api_key: $event})">
+                    <button matSuffix mat-icon-button (mousedown)="hideEmbeddingApiKey = false" (mouseup)="hideEmbeddingApiKey = true"
+                            (mouseleave)="hideEmbeddingApiKey = true">
+                        <mat-icon>{{ hideEmbeddingApiKey ? 'visibility_off' : 'visibility' }}</mat-icon>
+                    </button>
                 </mat-form-field>
             }
             @if (config.embedding_provider === "local-ai-server") {

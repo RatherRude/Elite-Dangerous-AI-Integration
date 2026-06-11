@@ -73,6 +73,7 @@ from lib.Event import (
     ProjectedEvent,
     StatusEvent,
     ToolEvent,
+    PluginEvent,
 )
 from lib.Logger import show_chat_message, configure_stdio
 from lib.Projections import registerProjections
@@ -432,6 +433,14 @@ class Chat:
         if event.kind == "memory":
             event = cast(MemoryEvent, event)
             show_chat_message("memory", event.content)
+        if event.kind == "plugin":
+            event = cast(PluginEvent, event)
+            plugin_message = event.plugin_event_content.get("text") if isinstance(event.plugin_event_content, dict) else None
+            show_chat_message(
+                "plugin",
+                plugin_message if isinstance(plugin_message, str) and plugin_message.strip() else event.plugin_event_name,
+                plugin_event_name=event.plugin_event_name,
+            )
         if event.kind == "quest":
             event = cast(QuestEvent, event)
             action_value = event.content.get("action") if isinstance(event.content, dict) else None

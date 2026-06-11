@@ -16,6 +16,7 @@ export interface ChatMessage extends BaseMessage {
     avatar_url?: string;
     display_name?: string;
     display_color?: string;
+    plugin_event_name?: string;
 }
 
 export interface ToolEvent {

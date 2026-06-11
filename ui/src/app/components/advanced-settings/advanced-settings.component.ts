@@ -103,6 +103,12 @@ export class AdvancedSettingsComponent implements OnDestroy {
     screensSubscription: Subscription;
     voiceInstructionSupportedModels: string[] = this.characterService.voiceInstructionSupportedModels;
     hideApiKey = true;
+    hideLlmApiKey = true;
+    hideAgentLlmApiKey = true;
+    hideSttApiKey = true;
+    hideTtsApiKey = true;
+    hideVisionApiKey = true;
+    hideEmbeddingApiKey = true;
     apiKeyType: string | null = null;
     assigningPTTIndex: number | null = null;
     isRefreshingAudioDevices = false;

@@ -93,7 +93,7 @@ export class ChatContainerComponent implements AfterViewChecked, OnChanges, OnDe
 
   private applyLimit(): void {
     const filteredChat = this.fullChat.filter((msg) => !this.isFilteredEvent(msg));
-    const limitedRoles = ["covas", "cmdr", "action", "npc_message"];
+    const limitedRoles = ["covas", "cmdr", "action", "npc_message", "plugin"];
 
     if (typeof this.limit === "number" && this.limit > 0) {
       this.chat = filteredChat
@@ -146,9 +146,18 @@ export class ChatContainerComponent implements AfterViewChecked, OnChanges, OnDe
         return "#FF9800";
       case "npc_message":
         return "#2196F3";
+      case "plugin":
+        return "#9C27B0";
       default:
         return "inherit";
     }
+  }
+
+  public getDisplayName(msg: ChatMessage): string {
+    if (msg.role?.toLowerCase() === "plugin") {
+      return msg.plugin_event_name === "EdCoPilotEvent" ? "EDCoPilot" : msg.plugin_event_name || "plugin";
+    }
+    return msg.display_name || msg.role;
   }
 
   public getEventStatus(eventName: string): 'enabled' | 'disabled' | 'not-enabled' {

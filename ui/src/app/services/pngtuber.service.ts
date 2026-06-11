@@ -82,7 +82,7 @@ export class PngTuberService {
         this.chatService.chatHistory$.subscribe((chat)=>{
             const preview = chat.filter(
                 (value) => value["show_in_overlay"] !== false
-                    && ['covas', 'cmdr', 'action', 'npc_message'].includes(value.role),
+                    && ['covas', 'cmdr', 'action', 'npc_message', 'plugin'].includes(value.role),
             ).slice(-2)
             this.chatPreviewSubject.next(preview)
         })
