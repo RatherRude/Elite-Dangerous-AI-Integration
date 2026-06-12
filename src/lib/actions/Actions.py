@@ -2,15 +2,14 @@ import json
 import platform
 import threading
 from time import sleep
-import math
 from typing import Any, Literal, cast
 from pyautogui import typewrite
 
 import openai
-import requests
 from pydantic import BaseModel
 
-from .actions_web import register_web_actions, lookup_plot_target, ensure_in_system_plot_target, ResolvedPlotTarget
+from .actions_web import register_web_actions
+from .Plotter import Plotter
 from .actions_ui import register_ui_actions
 from .actions_genui import register_genui_actions
 
@@ -435,346 +434,25 @@ def charge_field_neutraliser(args, projected_states):
 
 
 def calculate_navigation_distance_and_timing(current_system: str, target_system: str) -> tuple[float, int]:
-    distance_ly = 0.0  # Default value in case API call fails
-
-    if current_system != 'Unknown' and target_system:
-        try:
-            # Request coordinates for both systems from EDSM API
-            edsm_url = "https://www.edsm.net/api-v1/systems"
-            params = {
-                'systemName[]': [current_system, target_system],
-                'showCoordinates': 1
-            }
-
-            log('debug', 'Distance Calculation', f"Requesting coordinates for {current_system} -> {target_system}")
-            response = requests.get(edsm_url, params=params, timeout=5)
-
-            if response.status_code == 200:
-                systems_data = response.json()
-
-                if len(systems_data) >= 2:
-                    # Find the systems in the response
-                    current_coords = None
-                    target_coords = None
-
-                    for system in systems_data:
-                        if system.get('name', '').lower() == current_system.lower():
-                            current_coords = system.get('coords')
-                        elif system.get('name', '').lower() == target_system.lower():
-                            target_coords = system.get('coords')
-
-                    # Calculate distance if both coordinate sets are available
-                    if current_coords and target_coords:
-                        x1, y1, z1 = current_coords['x'], current_coords['y'], current_coords['z']
-                        x2, y2, z2 = target_coords['x'], target_coords['y'], target_coords['z']
-
-                        distance_ly = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2)
-                        distance_ly = round(distance_ly, 2)
-
-                        # Check if distance is too far to plot
-                        if distance_ly > 20000:
-                            raise Exception(f"Distance of {distance_ly} LY from {current_system} to {target_system} is too far to plot (max 20000 LY)")
-                    else:
-                        log('warn', 'Distance Calculation', f"Could not find coordinates for one or both systems: {current_system}, {target_system}")
-                else:
-                    log('warn', 'Distance Calculation', f"EDSM API returned insufficient data for systems: {current_system}, {target_system}")
-            else:
-                log('warn', 'Distance Calculation', f"EDSM API request failed with status {response.status_code}")
-
-        except requests.RequestException as e:
-            log('error', 'Distance Calculation', f"Failed to request system coordinates from EDSM API: {str(e)}")
-        except Exception as e:
-            # Re-raise if it's our distance check exception
-            if "too far to plot" in str(e):
-                raise
-            log('error', 'Distance Calculation', f"Unexpected error during distance calculation: {str(e)}")
-
-    # Determine wait time based on distance
-    zoom_wait_time = 3
-
-    # Add additional second for every 1000 LY
-    if distance_ly > 0:
-        additional_time = int(distance_ly / 1000)
-        zoom_wait_time += additional_time
-
-    # Add additional 2 seconds if distance couldn't be determined (still 0)
-    if distance_ly == 0:
-        zoom_wait_time += 2
-        log('warn', 'Navigation Timing', f"Distance could not be determined, adding 2 extra seconds to wait time")
-
-    return distance_ly, zoom_wait_time
+    return Plotter.calculate_navigation_distance_and_timing(current_system, target_system)
 
 
-def _systems_match(system_a: str, system_b: str) -> bool:
-    return system_a.strip().casefold() == system_b.strip().casefold()
+def _plotter() -> Plotter:
+    from .actions_web import _spansh_post, prepare_body_request, prepare_station_request, prepare_system_request
 
-
-def _parse_plot_target_args(args: dict[str, Any]) -> tuple[str | None, str | None, str | None]:
-    def clean(value: Any) -> str | None:
-        if value is None:
-            return None
-        text = str(value).strip()
-        return text or None
-
-    return clean(args.get('system')), clean(args.get('station')), clean(args.get('body'))
-
-
-def _navigate_system_map_target(resolved_target: ResolvedPlotTarget) -> None:
-    from ..ScreenReader import ScreenReader
-    from ..SystemMap import SystemMap
-
-    ensure_in_system_plot_target(resolved_target)
-    category = resolved_target.system_map_category or "LANDFALL PLANETS"
-    SystemMap(ScreenReader(sample_colors=screen_reader_sample_colors), keys).run(category=category, entry=resolved_target.name)
-
-
-def _select_orrery_from_galaxy_map(screen_reader, max_steps: int = 30) -> None:
-    keys.send('UI_Right')
-    sleep(0.1)
-    keys.send('UI_Right')
-    sleep(0.1)
-
-    selection = screen_reader.read_selected_area()
-    detection = selection.detection
-    if detection is not None and detection.icon_template != 'info':
-        raise Exception(f"Unexpected ScreenReader Result: {str(selection)}")
-
-    for _ in range(8):
-        keys.send('UI_Down')
-        sleep(0.1)
-
-    for _ in range(10):
-        selection = screen_reader.read_selected_area()
-        detection = selection.detection
-        if detection is not None and detection.icon_template == 'orrery':
-            keys.send('UI_Select')
-            sleep(0.1)
-            return
-        if detection is not None and detection.icon_template == 'target':
-            keys.send('UI_Up')
-            sleep(0.1)
-            keys.send('UI_Up')
-            sleep(0.1)
-            keys.send('UI_Select')
-            sleep(0.1)
-            return
-        keys.send('UI_Down')
-        sleep(0.1)
-
-    raise Exception("Could not find orrery icon in galaxy map system list")
-
-
-def _plot_in_system_from_galaxy_map(resolved_target: ResolvedPlotTarget, projected_states: ProjectedStates) -> None:
-    from ..ScreenReader import ScreenReader
-
-    screen_reader = ScreenReader(sample_colors=screen_reader_sample_colors)
-    _select_orrery_from_galaxy_map(screen_reader)
-
-    try:
-        event_manager.wait_for_condition('CurrentStatus', lambda s: s.GuiFocus == "SystemMap", 4)
-    except TimeoutError:
-        raise Exception("Failed to open system map from galaxy map orrery view")
-
-    sleep(3)
-    _navigate_system_map_target(resolved_target)
-
-
-def _plot_in_system(
-    resolved_target: ResolvedPlotTarget,
-    projected_states: ProjectedStates,
-    sys_map_key: str = "SystemMapOpen",
-) -> str:
-    current_gui = _ensure_system_map_open(projected_states, sys_map_key)
-    if current_gui != "SystemMap":
-        sleep(3)
-
-    _navigate_system_map_target(resolved_target)
-
-    if current_gui != "SystemMap":
-        keys.send(sys_map_key)
-
-    return (
-        f"Best location found: {json.dumps(resolved_target.details)}. "
-        f"In-system navigation to {resolved_target.name} completed."
+    return Plotter(
+        keys=keys,
+        event_manager=event_manager,
+        screen_reader_sample_colors=screen_reader_sample_colors,
+        prepare_system_request=prepare_system_request,
+        prepare_station_request=prepare_station_request,
+        prepare_body_request=prepare_body_request,
+        spansh_post=_spansh_post,
     )
-
-
-def _ensure_system_map_open(projected_states: ProjectedStates, sys_map_key: str = "SystemMapOpen") -> str:
-    current_gui = get_state_dict(projected_states, 'CurrentStatus').get('GuiFocus', '')
-
-    if current_gui in ['SAA', 'FSS', 'Codex']:
-        raise Exception('System map can not be opened currently, the active GUI needs to be closed first')
-
-    if current_gui == 'SystemMap':
-        return current_gui
-
-    keys.send(sys_map_key)
-    try:
-        event_manager.wait_for_condition('CurrentStatus', lambda s: s.GuiFocus == "SystemMap", 4)
-    except TimeoutError:
-        keys.send("UI_Back", repeat=10, repeat_delay=0.05)
-        keys.send(sys_map_key)
-        try:
-            event_manager.wait_for_condition('CurrentStatus', lambda s: s.GuiFocus == "SystemMap", 4)
-        except TimeoutError:
-            raise Exception("System map can not be opened currently, the current GUI needs to be closed first")
-
-    return current_gui
-
-
-def _ensure_galaxy_map_open(projected_states: ProjectedStates, galaxymap_key: str) -> str:
-    current_gui = get_state_dict(projected_states, 'CurrentStatus').get('GuiFocus', '')
-
-    if current_gui in ['SAA', 'FSS', 'Codex']:
-        raise Exception('Galaxy map can not be opened currently, the active GUI needs to be closed first')
-
-    if current_gui == 'GalaxyMap':
-        return current_gui
-
-    keys.send(galaxymap_key)
-    try:
-        event_manager.wait_for_condition('CurrentStatus', lambda s: s.GuiFocus == "GalaxyMap", 4)
-    except TimeoutError:
-        keys.send("UI_Back", repeat=10, repeat_delay=0.05)
-        keys.send(galaxymap_key)
-        try:
-            event_manager.wait_for_condition('CurrentStatus', lambda s: s.GuiFocus == "GalaxyMap", 5)
-        except TimeoutError:
-            raise Exception("Galaxy map can not be opened currently, the current GUI needs to be closed first")
-
-    return current_gui
-
-
-def _plot_galaxy_route(
-    system_name: str,
-    details: dict[str, Any] | None,
-    projected_states: ProjectedStates,
-    galaxymap_key: str = "GalaxyMapOpen",
-    resolved_target: ResolvedPlotTarget | None = None,
-) -> str:
-    current_gui = _ensure_galaxy_map_open(projected_states, galaxymap_key)
-    keep_galaxy_map_open = (
-        resolved_target is not None and resolved_target.target_type in ('station', 'body')
-    )
-
-    collisions = keys.get_collisions('UI_Up')
-    if 'CamTranslateForward' in collisions:
-        raise Exception(
-            "Unable to enter system name due to a collision between the 'UI Panel Up' and 'Galaxy Cam Translate Forward' keys. "
-            + "Please change the keybinding for 'Galaxy Cam Translate' to Shift + WASD under General Controls > Galaxy Map.")
-
-    collisions = keys.get_collisions('UI_Right')
-    if 'CamTranslateRight' in collisions:
-        raise Exception(
-            "Unable to enter system name due to a collision between the 'UI Panel Right' and 'Galaxy Cam Translate Right' keys. "
-            + "Please change the keybinding for 'Galaxy Cam Translate' to Shift + WASD under General Controls > Galaxy Map.")
-
-    keys.send('CamZoomIn')
-    sleep(0.05)
-
-    keys.send('UI_Up')
-    sleep(.05)
-    if current_gui == "GalaxyMap":
-        keys.send('UI_Left', repeat=3)
-        sleep(.05)
-        keys.send('UI_Right')
-        sleep(.05)
-        keys.send('UI_Up')
-        sleep(.05)
-    keys.send('UI_Select')
-    sleep(.05)
-
-    typewrite(system_name, interval=0.02)
-    sleep(0.05)
-
-    keys.send_key('Down', 'Key_Enter')
-    sleep(0.05)
-    keys.send_key('Up', 'Key_Enter')
-
-    sleep(0.05)
-    keys.send('UI_Right')
-    sleep(.5)
-    keys.send('UI_Select')
-
-    current_system = get_state_dict(projected_states, 'Location').get('StarSystem', 'Unknown')
-    distance_ly, zoom_wait_time = calculate_navigation_distance_and_timing(current_system, system_name)
-    log('info', 'zoom_wait_time', zoom_wait_time)
-
-    sleep(0.05)
-    keys.send('CamZoomOut')
-    sleep(zoom_wait_time)
-    keys.send('UI_Select', hold=1)
-    sleep(0.05)
-
-    try:
-        data = event_manager.wait_for_condition(
-            'NavInfo',
-            lambda s: s.NavRoute and len(s.NavRoute) > 0 and s.NavRoute[-1].StarSystem.lower() == system_name.lower(),
-            zoom_wait_time,
-        )
-        jump_amount = len(data.NavRoute) if data else 0
-
-        if not keep_galaxy_map_open and current_gui != "GalaxyMap":
-            keys.send(galaxymap_key)
-
-        prefix = f"Best location found: {json.dumps(details)}. " if details else ""
-        distance_text = f"Distance: {distance_ly} LY, " if distance_ly > 0 else ""
-        message = prefix + f"Route to {system_name} successfully plotted ({distance_text}Jumps: {jump_amount})"
-
-        if keep_galaxy_map_open and resolved_target is not None:
-            _plot_in_system_from_galaxy_map(resolved_target, projected_states)
-            message += f" In-system navigation to {resolved_target.name} configured."
-
-        return message
-    except TimeoutError:
-        return f"Failed to plot a route to {system_name}"
 
 
 def plot_to_target(args, projected_states, galaxymap_key="GalaxyMapOpen"):
-    setGameWindowActive()
-    system, station, body = _parse_plot_target_args(args)
-    if not any((system, station, body)):
-        raise Exception("At least one of system, station, or body must be provided.")
-
-    resolved = lookup_plot_target(
-        system=system,
-        station=station,
-        body=body,
-        projected_states=projected_states,
-    )
-    current_system = get_state_dict(projected_states, 'Location').get('StarSystem', 'Unknown')
-
-    if resolved:
-        nav_route = get_state_dict(projected_states, 'NavInfo').get('NavRoute', [])
-        if nav_route and _systems_match(nav_route[-1].get('StarSystem', ''), resolved.system_name):
-            if resolved.target_type == 'system' or not _systems_match(resolved.system_name, current_system):
-                return f"The route to {resolved.system_name} is already set"
-
-        if resolved.target_type == 'system' and _systems_match(resolved.system_name, current_system):
-            return f"Already in {resolved.system_name}."
-
-        if resolved.target_type in ('station', 'body') and _systems_match(resolved.system_name, current_system):
-            return _plot_in_system(resolved, projected_states)
-
-        return _plot_galaxy_route(
-            resolved.system_name,
-            resolved.details,
-            projected_states,
-            galaxymap_key,
-            resolved_target=resolved,
-        )
-
-    if system:
-        nav_route = get_state_dict(projected_states, 'NavInfo').get('NavRoute', [])
-        if nav_route and _systems_match(nav_route[-1].get('StarSystem', ''), system):
-            return f"The route to {system} is already set"
-        if _systems_match(system, current_system):
-            return f"Already in {system}."
-        return _plot_galaxy_route(system, None, projected_states, galaxymap_key)
-
-    raise Exception(
-        f"Could not resolve plot target from station={station!r}, body={body!r}, system={system!r}."
-    )
+    return _plotter().plot_to_target(args, projected_states, galaxymap_key)
 
 
 def galaxy_map_open_or_close(args, projected_states, galaxymap_key="GalaxyMapOpen"):

@@ -1,6 +1,6 @@
 /* CSS Custom Properties */
 :root {
-  --color-primary-blue: #64b5f6;
+  --color-primary-blue: var(--hud-cyan);
   --color-success-green: #4caf50;
   --color-warning-orange: #ff9800;
   --color-error-red: #f44336;
@@ -301,7 +301,7 @@
   font-size: 24px !important;
   width: 24px;
   height: 24px;
-  color: #64b5f6;
+  color: var(--hud-cyan);
 }
 
 .friend-item {
@@ -361,7 +361,7 @@
 
 .fighter-item mat-icon {
   margin-right: 8px;
-  color: #2196f3;
+  color: var(--hud-cyan);
   margin-top: 2px;
 }
 
@@ -433,7 +433,7 @@
 
 .status-active { background: rgba(76, 175, 80, 0.2); color: #4caf50; }
 .status-pending { background: rgba(255, 152, 0, 0.2); color: #ff9800; }
-.status-complete { background: rgba(33, 150, 243, 0.2); color: #2196f3; }
+.status-complete { background: color-mix(in srgb, var(--hud-cyan) 20%, transparent); color: var(--hud-cyan); }
 .status-unknown { background: rgba(158, 158, 158, 0.2); color: #9e9e9e; }
 
 .progress-container h4 {
@@ -704,7 +704,7 @@
 }
 
 /* Star class colors */
-.star-o { color: #64b5f6; }
+.star-o { color: var(--hud-cyan); }
 .star-b { color: #42a5f5; }
 .star-a { color: #fff; }
 .star-f { color: #ffeb3b; }
@@ -799,7 +799,7 @@
 .class-circle {
   width: 50px;
   height: 50px;
-  border: 2px solid #64b5f6;
+  border: 2px solid var(--hud-cyan);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -810,7 +810,7 @@
 .circle-value {
   font-size: 20px;
   font-weight: bold;
-  color: #64b5f6;
+  color: var(--hud-cyan);
 }
 
 .class-label {
@@ -1002,7 +1002,7 @@
   font-size: 16px !important;
   width: 16px !important;
   height: 16px !important;
-  color: #64b5f6;
+  color: var(--hud-cyan);
 }
 
 .mod-name {
@@ -1097,11 +1097,11 @@
 
 .weapon-mod-tag {
   background: rgba(100, 181, 246, 0.2);
-  border: 1px solid #64b5f6;
+  border: 1px solid var(--hud-cyan);
   border-radius: 3px;
   padding: 2px 6px;
   font-size: 9px;
-  color: #64b5f6;
+  color: var(--hud-cyan);
 }
 
 /* Ship defense stats */
@@ -1291,7 +1291,7 @@
 }
 
 .category-count {
-  color: #64b5f6;
+  color: var(--hud-cyan);
   font-weight: 500;
 }
 
@@ -1362,7 +1362,7 @@
 .show-less {
   text-align: center;
   padding: 12px;
-  color: #64b5f6;
+  color: var(--hud-cyan);
   cursor: pointer;
   font-size: 12px;
   border-top: 1px solid #333;

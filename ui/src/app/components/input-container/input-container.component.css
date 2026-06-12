@@ -37,6 +37,6 @@
 }
 
 .input-field:focus-visible {
-    outline: 1px solid rgba(20, 245, 255, 0.45);
+    outline: 1px solid var(--hud-border-cyan);
     outline-offset: 3px;
 }

@@ -172,7 +172,7 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
     
     if (status.flags?.InDanger) return '#f44336';
     if (status.flags?.Docked) return '#4caf50';
-    if (status.flags?.Landed) return '#2196f3';
+    if (status.flags?.Landed) return 'var(--hud-cyan)';
     if (status.flags?.InFlight) return '#ff9800';
     if (status.flags?.Supercruise) return '#9c27b0';
     
