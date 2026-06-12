@@ -640,7 +640,14 @@ class ScreenReader:
 
 
 if __name__ == "__main__":
-    reader = ScreenReader()
+    from .Config import load_config, load_hud_color_matrix
+
+    config = load_config()
+    hud_color_matrix = load_hud_color_matrix(config)
+    reader = ScreenReader(sample_colors=[
+        hud_color_matrix.shift_secondary_color().lstrip("#"),
+        hud_color_matrix.shift_primary_color().lstrip("#"),
+    ])
     while True:
         result = reader.read_selected_area()
         if result.detection is None:

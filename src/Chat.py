@@ -790,6 +790,7 @@ class Chat:
 
         if self.config["tools_var"]:
             log("info", "Register actions...")
+            hud_color_matrix = load_hud_color_matrix(self.config)
 
             register_actions(
                 actionManager=self.action_manager,
@@ -819,6 +820,10 @@ class Chat:
                 weapon_types_list=self.config.get("weapon_types", []),
                 agent_llm_model=self.agent_llm_model,
                 agent_llm_max_tries=self.config.get("agent_llm_max_tries", 7),
+                hud_sample_colors=[
+                    hud_color_matrix.shift_secondary_color().lstrip("#"),
+                    hud_color_matrix.shift_primary_color().lstrip("#"),
+                ],
             )
 
             log("info", "Actions ready.")

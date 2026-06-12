@@ -32,6 +32,7 @@ llm_model: LLMModel = cast(LLMModel, None)
 vision_model_name: str | None = None
 event_manager: EventManager = cast(EventManager, None)
 embedding_model: EmbeddingModel | None = None
+screen_reader_sample_colors: list[str] | None = None
 
 chat_local_tabbed: bool = False
 chat_wing_tabbed: bool = False
@@ -524,7 +525,7 @@ def _navigate_system_map_target(resolved_target: ResolvedPlotTarget) -> None:
 
     ensure_in_system_plot_target(resolved_target)
     category = resolved_target.system_map_category or "LANDFALL PLANETS"
-    SystemMap(ScreenReader(), keys).run(category=category, entry=resolved_target.name)
+    SystemMap(ScreenReader(sample_colors=screen_reader_sample_colors), keys).run(category=category, entry=resolved_target.name)
 
 
 def _select_orrery_from_galaxy_map(screen_reader, max_steps: int = 30) -> None:
@@ -566,7 +567,7 @@ def _select_orrery_from_galaxy_map(screen_reader, max_steps: int = 30) -> None:
 def _plot_in_system_from_galaxy_map(resolved_target: ResolvedPlotTarget, projected_states: ProjectedStates) -> None:
     from ..ScreenReader import ScreenReader
 
-    screen_reader = ScreenReader()
+    screen_reader = ScreenReader(sample_colors=screen_reader_sample_colors)
     _select_orrery_from_galaxy_map(screen_reader)
 
     try:
@@ -1576,8 +1577,9 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
                      overlay_show_hud: bool = False,
                      weapon_types_list: list | None = None,
                      agent_llm_model: LLMModel | None = None,
-                     agent_llm_max_tries: int = 7):
-    global event_manager, vision_model, llm_model, vision_model_name, keys, weapon_types, embedding_model
+                     agent_llm_max_tries: int = 7,
+                     hud_sample_colors: list[str] | None = None):
+    global event_manager, vision_model, llm_model, vision_model_name, keys, weapon_types, embedding_model, screen_reader_sample_colors
     keys = edKeys
     event_manager = eventManager
     llm_model = llmModel
@@ -1585,6 +1587,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
     vision_model_name = visionModelName
     embedding_model = embeddingModel
     weapon_types = weapon_types_list or []
+    screen_reader_sample_colors = hud_sample_colors
     global discovery_primary_var, discovery_firegroup_var
     discovery_primary_var = discovery_primary_var_flag
     discovery_firegroup_var = discovery_firegroup_var_flag

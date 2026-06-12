@@ -66,6 +66,7 @@ export interface SystemInfo {
     output_device_names: string[];
     hud_color_matrix?: number[][];
     hud_accent_color?: string;
+    hud_secondary_color?: string;
 }
 
 export interface SystemInfoMessage extends BaseMessage {

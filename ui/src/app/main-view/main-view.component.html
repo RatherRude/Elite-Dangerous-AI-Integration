@@ -104,7 +104,7 @@
                     <mat-icon>info</mat-icon>
                 </button>
             } @else {
-                <button mat-fab class="hud-accent-fab" aria-label="Start AI Assistant" (click)="start()"
+                <button mat-fab class="hud-accent-fab ai-toggle-fab" aria-label="Start AI Assistant" (click)="start()"
                         [style.--hud-accent-color]="hudAccentColor"
                         [disabled]="isLoading">
                     <mat-icon>play_arrow</mat-icon>
@@ -116,7 +116,7 @@
                     <mat-icon>hourglass_empty</mat-icon>
                 </button>
             } @else {
-                <button mat-fab color="warn" aria-label="Stop AI Assistant" (click)="stop()" [disabled]="isLoading">
+                <button mat-fab class="ai-toggle-fab" color="warn" aria-label="Stop AI Assistant" (click)="stop()" [disabled]="isLoading">
                     <mat-icon>stop</mat-icon>
                 </button>
             }
