@@ -3,7 +3,7 @@
 
 .input-container {
     background: rgba(0, 0, 0, 0.48);
-    border-top: 1px solid var(--hud-border);
+    border-top: 2px solid var(--hud-border);
     min-height: 36px;
     display: flex;
     gap: 5px;
