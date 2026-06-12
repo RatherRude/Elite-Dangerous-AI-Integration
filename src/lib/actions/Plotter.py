@@ -180,6 +180,26 @@ class Plotter:
     def _plot_search_obj(cls, query: str) -> dict[str, Any]:
         return {"name": cls.spansh_plot_search_name(query), "size": PLOT_TARGET_SEARCH_SIZE}
 
+    def _apply_plot_request_routing(self, request_body: dict[str, Any], projected_states: Any) -> dict[str, Any]:
+        location = get_state_dict(projected_states, 'Location')
+        star_pos = location.get('StarPos')
+
+        request_body["sort"] = [{"distance": {"direction": "asc"}}]
+        request_body.pop("reference_route", None)
+
+        if isinstance(star_pos, list) and len(star_pos) >= 3:
+            request_body.pop("reference_system", None)
+            request_body["reference_coords"] = {
+                "x": star_pos[0],
+                "y": star_pos[1],
+                "z": star_pos[2],
+            }
+        else:
+            request_body.pop("reference_coords", None)
+            request_body["reference_system"] = location.get('StarSystem', 'Sol')
+
+        return request_body
+
     @classmethod
     def _plot_candidate_score(cls, query: str, candidate_name: str) -> float:
         if cls.is_plot_name_exact_match(query, candidate_name):
@@ -190,6 +210,7 @@ class Plotter:
         if self.prepare_system_request is None:
             raise Exception("prepare_system_request is required")
         request_body = self.prepare_system_request(self._plot_search_obj(query), projected_states)
+        self._apply_plot_request_routing(request_body, projected_states)
         data = self.spansh_post(SPANSH_SYSTEMS_URL, request_body)
         candidates: list[ResolvedPlotTarget] = []
 
@@ -215,6 +236,7 @@ class Plotter:
         if self.prepare_station_request is None:
             raise Exception("prepare_station_request is required")
         request_body = self.prepare_station_request(self._plot_search_obj(query), projected_states)
+        self._apply_plot_request_routing(request_body, projected_states)
         data = self.spansh_post(SPANSH_STATIONS_URL, request_body)
         candidates: list[ResolvedPlotTarget] = []
 
@@ -250,6 +272,7 @@ class Plotter:
         if self.prepare_body_request is None:
             raise Exception("prepare_body_request is required")
         request_body = self.prepare_body_request(self._plot_search_obj(query), projected_states)
+        self._apply_plot_request_routing(request_body, projected_states)
         data = self.spansh_post(SPANSH_BODIES_URL, request_body)
         candidates: list[ResolvedPlotTarget] = []
 
