@@ -360,7 +360,7 @@ class EDCoPilotPlugin(PluginBase):
             if not self.client.pending_events.empty():
                 event = self.client.pending_events.get()
                 if isinstance(event, SpeakingPhraseEvent) and event.reason != 'covas':
-                    log('info', 'eedcopilot', event)
+                    # log('info', 'eedcopilot', event)
                     self._helper.dispatch_event(PluginEvent(
                         kind="plugin",
                         plugin_event_name="EdCoPilotEvent",

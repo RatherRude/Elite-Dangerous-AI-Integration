@@ -172,9 +172,10 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .mat-mdc-tab-header {
-  border-bottom: 1px solid color-mix(in srgb, var(--hud-orange) 28%, transparent) !important;
+  border-bottom: 2px solid var(--hud-border) !important;
   background: rgba(5, 2, 0, 0.86);
   box-shadow: inset 0 -14px 18px -24px var(--hud-orange);
+  padding-bottom: 3px;
 }
 
 .mat-mdc-tab {
