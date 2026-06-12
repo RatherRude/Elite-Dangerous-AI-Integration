@@ -32,11 +32,45 @@
   min-width: 40px;
 }
 
+:host ::ng-deep .mat-button-toggle-group {
+  background: #020100;
+  border: 1px solid var(--hud-border);
+  border-radius: 2px;
+}
+
+:host ::ng-deep .mat-button-toggle {
+  background: #020100;
+  color: var(--hud-text);
+  border-color: var(--hud-border) !important;
+}
+
+:host ::ng-deep .mat-button-toggle:hover:not(.mat-button-toggle-checked) {
+  background: color-mix(in srgb, var(--hud-orange) 12%, black);
+  color: var(--hud-orange);
+}
+
+:host ::ng-deep .mat-button-toggle-checked {
+  background: var(--hud-orange) !important;
+  color: #160800 !important;
+}
+
+:host ::ng-deep .mat-button-toggle-checked .mat-icon,
+:host ::ng-deep .mat-button-toggle-checked .category-count {
+  color: #160800 !important;
+}
+
+:host ::ng-deep .mat-expansion-panel,
+:host ::ng-deep .mat-expansion-panel-content,
+:host ::ng-deep .mat-expansion-panel-body {
+  background: #020100 !important;
+}
+
 .event-row {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 0;
+  background: #020100;
 
   .event-state-icon {
     color: rgba(255, 255, 255, 0.7);
@@ -78,7 +112,7 @@
     }
   }
   &:hover {
-    background-color: rgba(255, 255, 255, 0.1) ;
+    background-color: color-mix(in srgb, var(--hud-orange) 10%, black);
   }
 }
 

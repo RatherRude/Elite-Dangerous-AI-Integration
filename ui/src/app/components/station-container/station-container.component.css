@@ -110,13 +110,13 @@
   justify-content: center;
   width: 40px;
   height: 40px;
-  background: rgba(64, 181, 246, 0.2);
+  background: color-mix(in srgb, var(--hud-cyan) 20%, transparent);
   border-radius: 50%;
   flex-shrink: 0;
 }
 
 .ship-icon mat-icon {
-  color: #40b5f6;
+  color: var(--hud-cyan);
   font-size: 20px;
 }
 
@@ -140,7 +140,7 @@
 
 .ship-location {
   font-size: 14px;
-  color: #64b5f6;
+  color: var(--hud-cyan);
   font-weight: 500;
 }
 
@@ -208,9 +208,9 @@
 }
 
 .station-services button.active {
-  background: rgba(64, 181, 246, 0.2);
-  border-color: #40b5f6;
-  color: #40b5f6;
+  background: color-mix(in srgb, var(--hud-cyan) 20%, transparent);
+  border-color: var(--hud-cyan);
+  color: var(--hud-cyan);
 }
 
 .station-services button mat-icon {
@@ -262,17 +262,17 @@
   color: var(--hud-text);
   font-family: var(--hud-font);
   font-size: 14px;
-  box-shadow: inset 0 0 18px rgba(255, 157, 0, 0.08);
+  box-shadow: inset 0 0 18px color-mix(in srgb, var(--hud-orange) 8%, transparent);
 }
 
 .search-box input:hover {
-  border-color: rgba(255, 157, 0, 0.75);
+  border-color: color-mix(in srgb, var(--hud-orange) 75%, transparent);
 }
 
 .search-box input:focus {
   outline: none;
   border-color: var(--hud-orange);
-  box-shadow: inset 0 0 18px rgba(255, 157, 0, 0.12), 0 0 12px rgba(255, 157, 0, 0.24);
+  box-shadow: inset 0 0 18px color-mix(in srgb, var(--hud-orange) 12%, transparent), 0 0 12px color-mix(in srgb, var(--hud-orange) 24%, transparent);
 }
 
 .search-box input::placeholder {

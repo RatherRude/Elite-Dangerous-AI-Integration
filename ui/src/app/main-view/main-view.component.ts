@@ -72,7 +72,6 @@ export class MainViewComponent implements OnInit, OnDestroy {
     private hasAutoStarted = false;
     public usageDisclaimerAccepted = false;
     public isQuestEditorOpen = false;
-    public hudAccentColor = "#fe8101";
     private systemSubscription?: Subscription;
 
     constructor(
@@ -92,16 +91,23 @@ export class MainViewComponent implements OnInit, OnDestroy {
         );
     }
 
-    private applyHudAccentColor(color?: string): void {
-        if (color) {
-            this.hudAccentColor = color;
+    private applyHudColors(system?: { hud_accent_color?: string; hud_secondary_color?: string } | null): void {
+        this.setHudColor("--hud-orange", system?.hud_accent_color);
+        this.setHudColor("--hud-cyan", system?.hud_secondary_color);
+    }
+
+    private setHudColor(variable: "--hud-orange" | "--hud-cyan", color?: string): void {
+        if (!color || !/^#[0-9a-fA-F]{6}$/.test(color)) {
+            return;
         }
+
+        document.documentElement.style.setProperty(variable, color);
     }
 
     ngOnInit(): void {
-        this.applyHudAccentColor(this.configService.systemInfo?.hud_accent_color);
+        this.applyHudColors(this.configService.systemInfo);
         this.systemSubscription = this.configService.system$.subscribe((system) => {
-            this.applyHudAccentColor(system?.hud_accent_color);
+            this.applyHudColors(system);
         });
 
         this.configSubscription = this.configService.config$.subscribe(

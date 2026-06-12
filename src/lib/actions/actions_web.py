@@ -1,8 +1,6 @@
 import datetime
 import math
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass
-from typing import cast, Any, List, Dict, Literal
+from typing import cast, Any, List, Dict
 
 import requests
 import yaml
@@ -2579,258 +2577,72 @@ def filter_body_response(request, response):
     }
 
 
-SPANSH_SYSTEMS_URL = "https://spansh.co.uk/api/systems/search"
-SPANSH_STATIONS_URL = "https://spansh.co.uk/api/stations/search"
-SPANSH_BODIES_URL = "https://spansh.co.uk/api/bodies/search"
-PLOT_TARGET_SEARCH_SIZE = 10
-
-STATION_TYPE_SYSTEM_MAP_CATEGORY = {
-    "Asteroid base": "ORBITAL PORTS",
-    "Coriolis Starport": "ORBITAL PORTS",
-    "Dockable Planet Station": "PLANETARY PORTS",
-    "Dodec Starport": "ORBITAL PORTS",
-    "Drake-Class Carrier": "FLEET CARRIERS",
-    "Mega ship": "INSTALLATIONS",
-    "Ocellus Starport": "ORBITAL PORTS",
-    "Orbis Starport": "ORBITAL PORTS",
-    "Outpost": "ORBITAL PORTS",
-    "Planetary Construction Depot": "PLANETARY PORTS",
-    "Planetary Outpost": "PLANETARY PORTS",
-    "Planetary Port": "PLANETARY PORTS",
-    "Settlement": "ODYSSEY SETTLEMENTS",
-    "Space Construction Depot": "ORBITAL PORTS",
-    "Surface Settlement": "SURFACE SETTLEMENTS",
-}
+from .Plotter import (
+    PLOT_TARGET_SEARCH_SIZE,
+    SPANSH_BODIES_URL,
+    SPANSH_STATIONS_URL,
+    SPANSH_SYSTEMS_URL,
+    STATION_TYPE_SYSTEM_MAP_CATEGORY,
+    Plotter,
+    ResolvedPlotTarget,
+)
 
 
-@dataclass(frozen=True)
-class ResolvedPlotTarget:
-    target_type: Literal["system", "station", "body"]
-    name: str
-    system_name: str
-    system_map_category: str | None
-    distance: float | None
-    match_score: float
-    details: dict[str, Any]
-    is_landable: bool | None = None
+def _plotter() -> Plotter:
+    return Plotter(
+        prepare_system_request=prepare_system_request,
+        prepare_station_request=prepare_station_request,
+        prepare_body_request=prepare_body_request,
+        spansh_post=_spansh_post,
+    )
 
 
 def normalize_plot_name(name: str) -> str:
-    return "".join(str(name).upper().split())
+    return Plotter.normalize_plot_name(name)
 
 
 def is_plot_name_exact_match(query: str, candidate: str) -> bool:
-    query_normalized = normalize_plot_name(query)
-    candidate_normalized = normalize_plot_name(candidate)
-    return bool(query_normalized and query_normalized == candidate_normalized)
+    return Plotter.is_plot_name_exact_match(query, candidate)
 
 
 def plot_name_match_score(query: str, candidate: str) -> float:
-    query_normalized = normalize_plot_name(query)
-    candidate_normalized = normalize_plot_name(candidate)
-    if not query_normalized or not candidate_normalized:
-        return 0.0
-    if query_normalized == candidate_normalized:
-        return 1.0
-    if candidate_normalized.startswith(query_normalized) or query_normalized.startswith(candidate_normalized):
-        return 0.9
-
-    max_distance = max(1, len(query_normalized) // 3)
-    distance = levenshtein_distance(query_normalized, candidate_normalized)
-    if distance > max_distance:
-        return 0.0
-
-    max_len = max(len(query_normalized), len(candidate_normalized), 1)
-    return 0.8 * (1 - distance / max_len)
+    return Plotter.plot_name_match_score(query, candidate)
 
 
 def system_map_category_for_station(station: dict[str, Any]) -> str | None:
-    station_type = str(station.get("type") or "").strip()
-    if station_type in STATION_TYPE_SYSTEM_MAP_CATEGORY:
-        return STATION_TYPE_SYSTEM_MAP_CATEGORY[station_type]
-    for known_type, category in STATION_TYPE_SYSTEM_MAP_CATEGORY.items():
-        if known_type.casefold() == station_type.casefold():
-            return category
-    return None
+    return Plotter.system_map_category_for_station(station)
 
 
 def ensure_in_system_plot_target(resolved: ResolvedPlotTarget) -> None:
-    if resolved.target_type == "station":
-        if not resolved.system_map_category:
-            station_type = resolved.details.get("station_type", "unknown")
-            raise Exception(
-                f"Station {resolved.name!r} has unknown type {station_type!r} and cannot be selected in the system map."
-            )
-        return
-
-    if resolved.target_type != "body":
-        return
-
-    if resolved.is_landable is False:
-        raise Exception(
-            f"Body {resolved.name!r} is not landable and cannot be selected from the landfall planets list."
-        )
+    Plotter.ensure_in_system_plot_target(resolved)
 
 
 def _spansh_post(url: str, request_body: dict[str, Any]) -> dict[str, Any]:
-    response = requests.post(url, json=request_body, timeout=15)
-    response.raise_for_status()
-    return response.json()
-
-
-def _plot_target_details(
-    target_type: Literal["system", "station", "body"],
-    name: str,
-    system_name: str,
-    distance: float | None,
-    *,
-    station_type: str | None = None,
-    is_landable: bool | None = None,
-) -> dict[str, Any]:
-    details = {
-        "query_type": target_type,
-        "name": name,
-        "system_name": system_name,
-        "distance": distance,
-    }
-    if station_type is not None:
-        details["station_type"] = station_type
-    if is_landable is not None:
-        details["is_landable"] = is_landable
-    return details
+    return Plotter._spansh_post(url, request_body)
 
 
 def spansh_plot_search_name(query: str) -> str:
-    query = str(query).strip()
-    if not query:
-        return query
-    return query[:-1] + "?"
+    return Plotter.spansh_plot_search_name(query)
 
 
 def _plot_search_obj(query: str) -> dict[str, Any]:
-    return {"name": spansh_plot_search_name(query), "size": PLOT_TARGET_SEARCH_SIZE}
-
-
-def _plot_candidate_score(query: str, candidate_name: str) -> float:
-    if is_plot_name_exact_match(query, candidate_name):
-        return 1.0
-    return plot_name_match_score(query, candidate_name)
+    return Plotter._plot_search_obj(query)
 
 
 def _plot_candidates_from_systems(query: str, projected_states: Any) -> list[ResolvedPlotTarget]:
-    request_body = prepare_system_request(_plot_search_obj(query), projected_states)
-    data = _spansh_post(SPANSH_SYSTEMS_URL, request_body)
-    candidates: list[ResolvedPlotTarget] = []
-
-    for system in data.get("results", [])[:PLOT_TARGET_SEARCH_SIZE]:
-        name = str(system.get("name") or "").strip()
-        if not name:
-            continue
-        distance = system.get("distance")
-        distance_value = float(distance) if distance is not None else None
-        candidates.append(ResolvedPlotTarget(
-            target_type="system",
-            name=name,
-            system_name=name,
-            system_map_category=None,
-            distance=distance_value,
-            match_score=_plot_candidate_score(query, name),
-            details=_plot_target_details("system", name, name, distance_value),
-        ))
-
-    return candidates
+    return _plotter()._plot_candidates_from_systems(query, projected_states)
 
 
 def _plot_candidates_from_stations(query: str, projected_states: Any) -> list[ResolvedPlotTarget]:
-    request_body = prepare_station_request(_plot_search_obj(query), projected_states)
-
-    # delete the distance sorting to ensure we get the best name matches even if they are farther away, we'll sort by distance in the results processing instead
-    # request_body["sort"] = []
-
-    data = _spansh_post(SPANSH_STATIONS_URL, request_body)
-    candidates: list[ResolvedPlotTarget] = []
-
-    for station in data.get("results", [])[:PLOT_TARGET_SEARCH_SIZE]:
-        name = str(station.get("name") or "").strip()
-        system_name = str(station.get("system_name") or "").strip()
-        station_type = str(station.get("type") or "").strip()
-        if not name or not system_name:
-            continue
-        distance = station.get("distance")
-        distance_value = float(distance) if distance is not None else None
-        if name != query:
-            continue
-        candidates.append(ResolvedPlotTarget(
-            target_type="station",
-            name=name,
-            system_name=system_name,
-            system_map_category=system_map_category_for_station(station),
-            distance=distance_value,
-            match_score=_plot_candidate_score(query, name),
-            details=_plot_target_details(
-                "station",
-                name,
-                system_name,
-                distance_value,
-                station_type=station_type or None,
-            ),
-        ))
-
-    return candidates
+    return _plotter()._plot_candidates_from_stations(query, projected_states)
 
 
 def _plot_candidates_from_bodies(query: str, projected_states: Any) -> list[ResolvedPlotTarget]:
-    request_body = prepare_body_request(_plot_search_obj(query), projected_states)
-    data = _spansh_post(SPANSH_BODIES_URL, request_body)
-    candidates: list[ResolvedPlotTarget] = []
-
-    for body in data.get("results", [])[:PLOT_TARGET_SEARCH_SIZE]:
-        if body.get("type") != "Planet":
-            continue
-        name = str(body.get("name") or "").strip()
-        system_name = str(body.get("system_name") or "").strip()
-        if not name or not system_name:
-            continue
-        distance = body.get("distance")
-        distance_value = float(distance) if distance is not None else None
-        is_landable = body.get("is_landable")
-        landable_value = is_landable if isinstance(is_landable, bool) else None
-        candidates.append(ResolvedPlotTarget(
-            target_type="body",
-            name=name,
-            system_name=system_name,
-            system_map_category="LANDFALL PLANETS",
-            distance=distance_value,
-            match_score=_plot_candidate_score(query, name),
-            details=_plot_target_details(
-                "body",
-                name,
-                system_name,
-                distance_value,
-                is_landable=landable_value,
-            ),
-            is_landable=landable_value,
-        ))
-
-    return candidates
+    return _plotter()._plot_candidates_from_bodies(query, projected_states)
 
 
 def _select_best_plot_target(candidates: list[ResolvedPlotTarget], query: str) -> ResolvedPlotTarget | None:
-    if not candidates:
-        return None
-
-    exact_matches = [candidate for candidate in candidates if is_plot_name_exact_match(query, candidate.name)]
-    if exact_matches:
-        return min(
-            exact_matches,
-            key=lambda candidate: candidate.distance if candidate.distance is not None else float("inf"),
-        )
-
-    def sort_key(candidate: ResolvedPlotTarget) -> tuple[float, float]:
-        distance = candidate.distance if candidate.distance is not None else float("inf")
-        return (-candidate.match_score, distance)
-
-    return sorted(candidates, key=sort_key)[0]
+    return Plotter._select_best_plot_target(candidates, query)
 
 
 def plot_search_query(
@@ -2839,10 +2651,7 @@ def plot_search_query(
     station: str | None = None,
     body: str | None = None,
 ) -> str | None:
-    for value in (station, body, system):
-        if value and str(value).strip():
-            return str(value).strip()
-    return None
+    return Plotter.plot_search_query(system=system, station=station, body=body)
 
 
 def lookup_plot_target(
@@ -2852,46 +2661,11 @@ def lookup_plot_target(
     body: str | None = None,
     projected_states: Any,
 ) -> ResolvedPlotTarget | None:
-    query = plot_search_query(system=system, station=station, body=body)
-    if not query:
-        return None
-    return resolve_plot_target(query, projected_states)
+    return _plotter().lookup_plot_target(system=system, station=station, body=body, projected_states=projected_states)
 
 
 def resolve_plot_target(query: str, projected_states: Any) -> ResolvedPlotTarget | None:
-    query = str(query or "").strip()
-    if not query:
-        return None
-
-    search_jobs = {
-        "system": _plot_candidates_from_systems,
-        "station": _plot_candidates_from_stations,
-        "body": _plot_candidates_from_bodies,
-    }
-    candidates: list[ResolvedPlotTarget] = []
-
-    with ThreadPoolExecutor(max_workers=3) as executor:
-        futures = {
-            executor.submit(search_fn, query, projected_states): target_type
-            for target_type, search_fn in search_jobs.items()
-        }
-        for future in as_completed(futures):
-            target_type = futures[future]
-            try:
-                candidates.extend(future.result())
-            except Exception as error:
-                log("warn", "Plot target lookup failed", f"{target_type}: {error}")
-
-    best_match = _select_best_plot_target(candidates, query)
-    if best_match:
-        log(
-            "info",
-            "Resolved plot target",
-            f"{query!r} -> {best_match.target_type} {best_match.name!r} in {best_match.system_name!r}",
-        )
-    else:
-        log("warn", "Could not resolve plot target", query)
-    return best_match
+    return _plotter().resolve_plot_target(query, projected_states)
 
 
 # Body finder function that sends the request to the Spansh API

@@ -3,16 +3,16 @@
 @include mat.core();
 
 $primary-palette: (
-  50: lighten(#ff9d00, 40%),
-  100: lighten(#ff9d00, 30%),
-  200: lighten(#ff9d00, 20%),
-  300: lighten(#ff9d00, 10%),
-  400: lighten(#ff9d00, 5%),
-  500: #ff9d00,
-  600: darken(#ff9d00, 5%),
-  700: darken(#ff9d00, 10%),
-  800: darken(#ff9d00, 20%),
-  900: darken(#ff9d00, 30%),
+  50: lighten(#fe8101, 40%),
+  100: lighten(#fe8101, 30%),
+  200: lighten(#fe8101, 20%),
+  300: lighten(#fe8101, 10%),
+  400: lighten(#fe8101, 5%),
+  500: #fe8101,
+  600: darken(#fe8101, 5%),
+  700: darken(#fe8101, 10%),
+  800: darken(#fe8101, 20%),
+  900: darken(#fe8101, 30%),
   contrast: (
     50: rgba(black, 0.87),
     100: rgba(black, 0.87),
@@ -77,21 +77,24 @@ $my-dark-theme: mat.define-dark-theme((
 @include mat.all-component-densities($my-density);
 
 :root {
-  --hud-orange: #ff9d00;
-  --hud-orange-soft: #ffc15a;
-  --hud-orange-dark: #3a1900;
+  --hud-orange: #fe8101;
+  --hud-orange-soft: color-mix(in srgb, var(--hud-orange) 62%, white);
+  --hud-orange-dark: color-mix(in srgb, var(--hud-orange) 22%, black);
   --hud-cyan: #14f5ff;
-  --hud-cyan-dark: #002e36;
+  --hud-cyan-dark: color-mix(in srgb, var(--hud-cyan) 22%, black);
   --hud-text: #dffbff;
   --hud-muted: #8da3aa;
   --hud-panel: rgba(17, 8, 0, 0.82);
-  --hud-panel-soft: rgba(255, 157, 0, 0.1);
-  --hud-panel-strong: rgba(255, 157, 0, 0.18);
-  --hud-border: rgba(255, 157, 0, 0.55);
-  --hud-border-cyan: rgba(20, 245, 255, 0.45);
-  --hud-glow: 0 0 12px rgba(255, 157, 0, 0.55), 0 0 28px rgba(255, 157, 0, 0.18);
-  --hud-cyan-glow: 0 0 12px rgba(20, 245, 255, 0.45);
+  --hud-panel-soft: color-mix(in srgb, var(--hud-orange) 10%, transparent);
+  --hud-panel-strong: color-mix(in srgb, var(--hud-orange) 18%, transparent);
+  --hud-border: color-mix(in srgb, var(--hud-orange) 55%, transparent);
+  --hud-border-dark: color-mix(in srgb, var(--hud-orange) 70%, black);
+  --hud-border-cyan: color-mix(in srgb, var(--hud-cyan) 45%, transparent);
+  --hud-glow: 0 0 12px color-mix(in srgb, var(--hud-orange) 55%, transparent), 0 0 28px color-mix(in srgb, var(--hud-orange) 18%, transparent);
+  --hud-cyan-glow: 0 0 12px color-mix(in srgb, var(--hud-cyan) 45%, transparent);
   --hud-font: "Jura", "Eurostile", "Rajdhani", "Segoe UI", sans-serif;
+  --mat-primary: var(--hud-orange);
+  --mat-accent: var(--hud-cyan);
 }
 
 html, body, app-root {
@@ -119,7 +122,7 @@ body {
 }
 
 * {
-  scrollbar-color: var(--hud-orange) rgba(255, 157, 0, 0.08);
+  scrollbar-color: var(--hud-orange) color-mix(in srgb, var(--hud-orange) 8%, transparent);
   scrollbar-width: thin;
 }
 
@@ -129,7 +132,7 @@ body {
 }
 
 *::-webkit-scrollbar-track {
-  background: linear-gradient(90deg, transparent 44%, rgba(255, 157, 0, 0.32) 45%, transparent 56%);
+  background: linear-gradient(90deg, transparent 44%, color-mix(in srgb, var(--hud-orange) 32%, transparent) 45%, transparent 56%);
 }
 
 *::-webkit-scrollbar-thumb {
@@ -169,7 +172,7 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .mat-mdc-tab-header {
-  border-bottom: 1px solid rgba(255, 157, 0, 0.28) !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--hud-orange) 28%, transparent) !important;
   background: rgba(5, 2, 0, 0.86);
   box-shadow: inset 0 -14px 18px -24px var(--hud-orange);
 }
@@ -180,8 +183,8 @@ h1, h2, h3, h4, h5, h6,
   min-width: 104px !important;
   height: 40px !important;
   padding: 0 18px !important;
-  background: rgba(255, 157, 0, 0.08);
-  border-right: 1px solid rgba(255, 157, 0, 0.18);
+  background: color-mix(in srgb, var(--hud-orange) 8%, transparent);
+  border-right: 1px solid color-mix(in srgb, var(--hud-orange) 18%, transparent);
   transition: background-color 120ms ease, filter 120ms ease, color 120ms ease;
 }
 
@@ -190,7 +193,7 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .mat-mdc-tab-header-pagination-disabled .mat-mdc-tab-header-pagination-chevron {
-  border-color: rgba(255, 157, 0, 0.28) !important;
+  border-color: color-mix(in srgb, var(--hud-orange) 28%, transparent) !important;
 }
 
 .mat-mdc-tab-header-pagination-disabled {
@@ -213,13 +216,13 @@ h1, h2, h3, h4, h5, h6,
 
 .mat-mdc-tab.mdc-tab--active {
   background: var(--hud-orange);
-  box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.22), 0 0 12px rgba(255, 157, 0, 0.36);
+  box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.22), 0 0 12px color-mix(in srgb, var(--hud-orange) 36%, transparent);
   filter: brightness(1.05) contrast(1.08);
 }
 
 .mat-mdc-tab:hover:not(.mdc-tab--active),
 .mat-mdc-tab:focus-visible:not(.mdc-tab--active) {
-  background: rgba(255, 157, 0, 0.16);
+  background: color-mix(in srgb, var(--hud-orange) 16%, transparent);
   filter: brightness(1.12);
 }
 
@@ -236,7 +239,7 @@ h1, h2, h3, h4, h5, h6,
   background: rgba(8, 4, 0, 0.94) !important;
   border: 1px solid var(--hud-border) !important;
   border-radius: 2px !important;
-  box-shadow: inset 0 0 24px rgba(255, 157, 0, 0.12), 0 0 24px rgba(0, 0, 0, 0.55) !important;
+  box-shadow: inset 0 0 24px color-mix(in srgb, var(--hud-orange) 12%, transparent), 0 0 24px rgba(0, 0, 0, 0.55) !important;
 }
 
 .mat-accordion {
@@ -248,7 +251,7 @@ h1, h2, h3, h4, h5, h6,
 .mat-expansion-panel {
   display: block !important;
   background: rgba(255, 255, 255, 0.045) !important;
-  border: 1px solid rgba(255, 157, 0, 0.24) !important;
+  border: 1px solid color-mix(in srgb, var(--hud-orange) 70%, black) !important;
   border-radius: 2px !important;
   color: var(--hud-text) !important;
   box-shadow: none !important;
@@ -257,12 +260,12 @@ h1, h2, h3, h4, h5, h6,
 
 .mat-expansion-panel:not(.mat-expanded):not([aria-disabled='true']):hover {
   background: rgba(255, 255, 255, 0.075) !important;
-  border-color: rgba(255, 157, 0, 0.38) !important;
+  border-color: color-mix(in srgb, var(--hud-orange) 78%, black) !important;
 }
 
 .mat-expansion-panel.mat-expanded {
   background: rgba(0, 0, 0, 0.34) !important;
-  border-color: rgba(255, 157, 0, 0.42) !important;
+  border-color: var(--hud-orange) !important;
 }
 
 .mat-expansion-panel-header {
@@ -277,13 +280,13 @@ h1, h2, h3, h4, h5, h6,
 .mat-expansion-panel-header:hover,
 .mat-expansion-panel-header.mat-expanded:focus,
 .mat-expansion-panel-header.mat-expanded:hover {
-  background: rgba(255, 157, 0, 0.16) !important;
+  background: color-mix(in srgb, var(--hud-orange) 16%, transparent) !important;
 }
 
 .mat-expansion-panel.mat-expanded .mat-expansion-panel-header {
   background: var(--hud-orange) !important;
   border-bottom-color: rgba(0, 0, 0, 0.32);
-  box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.22), 0 0 12px rgba(255, 157, 0, 0.28);
+  box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.22), 0 0 12px color-mix(in srgb, var(--hud-orange) 28%, transparent);
 }
 
 .mat-expansion-panel-header-title,
@@ -389,12 +392,40 @@ h1, h2, h3, h4, h5, h6,
 .mat-mdc-button-base:hover:not(:disabled),
 .mat-mdc-button-base:focus-visible:not(:disabled) {
   filter: brightness(1.18) contrast(1.1);
-  box-shadow: inset 0 0 20px rgba(255, 157, 0, 0.2), 0 0 18px rgba(255, 157, 0, 0.35) !important;
+  box-shadow: inset 0 0 20px color-mix(in srgb, var(--hud-orange) 20%, transparent), 0 0 18px color-mix(in srgb, var(--hud-orange) 35%, transparent) !important;
+}
+
+.mat-mdc-slide-toggle,
+.mat-mdc-slide-toggle.mat-primary,
+.mat-mdc-slide-toggle.mat-accent {
+  --mdc-switch-selected-focus-state-layer-color: var(--hud-cyan) !important;
+  --mdc-switch-selected-hover-state-layer-color: var(--hud-cyan) !important;
+  --mdc-switch-selected-pressed-state-layer-color: var(--hud-cyan) !important;
+  --mdc-switch-selected-handle-color: var(--hud-cyan) !important;
+  --mdc-switch-selected-focus-handle-color: var(--hud-cyan) !important;
+  --mdc-switch-selected-hover-handle-color: var(--hud-cyan) !important;
+  --mdc-switch-selected-pressed-handle-color: var(--hud-cyan) !important;
+  --mdc-switch-selected-icon-color: #001013 !important;
+  --mdc-switch-selected-focus-icon-color: #001013 !important;
+  --mdc-switch-selected-hover-icon-color: #001013 !important;
+  --mdc-switch-selected-pressed-icon-color: #001013 !important;
+  --mdc-switch-selected-track-color: color-mix(in srgb, var(--hud-cyan) 42%, black) !important;
+  --mdc-switch-selected-focus-track-color: color-mix(in srgb, var(--hud-cyan) 42%, black) !important;
+  --mdc-switch-selected-hover-track-color: color-mix(in srgb, var(--hud-cyan) 50%, black) !important;
+  --mdc-switch-selected-pressed-track-color: color-mix(in srgb, var(--hud-cyan) 50%, black) !important;
+  --mdc-switch-unselected-handle-color: var(--hud-muted) !important;
+  --mdc-switch-unselected-icon-color: rgba(0, 0, 0, 0.68) !important;
+  --mdc-switch-unselected-track-color: rgba(8, 4, 0, 0.94) !important;
+  --mdc-switch-unselected-focus-track-color: rgba(8, 4, 0, 0.94) !important;
+  --mdc-switch-unselected-hover-track-color: rgba(8, 4, 0, 0.94) !important;
+  --mdc-switch-unselected-pressed-track-color: rgba(8, 4, 0, 0.94) !important;
+  --mdc-switch-unselected-track-outline-color: var(--hud-border) !important;
+  --mat-switch-label-text-color: var(--hud-text) !important;
 }
 
 .mat-mdc-progress-bar {
   --mdc-linear-progress-active-indicator-color: var(--hud-orange);
-  --mdc-linear-progress-track-color: rgba(255, 157, 0, 0.18);
+  --mdc-linear-progress-track-color: color-mix(in srgb, var(--hud-orange) 18%, transparent);
   filter: drop-shadow(0 0 8px var(--hud-orange));
 }
 
@@ -411,11 +442,11 @@ th {
 }
 
 td, th {
-  border-bottom: 1px solid rgba(255, 157, 0, 0.18);
+  border-bottom: 1px solid color-mix(in srgb, var(--hud-orange) 18%, transparent);
 }
 
 tr:hover td {
-  background: rgba(255, 157, 0, 0.1);
+  background: color-mix(in srgb, var(--hud-orange) 10%, transparent);
 }
 
 // Styles for the overlay window

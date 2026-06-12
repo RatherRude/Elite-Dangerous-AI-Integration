@@ -30,13 +30,13 @@
   flex-direction: column;
   position: relative;
   z-index: 1;
-  /*background: linear-gradient(180deg, rgba(255, 157, 0, 0.11), rgba(4, 2, 0, 0.86));*/
+  /*background: linear-gradient(180deg, color-mix(in srgb, var(--hud-orange) 11%, transparent), rgba(4, 2, 0, 0.86));*/
   backdrop-filter: blur(12px) saturate(1.15);
   -webkit-backdrop-filter: blur(12px) saturate(1.15);
   border: 0;
   border-radius: 0;
   padding: 0;
-  box-shadow: inset 0 0 42px rgba(255, 157, 0, 0.08);
+  box-shadow: inset 0 0 42px color-mix(in srgb, var(--hud-orange) 8%, transparent);
 }
 
 .settings-container app-settings-menu {
@@ -51,12 +51,12 @@
   flex-direction: column;
   position: relative;
   z-index: 1;
-  /*background: linear-gradient(180deg, rgba(255, 157, 0, 0.11), rgba(5, 2, 0, 0.9));*/
+  /*background: linear-gradient(180deg, color-mix(in srgb, var(--hud-orange) 11%, transparent), rgba(5, 2, 0, 0.9));*/
   backdrop-filter: blur(12px) saturate(1.15);
   -webkit-backdrop-filter: blur(12px) saturate(1.15);
   border: 0;
   border-radius: 0;
-  box-shadow: inset 0 0 46px rgba(255, 157, 0, 0.09);
+  box-shadow: inset 0 0 46px color-mix(in srgb, var(--hud-orange) 9%, transparent);
   overflow: hidden;
 }
 
@@ -135,7 +135,7 @@
 }
 
 ::ng-deep .mat-mdc-tab:hover:not(.mdc-tab--active) {
-  background: rgba(255, 157, 0, 0.16);
+  background: color-mix(in srgb, var(--hud-orange) 16%, transparent);
   filter: brightness(1.15);
 }
 
@@ -150,9 +150,9 @@
 }
 
 .hud-accent-fab {
-  --mdc-fab-container-color: var(--hud-accent-color, #d27d00);
+  --mdc-fab-container-color: var(--hud-orange);
   --mat-fab-foreground-color: #fff;
-  background-color: var(--hud-accent-color, #d27d00);
+  background-color: var(--hud-orange);
   color: #fff;
 }
 
@@ -192,7 +192,7 @@ app-chat-container.small {
   --color-text-secondary: rgba(223, 251, 255, 0.72);
   --color-text-muted: var(--hud-muted);
   --color-background-dark: rgba(0, 0, 0, 0.42);
-  --color-border: rgba(255, 157, 0, 0.32);
+  --color-border: color-mix(in srgb, var(--hud-orange) 32%, transparent);
   color: var(--hud-text);
   font-family: var(--hud-font);
 }
@@ -223,10 +223,10 @@ app-chat-container.small {
 ::ng-deep app-materials-panel .material-card,
 ::ng-deep app-engineers-panel .engineer-card,
 ::ng-deep app-engineering-blueprints .blueprint-card {
-  background: linear-gradient(180deg, rgba(255, 157, 0, 0.1), rgba(0, 0, 0, 0.42)) !important;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--hud-orange) 10%, transparent), rgba(0, 0, 0, 0.42)) !important;
   border: 1px solid var(--hud-border) !important;
   border-radius: 2px !important;
-  box-shadow: inset 0 0 22px rgba(255, 157, 0, 0.08), 0 0 18px rgba(0, 0, 0, 0.38) !important;
+  box-shadow: inset 0 0 22px color-mix(in srgb, var(--hud-orange) 8%, transparent), 0 0 18px rgba(0, 0, 0, 0.38) !important;
 }
 
 ::ng-deep app-status-container .section-header,
@@ -284,7 +284,7 @@ app-chat-container.small {
 
 ::ng-deep app-status-container .panel-close-btn:hover {
   color: var(--hud-orange) !important;
-  background: rgba(255, 157, 0, 0.12) !important;
+  background: color-mix(in srgb, var(--hud-orange) 12%, transparent) !important;
 }
 
 @media (max-width: 720px) {
