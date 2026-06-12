@@ -72,7 +72,7 @@ export class MainViewComponent implements OnInit, OnDestroy {
     private hasAutoStarted = false;
     public usageDisclaimerAccepted = false;
     public isQuestEditorOpen = false;
-    public hudAccentColor = "#d27d00";
+    public hudAccentColor = "#fe8101";
     private systemSubscription?: Subscription;
 
     constructor(

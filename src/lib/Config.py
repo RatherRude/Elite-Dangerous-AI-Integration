@@ -1562,6 +1562,7 @@ class SystemInfo(TypedDict):
     output_device_names: list[str]
     hud_color_matrix: list[list[float]]
     hud_accent_color: str
+    hud_secondary_color: str
 
 
 def get_system_info() -> SystemInfo:
@@ -1571,7 +1572,8 @@ def get_system_info() -> SystemInfo:
         "input_device_names": get_input_device_names(),
         "output_device_names": get_output_device_names(),
         "hud_color_matrix": hud_color.matrix,
-        "hud_accent_color": hud_color.shift_reference_orange(),
+        "hud_accent_color": hud_color.shift_primary_color(),
+        "hud_secondary_color": hud_color.shift_secondary_color(),
     }
 
 

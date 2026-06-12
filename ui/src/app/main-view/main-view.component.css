@@ -156,6 +156,16 @@
   color: #fff;
 }
 
+.ai-toggle-fab {
+  opacity: 0.6;
+  transition: opacity 120ms ease;
+}
+
+.ai-toggle-fab:hover,
+.ai-toggle-fab:focus-visible {
+  opacity: 1;
+}
+
 app-chat-container.small {
   max-height: 4em;
   overflow-y: auto;

@@ -6,7 +6,7 @@ import time
 from .EDKeys import EDKeys
 from .Logger import log
 from .ScreenReader import ScreenReader, ScreenReadResult
-from .Config import get_ed_appdata_path, load_config
+from .Config import get_ed_appdata_path, load_config, load_hud_color_matrix
 
 
 class SystemMap:
@@ -62,7 +62,11 @@ class SystemMap:
 if __name__ == "__main__":
     try:
         config = load_config()
-        screen_reader = ScreenReader()
+        hud_color_matrix = load_hud_color_matrix(config)
+        screen_reader = ScreenReader(sample_colors=[
+            hud_color_matrix.shift_secondary_color().lstrip("#"),
+            hud_color_matrix.shift_primary_color().lstrip("#"),
+        ])
         ed_keys = EDKeys(
             get_ed_appdata_path(config),
             prefer_primary_bindings=config.get("prefer_primary_bindings", False),
