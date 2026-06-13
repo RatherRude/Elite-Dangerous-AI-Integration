@@ -1653,6 +1653,12 @@
   font-size: 14px;
 }
 
+.utility-item.module-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: flex-start;
+}
+
 .hardpoint-details, .utility-details {
   flex: 1;
 }
