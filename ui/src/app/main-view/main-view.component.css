@@ -139,6 +139,13 @@
   filter: brightness(1.15);
 }
 
+.tab-label-icon {
+  margin-right: 6px;
+  font-size: 19px;
+  width: 19px;
+  height: 19px;
+}
+
 .floating-action-container {
   position: fixed;
   right: 3em;
@@ -157,13 +164,28 @@
 }
 
 .ai-toggle-fab {
-  opacity: 0.6;
-  transition: opacity 120ms ease;
+  position: relative;
+  border: 1px solid var(--hud-border);
+  transition: border-color 120ms ease;
 }
 
 .ai-toggle-fab:hover,
 .ai-toggle-fab:focus-visible {
-  opacity: 1;
+  border-color: transparent;
+}
+
+.ai-toggle-fab:hover::after,
+.ai-toggle-fab:focus-visible::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, var(--hud-orange), transparent 72%);
+  pointer-events: none;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
 }
 
 app-chat-container.small {

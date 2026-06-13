@@ -420,18 +420,19 @@
                     <h3 class="stat-header">UTILITY</h3>
                     <div class="utility-list">
                         <ng-container *ngFor="let module of getUtilityModules()">
-                            <div class="utility-item">
-                                <div class="utility-details">
-                                    <span class="utility-name">{{ formatModuleName(module.Item) }}</span>
-                                </div>
-                                <div class="utility-engineering" *ngIf="module.Engineering">
-                                    <mat-icon class="engineering-icon">build</mat-icon>
-                                    <span class="engineering-text">{{ formatEngineeringName(module.Engineering.BlueprintName) }}
-                                        (G{{ module.Engineering.Level || '?' }})
-                                    <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
-                                        - {{ module.Engineering.ExperimentalEffect_Localised }}
+                            <div class="utility-item module-item">
+                                <div class="module-slot">{{ getUtilityModuleClassLabel(module) }}</div>
+                                <div class="module-content utility-details">
+                                    <div class="module-name utility-name">{{ formatUtilityModuleName(module.Item) }}</div>
+                                    <div class="module-engineering utility-engineering" *ngIf="module.Engineering">
+                                        <mat-icon class="engineering-icon">build</mat-icon>
+                                        <span class="engineering-text">{{ formatEngineeringName(module.Engineering.BlueprintName) }}
+                                            (G{{ module.Engineering.Level || '?' }})
+                                        <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
+                                            - {{ module.Engineering.ExperimentalEffect_Localised }}
+                                        </span>
                                     </span>
-                                </span>
+                                    </div>
                                 </div>
                             </div>
                         </ng-container>
@@ -575,7 +576,7 @@
                                 <div class="module-item">
                                     <div class="module-slot">{{ formatSlotName(module.Slot) }}</div>
                                     <div class="module-content">
-                                        <div class="module-name">{{ formatModuleName(module.Item) }}</div>
+                                        <div class="module-name">{{ formatCoreModuleLabel(module.Item) }}</div>
                                         <div class="module-engineering" *ngIf="module.Engineering">
                                             <mat-icon class="engineering-icon">build</mat-icon>
                                             <span class="engineering-text">{{ formatEngineeringName(module.Engineering.BlueprintName) }}
@@ -598,7 +599,7 @@
                                 <div *ngIf="showAllModules || i < getVisibleModulesCount()" class="module-item">
                                     <div class="module-slot">{{ getModuleClassLabel(module) }}</div>
                                     <div class="module-content">
-                                        <div class="module-name">{{ formatModuleName(module.Item) }}</div>
+                                        <div class="module-name">{{ formatOptionalModuleName(module.Item) }}</div>
                                         <div class="module-engineering" *ngIf="module.Engineering">
                                             <mat-icon class="engineering-icon">build</mat-icon>
                                             <span class="engineering-text">{{ formatEngineeringName(module.Engineering.BlueprintName) }}

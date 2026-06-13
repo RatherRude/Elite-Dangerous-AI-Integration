@@ -61,6 +61,8 @@ export class MainViewComponent implements OnInit, OnDestroy {
     isInCombat = false;
     isDockedAtStation = false;
     isShipIdentUnknown = false;
+    currentGameModeLabel = "Status";
+    currentGameModeIcon = "info";
     selectedTabIndex: number = 0;
     config: Config|undefined;
     hasLogbook = true;
@@ -207,6 +209,8 @@ export class MainViewComponent implements OnInit, OnDestroy {
         this.currentStatusSubscription = this.projectionsService.currentStatus$
             .subscribe((currentStatusData) => {
                 this.isDockedAtStation = Boolean(currentStatusData?.flags?.Docked === true);
+                this.currentGameModeLabel = this.getCurrentGameModeLabel(currentStatusData);
+                this.currentGameModeIcon = this.getCurrentGameModeIcon(currentStatusData);
             });
 
         // Subscribe to ShipInfo projection to track unknown ship ident
@@ -240,6 +244,42 @@ export class MainViewComponent implements OnInit, OnDestroy {
         if (this.shipInfoSubscription) {
             this.shipInfoSubscription.unsubscribe();
         }
+    }
+
+    private getCurrentGameModeLabel(currentStatusData: any): string {
+        if (!currentStatusData) {
+            return "Status";
+        }
+
+        if (currentStatusData.flags2?.OnFoot) {
+            return "Suit";
+        }
+        if (currentStatusData.flags?.InSRV) {
+            return "SRV";
+        }
+        if (currentStatusData.flags?.InFighter) {
+            return "SLF";
+        }
+
+        return "Ship";
+    }
+
+    private getCurrentGameModeIcon(currentStatusData: any): string {
+        if (!currentStatusData) {
+            return "info";
+        }
+
+        if (currentStatusData.flags2?.OnFoot) {
+            return "directions_walk";
+        }
+        if (currentStatusData.flags?.InSRV) {
+            return "directions_car";
+        }
+        if (currentStatusData.flags?.InFighter) {
+            return "flight";
+        }
+
+        return "rocket_launch";
     }
 
     // Called by the floating FAB when the policy is not yet accepted
