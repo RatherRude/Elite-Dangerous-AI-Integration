@@ -87,7 +87,7 @@ from lib.EventManager import EventManager
 from lib.UI import send_message, emit_message
 from lib.QuestCatalogManager import QuestCatalogManager
 from lib.SystemDatabase import SystemDatabase
-from lib.Database import ModelUsageStore, QuestDatabase
+from lib.Database import ModelUsageStore, QuestDatabase, VectorStore
 from lib.Assistant import Assistant
 
 
@@ -1043,6 +1043,13 @@ def read_stdin(chat: Chat):
                 chat.assistant.reset_runtime_state()
                 chat.previous_states = {}
                 emit_message("history_cleared", scope="state_machine")
+            if data.get("type") == "delete_current_logbook":
+                try:
+                    chat.event_manager.long_term_memory.delete_all()
+                    emit_message("logbook_deleted", success=True)
+                except Exception as e:
+                    log("error", f"Failed to delete current logbook: {e}")
+                    emit_message("logbook_deleted", success=False, message=str(e))
             if data.get("type") == "get_quests":
                 results = chat.get_quest_overview()
                 emit_message(
@@ -1166,6 +1173,13 @@ if __name__ == "__main__":
                     # ActionManager.clear_action_cache()
                 if data.get("type") == "reset_state_machine":
                     EventManager.reset_state_machine_store()
+                if data.get("type") == "delete_current_logbook":
+                    try:
+                        VectorStore("memory").delete_all()
+                        emit_message("logbook_deleted", success=True)
+                    except Exception as e:
+                        log("error", f"Failed to delete current logbook: {e}")
+                        emit_message("logbook_deleted", success=False, message=str(e))
                 if data.get("type") == "refresh_system_info":
                     emit_message("system", system=get_system_info())
                 if data.get("type") == "init_overlay":

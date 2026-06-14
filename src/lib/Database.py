@@ -707,20 +707,20 @@ class VectorStore():
 
     def delete_all(self) -> None:
         """Delete all embeddings"""
-        if not self.initialized:
-            log('error', f"VectorStore '{self.store_name}' not initialized. Call 'initialize' first.")
-            return
         conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute(f'''
-            DELETE FROM {self.table_name}
-        ''')
 
-        cursor.execute(f'''
-            DELETE FROM {self.vector_table}
-        ''')
+        if self._table_exists(self.table_name):
+            cursor.execute(f'''
+                DELETE FROM {self.table_name}
+            ''')
 
-        if self.keywords_enabled:
+        if self._table_exists(self.vector_table):
+            cursor.execute(f'''
+                DELETE FROM {self.vector_table}
+            ''')
+
+        if self.keywords_enabled or self._table_exists(self.keyword_table):
             cursor.execute(f'''
                 DELETE FROM {self.keyword_table}
             ''')

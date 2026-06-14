@@ -392,6 +392,15 @@ export class ConfigService {
         }
     }
 
+    public async deleteCurrentLogbook(): Promise<void> {
+        const message: BaseCommand = {
+            type: "delete_current_logbook",
+            timestamp: new Date().toISOString(),
+        };
+
+        await this.tauriService.send_command(message);
+    }
+
     public async refreshSystemInfo(): Promise<void> {
         const message: RefreshSystemInfoMessage = {
             type: "refresh_system_info",
