@@ -196,9 +196,10 @@ def test_ensure_in_system_plot_target_rejects_unlandable_body() -> None:
         raise AssertionError("Expected unlandable body to be rejected")
 
 
-def test_plot_candidates_from_bodies_skips_non_planets_and_requests_ten_results(monkeypatch) -> None:
+def test_plot_candidates_from_bodies_skips_non_planets_and_requests_one_result(monkeypatch) -> None:
     captured_sizes: list[int] = []
     captured_names: list[str] = []
+    captured_requests: list[dict] = []
 
     def fake_prepare_body_request(obj, projected_states):
         captured_sizes.append(obj["size"])
@@ -206,6 +207,7 @@ def test_plot_candidates_from_bodies_skips_non_planets_and_requests_ten_results(
         return {"filters": {}, "size": obj["size"], "page": 0}
 
     def fake_post(url: str, request_body: dict) -> dict:
+        captured_requests.append(request_body)
         return {
             "results": [
                 {
@@ -228,13 +230,76 @@ def test_plot_candidates_from_bodies_skips_non_planets_and_requests_ten_results(
     monkeypatch.setattr(actions_web, "prepare_body_request", fake_prepare_body_request)
     monkeypatch.setattr(actions_web, "_spansh_post", fake_post)
 
-    candidates = actions_web._plot_candidates_from_bodies("Earth", {"Location": {"StarSystem": "Sol"}})
+    candidates = actions_web._plot_candidates_from_bodies("Earth", {
+        "Location": {
+            "StarSystem": "Sol",
+            "StarPos": [0, 0, 0],
+        }
+    })
 
-    assert captured_sizes == [10]
+    assert captured_sizes == [1]
     assert captured_names == ["Eart?"]
+    assert captured_requests[0]["size"] == 1
+    assert captured_requests[0]["sort"] == [{"distance": {"direction": "asc"}}]
+    assert captured_requests[0]["reference_coords"] == {"x": 0, "y": 0, "z": 0}
     assert len(candidates) == 1
     assert candidates[0].name == "Earth"
     assert candidates[0].is_landable is False
+
+
+def test_plot_candidates_from_stations_requests_nearest_named_station(monkeypatch) -> None:
+    captured_requests: list[dict] = []
+
+    def fake_prepare_station_request(obj, projected_states):
+        return {
+            "filters": {
+                "distance": {"min": "0", "max": "50000"},
+                "name": {"value": obj["name"]},
+                "type": {"value": ["Outpost"]},
+                "has_large_pad": {"value": True},
+            },
+            "sort": [],
+            "size": obj["size"],
+            "page": 0,
+        }
+
+    def fake_post(url: str, request_body: dict) -> dict:
+        captured_requests.append(request_body)
+        return {
+            "results": [{
+                "name": "Moskowitz Enterprise",
+                "system_name": "Lyncis Sector XK-O b6-1",
+                "type": "Outpost",
+                "distance": 12.0,
+            }]
+        }
+
+    monkeypatch.setattr(actions_web, "prepare_station_request", fake_prepare_station_request)
+    monkeypatch.setattr(actions_web, "_spansh_post", fake_post)
+
+    candidates = actions_web._plot_candidates_from_stations("Moskowitz Enterprise", {
+        "Location": {
+            "StarSystem": "Lyncis Sector XK-O b6-1",
+            "StarPos": [-82.625, 75.84375, -79.46875],
+        }
+    })
+
+    assert captured_requests[0] == {
+        "filters": {
+            "distance": {"min": "0", "max": "50000"},
+            "name": {"value": "Moskowitz Enterpris?"},
+        },
+        "sort": [{"distance": {"direction": "asc"}}],
+        "size": 1,
+        "page": 0,
+        "reference_coords": {
+            "x": -82.625,
+            "y": 75.84375,
+            "z": -79.46875,
+        },
+    }
+    assert len(candidates) == 1
+    assert candidates[0].name == "Moskowitz Enterprise"
 
 
 def test_plot_search_query_prefers_station_then_body_then_system() -> None:
@@ -251,7 +316,7 @@ def test_spansh_plot_search_name_disables_fuzzy_matching() -> None:
     assert actions_web.spansh_plot_search_name("") == ""
     assert actions_web._plot_search_obj("Jameson Memorial") == {
         "name": "Jameson Memoria?",
-        "size": actions_web.PLOT_TARGET_SEARCH_SIZE,
+        "size": 1,
     }
 
 
@@ -260,8 +325,10 @@ def test_resolve_plot_target_queries_all_spansh_endpoints(monkeypatch) -> None:
 
     def fake_post(url: str, request_body: dict) -> dict:
         posted_urls.append(url)
+        assert request_body["size"] == 1
+        assert request_body["sort"] == [{"distance": {"direction": "asc"}}]
+        assert request_body["reference_system"] == "Alpha Centauri"
         if url == actions_web.SPANSH_SYSTEMS_URL:
-            assert request_body["size"] == 10
             return {"results": [{"name": "Sol", "distance": 100.0}]}
         if url == actions_web.SPANSH_STATIONS_URL:
             return {"results": []}
