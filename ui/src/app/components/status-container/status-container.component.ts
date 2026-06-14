@@ -172,7 +172,7 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
     
     if (status.flags?.InDanger) return '#f44336';
     if (status.flags?.Docked) return '#4caf50';
-    if (status.flags?.Landed) return '#2196f3';
+    if (status.flags?.Landed) return 'var(--hud-cyan)';
     if (status.flags?.InFlight) return '#ff9800';
     if (status.flags?.Supercruise) return '#9c27b0';
     
@@ -769,11 +769,88 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
   }
 
   formatModuleName(item: string): string {
-    return item?.replace(/^hpt_/i, '') // Remove "hpt_" prefix (case insensitive)
+    const name = item?.replace(/^hpt_/i, '') // Remove "hpt_" prefix (case insensitive)
                .replace(/^int_/i, '') // Remove "int_" prefix (case insensitive)
                .replace(/_/g, ' ')      // Replace underscores with spaces
-               .replace(/([A-Z])/g, ' $1') // Add space before capital letters
-               .trim() || 'Unknown Module';
+               .replace(/([a-z])([A-Z])/g, '$1 $2') // Add space before camelCase capitals
+               .trim();
+
+    return name ? this.titleCaseModuleName(name) : 'Unknown Module';
+  }
+
+  formatCoreModuleLabel(item: string): string {
+    const stats = this.getModuleSizeClassGrade(item);
+    const parts: string[] = [];
+
+    if (stats.grade) {
+      parts.push(`Grade ${stats.grade}`);
+    }
+    if (stats.size) {
+      parts.push(stats.size);
+    }
+    if (stats.classLetter) {
+      parts.push(stats.classLetter);
+    }
+
+    return parts.join(' ') || 'Unknown Module';
+  }
+
+  formatOptionalModuleName(item: string): string {
+    if (!item) {
+      return 'Unknown Module';
+    }
+
+    const stats = this.getModuleSizeClassGrade(item);
+    const baseName = item
+      .replace(/^hpt_/i, '')
+      .replace(/^int_/i, '')
+      .replace(/_?size\d+/gi, '')
+      .replace(/_?class\d+/gi, '')
+      .replace(/_?grade\d+/gi, '')
+      .replace(/_/g, ' ')
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .trim();
+
+    const parts = [this.titleCaseModuleName(baseName)];
+    if (stats.grade) {
+      parts.push(`Grade ${stats.grade}`);
+    }
+    if (stats.size) {
+      parts.push(stats.size);
+    }
+    if (stats.classLetter) {
+      parts.push(stats.classLetter);
+    }
+
+    return parts.filter(Boolean).join(' ') || 'Unknown Module';
+  }
+
+  formatUtilityModuleName(item: string): string {
+    return this.formatOptionalModuleName(item);
+  }
+
+  private getModuleSizeClassGrade(item: string): { size?: string; classLetter?: string; grade?: string } {
+    const classLetters: Record<string, string> = {
+      '1': 'E',
+      '2': 'D',
+      '3': 'C',
+      '4': 'B',
+      '5': 'A'
+    };
+
+    const size = item?.match(/(?:^|_)size(\d+)/i)?.[1];
+    const classValue = item?.match(/(?:^|_)class(\d+)/i)?.[1];
+    const grade = item?.match(/(?:^|_)grade(\d+)/i)?.[1];
+
+    return {
+      size,
+      classLetter: classValue ? classLetters[classValue] || classValue : undefined,
+      grade
+    };
+  }
+
+  private titleCaseModuleName(name: string): string {
+    return name.replace(/\S+/g, (word) => word.charAt(0).toUpperCase() + word.slice(1));
   }
 
   formatEngineeringName(name?: string): string {
@@ -815,6 +892,11 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
     }
 
     return 'Class ?';
+  }
+
+  getUtilityModuleClassLabel(module: any): string {
+    const classLabel = this.getModuleClassLabel(module);
+    return classLabel === 'Class ?' ? 'Utility' : classLabel;
   }
 
   // Debug method for troubleshooting

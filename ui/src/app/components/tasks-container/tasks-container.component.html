@@ -1,12 +1,10 @@
 <div class="tasks-container">
   <div class="tasks-content">
-    <!-- Missions Section -->
-    <div class="tasks-section">
-      <div class="section-header" (click)="toggleSection('missions')">
-        <h3>Missions</h3>
-        <mat-icon class="collapse-icon">{{ sectionsCollapsed.missions ? 'expand_more' : 'expand_less' }}</mat-icon>
-      </div>
-      <div class="section-content" [class.collapsed]="sectionsCollapsed.missions">
+    <mat-accordion multi>
+      <mat-expansion-panel>
+        <mat-expansion-panel-header>
+          <mat-panel-title>Missions</mat-panel-title>
+        </mat-expansion-panel-header>
         @if (getActiveMissions().length > 0) {
           <div class="missions-list">
             @for (mission of getActiveMissions(); track mission.MissionID) {
@@ -45,63 +43,48 @@
             No active missions.
           </div>
         }
-      </div>
-    </div>
+      </mat-expansion-panel>
 
-    <!-- Quests Section -->
-    @if (getActiveQuests().length > 0) {
-      <div class="tasks-section">
-          <div class="section-header" (click)="toggleSection('quests')">
-            <h3>Quests</h3>
-            <mat-icon class="collapse-icon">{{ sectionsCollapsed.quests ? 'expand_more' : 'expand_less' }}</mat-icon>
-          </div>
-          <div class="section-content" [class.collapsed]="sectionsCollapsed.quests">
-            @if (questsError) {
-              <div class="no-data-message">
-                <mat-icon>warning</mat-icon>
-                {{ questsError }}
-              </div>
-            } @else {
-              @if (getActiveQuests().length > 0) {
-                <div class="quests-list">
-                  @for (quest of getActiveQuests(); track quest.id) {
-                    <div class="quest-item">
-                      <div class="quest-header">
-                        <div class="quest-title">{{ quest.title || quest.id }}</div>
-                        <div class="quest-stage">{{ quest.stage_title || quest.stage_id }}</div>
+      @if (getActiveQuests().length > 0 || questsError) {
+        <mat-expansion-panel>
+          <mat-expansion-panel-header>
+            <mat-panel-title>Quests</mat-panel-title>
+          </mat-expansion-panel-header>
+          @if (questsError) {
+            <div class="no-data-message">
+              <mat-icon>warning</mat-icon>
+              {{ questsError }}
+            </div>
+          } @else {
+            <div class="quests-list">
+              @for (quest of getActiveQuests(); track quest.id) {
+                <div class="quest-item">
+                  <div class="quest-header">
+                    <div class="quest-title">{{ quest.title || quest.id }}</div>
+                    <div class="quest-stage">{{ quest.stage_title || quest.stage_id }}</div>
+                  </div>
+                  <div class="quest-details">
+                    @if (quest.description) {
+                      <div class="quest-description">{{ quest.description }}</div>
+                    }
+                    @if (quest.instructions) {
+                      <div class="quest-instructions">
+                        <mat-icon>flag</mat-icon>
+                        {{ quest.instructions }}
                       </div>
-                      <div class="quest-details">
-                        @if (quest.description) {
-                          <div class="quest-description">{{ quest.description }}</div>
-                        }
-                        @if (quest.instructions) {
-                          <div class="quest-instructions">
-                            <mat-icon>flag</mat-icon>
-                            {{ quest.instructions }}
-                          </div>
-                        }
-                      </div>
-                    </div>
-                  }
-                </div>
-              } @else {
-                <div class="no-data-message">
-                  <mat-icon>flag</mat-icon>
-                  No active quests.
+                    }
+                  </div>
                 </div>
               }
-            }
-          </div>
-        </div>
-    }
+            </div>
+          }
+        </mat-expansion-panel>
+      }
 
-    <!-- Community Goals Section -->
-    <div class="tasks-section">
-      <div class="section-header" (click)="toggleSection('communityGoals')">
-        <h3>Community Goals</h3>
-        <mat-icon class="collapse-icon">{{ sectionsCollapsed.communityGoals ? 'expand_more' : 'expand_less' }}</mat-icon>
-      </div>
-      <div class="section-content" [class.collapsed]="sectionsCollapsed.communityGoals">
+      <mat-expansion-panel>
+        <mat-expansion-panel-header>
+          <mat-panel-title>Community Goals</mat-panel-title>
+        </mat-expansion-panel-header>
         @if (getCurrentGoals().length > 0) {
           <div class="cg-list">
             @for (goal of getCurrentGoals(); track goal.CGID) {
@@ -112,18 +95,9 @@
                 </div>
                 <div class="cg-details">
                   <div class="cg-stats">
-                    <span>
-                      <mat-icon>group</mat-icon>
-                      {{ formatNumber(goal.NumContributors || 0) }} contributors
-                    </span>
-                    <span>
-                      <mat-icon>leaderboard</mat-icon>
-                      {{ goal.TierReached || goal.TopTier?.Name || 'Tier ?' }}
-                    </span>
-                    <span>
-                      <mat-icon>attach_money</mat-icon>
-                      Bonus: {{ formatCr(goal.Bonus) }}
-                    </span>
+                    <span><mat-icon>group</mat-icon>{{ formatNumber(goal.NumContributors || 0) }} contributors</span>
+                    <span><mat-icon>leaderboard</mat-icon>{{ goal.TierReached || goal.TopTier?.Name || 'Tier ?' }}</span>
+                    <span><mat-icon>attach_money</mat-icon>Bonus: {{ formatCr(goal.Bonus) }}</span>
                   </div>
                   <div class="cg-progress">
                     <span>Total: {{ formatNumber(goal.CurrentTotal || 0) }}</span>
@@ -141,9 +115,7 @@
             No community goals available.
           </div>
         }
-      </div>
-    </div>
+      </mat-expansion-panel>
+    </mat-accordion>
   </div>
 </div>
-
-

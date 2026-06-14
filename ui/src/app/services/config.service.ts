@@ -64,6 +64,9 @@ export interface SystemInfo {
     os: string;
     input_device_names: string[];
     output_device_names: string[];
+    hud_color_matrix?: number[][];
+    hud_accent_color?: string;
+    hud_secondary_color?: string;
 }
 
 export interface SystemInfoMessage extends BaseMessage {
@@ -387,6 +390,15 @@ export class ConfigService {
         } catch (error) {
             console.error("Error sending state machine reset request:", error);
         }
+    }
+
+    public async deleteCurrentLogbook(): Promise<void> {
+        const message: BaseCommand = {
+            type: "delete_current_logbook",
+            timestamp: new Date().toISOString(),
+        };
+
+        await this.tauriService.send_command(message);
     }
 
     public async refreshSystemInfo(): Promise<void> {

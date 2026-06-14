@@ -2,26 +2,34 @@
 }
 
 .input-container {
-    background-color: #0003;
-    border-top: 1px solid #666;
-    height: 30px;
+    background: rgba(0, 0, 0, 0.48);
+    border-top: 2px solid var(--hud-border);
+    min-height: 36px;
     display: flex;
     gap: 5px;
     flex-direction: row;
     align-items: center;
     justify-content: center;
     padding: 5px;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.28);
 }
 
 .input-field {
     background-color: transparent;
     border: none;
-    color: #fff;
+    color: var(--hud-text);
     font-size: 16px;
-    font-family: 'Roboto', sans-serif;
-    font-weight: 400;
+    font-family: var(--hud-font);
+    font-weight: 700;
+    letter-spacing: 0.04em;
     line-height: 1.5;
     flex: 1;
+    text-shadow: var(--hud-glow);
+}
+
+.input-field::placeholder {
+    color: rgba(223, 251, 255, 0.42);
+    text-transform: uppercase;
 }
 
 .input-field:focus {
@@ -29,5 +37,6 @@
 }
 
 .input-field:focus-visible {
-    outline: unset;
+    outline: 1px solid var(--hud-border-cyan);
+    outline-offset: 3px;
 }

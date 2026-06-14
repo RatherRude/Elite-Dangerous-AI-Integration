@@ -49,14 +49,14 @@ export class ActionsSettingsComponent {
     readonly gamePermissions: string[] = [
         // Ship/mainship/fighter/buggy/humanoid/global
         'fireWeapons', 'setSpeed', 'deployHeatSink', 'deployHardpointToggle',
-        'managePowerDistribution', 'galaxyMapOpen', 'galaxyMapClose', 'systemMapOpenOrClose',
+        'managePowerDistribution', 'plotToTarget', 'galaxyMapOpenOrClose', 'systemMapOpenOrClose',
         'targetShip', 'toggleWingNavLock', 'cycle_fire_group', 'Change_ship_HUD_mode',
         'shipSpotLightToggle', 'fireChaffLauncher', 'nightVisionToggle', 'targetSubmodule',
         'chargeECM', 'chargeFieldNeutraliser', 'npcOrder', 'FsdJump', 'target_next_system_in_route',
         'toggleCargoScoop', 'ejectAllCargo', 'landingGearToggle', 'useShieldCell',
         'requestDocking', 'undockShip', 'fighterRequestDock',
         // Buggy
-        'toggleDriveAssist', 'fireWeaponsBuggy', 'autoBreak', 'headlights', 'nightVisionToggleBuggy', 'toggleTurret', 'selectTargetBuggy', 'managePowerDistributionBuggy', 'toggleCargoScoopBuggy', 'ejectAllCargoBuggy', 'recallDismissShipBuggy', 'galaxyMapOpenOrCloseBuggy', 'systemMapOpenOrCloseBuggy',
+        'toggleDriveAssist', 'fireWeaponsBuggy', 'autoBreak', 'headlights', 'nightVisionToggleBuggy', 'toggleTurret', 'selectTargetBuggy', 'managePowerDistributionBuggy', 'toggleCargoScoopBuggy', 'ejectAllCargoBuggy', 'recallDismissShipBuggy', 'plotToTargetBuggy', 'galaxyMapOpenOrCloseBuggy', 'systemMapOpenOrCloseBuggy',
         // Humanoid
         'primaryInteractHumanoid', 'secondaryInteractHumanoid', 'equipGearHumanoid', 'toggleFlashlightHumanoid', 'toggleNightVisionHumanoid', 'toggleShieldsHumanoid', 'clearAuthorityLevelHumanoid', 'healthPackHumanoid', 'batteryHumanoid', 'galaxyMapOpenOrCloseHumanoid', 'systemMapOpenOrCloseHumanoid', 'recallDismissShipHumanoid',
         // Global
@@ -68,7 +68,7 @@ export class ActionsSettingsComponent {
             type: 'ship',
             actions: [
                 'fireWeapons', 'setSpeed', 'deployHeatSink', 'deployHardpointToggle',
-                'managePowerDistribution', 'galaxyMapOpen', 'galaxyMapClose', 'systemMapOpenOrClose',
+                'managePowerDistribution', 'plotToTarget', 'galaxyMapOpenOrClose', 'systemMapOpenOrClose',
                 'targetShip', 'toggleWingNavLock', 'cycle_fire_group', 'shipSpotLightToggle',
                 'fireChaffLauncher', 'nightVisionToggle', 'targetSubmodule', 'chargeECM', 'chargeFieldNeutraliser', 'npcOrder'
             ],
@@ -86,7 +86,7 @@ export class ActionsSettingsComponent {
             actions: [
                 'toggleDriveAssist', 'fireWeaponsBuggy', 'autoBreak', 'headlights', 'nightVisionToggleBuggy',
                 'toggleTurret', 'selectTargetBuggy', 'managePowerDistributionBuggy', 'toggleCargoScoopBuggy',
-                'ejectAllCargoBuggy', 'recallDismissShipBuggy', 'galaxyMapOpenOrCloseBuggy', 'systemMapOpenOrCloseBuggy'
+                'ejectAllCargoBuggy', 'recallDismissShipBuggy', 'plotToTargetBuggy', 'galaxyMapOpenOrCloseBuggy', 'systemMapOpenOrCloseBuggy'
             ],
         },
         {

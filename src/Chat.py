@@ -34,6 +34,7 @@ from lib.Config import (
     get_ed_journals_path,
     get_system_info,
     load_config,
+    load_hud_color_matrix,
     save_config,
     update_config,
     update_event_config,
@@ -86,7 +87,7 @@ from lib.EventManager import EventManager
 from lib.UI import send_message, emit_message
 from lib.QuestCatalogManager import QuestCatalogManager
 from lib.SystemDatabase import SystemDatabase
-from lib.Database import ModelUsageStore, QuestDatabase
+from lib.Database import ModelUsageStore, QuestDatabase, VectorStore
 from lib.Assistant import Assistant
 
 
@@ -789,6 +790,7 @@ class Chat:
 
         if self.config["tools_var"]:
             log("info", "Register actions...")
+            hud_color_matrix = load_hud_color_matrix(self.config)
 
             register_actions(
                 actionManager=self.action_manager,
@@ -818,6 +820,10 @@ class Chat:
                 weapon_types_list=self.config.get("weapon_types", []),
                 agent_llm_model=self.agent_llm_model,
                 agent_llm_max_tries=self.config.get("agent_llm_max_tries", 7),
+                hud_sample_colors=[
+                    hud_color_matrix.shift_secondary_color().lstrip("#"),
+                    hud_color_matrix.shift_primary_color().lstrip("#"),
+                ],
             )
 
             log("info", "Actions ready.")
@@ -1037,6 +1043,13 @@ def read_stdin(chat: Chat):
                 chat.assistant.reset_runtime_state()
                 chat.previous_states = {}
                 emit_message("history_cleared", scope="state_machine")
+            if data.get("type") == "delete_current_logbook":
+                try:
+                    chat.event_manager.long_term_memory.delete_all()
+                    emit_message("logbook_deleted", success=True)
+                except Exception as e:
+                    log("error", f"Failed to delete current logbook: {e}")
+                    emit_message("logbook_deleted", success=False, message=str(e))
             if data.get("type") == "get_quests":
                 results = chat.get_quest_overview()
                 emit_message(
@@ -1100,6 +1113,7 @@ if __name__ == "__main__":
         # Wait for start signal on stdin
         startup_phase = "config_load"
         config = load_config()
+        load_hud_color_matrix(config)
         emit_message("config", config=config)
         system = get_system_info()
         emit_message("system", system=system)
@@ -1159,6 +1173,13 @@ if __name__ == "__main__":
                     # ActionManager.clear_action_cache()
                 if data.get("type") == "reset_state_machine":
                     EventManager.reset_state_machine_store()
+                if data.get("type") == "delete_current_logbook":
+                    try:
+                        VectorStore("memory").delete_all()
+                        emit_message("logbook_deleted", success=True)
+                    except Exception as e:
+                        log("error", f"Failed to delete current logbook: {e}")
+                        emit_message("logbook_deleted", success=False, message=str(e))
                 if data.get("type") == "refresh_system_info":
                     emit_message("system", system=get_system_info())
                 if data.get("type") == "init_overlay":

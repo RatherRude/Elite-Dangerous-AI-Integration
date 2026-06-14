@@ -2577,6 +2577,97 @@ def filter_body_response(request, response):
     }
 
 
+from .Plotter import (
+    PLOT_TARGET_SEARCH_SIZE,
+    SPANSH_BODIES_URL,
+    SPANSH_STATIONS_URL,
+    SPANSH_SYSTEMS_URL,
+    STATION_TYPE_SYSTEM_MAP_CATEGORY,
+    Plotter,
+    ResolvedPlotTarget,
+)
+
+
+def _plotter() -> Plotter:
+    return Plotter(
+        prepare_system_request=prepare_system_request,
+        prepare_station_request=prepare_station_request,
+        prepare_body_request=prepare_body_request,
+        spansh_post=_spansh_post,
+    )
+
+
+def normalize_plot_name(name: str) -> str:
+    return Plotter.normalize_plot_name(name)
+
+
+def is_plot_name_exact_match(query: str, candidate: str) -> bool:
+    return Plotter.is_plot_name_exact_match(query, candidate)
+
+
+def plot_name_match_score(query: str, candidate: str) -> float:
+    return Plotter.plot_name_match_score(query, candidate)
+
+
+def system_map_category_for_station(station: dict[str, Any]) -> str | None:
+    return Plotter.system_map_category_for_station(station)
+
+
+def ensure_in_system_plot_target(resolved: ResolvedPlotTarget) -> None:
+    Plotter.ensure_in_system_plot_target(resolved)
+
+
+def _spansh_post(url: str, request_body: dict[str, Any]) -> dict[str, Any]:
+    return Plotter._spansh_post(url, request_body)
+
+
+def spansh_plot_search_name(query: str) -> str:
+    return Plotter.spansh_plot_search_name(query)
+
+
+def _plot_search_obj(query: str) -> dict[str, Any]:
+    return Plotter._plot_search_obj(query)
+
+
+def _plot_candidates_from_systems(query: str, projected_states: Any) -> list[ResolvedPlotTarget]:
+    return _plotter()._plot_candidates_from_systems(query, projected_states)
+
+
+def _plot_candidates_from_stations(query: str, projected_states: Any) -> list[ResolvedPlotTarget]:
+    return _plotter()._plot_candidates_from_stations(query, projected_states)
+
+
+def _plot_candidates_from_bodies(query: str, projected_states: Any) -> list[ResolvedPlotTarget]:
+    return _plotter()._plot_candidates_from_bodies(query, projected_states)
+
+
+def _select_best_plot_target(candidates: list[ResolvedPlotTarget], query: str) -> ResolvedPlotTarget | None:
+    return Plotter._select_best_plot_target(candidates, query)
+
+
+def plot_search_query(
+    *,
+    system: str | None = None,
+    station: str | None = None,
+    body: str | None = None,
+) -> str | None:
+    return Plotter.plot_search_query(system=system, station=station, body=body)
+
+
+def lookup_plot_target(
+    *,
+    system: str | None = None,
+    station: str | None = None,
+    body: str | None = None,
+    projected_states: Any,
+) -> ResolvedPlotTarget | None:
+    return _plotter().lookup_plot_target(system=system, station=station, body=body, projected_states=projected_states)
+
+
+def resolve_plot_target(query: str, projected_states: Any) -> ResolvedPlotTarget | None:
+    return _plotter().resolve_plot_target(query, projected_states)
+
+
 # Body finder function that sends the request to the Spansh API
 def body_finder(obj, projected_states):
     # Build the request body

@@ -1,30 +1,38 @@
 .chat-entry {
-  font-family: 'Roboto Mono', monospace;
+  font-family: var(--hud-font);
+  color: var(--hud-text);
+  line-height: 1.45;
+  letter-spacing: 0.02em;
   white-space: pre-wrap;
   word-wrap: break-word;
+  text-shadow: 0 0 10px rgba(255, 157, 0, 0.18);
 }
 
 .timestamp {
-  color: #888;
+  color: var(--hud-muted);
   margin-right: 8px;
+  font-size: 0.86em;
 }
 
 .prefix {
   font-weight: bold;
   margin-right: 8px;
+  text-transform: uppercase;
+  text-shadow: var(--hud-glow);
 }
 
 .message {
-  color: #e0e0e0;
+  color: var(--hud-text);
 }
 
 .processing-text {
   display: inline-block;
   margin-left: 10px;
   padding-left: 10px;
-  color: #ffcc80;
-  border-left: 1px solid rgba(255, 152, 0, 0.45);
+  color: var(--hud-orange-soft);
+  border-left: 1px solid var(--hud-border);
   opacity: 0.9;
+  text-transform: uppercase;
 }
 
 /* Event status styling */
@@ -33,7 +41,7 @@
 }
 
 .event-disabled .message {
-  color: #999999;
+  color: rgba(141, 163, 170, 0.65);
   text-decoration: line-through;
   text-decoration-thickness: 2px;
 }
@@ -43,7 +51,7 @@
 }
 
 .event-not-enabled .message {
-  color: #999999;
+  color: rgba(141, 163, 170, 0.72);
 }
 
 .event-enabled {

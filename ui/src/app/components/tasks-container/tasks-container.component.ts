@@ -2,6 +2,7 @@ import { Component, OnDestroy, OnInit } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
+import { MatExpansionModule } from "@angular/material/expansion";
 import { ProjectionsService } from "../../services/projections.service";
 import { Subscription } from "rxjs";
 import { EventMessage, EventService, QuestEvent } from "../../services/event.service";
@@ -10,7 +11,7 @@ import { GetQuestsMessage, QuestsMessage, TauriService } from "../../services/ta
 @Component({
   selector: "app-tasks-container",
   standalone: true,
-  imports: [CommonModule, MatIconModule, MatButtonModule],
+  imports: [CommonModule, MatIconModule, MatButtonModule, MatExpansionModule],
   templateUrl: "./tasks-container.component.html",
   styleUrl: "./tasks-container.component.css",
 })
@@ -20,13 +21,6 @@ export class TasksContainerComponent implements OnInit, OnDestroy {
   communityGoal: any = null;
   quests: any[] = [];
   questsError: string | null = null;
-
-  // UI state
-  sectionsCollapsed = {
-    missions: false,
-    quests: false,
-    communityGoals: false,
-  };
 
   private subscriptions: Subscription[] = [];
   private lastEventIndex = -1;
@@ -55,11 +49,6 @@ export class TasksContainerComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subscriptions.forEach((sub) => sub.unsubscribe());
-  }
-
-  // Collapsible section methods
-  toggleSection(section: keyof typeof this.sectionsCollapsed): void {
-    this.sectionsCollapsed[section] = !this.sectionsCollapsed[section];
   }
 
   // Missions helpers

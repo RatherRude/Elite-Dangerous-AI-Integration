@@ -10,7 +10,11 @@
     } @else {
         <div class="runtime-container">
             <mat-tab-group [selectedIndex]="selectedTabIndex">
-                <mat-tab label="Chat">
+                <mat-tab>
+                    <ng-template mat-tab-label>
+                        <mat-icon class="tab-label-icon">forum</mat-icon>
+                        Chat
+                    </ng-template>
                     <div class="tab-content-container">
                         <div class="chat-container">
                             <app-chat-container></app-chat-container>
@@ -19,7 +23,11 @@
                     <!--          <app-input-container class="input-container"></app-input-container>-->
                 </mat-tab>
                 @if (!isShipIdentUnknown) {
-                    <mat-tab label="Status">
+                    <mat-tab>
+                        <ng-template mat-tab-label>
+                            <mat-icon class="tab-label-icon">{{ currentGameModeIcon }}</mat-icon>
+                            {{ currentGameModeLabel }}
+                        </ng-template>
                         <div class="tab-content-container">
                             <div class="status-container-tab">
                                 <app-status-container></app-status-container>
@@ -28,14 +36,22 @@
                         <app-chat-container class="small" [limit]="2"></app-chat-container>
                     </mat-tab>
                 }
-                <mat-tab label="Navigation">
+                <mat-tab>
+                    <ng-template mat-tab-label>
+                        <mat-icon class="tab-label-icon">explore</mat-icon>
+                        Navigation
+                    </ng-template>
                     <div class="tab-content-container">
                         <app-navigation-container></app-navigation-container>
                     </div>
                     <app-chat-container class="small" [limit]="2"></app-chat-container>
                 </mat-tab>
                 @if (!isShipIdentUnknown) {
-                    <mat-tab label="Storage">
+                    <mat-tab>
+                        <ng-template mat-tab-label>
+                            <mat-icon class="tab-label-icon">inventory_2</mat-icon>
+                            Storage
+                        </ng-template>
                         <div class="tab-content-container">
                             <div class="storage-container-tab">
                                 <app-storage-container></app-storage-container>
@@ -43,7 +59,11 @@
                         </div>
                         <app-chat-container class="small" [limit]="2"></app-chat-container>
                     </mat-tab>
-                    <mat-tab label="Tasks">
+                    <mat-tab>
+                        <ng-template mat-tab-label>
+                            <mat-icon class="tab-label-icon">assignment</mat-icon>
+                            Tasks
+                        </ng-template>
                         <div class="tab-content-container">
                             <div class="tasks-container-tab">
                                 <app-tasks-container></app-tasks-container>
@@ -52,7 +72,11 @@
                         <app-chat-container class="small" [limit]="2"></app-chat-container>
                     </mat-tab>
                     @if (isDockedAtStation) {
-                        <mat-tab label="Station">
+                        <mat-tab>
+                            <ng-template mat-tab-label>
+                                <mat-icon class="tab-label-icon">anchor</mat-icon>
+                                Station
+                            </ng-template>
                             <div class="tab-content-container">
                                 <div class="station-container-tab">
                                     <app-station-container></app-station-container>
@@ -63,7 +87,11 @@
                     }
                 }
                 @if (hasLogbook) {
-                    <mat-tab label="Logbook">
+                    <mat-tab>
+                        <ng-template mat-tab-label>
+                            <mat-icon class="tab-label-icon">auto_stories</mat-icon>
+                            Logbook
+                        </ng-template>
                         <div class="tab-content-container">
                             <app-memories-container></app-memories-container>
                         </div>
@@ -71,7 +99,11 @@
                     </mat-tab>
                 }
 
-                <mat-tab label="Search">
+                <mat-tab>
+                    <ng-template mat-tab-label>
+                        <mat-icon class="tab-label-icon">travel_explore</mat-icon>
+                        Search
+                    </ng-template>
                     <div class="tab-content-container">
                         <app-search-results-container></app-search-results-container>
                     </div>
@@ -104,8 +136,7 @@
                     <mat-icon>info</mat-icon>
                 </button>
             } @else {
-                <button mat-fab color="primary" aria-label="Start AI Assistant" (click)="start()"
-                        [disabled]="isLoading">
+                <button mat-fab class="hud-accent-fab ai-toggle-fab" aria-label="Start AI Assistant" (click)="start()" [disabled]="isLoading">
                     <mat-icon>play_arrow</mat-icon>
                 </button>
             }
@@ -115,7 +146,7 @@
                     <mat-icon>hourglass_empty</mat-icon>
                 </button>
             } @else {
-                <button mat-fab color="warn" aria-label="Stop AI Assistant" (click)="stop()" [disabled]="isLoading">
+                <button mat-fab class="ai-toggle-fab" color="warn" aria-label="Stop AI Assistant" (click)="stop()" [disabled]="isLoading">
                     <mat-icon>stop</mat-icon>
                 </button>
             }

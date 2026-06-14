@@ -1,13 +1,37 @@
 
 .memories-log {
   padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .logbook-controls {
   display: flex;
   gap: 12px;
-  align-items: flex-start;
+  align-items: center;
   flex-wrap: wrap;
+}
+
+.browse-heading {
+  margin: 8px 0 0;
+  color: var(--hud-orange);
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-shadow: var(--hud-glow);
+}
+
+.selected-date-summary {
+  color: var(--hud-text);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.entries-panel {
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid color-mix(in srgb, var(--hud-orange) 20%, transparent);
+  padding: 12px;
 }
 
 .date-picker-field {
@@ -64,12 +88,12 @@
 }
 
 ::ng-deep .mat-calendar-body-selected {
-  background-color: #1976d2 !important;
+  background-color: var(--hud-cyan) !important;
   color: #fff !important;
 }
 
 ::ng-deep .mat-calendar-body-today:not(.mat-calendar-body-selected) {
-  border-color: #1976d2;
+  border-color: var(--hud-cyan);
 }
 
 /* Highlight dates with entries */
@@ -124,10 +148,11 @@
 .logbook-search {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   flex: 1;
   min-width: 200px;
   position: relative;
+  width: 100%;
 }
 
 .search-input-wrapper {
@@ -140,7 +165,7 @@
   left: 10px;
   top: 50%;
   transform: translateY(-50%);
-  color: #888;
+  color: var(--hud-orange);
   pointer-events: none;
   display: flex;
   align-items: center;
@@ -149,27 +174,65 @@
 .question-input {
   flex: 1;
   width: 100%;
-  padding: 6px 10px 6px 36px;
-  border: 1px solid #444;
-  border-radius: 4px;
-  background-color: #2a2a2a;
-  color: #e0e0e0;
+  padding: 10px 12px 10px 40px;
+  border: 1px solid var(--hud-border);
+  border-radius: 2px;
+  background-color: rgba(8, 4, 0, 0.94);
+  color: var(--hud-text);
+  font-family: var(--hud-font);
   font-size: 14px;
   height: 42px;
   box-sizing: border-box;
+  box-shadow: inset 0 0 18px color-mix(in srgb, var(--hud-orange) 8%, transparent);
 }
 
 .question-input:hover {
-  border-color: #666;
+  border-color: color-mix(in srgb, var(--hud-orange) 75%, transparent);
 }
 
 .question-input:focus {
   outline: none;
-  border-color: #1976d2;
+  border-color: var(--hud-orange);
+  box-shadow: inset 0 0 18px color-mix(in srgb, var(--hud-orange) 12%, transparent), 0 0 12px color-mix(in srgb, var(--hud-orange) 24%, transparent);
 }
 
 .question-input::placeholder {
-  color: #888;
+  color: rgba(223, 251, 255, 0.42);
+}
+
+.search-submit-btn {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--hud-border);
+  border-radius: 2px;
+  background: rgba(8, 4, 0, 0.94);
+  color: var(--hud-orange);
+  cursor: pointer;
+  box-shadow: inset 0 0 18px color-mix(in srgb, var(--hud-orange) 8%, transparent);
+}
+
+.search-submit-btn:hover:not(:disabled),
+.search-submit-btn:focus-visible:not(:disabled) {
+  border-color: var(--hud-orange);
+  box-shadow: inset 0 0 18px color-mix(in srgb, var(--hud-orange) 12%, transparent), 0 0 12px color-mix(in srgb, var(--hud-orange) 24%, transparent);
+  outline: none;
+}
+
+.search-submit-btn:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.search-loading-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--hud-orange);
+  box-shadow: var(--hud-glow);
 }
 
 .toggle-results-btn {
@@ -197,8 +260,8 @@
 }
 
 .toggle-results-btn.active {
-  background-color: #1976d2;
-  border-color: #1976d2;
+  background-color: var(--hud-cyan);
+  border-color: var(--hud-cyan);
 }
 
 .search-results-container {
@@ -248,7 +311,7 @@
   margin-bottom: 8px;
   background-color: #252525;
   border-radius: 4px;
-  border-left: 3px solid #1976d2;
+  border-left: 3px solid var(--hud-cyan);
 }
 
 .search-result:last-child {
@@ -282,7 +345,7 @@
 
 .result-score {
   font-size: 12px;
-  color: #1976d2;
+  color: var(--hud-cyan);
   font-weight: 600;
 }
 

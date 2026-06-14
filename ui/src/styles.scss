@@ -3,16 +3,16 @@
 @include mat.core();
 
 $primary-palette: (
-  50: lighten(#ffa724, 40%),
-  100: lighten(#ffa724, 30%),
-  200: lighten(#ffa724, 20%),
-  300: lighten(#ffa724, 10%),
-  400: lighten(#ffa724, 5%),
-  500: #ffa724,
-  600: darken(#ffa724, 5%),
-  700: darken(#ffa724, 10%),
-  800: darken(#ffa724, 20%),
-  900: darken(#ffa724, 30%),
+  50: lighten(#fe8101, 40%),
+  100: lighten(#fe8101, 30%),
+  200: lighten(#fe8101, 20%),
+  300: lighten(#fe8101, 10%),
+  400: lighten(#fe8101, 5%),
+  500: #fe8101,
+  600: darken(#fe8101, 5%),
+  700: darken(#fe8101, 10%),
+  800: darken(#fe8101, 20%),
+  900: darken(#fe8101, 30%),
   contrast: (
     50: rgba(black, 0.87),
     100: rgba(black, 0.87),
@@ -28,16 +28,16 @@ $primary-palette: (
 );
 
 $secondary-palette: (
-  50: lighten(#448aff, 40%),
-  100: lighten(#448aff, 30%),
-  200: lighten(#448aff, 20%),
-  300: lighten(#448aff, 10%),
-  400: lighten(#448aff, 5%),
-  500: #448aff,
-  600: darken(#448aff, 5%),
-  700: darken(#448aff, 10%),
-  800: darken(#448aff, 20%),
-  900: darken(#448aff, 30%),
+  50: lighten(#14f5ff, 40%),
+  100: lighten(#14f5ff, 30%),
+  200: lighten(#14f5ff, 20%),
+  300: lighten(#14f5ff, 10%),
+  400: lighten(#14f5ff, 5%),
+  500: #14f5ff,
+  600: darken(#14f5ff, 5%),
+  700: darken(#14f5ff, 10%),
+  800: darken(#14f5ff, 20%),
+  900: darken(#14f5ff, 30%),
   contrast: (
     50: rgba(black, 0.87),
     100: rgba(black, 0.87),
@@ -76,13 +76,378 @@ $my-dark-theme: mat.define-dark-theme((
 @include mat.all-component-typographies($my-typography);
 @include mat.all-component-densities($my-density);
 
-html, body, app-root { 
+:root {
+  --hud-orange: #fe8101;
+  --hud-orange-soft: color-mix(in srgb, var(--hud-orange) 62%, white);
+  --hud-orange-dark: color-mix(in srgb, var(--hud-orange) 22%, black);
+  --hud-cyan: #14f5ff;
+  --hud-cyan-dark: color-mix(in srgb, var(--hud-cyan) 22%, black);
+  --hud-text: #dffbff;
+  --hud-muted: #8da3aa;
+  --hud-panel: rgba(17, 8, 0, 0.82);
+  --hud-panel-soft: color-mix(in srgb, var(--hud-orange) 10%, transparent);
+  --hud-panel-strong: color-mix(in srgb, var(--hud-orange) 18%, transparent);
+  --hud-border: color-mix(in srgb, var(--hud-orange) 55%, transparent);
+  --hud-border-dark: color-mix(in srgb, var(--hud-orange) 70%, black);
+  --hud-border-cyan: color-mix(in srgb, var(--hud-cyan) 45%, transparent);
+  --hud-glow: 0 0 12px color-mix(in srgb, var(--hud-orange) 55%, transparent), 0 0 28px color-mix(in srgb, var(--hud-orange) 18%, transparent);
+  --hud-cyan-glow: 0 0 12px color-mix(in srgb, var(--hud-cyan) 45%, transparent);
+  --hud-font: "Jura", "Eurostile", "Rajdhani", "Segoe UI", sans-serif;
+  --mat-primary: var(--hud-orange);
+  --mat-accent: var(--hud-cyan);
+}
+
+html, body, app-root {
   height: 100vh;
   width: 100vw;
   margin: 0;
   padding: 0;
   color-scheme: dark;
-  background-color: #000000;
+  background: #020100;
+  color: var(--hud-text);
+  font-family: var(--hud-font);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  overflow: hidden;
+}
+
+::selection {
+  background: var(--hud-cyan-dark);
+  color: var(--hud-cyan);
+  text-shadow: var(--hud-cyan-glow);
+}
+
+* {
+  scrollbar-color: var(--hud-orange) color-mix(in srgb, var(--hud-orange) 8%, transparent);
+  scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+*::-webkit-scrollbar-track {
+  background: linear-gradient(90deg, transparent 44%, color-mix(in srgb, var(--hud-orange) 32%, transparent) 45%, transparent 56%);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--hud-orange);
+  border: 3px solid #120700;
+  box-shadow: var(--hud-glow);
+}
+
+h1, h2, h3, h4, h5, h6,
+.mat-mdc-tab .mdc-tab__text-label,
+.mat-mdc-button,
+.mat-mdc-raised-button,
+.mat-mdc-unelevated-button,
+.mat-mdc-outlined-button,
+.mat-mdc-fab,
+.mat-mdc-mini-fab {
+  font-family: var(--hud-font) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.mat-mdc-tab-group,
+.mat-mdc-form-field,
+.mat-mdc-select,
+.mat-mdc-option,
+.mat-mdc-menu-item,
+.mat-mdc-dialog-container,
+.mat-mdc-card,
+.mat-mdc-button,
+.mat-mdc-raised-button,
+.mat-mdc-unelevated-button,
+.mat-mdc-outlined-button,
+.mat-mdc-fab,
+.mat-mdc-mini-fab {
+  font-family: var(--hud-font) !important;
+}
+
+.mat-mdc-tab-header {
+  border-bottom: 2px solid var(--hud-border) !important;
+  background: rgba(5, 2, 0, 0.86);
+  box-shadow: inset 0 -14px 18px -24px var(--hud-orange);
+  padding-bottom: 3px;
+}
+
+.mat-mdc-tab {
+  --mat-tab-header-active-ripple-color: transparent;
+  --mat-tab-header-inactive-ripple-color: transparent;
+  min-width: 104px !important;
+  height: 40px !important;
+  padding: 0 18px !important;
+  background: color-mix(in srgb, var(--hud-orange) 8%, transparent);
+  border-right: 1px solid color-mix(in srgb, var(--hud-orange) 18%, transparent);
+  transition: background-color 120ms ease, filter 120ms ease, color 120ms ease;
+}
+
+.mat-mdc-tab-header-pagination-chevron {
+  border-color: var(--hud-orange) !important;
+}
+
+.mat-mdc-tab-header-pagination-disabled .mat-mdc-tab-header-pagination-chevron {
+  border-color: color-mix(in srgb, var(--hud-orange) 28%, transparent) !important;
+}
+
+.mat-mdc-tab-header-pagination-disabled {
+  display: none !important;
+}
+
+.mat-mdc-tab .mdc-tab__text-label {
+  color: var(--hud-orange) !important;
+  text-shadow: var(--hud-glow);
+}
+
+.mat-mdc-tab .mat-icon {
+  color: currentColor !important;
+}
+
+.mat-mdc-tab.mdc-tab--active .mdc-tab__text-label {
+  color: #160800 !important;
+  text-shadow: none;
+}
+
+.mat-mdc-tab.mdc-tab--active {
+  background: var(--hud-orange);
+  box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.22), 0 0 12px color-mix(in srgb, var(--hud-orange) 36%, transparent);
+  filter: brightness(1.05) contrast(1.08);
+}
+
+.mat-mdc-tab:hover:not(.mdc-tab--active),
+.mat-mdc-tab:focus-visible:not(.mdc-tab--active) {
+  background: color-mix(in srgb, var(--hud-orange) 16%, transparent);
+  filter: brightness(1.12);
+}
+
+.mat-mdc-tab .mdc-tab-indicator__content--underline {
+  border-color: transparent !important;
+  filter: none;
+}
+
+.mat-mdc-text-field-wrapper,
+.mat-mdc-select-panel,
+.mat-mdc-menu-panel,
+.mat-mdc-dialog-surface,
+.mat-mdc-card {
+  background: rgba(8, 4, 0, 0.94) !important;
+  border: 1px solid var(--hud-border) !important;
+  border-radius: 2px !important;
+  box-shadow: inset 0 0 24px color-mix(in srgb, var(--hud-orange) 12%, transparent), 0 0 24px rgba(0, 0, 0, 0.55) !important;
+}
+
+.mat-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.mat-expansion-panel {
+  display: block !important;
+  background: rgba(255, 255, 255, 0.045) !important;
+  border: 1px solid color-mix(in srgb, var(--hud-orange) 70%, black) !important;
+  border-radius: 2px !important;
+  color: var(--hud-text) !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+}
+
+.mat-expansion-panel:not(.mat-expanded):not([aria-disabled='true']):hover {
+  background: rgba(255, 255, 255, 0.075) !important;
+  border-color: color-mix(in srgb, var(--hud-orange) 78%, black) !important;
+}
+
+.mat-expansion-panel.mat-expanded {
+  background: rgba(0, 0, 0, 0.34) !important;
+  border-color: var(--hud-orange) !important;
+}
+
+.mat-expansion-panel-header {
+  min-height: 44px !important;
+  height: auto !important;
+  padding: 8px 14px !important;
+  border-bottom: 1px solid transparent;
+  font-family: var(--hud-font) !important;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.mat-expansion-panel-header:hover,
+.mat-expansion-panel-header.mat-expanded:focus,
+.mat-expansion-panel-header.mat-expanded:hover {
+  background: color-mix(in srgb, var(--hud-orange) 16%, transparent) !important;
+}
+
+.mat-expansion-panel.mat-expanded .mat-expansion-panel-header {
+  background: var(--hud-orange) !important;
+  border-bottom-color: rgba(0, 0, 0, 0.32);
+  box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.22), 0 0 12px color-mix(in srgb, var(--hud-orange) 28%, transparent);
+}
+
+.mat-expansion-panel-header-title,
+.mat-expansion-panel-header-description,
+.mat-expansion-panel-content,
+.mat-expansion-panel-body {
+  color: var(--hud-text) !important;
+  font-family: var(--hud-font) !important;
+}
+
+.mat-expansion-panel-header-title {
+  align-items: center;
+  gap: 8px;
+  color: var(--hud-orange) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-shadow: var(--hud-glow);
+}
+
+.mat-expansion-panel-header-title mat-icon,
+.mat-expansion-panel-header-description mat-icon {
+  color: var(--hud-orange) !important;
+}
+
+.mat-expansion-panel.mat-expanded .mat-expansion-panel-header-title,
+.mat-expansion-panel.mat-expanded .mat-expansion-panel-header-description,
+.mat-expansion-panel.mat-expanded .mat-expansion-panel-header-title mat-icon,
+.mat-expansion-panel.mat-expanded .mat-expansion-panel-header-description mat-icon {
+  color: #160800 !important;
+  text-shadow: none;
+}
+
+.mat-expansion-indicator::after {
+  color: var(--hud-orange) !important;
+  border-color: var(--hud-orange) !important;
+}
+
+.mat-expansion-panel.mat-expanded .mat-expansion-indicator::after {
+  color: #160800 !important;
+  border-color: #160800 !important;
+}
+
+.mat-expansion-panel-body {
+  padding: 12px 14px 14px !important;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.mat-expansion-panel-spacing {
+  margin: 0 !important;
+}
+
+.mat-mdc-form-field-focus-overlay,
+.mdc-text-field--filled:not(.mdc-text-field--disabled) {
+  background: transparent !important;
+}
+
+.mat-mdc-form-field-label,
+.mat-mdc-floating-label,
+.mat-mdc-select-value,
+.mat-mdc-input-element,
+.mat-mdc-select-arrow,
+.mat-mdc-option,
+.mat-mdc-menu-item-text {
+  color: var(--hud-text) !important;
+}
+
+.mat-mdc-select-arrow svg,
+.mat-mdc-select-arrow path {
+  fill: var(--hud-orange) !important;
+}
+
+.mat-mdc-form-field.mat-focused .mat-mdc-floating-label,
+.mat-mdc-option.mdc-list-item--selected,
+.mat-mdc-option:hover:not(.mdc-list-item--disabled) {
+  color: var(--hud-cyan) !important;
+  text-shadow: var(--hud-cyan-glow);
+}
+
+.mdc-line-ripple::before,
+.mdc-line-ripple::after {
+  border-bottom-color: var(--hud-orange) !important;
+}
+
+.mat-mdc-button:not(:disabled),
+.mat-mdc-raised-button:not(:disabled),
+.mat-mdc-unelevated-button:not(:disabled),
+.mat-mdc-outlined-button:not(:disabled) {
+  color: var(--hud-orange) !important;
+}
+
+.mat-mdc-button-base:not(:disabled) {
+  --mdc-filled-button-container-color: var(--hud-orange-dark);
+  --mdc-filled-button-label-text-color: var(--hud-orange);
+  --mdc-protected-button-container-color: var(--hud-orange-dark);
+  --mdc-protected-button-label-text-color: var(--hud-orange);
+  --mdc-fab-container-color: var(--hud-orange);
+  --mdc-fab-icon-color: #140700;
+  text-shadow: var(--hud-glow);
+  transition: filter 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+}
+
+.mat-mdc-button-base:hover:not(:disabled),
+.mat-mdc-button-base:focus-visible:not(:disabled) {
+  filter: brightness(1.18) contrast(1.1);
+  box-shadow: inset 0 0 20px color-mix(in srgb, var(--hud-orange) 20%, transparent), 0 0 18px color-mix(in srgb, var(--hud-orange) 35%, transparent) !important;
+}
+
+.mat-mdc-slide-toggle,
+.mat-mdc-slide-toggle.mat-primary,
+.mat-mdc-slide-toggle.mat-accent {
+  --mdc-switch-selected-focus-state-layer-color: var(--hud-cyan) !important;
+  --mdc-switch-selected-hover-state-layer-color: var(--hud-cyan) !important;
+  --mdc-switch-selected-pressed-state-layer-color: var(--hud-cyan) !important;
+  --mdc-switch-selected-handle-color: var(--hud-cyan) !important;
+  --mdc-switch-selected-focus-handle-color: var(--hud-cyan) !important;
+  --mdc-switch-selected-hover-handle-color: var(--hud-cyan) !important;
+  --mdc-switch-selected-pressed-handle-color: var(--hud-cyan) !important;
+  --mdc-switch-selected-icon-color: #001013 !important;
+  --mdc-switch-selected-focus-icon-color: #001013 !important;
+  --mdc-switch-selected-hover-icon-color: #001013 !important;
+  --mdc-switch-selected-pressed-icon-color: #001013 !important;
+  --mdc-switch-selected-track-color: color-mix(in srgb, var(--hud-cyan) 42%, black) !important;
+  --mdc-switch-selected-focus-track-color: color-mix(in srgb, var(--hud-cyan) 42%, black) !important;
+  --mdc-switch-selected-hover-track-color: color-mix(in srgb, var(--hud-cyan) 50%, black) !important;
+  --mdc-switch-selected-pressed-track-color: color-mix(in srgb, var(--hud-cyan) 50%, black) !important;
+  --mdc-switch-unselected-handle-color: var(--hud-muted) !important;
+  --mdc-switch-unselected-icon-color: rgba(0, 0, 0, 0.68) !important;
+  --mdc-switch-unselected-track-color: rgba(8, 4, 0, 0.94) !important;
+  --mdc-switch-unselected-focus-track-color: rgba(8, 4, 0, 0.94) !important;
+  --mdc-switch-unselected-hover-track-color: rgba(8, 4, 0, 0.94) !important;
+  --mdc-switch-unselected-pressed-track-color: rgba(8, 4, 0, 0.94) !important;
+  --mdc-switch-unselected-track-outline-color: var(--hud-border) !important;
+  --mat-switch-label-text-color: var(--hud-text) !important;
+}
+
+.mat-mdc-progress-bar {
+  --mdc-linear-progress-active-indicator-color: var(--hud-orange);
+  --mdc-linear-progress-track-color: color-mix(in srgb, var(--hud-orange) 18%, transparent);
+  filter: drop-shadow(0 0 8px var(--hud-orange));
+}
+
+table {
+  border-collapse: collapse;
+  color: var(--hud-text);
+}
+
+th {
+  color: var(--hud-cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-shadow: var(--hud-cyan-glow);
+}
+
+td, th {
+  border-bottom: 1px solid color-mix(in srgb, var(--hud-orange) 18%, transparent);
+}
+
+tr:hover td {
+  background: color-mix(in srgb, var(--hud-orange) 10%, transparent);
 }
 
 // Styles for the overlay window
@@ -98,16 +463,17 @@ html.overlay-window app-root {
 }
 
 .custom-tooltip {
-  background: #333;
-  color: #fff;
+  background: rgba(8, 4, 0, 0.95);
+  color: var(--hud-text);
   padding: 6px 10px;
-  border-radius: 4px;
+  border: 1px solid var(--hud-border);
+  border-radius: 2px;
   font-size: 14px;
   max-width: 400px;
   min-width: 200px;
   text-align: justify;
   line-height: 1.4;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--hud-glow), 0 8px 26px rgba(0, 0, 0, 0.55);
   z-index: 1000;
   pointer-events: none;
   position: absolute;
