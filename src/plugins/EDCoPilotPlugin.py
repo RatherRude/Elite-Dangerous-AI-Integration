@@ -26,7 +26,8 @@ from EDMesg.CovasNext import (
     CovasReplied,
     ConfigurationUpdated
 )
-from EDMesg.EDCoPilot import create_edcopilot_client, OpenPanelAction, PanelNavigationAction, SpeakingPhraseEvent
+import EDMesg.EDCoPilot as EDCoPilot
+from EDMesg.EDCoPilot import OpenPanelAction, PanelNavigationAction, SpeakingPhraseEvent as BaseSpeakingPhraseEvent
 from EDMesg.base import EDMesgWelcomeAction
 
 
@@ -87,6 +88,10 @@ class EDCoPilotNavigatePanelParams(BaseModel):
         if self.navigate == "selectItem" and self.selectItem is None:
             raise ValueError("selectItem is required when navigate is 'selectItem'")
         return self
+
+
+class SpeakingPhraseEvent(BaseSpeakingPhraseEvent):
+    interrupt: bool = False
 
 
 def get_install_path() -> (str | None):
@@ -369,6 +374,8 @@ class EDCoPilotPlugin(PluginBase):
                         }
                     ))
                     if read_commentary and event.duration == 0:
+                        if event.interrupt:
+                            self._helper._assistant.tts.abort()
                         self._helper._assistant.tts.say(event.text, voice=voice, postprocessing=post_processing)
             time.sleep(0.1)
         # return
@@ -391,7 +398,11 @@ class EDCoPilotPlugin(PluginBase):
         
         # Initialize EDCoPilot connection
         try:
-            self.client = create_edcopilot_client()
+            EDCoPilot.events = [
+                SpeakingPhraseEvent if event_type is BaseSpeakingPhraseEvent else event_type
+                for event_type in EDCoPilot.events
+            ]
+            self.client = EDCoPilot.create_edcopilot_client()
             self.provider = create_covasnext_provider()
             log('info', 'Successfully connected to EDCoPilot via EDMesg')
         except Exception as e:
