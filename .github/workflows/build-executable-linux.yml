@@ -192,8 +192,8 @@ jobs:
           name: COVAS_NEXT_FLATPAK_v${{ github.sha }}_linux
           path: covas-next-ui-*.flatpak
 
-  e2e-and-scan:
-    name: E2E Tests & Defender Scan
+  e2e:
+    name: E2E Tests
     runs-on: ubuntu-latest
     needs: pyinstaller-build
     steps:
@@ -216,7 +216,7 @@ jobs:
 
   draft-release:
     name: Add Linux Artifacts to Draft Release
-    needs: [flatpak-bundle, e2e-and-scan]
+    needs: [flatpak-bundle, e2e]
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     concurrency:
