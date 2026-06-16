@@ -11,7 +11,7 @@ import { ScreenInfo } from "../models/screen-info";
 
 declare global {
     interface Window {
-        electronAPI: {
+        electronAPI?: {
             invoke: (call: string, opts?: any) => Promise<any>;
             onStdout: (callback: (value: any) => void) => Promise<void> | void;
             onStderr: (callback: (value: any) => void) => Promise<void> | void;
@@ -27,7 +27,130 @@ declare global {
         };
     }
 }
-const electronAPI = window.electronAPI;
+
+type TransportCallback = (value: any) => void;
+
+interface BackendTransport {
+    readonly isRemote: boolean;
+    invoke(call: string, opts?: any): Promise<any>;
+    onStdout(callback: TransportCallback): Promise<void> | void;
+    onStderr(callback: TransportCallback): Promise<void> | void;
+    onBackendLifecycle(callback: TransportCallback): Promise<void> | void;
+}
+
+class ElectronBackendTransport implements BackendTransport {
+    readonly isRemote = false;
+
+    constructor(private electronAPI: NonNullable<Window["electronAPI"]>) {}
+
+    invoke(call: string, opts?: any): Promise<any> {
+        return this.electronAPI.invoke(call, opts);
+    }
+
+    onStdout(callback: TransportCallback): Promise<void> | void {
+        return this.electronAPI.onStdout(callback);
+    }
+
+    onStderr(callback: TransportCallback): Promise<void> | void {
+        return this.electronAPI.onStderr(callback);
+    }
+
+    onBackendLifecycle(callback: TransportCallback): Promise<void> | void {
+        return this.electronAPI.onBackendLifecycle(callback);
+    }
+}
+
+class WebSocketBackendTransport implements BackendTransport {
+    readonly isRemote = true;
+    private socket: WebSocket;
+    private nextRequestId = 1;
+    private stdoutCallback: TransportCallback | null = null;
+    private stderrCallback: TransportCallback | null = null;
+    private backendLifecycleCallback: TransportCallback | null = null;
+    private pending = new Map<number, { resolve: (value: any) => void; reject: (reason?: any) => void }>();
+    private connected: Promise<void>;
+
+    constructor() {
+        const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+        const wsUrl = `${protocol}://${window.location.host}/ws`;
+        this.socket = new WebSocket(wsUrl);
+        this.connected = new Promise((resolve, reject) => {
+            this.socket.addEventListener("open", () => resolve(), { once: true });
+            this.socket.addEventListener("error", () => reject(new Error(`Failed to connect to ${wsUrl}`)), { once: true });
+        });
+        this.socket.addEventListener("message", (event) => this.handleMessage(event));
+        this.socket.addEventListener("close", () => this.rejectPending("Remote backend connection closed"));
+    }
+
+    async invoke(call: string, opts?: any): Promise<any> {
+        if (call !== "send_json_line") {
+            throw new Error(`Remote transport does not support ${call}`);
+        }
+
+        await this.connected;
+        const id = this.nextRequestId++;
+        const result = new Promise((resolve, reject) => {
+            this.pending.set(id, { resolve, reject });
+        });
+        this.socket.send(JSON.stringify({ id, call, opts }));
+        return result;
+    }
+
+    onStdout(callback: TransportCallback): void {
+        this.stdoutCallback = callback;
+    }
+
+    onStderr(callback: TransportCallback): void {
+        this.stderrCallback = callback;
+    }
+
+    onBackendLifecycle(callback: TransportCallback): void {
+        this.backendLifecycleCallback = callback;
+    }
+
+    private handleMessage(event: MessageEvent): void {
+        let message: any;
+        try {
+            message = JSON.parse(event.data);
+        } catch (error) {
+            console.warn("Invalid remote backend message:", error, event.data);
+            return;
+        }
+
+        if (typeof message.id === "number") {
+            const pending = this.pending.get(message.id);
+            if (!pending) {
+                return;
+            }
+            this.pending.delete(message.id);
+            if (message.error) {
+                pending.reject(new Error(message.error));
+            } else {
+                pending.resolve(message.result);
+            }
+            return;
+        }
+
+        switch (message.channel) {
+            case "stdout":
+                this.stdoutCallback?.(message.payload);
+                break;
+            case "stderr":
+                this.stderrCallback?.(message.payload);
+                break;
+            case "backend-lifecycle":
+                this.backendLifecycleCallback?.(message.payload);
+                break;
+        }
+    }
+
+    private rejectPending(reason: string): void {
+        for (const pending of this.pending.values()) {
+            pending.reject(new Error(reason));
+        }
+        this.pending.clear();
+    }
+}
 
 export interface BaseCommand {
     type: string;
@@ -200,72 +323,89 @@ export class TauriService {
     private currentIndex = 0;
     private startupErrorPendingExit = false;
     private restartTimer: number | null = null;
+    private transport: BackendTransport;
 
     constructor(
         private ngZone: NgZone,
         private dialog: MatDialog,
         private snackBar: MatSnackBar,
     ) {
+        this.transport = window.electronAPI
+            ? new ElectronBackendTransport(window.electronAPI)
+            : new WebSocketBackendTransport();
         this.startReadingOutput();
         window.localStorage.setItem("install_id", this.installId);
 
-        electronAPI.onWindowClose((event) => this.onWindowClose(event));
+        window.electronAPI?.onWindowClose((event) => this.onWindowClose(event));
 
     }
 
     public async createOverlay(config: OverlayCreateOptions): Promise<void> {
-        const result = await electronAPI.invoke("create_floating_overlay", config);
+        const result = await window.electronAPI?.invoke("create_floating_overlay", config);
         return result;
     }
 
     public async destroyOverlay(): Promise<void> {
-        await electronAPI.invoke("destroy_floating_overlay", {});
+        await window.electronAPI?.invoke("destroy_floating_overlay", {});
     }
 
     public async getAvailableScreens(): Promise<ScreenInfo[]> {
-        if (!electronAPI) {
+        if (!window.electronAPI) {
             throw new Error('electronAPI not available');
         }
-        const result = await electronAPI.invoke('get_available_screens');
+        const result = await window.electronAPI.invoke('get_available_screens');
         return result as ScreenInfo[];
     }
 
     public async getOverlayRuntimeInfo(): Promise<OverlayRuntimeInfo> {
-        if (!electronAPI) {
+        if (!window.electronAPI) {
             throw new Error('electronAPI not available');
         }
-        const result = await electronAPI.invoke('get_overlay_runtime_info');
+        const result = await window.electronAPI.invoke('get_overlay_runtime_info');
         return result as OverlayRuntimeInfo;
     }
 
     public async requestAccessibilityPermission(): Promise<AccessibilityPermissionResult> {
-        if (!electronAPI) {
+        if (!window.electronAPI) {
             throw new Error('electronAPI not available');
         }
-        const result = await electronAPI.invoke('request_accessibility_permission');
+        const result = await window.electronAPI.invoke('request_accessibility_permission');
         return result as AccessibilityPermissionResult;
     }
 
     public async openAccessibilitySettings(): Promise<AccessibilitySettingsResult> {
-        if (!electronAPI) {
+        if (!window.electronAPI) {
             throw new Error('electronAPI not available');
         }
-        const result = await electronAPI.invoke('open_accessibility_settings');
+        const result = await window.electronAPI.invoke('open_accessibility_settings');
         return result as AccessibilitySettingsResult;
     }
 
     private async startReadingOutput(): Promise<void> {
         if (this.stopListener) this.stopListener();
-        await electronAPI.onStdout(
+        await this.transport.onStdout(
             (e) => this.processStdout(e),
         );
         if (this.stopStderrListener) this.stopStderrListener();
-        await electronAPI.onStderr(
+        await this.transport.onStderr(
             (e) => this.processStderr(e),
         );
-        await electronAPI.onBackendLifecycle(
+        await this.transport.onBackendLifecycle(
             (e) => this.processBackendLifecycle(e),
         );
+        if (this.transport.isRemote) {
+            await this.requestRemoteRuntimeState();
+        }
+    }
+
+    private async requestRemoteRuntimeState(): Promise<void> {
+        await this.transport.invoke("send_json_line", {
+            jsonLine: JSON.stringify({
+                type: "init_overlay",
+                timestamp: new Date().toISOString(),
+                index: this.currentIndex++,
+            }) + "\n",
+        });
     }
 
     private pushMessage(message: OutboundMessage): void {
@@ -457,9 +597,12 @@ export class TauriService {
     }
 
     public async runExe(): Promise<string[]> {
+        if (this.transport.isRemote) {
+            return [];
+        }
         await this.stopExe();
         try {
-            const output: string[] = await electronAPI.invoke("start_process", {});
+            const output: string[] = await this.transport.invoke("start_process", {});
             this.startReadingOutput();
             return output;
         } catch (error) {
@@ -474,10 +617,13 @@ export class TauriService {
         }
     }
     private async stopExe(): Promise<void> {
+        if (this.transport.isRemote) {
+            return;
+        }
         try {
             this.runModeSubject.next("starting");
             console.log("process stopping...");
-            await electronAPI.invoke("stop_process", {});
+            await this.transport.invoke("stop_process", {});
         } catch (error) {
             console.error("Error running exe:", error);
             throw error;
@@ -498,7 +644,7 @@ export class TauriService {
         });
     }
     public async send_command(message: BaseCommand): Promise<void> {
-        await electronAPI.invoke("send_json_line", {
+        await this.transport.invoke("send_json_line", {
             jsonLine: JSON.stringify(message) + "\n",
         });
     }
@@ -604,6 +750,6 @@ export class TauriService {
         // Promise all windowCloseCallbacks
         await Promise.all(this.windowCloseCallbacks.map(callback => callback(event)));
         // confirm close to electron
-        await electronAPI.confirmWindowClose();
+        await window.electronAPI?.confirmWindowClose();
     }
 }

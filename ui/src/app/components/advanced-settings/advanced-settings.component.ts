@@ -112,6 +112,8 @@ export class AdvancedSettingsComponent implements OnDestroy {
     apiKeyType: string | null = null;
     assigningPTTIndex: number | null = null;
     isRefreshingAudioDevices = false;
+    isStartingRemoteInterface = false;
+    remoteInterfaceUrl: string | null = null;
     highlightTarget: AdvancedSettingsFocusTarget | null = null;
     expandedPanels: Record<AdvancedSettingsPanel, boolean> = {
         commander: false,
@@ -505,6 +507,34 @@ export class AdvancedSettingsComponent implements OnDestroy {
             this.snackBar.open('Failed to open Accessibility settings.', 'OK', {
                 duration: 5000,
             });
+        }
+    }
+
+    async startRemoteInterface(): Promise<void> {
+        if (!window.electronAPI?.invoke) {
+            this.snackBar.open('Remote web interface can only be started from the desktop app.', 'OK', {
+                duration: 5000,
+            });
+            return;
+        }
+
+        this.isStartingRemoteInterface = true;
+        try {
+            const result = await window.electronAPI.invoke('start_remote_interface', {
+                host: '127.0.0.1',
+                port: 4048,
+            });
+            this.remoteInterfaceUrl = typeof result?.url === 'string' ? result.url : 'http://127.0.0.1:4048/';
+            this.snackBar.open(`Remote web interface started at ${this.remoteInterfaceUrl}`, 'OK', {
+                duration: 5000,
+            });
+        } catch (error) {
+            console.error('Error starting remote web interface:', error);
+            this.snackBar.open('Failed to start remote web interface.', 'OK', {
+                duration: 5000,
+            });
+        } finally {
+            this.isStartingRemoteInterface = false;
         }
     }
 

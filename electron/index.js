@@ -1,11 +1,13 @@
 import { app, BrowserWindow, dialog, ipcMain, protocol, net, screen, shell, systemPreferences } from 'electron';
 import { spawn } from 'child_process';
+import http from 'node:http';
 import path from 'path';
 import url from 'node:url';
 import fs from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import contextMenu from 'electron-context-menu';
 import pino from 'pino';
+import { WebSocketServer } from 'ws';
 import {VROverlay} from '@covas-labs/electron-vr';
 
 const isDevelopment = process.env.NODE_ENV === 'development';
@@ -13,6 +15,7 @@ const isLinux = process.platform === 'linux';
 const overlayPreloadPath = path.join(import.meta.dirname, 'preload.js');
 const overlayWindowTitle = 'COVAS:NEXT Overlay';
 let loggerShuttingDown = false;
+let remoteInterface = null;
 
 // electron-vr needs shared image transport for efficient offscreen texture forwarding.
 app.commandLine.appendSwitch('enable-features', 'SharedImages');
@@ -274,6 +277,37 @@ const userAssetMimeTypes = {
   '.svg': 'image/svg+xml',
 };
 
+const remoteUiMimeTypes = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.map': 'application/json; charset=utf-8',
+};
+
+function getRemoteUiDirectory() {
+  const packagedUiDir = path.join(import.meta.dirname, './ui');
+  if (fs.existsSync(path.join(packagedUiDir, 'index.html'))) {
+    return packagedUiDir;
+  }
+
+  return path.join(import.meta.dirname, '../ui/dist/covas-next-ui/browser');
+}
+
+function getMimeTypeForRemoteUi(filePath) {
+  return remoteUiMimeTypes[path.extname(filePath).toLowerCase()] || 'application/octet-stream';
+}
+
 function getUserAssetsDirectory() {
   return path.join(app.getPath('userData'), 'userAssets');
 }
@@ -388,6 +422,8 @@ function resolveReadableAssetPath(filePath) {
 class BackendService {
   #currentProcess = null;
   #windows = [];
+  #remoteClients = new Set();
+  #recentMessages = [];
   #stopRequestedPid = null;
   #beforeQuitRegistered = false;
   #appQuitting = false;
@@ -395,6 +431,22 @@ class BackendService {
     for (const window of this.#windows) {
       window.webContents.send(channel, { payload });
     }
+  }
+  #notifyRemoteClients(channel, payload) {
+    const message = JSON.stringify({ channel, payload: { payload } });
+    for (const client of this.#remoteClients) {
+      if (client.readyState === 1) {
+        client.send(message);
+      }
+    }
+  }
+  #notifyListeners(channel, payload) {
+    this.#recentMessages.push({ channel, payload });
+    if (this.#recentMessages.length > 200) {
+      this.#recentMessages.shift();
+    }
+    this.#notifyWindows(channel, payload);
+    this.#notifyRemoteClients(channel, payload);
   }
   #hasActiveProcess() {
     return Boolean(this.#currentProcess && this.#currentProcess.exitCode === null && this.#currentProcess.signalCode === null);
@@ -424,6 +476,15 @@ class BackendService {
   }
   detachWindow(subWindow) {
     this.#windows = this.#windows.filter((w) => w !== subWindow);
+  }
+  attachRemoteClient(client) {
+    this.#remoteClients.add(client);
+    for (const message of this.#recentMessages) {
+      client.send(JSON.stringify({ channel: message.channel, payload: { payload: message.payload } }));
+    }
+  }
+  detachRemoteClient(client) {
+    this.#remoteClients.delete(client);
   }
   startProcess(mainWindow) {
     this.attachWindow(mainWindow);
@@ -472,7 +533,7 @@ class BackendService {
         this.#currentProcess = null;
       }
 
-      this.#notifyWindows('backend-lifecycle', {
+      this.#notifyListeners('backend-lifecycle', {
         ...payload,
         expected,
         pid: childProcess.pid ?? null,
@@ -520,9 +581,7 @@ class BackendService {
           } else {
             logger.info('[stdout]', "[config redacted]");
           }
-          for (const window of this.#windows) {
-            window.webContents.send('stdout', { payload: line });
-          }
+          this.#notifyListeners('stdout', line);
         }
       }
     });
@@ -546,9 +605,7 @@ class BackendService {
           } else {
             logger.info('[stderr]', "[config redacted]");
           }
-          for (const window of this.#windows) {
-            window.webContents.send('stderr', { payload: line });
-          }
+          this.#notifyListeners('stderr', line);
         }
       }
     });
@@ -800,6 +857,161 @@ function disposeOverlay(overlay, backend, closeWindow = true) {
   }
 }
 
+async function serveRemoteUiRequest(request, response) {
+  const uiDir = getRemoteUiDirectory();
+  const requestUrl = new URL(request.url, 'http://127.0.0.1');
+  let pathname = decodeURIComponent(requestUrl.pathname);
+
+  if (pathname === '/ws') {
+    response.writeHead(404);
+    response.end('Not found');
+    return;
+  }
+
+  if (pathname === '/') {
+    pathname = '/index.html';
+  }
+
+  let filePath = path.resolve(uiDir, `.${pathname}`);
+  const resolvedUiDir = path.resolve(uiDir);
+  if (filePath !== resolvedUiDir && !filePath.startsWith(resolvedUiDir + path.sep)) {
+    response.writeHead(403);
+    response.end('Forbidden');
+    return;
+  }
+
+  try {
+    const stats = await fsPromises.stat(filePath);
+    if (stats.isDirectory()) {
+      filePath = path.join(filePath, 'index.html');
+    }
+  } catch {
+    filePath = path.join(uiDir, 'index.html');
+  }
+
+  try {
+    const data = await fsPromises.readFile(filePath);
+    response.writeHead(200, {
+      'Content-Type': getMimeTypeForRemoteUi(filePath),
+      'Cache-Control': path.basename(filePath) === 'index.html' ? 'no-cache' : 'public, max-age=31536000',
+    });
+    response.end(data);
+  } catch (error) {
+    logger.warn('Failed to serve remote UI request:', { url: request.url, filePath, error });
+    response.writeHead(500);
+    response.end('Remote UI is not available. Build the Angular UI first.');
+  }
+}
+
+function createRemoteInterface(backend, opts = {}) {
+  const host = opts.host === '127.0.0.1' ? opts.host : '127.0.0.1';
+  const port = Number.isInteger(opts.port) ? opts.port : 4048;
+  const server = http.createServer((request, response) => {
+    void serveRemoteUiRequest(request, response);
+  });
+  const webSocketServer = new WebSocketServer({ noServer: true });
+
+  webSocketServer.on('connection', (socket) => {
+    logger.info('Remote web interface WebSocket client connected');
+    backend.attachRemoteClient(socket);
+    socket.send(JSON.stringify({ channel: 'remote-interface', payload: { payload: { status: 'connected' } } }));
+
+    socket.on('message', (rawMessage) => {
+      let message;
+      try {
+        message = JSON.parse(rawMessage.toString());
+      } catch (error) {
+        socket.send(JSON.stringify({ id: null, error: 'Invalid JSON message' }));
+        return;
+      }
+
+      const id = message?.id ?? null;
+      if (message?.call !== 'send_json_line') {
+        socket.send(JSON.stringify({ id, error: 'Remote interface only supports send_json_line' }));
+        return;
+      }
+
+      try {
+        const result = backend.sendJsonLine(null, message.opts ?? {});
+        socket.send(JSON.stringify({ id, result }));
+      } catch (error) {
+        socket.send(JSON.stringify({
+          id,
+          error: error instanceof Error ? error.message : String(error),
+        }));
+      }
+    });
+
+    socket.on('close', () => {
+      logger.info('Remote web interface WebSocket client disconnected');
+      backend.detachRemoteClient(socket);
+    });
+    socket.on('error', (error) => {
+      logger.warn('Remote WebSocket client error:', error);
+      backend.detachRemoteClient(socket);
+    });
+  });
+
+  server.on('upgrade', (request, socket, head) => {
+    const requestUrl = new URL(request.url, `http://${host}:${port}`);
+    if (requestUrl.pathname !== '/ws') {
+      logger.warn('Rejected remote web interface WebSocket upgrade:', requestUrl.pathname);
+      socket.destroy();
+      return;
+    }
+
+    logger.info('Accepted remote web interface WebSocket upgrade');
+    webSocketServer.handleUpgrade(request, socket, head, (ws) => {
+      webSocketServer.emit('connection', ws, request);
+    });
+  });
+
+  return new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(port, host, () => {
+      server.off('error', reject);
+      const state = {
+        running: true,
+        host,
+        port,
+        url: `http://${host}:${port}/`,
+        server,
+        webSocketServer,
+      };
+      logger.info('Remote web interface started:', state.url);
+      resolve(state);
+    });
+  });
+}
+
+async function stopRemoteInterface() {
+  if (!remoteInterface) {
+    return { running: false, host: '127.0.0.1', port: 4048, url: null };
+  }
+
+  const current = remoteInterface;
+  remoteInterface = null;
+  for (const client of current.webSocketServer.clients) {
+    client.close();
+  }
+  current.webSocketServer.close();
+  await new Promise((resolve) => current.server.close(resolve));
+  logger.info('Remote web interface stopped');
+  return { running: false, host: current.host, port: current.port, url: null };
+}
+
+function getRemoteInterfaceState() {
+  if (!remoteInterface) {
+    return { running: false, host: '127.0.0.1', port: 4048, url: null };
+  }
+  return {
+    running: true,
+    host: remoteInterface.host,
+    port: remoteInterface.port,
+    url: remoteInterface.url,
+  };
+}
+
 app.whenReady().then(async ()=>{
 
   protocol.handle('app', (request) => {
@@ -853,6 +1065,19 @@ app.whenReady().then(async ()=>{
       floatingOverlay = null;
     }
   });
+  ipcMain.handle('start_remote_interface', async (event, opts = {}) => {
+    if (remoteInterface) {
+      return getRemoteInterfaceState();
+    }
+
+    remoteInterface = await createRemoteInterface(backend, {
+      host: '127.0.0.1',
+      port: Number.isInteger(opts?.port) ? opts.port : 4048,
+    });
+    return getRemoteInterfaceState();
+  });
+  ipcMain.handle('stop_remote_interface', async () => stopRemoteInterface());
+  ipcMain.handle('get_remote_interface_state', async () => getRemoteInterfaceState());
   ipcMain.handle('get_overlay_runtime_info', async () => getOverlayRuntimeInfo());
   ipcMain.handle('get_available_screens', async (event) => {
     const displays = screen.getAllDisplays();
@@ -981,6 +1206,7 @@ app.whenReady().then(async ()=>{
       floatingOverlay = null;
     }
     backend.stopProcess(mainWindow);
+    void stopRemoteInterface();
     if (process.platform !== 'darwin') {
       app.quit();
     }

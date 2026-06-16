@@ -26,6 +26,31 @@ mat-panel-title mat-icon {
   height: 20px;
 }
 
+.remote-interface-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.remote-interface-section p {
+  margin: 0.25rem 0 0;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.remote-interface-section button {
+  flex: 0 0 auto;
+}
+
+.remote-interface-section button mat-icon {
+  margin-right: 0.4rem;
+}
+
 .ptt-container,
 .overlay-primary-controls,
 .overlay-secondary-controls {
