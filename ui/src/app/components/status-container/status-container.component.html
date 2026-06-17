@@ -290,11 +290,6 @@
                             </div>
                         </div>
                     </div>
-                    <div *ngIf="hasNavRoute()" class="nav-info" (click)="toggleNavDetails()">
-                        <mat-icon>navigation</mat-icon>
-                        <span>{{ getNavRouteInfo() }}</span>
-                        <mat-icon class="expander">{{ showNavDetails ? 'expand_less' : 'expand_more' }}</mat-icon>
-                    </div>
                 </div>
 
                 <!-- Target info -->
@@ -383,31 +378,6 @@
                                 </mat-icon>
                             </div>
                         </ng-container>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Nav Route Details - integrated into character sheet -->
-            <div *ngIf="showNavDetails" class="nav-details-header">
-                <div class="nav-route-list">
-                    <div *ngFor="let system of getNavRouteDetails(); let i = index" class="nav-route-item">
-                        <div class="nav-index">{{ i + 1 }}</div>
-                        <div class="nav-system">{{ system.StarSystem }}</div>
-                        <div class="nav-star-info" *ngIf="system.StarClass">
-                            <mat-icon class="star-icon" [ngClass]="getStarClassColor(system.StarClass)">
-                                {{ getStarTypeIcon(system.StarClass) }}
-                            </mat-icon>
-                            <span class="star-class">{{ system.StarClass }}</span>
-                        </div>
-                        <div class="nav-distance" *ngIf="system.StarPos && i > 0">
-                            {{ getJumpDistance(i) }} ly
-                        </div>
-                        <div class="star-scoopable" *ngIf="system.Scoopable !== undefined">
-                            <mat-icon class="fuel-icon" [ngClass]="system.Scoopable ? 'scoopable' : 'not-scoopable'">
-                                {{ system.Scoopable ? 'local_gas_station' : 'not_interested' }}
-                            </mat-icon>
-                            <span class="small-text">{{ system.Scoopable ? 'Scoopable' : 'Not scoopable' }}</span>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -546,18 +516,19 @@
                     <h3 class="stat-header">ARMAMENTS</h3>
                     <div class="hardpoints-list">
                         <ng-container *ngFor="let module of getWeaponModules()">
-                            <div class="hardpoint-item">
-                                <div class="hardpoint-details weapon-display">
-                                    <span class="hardpoint-name">{{ formatModuleName(module.Item) }}</span>
-                                </div>
-                                <div class="hardpoint-engineering" *ngIf="module.Engineering">
-                                    <mat-icon class="engineering-icon">build</mat-icon>
-                                    <span class="engineering-text">{{ formatEngineeringName(module.Engineering.BlueprintName) }}
-                                        (G{{ module.Engineering.Level || '?' }})
-                                    <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
-                                        - {{ module.Engineering.ExperimentalEffect_Localised }}
-                                    </span>
-                                </span>
+                            <div class="hardpoint-item module-item">
+                                <div class="module-slot">{{ getModuleClassLabel(module) }}</div>
+                                <div class="module-content hardpoint-details">
+                                    <div class="module-name hardpoint-name">{{ formatModuleName(module.Item) }}</div>
+                                    <div class="module-engineering hardpoint-engineering" *ngIf="module.Engineering">
+                                        <mat-icon class="engineering-icon">build</mat-icon>
+                                        <span class="engineering-text">{{ formatEngineeringName(module.Engineering.BlueprintName) }}
+                                            (G{{ module.Engineering.Level || '?' }})
+                                            <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
+                                                - {{ module.Engineering.ExperimentalEffect_Localised }}
+                                            </span>
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </ng-container>

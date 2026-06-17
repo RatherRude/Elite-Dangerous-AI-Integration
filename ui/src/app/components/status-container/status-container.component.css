@@ -1653,7 +1653,8 @@
   font-size: 14px;
 }
 
-.utility-item.module-item {
+.utility-item.module-item,
+.hardpoint-item.module-item {
   display: grid;
   grid-template-columns: auto 1fr;
   align-items: flex-start;

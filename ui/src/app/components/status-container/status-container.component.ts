@@ -25,7 +25,6 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
   inCombat: any = null;
   friends: any = null;
   target: any = null;
-  navInfo: any = null;
   exobiologyScan: any = null;
   cargo: any = null;
   backpack: any = null;
@@ -54,7 +53,6 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
   showFriendsPanel = false;
   showWingPanel = false;
   showFightersPanel = false;
-  showNavDetails = false;
   showBackpackDetails = false;
   showCargoDetails = false;
   showAllModules = false;
@@ -106,11 +104,6 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
       this.projectionsService.target$.subscribe(target => {
         this.target = target;
       }),
-      
-      this.projectionsService.navInfo$.subscribe(navInfo => {
-        this.navInfo = navInfo;
-      }),
-      
       this.projectionsService.exobiologyScan$.subscribe(scan => {
         this.exobiologyScan = scan;
       }),
@@ -262,11 +255,6 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
     
     // All other flags are shown in green when active
     return 'status-active';
-  }
-
-  // Toggle methods
-  toggleNavDetails(): void {
-    this.showNavDetails = !this.showNavDetails;
   }
 
   toggleBackpackDetails(): void {
@@ -444,51 +432,6 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
     if (this.location?.Planet) return 'public';
     if (this.location?.Star) return 'star';
     return 'location_on';
-  }
-
-  // Navigation methods
-  hasNavRoute(): boolean {
-    return this.navInfo?.NavRoute && Array.isArray(this.navInfo.NavRoute) && this.navInfo.NavRoute.length > 0;
-  }
-
-  getNavRouteInfo(): string {
-    if (!this.hasNavRoute()) return '';
-    const route = this.navInfo.NavRoute;
-    const destination = route[route.length - 1]?.StarSystem || 'destination';
-    return `${route.length} jumps to ${destination}`;
-  }
-
-  getNavRouteDetails(): any[] {
-    return this.navInfo?.NavRoute || [];
-  }
-
-  getStarClassColor(starClass: string): string {
-    const colorMap: Record<string, string> = {
-      'O': 'star-o', 'B': 'star-b', 'A': 'star-a', 'F': 'star-f',
-      'G': 'star-g', 'K': 'star-k', 'M': 'star-m',
-      'L': 'star-l', 'T': 'star-t', 'Y': 'star-y'
-    };
-    return colorMap[starClass] || 'star-default';
-  }
-
-  getStarTypeIcon(starClass: string): string {
-    return 'star';
-  }
-
-  getJumpDistance(index: number): number {
-    const route = this.getNavRouteDetails();
-    if (index === 0 || !route[index] || !route[index - 1]) return 0;
-    
-    const current = route[index].StarPos;
-    const previous = route[index - 1].StarPos;
-    
-    if (!current || !previous) return 0;
-    
-    const dx = current[0] - previous[0];
-    const dy = current[1] - previous[1];
-    const dz = current[2] - previous[2];
-    
-    return Math.sqrt(dx * dx + dy * dy + dz * dz);
   }
 
   // Active mode detection
