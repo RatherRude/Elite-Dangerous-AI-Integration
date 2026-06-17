@@ -2,6 +2,7 @@ from __future__ import annotations
 import sys
 import traceback
 import time
+from typing import final
 
 from .EDKeys import EDKeys
 from .Logger import log
@@ -9,6 +10,7 @@ from .ScreenReader import ScreenReader, ScreenReadResult
 from .Config import get_ed_appdata_path, load_config, load_hud_color_matrix
 
 
+@final
 class SystemMap:
     def __init__(self, screen_reader: ScreenReader, ed_keys: EDKeys):
         self.screen_reader = screen_reader
@@ -16,7 +18,41 @@ class SystemMap:
         self.categories = ["ORBITAL PORTS", "INSTALLATIONS", "LANDFALL PLANETS", "PLANETARY PORTS", "SURFACE SETTLEMENTS", "ODYSSEY SETTLEMENTS", "FLEET CARRIERS"]
         self.wait_time = 0.5
 
-    def run(self, category="LANDFALL PLANETS", entry="HIP 58412 8 D") -> ScreenReadResult:
+    @staticmethod
+    def _normalize_search_text(value: str) -> str:
+        return "".join(value.upper().split())
+
+    @staticmethod
+    def _levenshtein_distance(a: str, b: str) -> int:
+        if len(a) < len(b):
+            a, b = b, a
+        previous = list(range(len(b) + 1))
+        for i, char_a in enumerate(a, start=1):
+            current = [i]
+            for j, char_b in enumerate(b, start=1):
+                insertions = previous[j] + 1
+                deletions = current[j - 1] + 1
+                substitutions = previous[j - 1] + (char_a != char_b)
+                current.append(min(insertions, deletions, substitutions))
+            previous = current
+        return previous[-1]
+
+    @classmethod
+    def selection_matches_entry(cls, selection: ScreenReadResult, entry: str) -> bool:
+        if len(selection.ocr_lines) < 2:
+            return False
+
+        target = cls._normalize_search_text(entry)
+        candidate = cls._normalize_search_text(selection.ocr_lines[1].text)
+        if not target or not candidate:
+            return False
+        if target in candidate:
+            return True
+
+        max_distance = max(1, len(target) // 8)
+        return cls._levenshtein_distance(target, candidate) <= max_distance
+
+    def run(self, category: str = "LANDFALL PLANETS", entry: str = "HIP 58412 8 D") -> ScreenReadResult:
         log("debug", "Navigating system map", category, entry)
         self.ed_keys.send("UI_Down")
         time.sleep(self.wait_time)
@@ -46,16 +82,14 @@ class SystemMap:
             log("info", selection)
             if not selection.detection or selection.detection.icon_template == 'exit':
                 raise Exception(f"Unexpected ScreenReader Result Exit: {str(selection)}")
-            for line in selection.ocr_lines:
-                if entry.replace(" ", "").upper() == line.text.replace(" ", "").upper():
-                    match = selection
+            if self.selection_matches_entry(selection, entry):
+                match = selection
             if not match:
                 self.ed_keys.send("UI_Down")
                 time.sleep(self.wait_time)
         log("info", "System map target matched", match)
-        self.ed_keys.send("UI_Select")
         time.sleep(self.wait_time)
-        self.ed_keys.send("UI_Select", hold=3)
+        self.ed_keys.send("UI_Select", hold=2)
 
         return match
 
