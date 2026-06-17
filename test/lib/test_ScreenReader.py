@@ -53,7 +53,7 @@ def test_detect_selected_area_uses_full_hud_color_matrix() -> None:
         [0.0, 0.45, 0.35],
         [0.0, 0.00, 0.25],
     ])
-    shifted_orange = bgr_from_rgb(hud_color_matrix.shift_color(254, 129, 1))
+    shifted_orange = bgr_from_rgb(hud_color_matrix.shift_color(255, 117, 0))
     image = np.zeros((240, 320, 3), dtype=np.uint8)
     cv2.rectangle(image, (120, 90), (260, 170), shifted_orange, thickness=-1)
 
@@ -66,4 +66,4 @@ def test_detect_selected_area_uses_full_hud_color_matrix() -> None:
     assert detection.y == 90
     assert detection.w == 141
     assert detection.h == 81
-    assert detection.profile == "sample-fe8101"
+    assert detection.profile == "sample-ff7500"
