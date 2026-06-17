@@ -723,10 +723,14 @@ class Assistant:
 
             for event in memory:
                 if isinstance(event, GameEvent) or isinstance(event, ProjectedEvent):
+                    if event.content.get('event') in self.disabled_game_events:
+                        continue
                     event_description = self.prompt_generator.get_event_template(event)
                     if event_description:
                         chat.append(f"{event.content.get('timestamp', '')}: {event_description}")
                 elif isinstance(event, StatusEvent):
+                    if event.status.get('event') in self.disabled_game_events:
+                        continue
                     if event.status.get('event','').lower() == 'status':
                         continue
                     event_description = self.prompt_generator.get_status_event_template(event)
