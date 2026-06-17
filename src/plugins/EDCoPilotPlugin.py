@@ -6,7 +6,8 @@ from typing import Any, override, Optional, Iterable, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
-from lib.PluginHelper import PluginHelper, TTSModel, LLMModel, STTModel, EmbeddingModel, PluginEvent
+from lib.Event import Event
+from lib.PluginHelper import PluginHelper, TTSModel, LLMModel, STTModel, EmbeddingModel, PluginEvent, Projection
 from lib.PluginSettingDefinitions import (
     PluginSettings, 
     SettingsGrid, 
@@ -27,7 +28,7 @@ from EDMesg.CovasNext import (
     ConfigurationUpdated
 )
 import EDMesg.EDCoPilot as EDCoPilot
-from EDMesg.EDCoPilot import OpenPanelAction, PanelNavigationAction, SpeakingPhraseEvent as BaseSpeakingPhraseEvent
+from EDMesg.EDCoPilot import OpenPanelAction, PanelContentsEvent, PanelNavigationAction, SpeakingPhraseEvent as BaseSpeakingPhraseEvent
 from EDMesg.base import EDMesgWelcomeAction
 
 
@@ -92,6 +93,32 @@ class EDCoPilotNavigatePanelParams(BaseModel):
 
 class SpeakingPhraseEvent(BaseSpeakingPhraseEvent):
     interrupt: bool = False
+
+
+class EDCoPilotPanelContentsState(BaseModel):
+    """Latest panel contents received from EDCoPilot."""
+
+    timestamp: str | None = None
+    contents: dict[str, Any] | None = None
+
+
+class EDCoPilotPanelContents(Projection[EDCoPilotPanelContentsState]):
+    StateModel = EDCoPilotPanelContentsState
+
+    @override
+    def process(self, event: Event) -> None:
+        if not isinstance(event, PluginEvent):
+            return
+        if event.plugin_event_name != "EdCoPilotPanelContentsEvent":
+            return
+        if not isinstance(event.plugin_event_content, dict):
+            return
+
+        timestamp = event.plugin_event_content.get("timestamp")
+        contents = event.plugin_event_content.get("contents")
+        if isinstance(timestamp, str):
+            self.state.timestamp = timestamp
+        self.state.contents = contents if isinstance(contents, dict) else None
 
 
 def get_install_path() -> (str | None):
@@ -377,6 +404,15 @@ class EDCoPilotPlugin(PluginBase):
                         if event.interrupt:
                             self._helper._assistant.tts.abort()
                         self._helper._assistant.tts.say(event.text, voice=voice, postprocessing=post_processing)
+                if isinstance(event, PanelContentsEvent):
+                    self._helper.dispatch_event(PluginEvent(
+                        kind="plugin",
+                        plugin_event_name="EdCoPilotPanelContentsEvent",
+                        plugin_event_content={
+                            "timestamp": event.timestamp,
+                            "contents": event.contents,
+                        }
+                    ))
             time.sleep(0.1)
         # return
     @override
@@ -402,6 +438,8 @@ class EDCoPilotPlugin(PluginBase):
                 SpeakingPhraseEvent if event_type is BaseSpeakingPhraseEvent else event_type
                 for event_type in EDCoPilot.events
             ]
+            if PanelContentsEvent not in EDCoPilot.events:
+                EDCoPilot.events.append(PanelContentsEvent)
             self.client = EDCoPilot.create_edcopilot_client()
             self.provider = create_covasnext_provider()
             log('info', 'Successfully connected to EDCoPilot via EDMesg')
@@ -421,6 +459,7 @@ class EDCoPilotPlugin(PluginBase):
         self.event_listener_thread.start()
         should_reply_to_edcp = self.settings.get("react_to_commentary", False)
         self._helper.register_event("EdCoPilotEvent", lambda event: should_reply_to_edcp, lambda event: "Received EdCoPilot Message: "+event.plugin_event_content.get("text", '-'))
+        self._helper.register_projection(EDCoPilotPanelContents())
 
 
         # Register actions if enabled
