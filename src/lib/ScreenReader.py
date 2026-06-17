@@ -253,8 +253,62 @@ def sample_color_sv(sample_hex: str) -> tuple[float, float]:
     return float(hsv[1]) / 255.0, float(hsv[2]) / 255.0
 
 
+def sample_color_hsv(sample_hex: str) -> tuple[float, float, float]:
+    r, g, b = parse_hex_color(sample_hex)
+    rgb = np.uint8([[[r, g, b]]])
+    hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)[0, 0]
+    return float(hsv[0]) * 2.0, float(hsv[1]) / 255.0, float(hsv[2]) / 255.0
+
+
+def format_hex_color(rgb: np.ndarray) -> str:
+    values = np.clip(np.rint(rgb * 255.0), 0, 255).astype(np.uint8)
+    return "".join(f"{int(value):02x}" for value in values)
+
+
+def transform_rgb(rgb: np.ndarray, matrix: np.ndarray) -> np.ndarray:
+    return np.clip(rgb @ matrix, 0.0, 1.0)
+
+
+def transformed_sample_hex(sample_hex: str, matrix: np.ndarray) -> str:
+    r, g, b = parse_hex_color(sample_hex)
+    rgb = np.array([r, g, b], dtype=np.float32) / 255.0
+    return format_hex_color(transform_rgb(rgb, matrix))
+
+
 def clamped_range(center: float, tolerance: float) -> tuple[float, float]:
     return max(0.0, center - tolerance), min(1.0, center + tolerance)
+
+
+def transformed_sv_bounds(
+    sample_hex: str,
+    matrix: np.ndarray,
+    *,
+    saturation_tolerance: float,
+    candidate_value_tolerance: float,
+    hue_tolerance_deg: float,
+) -> tuple[float, float, float]:
+    hue_deg, sample_sat, sample_val = sample_color_hsv(sample_hex)
+    saturations = np.linspace(*clamped_range(sample_sat, saturation_tolerance), num=9)
+    values = np.linspace(max(0.0, sample_val - candidate_value_tolerance), 1.0, num=5)
+    hue_offsets = np.linspace(-hue_tolerance_deg, hue_tolerance_deg, num=9)
+    transformed_hsv_values: list[np.ndarray] = []
+
+    for hue_offset in hue_offsets:
+        hue = ((hue_deg + hue_offset) % 360.0) / 2.0
+        for saturation in saturations:
+            for value in values:
+                hsv = np.uint8([[[round(hue), round(saturation * 255.0), round(value * 255.0)]]])
+                rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB)[0, 0].astype(np.float32) / 255.0
+                transformed = transform_rgb(rgb, matrix)
+                transformed_rgb = np.uint8([[np.rint(transformed * 255.0)]])
+                transformed_hsv_values.append(cv2.cvtColor(transformed_rgb, cv2.COLOR_RGB2HSV)[0, 0])
+
+    transformed_hsv = np.array(transformed_hsv_values)
+    return (
+        float(transformed_hsv[:, 1].min()) / 255.0,
+        float(transformed_hsv[:, 1].max()) / 255.0,
+        float(transformed_hsv[:, 2].min()) / 255.0,
+    )
 
 
 def build_profiles(
@@ -262,17 +316,34 @@ def build_profiles(
     *,
     saturation_tolerance: float,
     candidate_value_tolerance: float,
+    hue_tolerance_deg: float,
+    hud_color_matrix: np.ndarray | None,
 ) -> list[Profile]:
     profiles: list[Profile] = []
     for sample_hex in sample_colors:
-        sample_sat, sample_val = sample_color_sv(sample_hex)
-        border_min, border_max = clamped_range(sample_sat, saturation_tolerance)
-        content_min, content_max = clamped_range(sample_sat, saturation_tolerance)
         normalized_hex = sample_hex.strip().removeprefix("#").lower()
+        if hud_color_matrix is None:
+            derived_hex = normalized_hex
+            sample_sat, sample_val = sample_color_sv(sample_hex)
+            border_min, border_max = clamped_range(sample_sat, saturation_tolerance)
+            candidate_value_min = max(0.0, sample_val - candidate_value_tolerance)
+        else:
+            derived_hex = transformed_sample_hex(sample_hex, hud_color_matrix)
+            border_min, border_max, candidate_value_min = transformed_sv_bounds(
+                sample_hex,
+                hud_color_matrix,
+                saturation_tolerance=saturation_tolerance,
+                candidate_value_tolerance=candidate_value_tolerance,
+                hue_tolerance_deg=hue_tolerance_deg,
+            )
+        content_min, content_max = border_min, border_max
+        profile_name = f"sample-{normalized_hex}"
+        if derived_hex != normalized_hex:
+            profile_name += f"-as-{derived_hex}"
         profiles.append(
             Profile(
-                name=f"sample-{normalized_hex}",
-                sample_hex=normalized_hex,
+                name=profile_name,
+                sample_hex=derived_hex,
                 border_saturation_min=border_min,
                 border_saturation_max=border_max,
                 border_required=0.90,
@@ -280,7 +351,7 @@ def build_profiles(
                 content_saturation_min=content_min,
                 content_saturation_max=content_max,
                 content_required=0.70,
-                candidate_value_min=max(0.0, sample_val - candidate_value_tolerance),
+                candidate_value_min=candidate_value_min,
             )
         )
     return profiles
@@ -294,17 +365,6 @@ def normalize_hud_color_matrix(hud_color_matrix: HudColorMatrix | list[list[floa
     if normalized.shape != (3, 3):
         raise ValueError(f"HUD color matrix must be 3x3, got {normalized.shape}")
     return normalized
-
-
-def unshift_hud_colors(image: np.ndarray, hud_color_matrix: np.ndarray | None) -> np.ndarray:
-    if hud_color_matrix is None:
-        return image
-
-    rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32) / 255.0
-    inverse = np.linalg.pinv(hud_color_matrix)
-    unshifted_rgb = np.clip(rgb @ inverse, 0.0, 1.0)
-    unshifted_rgb_u8 = np.rint(unshifted_rgb * 255.0).astype(np.uint8)
-    return cv2.cvtColor(unshifted_rgb_u8, cv2.COLOR_RGB2BGR)
 
 
 def hue_distance_deg(hue: np.ndarray, target_deg: float) -> np.ndarray:
@@ -338,6 +398,9 @@ def match_binary_icon_template(
     border_px: int,
     max_size: int = 80,
     match_required: float = 0.35,
+    selected_saturation_min: int = 180,
+    selected_saturation_max: int | None = None,
+    selected_value_min: int = 100,
 ) -> float | None:
     height, width = roi_hsv.shape[:2]
     if width > max_size or height > max_size or abs(width - height) > 8:
@@ -353,10 +416,12 @@ def match_binary_icon_template(
     inner_hue = inner[:, :, 0]
     inner_sat = inner[:, :, 1]
     inner_val = inner[:, :, 2]
+    selected_saturation_max = 255 if selected_saturation_max is None else selected_saturation_max
     selected_color = (
         (hue_distance_deg(inner_hue, hue_deg) <= hue_tolerance_deg)
-        & (inner_sat >= 180)
-        & (inner_val >= 100)
+        & (inner_sat >= selected_saturation_min)
+        & (inner_sat <= selected_saturation_max)
+        & (inner_val >= selected_value_min)
     )
     glyph_mask = (~selected_color).astype(np.float32)
     result = cv2.matchTemplate(glyph_mask, template, cv2.TM_CCOEFF_NORMED)
@@ -376,6 +441,9 @@ def match_exit_icon_template(
     hue_tolerance_deg: float,
     border_px: int,
     max_size: int = 80,
+    selected_saturation_min: int = 180,
+    selected_saturation_max: int | None = None,
+    selected_value_min: int = 100,
 ) -> float | None:
     template_rows, match_required = ICON_TEMPLATES["exit"]
     return match_binary_icon_template(
@@ -386,6 +454,9 @@ def match_exit_icon_template(
         border_px=border_px,
         max_size=max_size,
         match_required=match_required,
+        selected_saturation_min=selected_saturation_min,
+        selected_saturation_max=selected_saturation_max,
+        selected_value_min=selected_value_min,
     )
 
 
@@ -396,6 +467,9 @@ def identify_icon_template(
     hue_tolerance_deg: float,
     border_px: int,
     max_size: int = 80,
+    selected_saturation_min: int = 180,
+    selected_saturation_max: int | None = None,
+    selected_value_min: int = 100,
 ) -> tuple[str | None, float | None]:
     best_name: str | None = None
     best_score: float | None = None
@@ -409,6 +483,9 @@ def identify_icon_template(
             border_px=border_px,
             max_size=max_size,
             match_required=match_required,
+            selected_saturation_min=selected_saturation_min,
+            selected_saturation_max=selected_saturation_max,
+            selected_value_min=selected_value_min,
         )
         if score is None:
             continue
@@ -525,6 +602,9 @@ def find_detection(
                 hue_deg=hue_deg,
                 hue_tolerance_deg=hue_tolerance_deg,
                 border_px=border_px,
+                selected_saturation_min=round(profile.content_saturation_min * 255.0),
+                selected_saturation_max=round(profile.content_saturation_max * 255.0),
+                selected_value_min=round(profile.candidate_value_min * 255.0),
             )
 
             detection = Detection(
@@ -575,6 +655,8 @@ class ScreenReader:
             sample_colors or ["69d9da", "fe8101"],
             saturation_tolerance=saturation_tolerance,
             candidate_value_tolerance=candidate_value_tolerance,
+            hue_tolerance_deg=hue_tolerance_deg,
+            hud_color_matrix=self.hud_color_matrix,
         )
         self.border_px = border_px
         self.border_required = border_required
@@ -590,9 +672,8 @@ class ScreenReader:
         if image is None:
             return None
 
-        detection_image = unshift_hud_colors(image, self.hud_color_matrix)
         return find_detection(
-            detection_image,
+            image,
             profiles=self.profiles,
             border_px=self.border_px,
             border_required=self.border_required,
