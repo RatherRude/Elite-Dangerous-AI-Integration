@@ -33,6 +33,10 @@ class Detection:
 class OcrLine:
     text: str
     confidence: float
+    x: float | None = None
+    y: float | None = None
+    w: float | None = None
+    h: float | None = None
 
 
 @dataclass(frozen=True)
@@ -634,6 +638,65 @@ def crop_detection(image: np.ndarray, detection: Detection, padding: int = 0) ->
     return image[y0:y1, x0:x1]
 
 
+def ocr_item_bbox(item: object) -> tuple[float, float, float, float] | None:
+    try:
+        points = np.array(item[0], dtype=np.float32)  # type: ignore[index]
+    except (TypeError, ValueError, IndexError):
+        return None
+    if points.ndim != 2 or points.shape[0] == 0 or points.shape[1] < 2:
+        return None
+
+    x0 = float(points[:, 0].min())
+    y0 = float(points[:, 1].min())
+    x1 = float(points[:, 0].max())
+    y1 = float(points[:, 1].max())
+    return x0, y0, x1 - x0, y1 - y0
+
+
+def group_ocr_lines(boxes: list[OcrLine]) -> list[OcrLine]:
+    groups: list[list[OcrLine]] = []
+    for box in sorted(boxes, key=lambda line: ((line.y or 0.0) + (line.h or 0.0) / 2.0, line.x or 0.0)):
+        if box.y is None or box.h is None:
+            groups.append([box])
+            continue
+
+        center_y = box.y + box.h / 2.0
+        matched_group: list[OcrLine] | None = None
+        for group in groups:
+            group_boxes = [line for line in group if line.y is not None and line.h is not None]
+            if not group_boxes:
+                continue
+            group_center_y = sum(line.y + line.h / 2.0 for line in group_boxes) / len(group_boxes)
+            group_height = sum(line.h for line in group_boxes) / len(group_boxes)
+            if abs(center_y - group_center_y) <= max(8.0, min(box.h, group_height) * 0.75):
+                matched_group = group
+                break
+
+        if matched_group is None:
+            groups.append([box])
+        else:
+            matched_group.append(box)
+
+    lines: list[OcrLine] = []
+    for group in groups:
+        ordered = sorted(group, key=lambda line: line.x or 0.0)
+        text = " ".join(line.text for line in ordered).strip()
+        if not text:
+            continue
+        confidences = [line.confidence for line in ordered]
+        positioned = [line for line in ordered if line.x is not None and line.y is not None and line.w is not None and line.h is not None]
+        if positioned:
+            x0 = min(line.x for line in positioned if line.x is not None)
+            y0 = min(line.y for line in positioned if line.y is not None)
+            x1 = max((line.x or 0.0) + (line.w or 0.0) for line in positioned)
+            y1 = max((line.y or 0.0) + (line.h or 0.0) for line in positioned)
+            lines.append(OcrLine(text=text, confidence=float(sum(confidences) / len(confidences)), x=x0, y=y0, w=x1 - x0, h=y1 - y0))
+        else:
+            lines.append(OcrLine(text=text, confidence=float(sum(confidences) / len(confidences))))
+
+    return sorted(lines, key=lambda line: (line.y if line.y is not None else float("inf"), line.x or 0.0))
+
+
 @final
 class ScreenReader:
     def __init__(
@@ -705,15 +768,20 @@ class ScreenReader:
         if not result:
             return []
 
-        lines: list[OcrLine] = []
+        boxes: list[OcrLine] = []
         for item in result:
             if len(item) < 3:
                 continue
             text = str(item[1]).strip()
             if not text:
                 continue
-            lines.append(OcrLine(text=text, confidence=float(item[2])))
-        return lines
+            bbox = ocr_item_bbox(item)
+            if bbox is None:
+                boxes.append(OcrLine(text=text, confidence=float(item[2])))
+                continue
+            x, y, w, h = bbox
+            boxes.append(OcrLine(text=text, confidence=float(item[2]), x=x, y=y, w=w, h=h))
+        return group_ocr_lines(boxes)
 
     def get_ocr(self) -> object | None:
         if self._ocr is not None:
