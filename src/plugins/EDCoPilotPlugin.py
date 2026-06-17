@@ -339,6 +339,14 @@ class EDCoPilotPlugin(PluginBase):
                                 placeholder=None,
                                 default_value=True
                             ),
+                            ToggleSetting(
+                                key="read_edcp_ui",
+                                label="Read EDCP UI",
+                                type="toggle",
+                                readonly=False,
+                                placeholder=None,
+                                default_value=False
+                            ),
                             ParagraphSetting(
                                 key="actions_warning",
                                 label=None,
@@ -485,6 +493,9 @@ class EDCoPilotPlugin(PluginBase):
             )
 
     def _edcopilot_panel_contents_status(self, projected_states: dict[str, Any]) -> list[tuple[str, Any]]:
+        if not self.settings.get("read_edcp_ui", False):
+            return []
+
         state = projected_states.get("EDCoPilotPanelContents")
         if state is None:
             return []
