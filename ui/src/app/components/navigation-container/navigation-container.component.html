@@ -7,44 +7,46 @@
     <div class="navigation-content">
     <div class="header">
         <div class="system-info">
-            <div class="system-title">
-                <h2>{{ currentSystemName || 'Unknown System' }}</h2>
-                @if (getNavigationOptions().length) {
-                    <mat-form-field class="system-selector" appearance="fill">
-                        <mat-select [(ngModel)]="selectedNavigationTarget" (selectionChange)="onNavigationTargetChange()">
-                            <mat-select-trigger>{{ getSelectedNavigationTargetLabel() }}</mat-select-trigger>
-                            <mat-option value="commander">Current Location</mat-option>
-                            @if (getCarrierNavigationOptions().length) {
-                                <mat-optgroup label="Carriers">
-                                    @for (option of getCarrierNavigationOptions(); track option.id) {
-                                        <mat-option [value]="option.id">{{ formatNavigationOption(option) }}</mat-option>
-                                    }
-                                </mat-optgroup>
-                            }
-                            @if (getNavRouteNavigationOptions().length) {
-                                <mat-optgroup label="Nav Route">
-                                    @for (option of getNavRouteNavigationOptions(); track option.id) {
-                                        <mat-option [value]="option.id">
-                                            <span class="nav-route-option">
-                                                <span class="nav-route-option-main">{{ formatNavigationOption(option) }}</span>
-                                                @if (option.scoopable !== null) {
-                                                    <mat-icon
-                                                        class="nav-route-scoop-icon"
-                                                        [class.nav-route-scoop-icon--unscoopable]="!option.scoopable"
-                                                        [attr.aria-label]="option.scoopable ? 'Scoopable star' : 'Not scoopable'"
-                                                    >
-                                                        local_gas_station
-                                                    </mat-icon>
-                                                }
-                                            </span>
-                                        </mat-option>
-                                    }
-                                </mat-optgroup>
-                            }
-                        </mat-select>
-                    </mat-form-field>
-                }
-            </div>
+            @if (activeNavigationSubtab !== "route") {
+                <div class="system-title">
+                    <h2>{{ currentSystemName || 'Unknown System' }}</h2>
+                    @if (getNavigationOptions().length) {
+                        <mat-form-field class="system-selector" appearance="fill">
+                            <mat-select [(ngModel)]="selectedNavigationTarget" (selectionChange)="onNavigationTargetChange()">
+                                <mat-select-trigger>{{ getSelectedNavigationTargetLabel() }}</mat-select-trigger>
+                                <mat-option value="commander">Current Location</mat-option>
+                                @if (getCarrierNavigationOptions().length) {
+                                    <mat-optgroup label="Carriers">
+                                        @for (option of getCarrierNavigationOptions(); track option.id) {
+                                            <mat-option [value]="option.id">{{ formatNavigationOption(option) }}</mat-option>
+                                        }
+                                    </mat-optgroup>
+                                }
+                                @if (getNavRouteNavigationOptions().length) {
+                                    <mat-optgroup label="Nav Route">
+                                        @for (option of getNavRouteNavigationOptions(); track option.id) {
+                                            <mat-option [value]="option.id">
+                                                <span class="nav-route-option">
+                                                    <span class="nav-route-option-main">{{ formatNavigationOption(option) }}</span>
+                                                    @if (option.scoopable !== null) {
+                                                        <mat-icon
+                                                            class="nav-route-scoop-icon"
+                                                            [class.nav-route-scoop-icon--unscoopable]="!option.scoopable"
+                                                            [attr.aria-label]="option.scoopable ? 'Scoopable star' : 'Not scoopable'"
+                                                        >
+                                                            local_gas_station
+                                                        </mat-icon>
+                                                    }
+                                                </span>
+                                            </mat-option>
+                                        }
+                                    </mat-optgroup>
+                                }
+                            </mat-select>
+                        </mat-form-field>
+                    }
+                </div>
+            }
             <div class="meta">
 <!--                <span>Address: {{ currentSystemAddress ?? 'Unknown' }}</span>-->
                 @if (systemRecord?.star_class) {
@@ -52,11 +54,13 @@
                 }
             </div>
         </div>
-        <div class="meta header-meta">
-            @if (lastUpdatedMs) {
-                <span>Updated {{ lastUpdatedMs | date:'short' }}</span>
-            }
-        </div>
+        @if (activeNavigationSubtab !== "route") {
+            <div class="meta header-meta">
+                @if (lastUpdatedMs) {
+                    <span>Updated {{ lastUpdatedMs | date:'short' }}</span>
+                }
+            </div>
+        }
 <!--        <button mat-stroked-button color="primary" (click)="manualRefresh()" [disabled]="currentSystemAddress === null || isLoading">-->
 <!--            <mat-icon>refresh</mat-icon>-->
 <!--            Refresh-->
@@ -263,7 +267,7 @@
                     <div class="route-summary-grid route-summary-grid--top">
                         <div class="route-summary-card">
                             <span class="label">Current location</span>
-                            <span class="value">{{ getNavRouteDetails()[0].systemName }}</span>
+                            <span class="value">{{ commanderSystemName }}</span>
                         </div>
                         <div class="route-summary-card">
                             <span class="label">Destination</span>
@@ -276,23 +280,25 @@
                             <button
                                 type="button"
                                 class="route-detail-row"
-                                [class.current]="entry.isCurrent"
                                 [class.destination]="entry.isDestination"
                                 (click)="selectRouteSystem(entry)"
                             >
-                                <span class="route-index">{{ entry.index + 1 }}</span>
                                 <span class="route-system">
                                     <strong>{{ entry.systemName }}</strong>
                                     <small>
-                                        @if (entry.isCurrent) { Current system }
-                                        @else if (entry.isDestination) { Destination }
-                                        @else { Jump {{ entry.index }} }
+                                        @if (entry.isDestination) { Destination }
+                                        @else { Jump {{ entry.index + 1 }} }
                                     </small>
                                 </span>
                                 <span class="route-scoop-status" [class.unscoopable]="entry.scoopable === false">
                                     @if (entry.scoopable !== null) {
-                                        <mat-icon>local_gas_station</mat-icon>
-                                        <span>{{ entry.scoopable ? "Scoopable" : "Unscoopable" }}</span>
+                                        <mat-icon
+                                            class="route-scoop-icon"
+                                            [class.route-scoop-icon--unscoopable]="entry.scoopable === false"
+                                            [attr.aria-label]="entry.scoopable ? 'Scoopable star' : 'Not scoopable'"
+                                        >
+                                            local_gas_station
+                                        </mat-icon>
                                     }
                                 </span>
                                 <span class="route-distance">

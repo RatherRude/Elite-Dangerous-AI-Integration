@@ -19,7 +19,6 @@ type NavigationOption = { id: string; label: string; systemName: string; systemA
 type NavigationRouteOption = NavigationOption & { scoopable: boolean | null };
 type NavigationRouteDetail = NavigationRouteOption & {
     index: number;
-    isCurrent: boolean;
     isDestination: boolean;
     distanceFromPrevious: number | null;
     accumulatedDistance: number;
@@ -49,6 +48,7 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
     currentSystemAddress: number | null = null;
     commanderSystemName: string = "Unknown";
     commanderSystemAddress: number | null = null;
+    commanderStarPos: number[] | null = null;
     selectedNavigationTarget: "commander" | string = "commander";
     activeNavigationSubtab: NavigationSubtabId = "location";
     isSystemInfoLegendCollapsed = false;
@@ -93,6 +93,7 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
             this.projectionsService.location$.subscribe((location) => {
                 this.commanderSystemName = location?.StarSystem ?? "Unknown";
                 this.commanderSystemAddress = location?.SystemAddress ?? null;
+                this.commanderStarPos = this.normalizeStarPos(location?.StarPos);
                 if (this.selectedNavigationTarget === "commander") {
                     this.updateSystemContext(this.commanderSystemName, this.commanderSystemAddress);
                 }
@@ -196,7 +197,6 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
             return {
                 ...option,
                 index,
-                isCurrent: index === 0,
                 isDestination: index === options.length - 1,
                 distanceFromPrevious,
                 accumulatedDistance,
@@ -210,7 +210,7 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
     }
 
     getRouteJumpsLeft(): number {
-        return Math.max(0, this.getNavRouteNavigationOptions().length - 1);
+        return Math.max(0, this.getNavRouteNavigationOptions().length);
     }
 
     getRouteDistanceRemaining(): number {
@@ -259,18 +259,29 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
     }
 
     private getRouteLegDistance(index: number): number | null {
-        if (index <= 0) {
-            return null;
-        }
         const route = Array.isArray(this.navInfo?.NavRoute) ? this.navInfo.NavRoute : [];
-        const previous = route[index - 1]?.StarPos;
+        const previous = index === 0 ? this.commanderStarPos : route[index - 1]?.StarPos;
         const current = route[index]?.StarPos;
-        if (!Array.isArray(previous) || !Array.isArray(current) || previous.length < 3 || current.length < 3) {
+        return this.getStarPosDistance(previous, current);
+    }
+
+    private normalizeStarPos(starPos: unknown): number[] | null {
+        if (!Array.isArray(starPos) || starPos.length < 3) {
             return null;
         }
-        const dx = Number(current[0]) - Number(previous[0]);
-        const dy = Number(current[1]) - Number(previous[1]);
-        const dz = Number(current[2]) - Number(previous[2]);
+        const values = starPos.slice(0, 3).map((value) => Number(value));
+        return values.every(Number.isFinite) ? values : null;
+    }
+
+    private getStarPosDistance(previous: unknown, current: unknown): number | null {
+        const previousPos = this.normalizeStarPos(previous);
+        const currentPos = this.normalizeStarPos(current);
+        if (!previousPos || !currentPos) {
+            return null;
+        }
+        const dx = currentPos[0] - previousPos[0];
+        const dy = currentPos[1] - previousPos[1];
+        const dz = currentPos[2] - previousPos[2];
         if (![dx, dy, dz].every(Number.isFinite)) {
             return null;
         }
