@@ -21,6 +21,7 @@ from ..ActionManager import ActionManager
 from ..PromptGenerator import PromptGenerator
 from ..Models import LLMModel, EmbeddingModel
 from ..Projections import get_state_dict, ProjectedStates
+from ..HudColorMatrix import HudColorMatrix
 
 keys: EDKeys = cast(EDKeys, None)
 discovery_primary_var: bool = True
@@ -31,7 +32,7 @@ llm_model: LLMModel = cast(LLMModel, None)
 vision_model_name: str | None = None
 event_manager: EventManager = cast(EventManager, None)
 embedding_model: EmbeddingModel | None = None
-screen_reader_sample_colors: list[str] | None = None
+screen_reader_hud_color_matrix: HudColorMatrix | None = None
 
 chat_local_tabbed: bool = False
 chat_wing_tabbed: bool = False
@@ -443,7 +444,7 @@ def _plotter() -> Plotter:
     return Plotter(
         keys=keys,
         event_manager=event_manager,
-        screen_reader_sample_colors=screen_reader_sample_colors,
+        screen_reader_hud_color_matrix=screen_reader_hud_color_matrix,
         prepare_system_request=prepare_system_request,
         prepare_station_request=prepare_station_request,
         prepare_body_request=prepare_body_request,
@@ -1253,11 +1254,11 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
                      chat_squadron_tabbed_flag: bool = False,
                      chat_direct_tabbed_flag: bool = False,
                      overlay_show_hud: bool = False,
-                     weapon_types_list: list | None = None,
-                     agent_llm_model: LLMModel | None = None,
-                     agent_llm_max_tries: int = 7,
-                     hud_sample_colors: list[str] | None = None):
-    global event_manager, vision_model, llm_model, vision_model_name, keys, weapon_types, embedding_model, screen_reader_sample_colors
+                      weapon_types_list: list | None = None,
+                      agent_llm_model: LLMModel | None = None,
+                      agent_llm_max_tries: int = 7,
+                      hud_color_matrix: HudColorMatrix | None = None):
+    global event_manager, vision_model, llm_model, vision_model_name, keys, weapon_types, embedding_model, screen_reader_hud_color_matrix
     keys = edKeys
     event_manager = eventManager
     llm_model = llmModel
@@ -1265,7 +1266,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
     vision_model_name = visionModelName
     embedding_model = embeddingModel
     weapon_types = weapon_types_list or []
-    screen_reader_sample_colors = hud_sample_colors
+    screen_reader_hud_color_matrix = hud_color_matrix
     global discovery_primary_var, discovery_firegroup_var
     discovery_primary_var = discovery_primary_var_flag
     discovery_firegroup_var = discovery_firegroup_var_flag

@@ -9,6 +9,7 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from src.lib.ScreenReader import ScreenReader
+from src.lib.HudColorMatrix import HudColorMatrix
 
 
 def bgr_from_hex(value: str) -> tuple[int, int, int]:
@@ -16,6 +17,11 @@ def bgr_from_hex(value: str) -> tuple[int, int, int]:
     r = int(text[0:2], 16)
     g = int(text[2:4], 16)
     b = int(text[4:6], 16)
+    return b, g, r
+
+
+def bgr_from_rgb(rgb: tuple[int, int, int]) -> tuple[int, int, int]:
+    r, g, b = rgb
     return b, g, r
 
 
@@ -39,3 +45,25 @@ def test_detect_selected_area_returns_none_without_matching_selection() -> None:
     image = np.zeros((240, 320, 3), dtype=np.uint8)
 
     assert ScreenReader().detect_selected_area(image) is None
+
+
+def test_detect_selected_area_uses_full_hud_color_matrix() -> None:
+    hud_color_matrix = HudColorMatrix([
+        [1.0, 0.70, 0.70],
+        [0.0, 0.45, 0.35],
+        [0.0, 0.00, 0.25],
+    ])
+    shifted_orange = bgr_from_rgb(hud_color_matrix.shift_color(254, 129, 1))
+    image = np.zeros((240, 320, 3), dtype=np.uint8)
+    cv2.rectangle(image, (120, 90), (260, 170), shifted_orange, thickness=-1)
+
+    assert ScreenReader().detect_selected_area(image) is None
+
+    detection = ScreenReader(hud_color_matrix=hud_color_matrix).detect_selected_area(image)
+
+    assert detection is not None
+    assert detection.x == 120
+    assert detection.y == 90
+    assert detection.w == 141
+    assert detection.h == 81
+    assert detection.profile == "sample-fe8101"

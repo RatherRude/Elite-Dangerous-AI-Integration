@@ -11,6 +11,7 @@ import numpy as np
 
 from .Logger import log
 from .Screenshot import screenshot_game_window, set_game_window_active
+from .HudColorMatrix import HudColorMatrix
 
 
 @dataclass(frozen=True)
@@ -285,6 +286,27 @@ def build_profiles(
     return profiles
 
 
+def normalize_hud_color_matrix(hud_color_matrix: HudColorMatrix | list[list[float]] | None) -> np.ndarray | None:
+    if hud_color_matrix is None:
+        return None
+    matrix = hud_color_matrix.matrix if isinstance(hud_color_matrix, HudColorMatrix) else hud_color_matrix
+    normalized = np.array(matrix, dtype=np.float32)
+    if normalized.shape != (3, 3):
+        raise ValueError(f"HUD color matrix must be 3x3, got {normalized.shape}")
+    return normalized
+
+
+def unshift_hud_colors(image: np.ndarray, hud_color_matrix: np.ndarray | None) -> np.ndarray:
+    if hud_color_matrix is None:
+        return image
+
+    rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32) / 255.0
+    inverse = np.linalg.pinv(hud_color_matrix)
+    unshifted_rgb = np.clip(rgb @ inverse, 0.0, 1.0)
+    unshifted_rgb_u8 = np.rint(unshifted_rgb * 255.0).astype(np.uint8)
+    return cv2.cvtColor(unshifted_rgb_u8, cv2.COLOR_RGB2BGR)
+
+
 def hue_distance_deg(hue: np.ndarray, target_deg: float) -> np.ndarray:
     deg = hue.astype(np.float32) * 2.0
     diff = np.abs(deg - target_deg)
@@ -538,6 +560,7 @@ class ScreenReader:
         self,
         sample_colors: list[str] | None = None,
         *,
+        hud_color_matrix: HudColorMatrix | list[list[float]] | None = None,
         saturation_tolerance: float = 0.25,
         candidate_value_tolerance: float = 0.10,
         border_px: int = 4,
@@ -547,6 +570,7 @@ class ScreenReader:
         min_width: int = 20,
         min_height: int = 20,
     ):
+        self.hud_color_matrix = normalize_hud_color_matrix(hud_color_matrix)
         self.profiles = build_profiles(
             sample_colors or ["69d9da", "fe8101"],
             saturation_tolerance=saturation_tolerance,
@@ -566,8 +590,9 @@ class ScreenReader:
         if image is None:
             return None
 
+        detection_image = unshift_hud_colors(image, self.hud_color_matrix)
         return find_detection(
-            image,
+            detection_image,
             profiles=self.profiles,
             border_px=self.border_px,
             border_required=self.border_required,
@@ -644,10 +669,7 @@ if __name__ == "__main__":
 
     config = load_config()
     hud_color_matrix = load_hud_color_matrix(config)
-    reader = ScreenReader(sample_colors=[
-        hud_color_matrix.shift_secondary_color().lstrip("#"),
-        hud_color_matrix.shift_primary_color().lstrip("#"),
-    ])
+    reader = ScreenReader(hud_color_matrix=hud_color_matrix)
     while True:
         result = reader.read_selected_area()
         if result.detection is None:

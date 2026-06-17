@@ -11,6 +11,7 @@ from pyautogui import typewrite
 from ..Logger import log
 from ..Projections import ProjectedStates, get_state_dict
 from ..Screenshot import set_game_window_active
+from ..HudColorMatrix import HudColorMatrix
 
 
 SPANSH_SYSTEMS_URL = "https://spansh.co.uk/api/systems/search"
@@ -55,7 +56,7 @@ class Plotter:
         *,
         keys: Any = None,
         event_manager: Any = None,
-        screen_reader_sample_colors: list[str] | None = None,
+        screen_reader_hud_color_matrix: HudColorMatrix | None = None,
         prepare_system_request: Callable[[dict[str, Any], Any], dict[str, Any]] | None = None,
         prepare_station_request: Callable[[dict[str, Any], Any], dict[str, Any]] | None = None,
         prepare_body_request: Callable[[dict[str, Any], Any], dict[str, Any]] | None = None,
@@ -63,7 +64,7 @@ class Plotter:
     ) -> None:
         self.keys = keys
         self.event_manager = event_manager
-        self.screen_reader_sample_colors = screen_reader_sample_colors
+        self.screen_reader_hud_color_matrix = screen_reader_hud_color_matrix
         self.prepare_system_request = prepare_system_request
         self.prepare_station_request = prepare_station_request
         self.prepare_body_request = prepare_body_request
@@ -456,7 +457,7 @@ class Plotter:
         self._require_ui_dependencies()
         self.ensure_in_system_plot_target(resolved_target)
         category = resolved_target.system_map_category or "LANDFALL PLANETS"
-        SystemMap(ScreenReader(sample_colors=self.screen_reader_sample_colors), self.keys).run(
+        SystemMap(ScreenReader(hud_color_matrix=self.screen_reader_hud_color_matrix), self.keys).run(
             category=category,
             entry=resolved_target.name,
         )
@@ -501,7 +502,7 @@ class Plotter:
         from ..ScreenReader import ScreenReader
 
         self._require_ui_dependencies()
-        screen_reader = ScreenReader(sample_colors=self.screen_reader_sample_colors)
+        screen_reader = ScreenReader(hud_color_matrix=self.screen_reader_hud_color_matrix)
         self._select_orrery_from_galaxy_map(screen_reader)
 
         try:
