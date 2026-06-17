@@ -43,30 +43,40 @@ mat-slide-toggle {
 .preflight-list {
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 2px;
+  padding: 2px 0;
 }
 
 .preflight-item {
+  position: relative;
   display: flex;
   align-items: center;
   width: 100%;
   min-width: 0;
   gap: 0.75rem;
-  padding: 0.75rem;
+  padding: 0.68rem 0.75rem;
   border: 0;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.035);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--hud-orange) 8%, transparent);
   color: inherit;
   cursor: default;
   font: inherit;
   text-align: left;
-  transition: background 160ms ease;
+  transition: background 160ms ease, box-shadow 160ms ease, color 160ms ease, filter 160ms ease;
 }
 
 .preflight-item:hover,
-.preflight-item:focus-visible,
+.preflight-item:focus-visible {
+  background: color-mix(in srgb, var(--hud-orange) 16%, transparent);
+  filter: brightness(1.12);
+  outline: none;
+}
+
 .preflight-item.active {
-  background: rgba(255, 255, 255, 0.075);
+  background: var(--hud-orange);
+  box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.22), 0 0 12px color-mix(in srgb, var(--hud-orange) 36%, transparent);
+  color: #160800;
+  filter: brightness(1.05) contrast(1.08);
   outline: none;
 }
 
@@ -76,6 +86,10 @@ mat-slide-toggle {
   height: 22px;
   color: rgba(255, 255, 255, 0.5);
   font-size: 22px;
+}
+
+.preflight-item.active .preflight-kind-icon {
+  color: currentColor;
 }
 
 .preflight-status-icon {
@@ -101,6 +115,12 @@ mat-slide-toggle {
   color: #ff6b6b;
 }
 
+.preflight-item.active .preflight-status-icon,
+.preflight-item.active.ready .preflight-status-icon,
+.preflight-item.active.needs-attention .preflight-status-icon {
+  color: currentColor;
+}
+
 .preflight-category-copy {
   display: flex;
   min-width: 0;
@@ -109,10 +129,17 @@ mat-slide-toggle {
 }
 
 .preflight-category-copy span {
-  color: rgba(255, 255, 255, 0.58);
+  color: var(--hud-cyan);
   font-size: 0.75rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  text-shadow: var(--hud-cyan-glow);
+}
+
+.preflight-item.active .preflight-category-copy span,
+.preflight-item.active .preflight-category-copy strong {
+  color: currentColor;
+  text-shadow: none;
 }
 
 .preflight-category-copy strong {

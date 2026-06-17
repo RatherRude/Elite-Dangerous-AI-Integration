@@ -100,21 +100,21 @@
                                 <mat-icon>edit</mat-icon> Edit
                             </button>
 
-                            <button mat-raised-button color="accent" (click)="addNewCharacter()"
+                            <button mat-raised-button color="accent" class="secondary-character-button" (click)="addNewCharacter()"
                                     [matTooltip]="selectedCharacterIndex === 0 ? 'Create a new character with customizable traits and personality prompt' : 'Create a new character based on the current one'"
                                     matTooltipPosition="above">
                                 <mat-icon>add</mat-icon> New
 
                             </button>
 
-                            <button mat-raised-button color="accent" 
+                            <button mat-raised-button color="accent" class="secondary-character-button"
                                     (click)="duplicateSelectedCharacter()"
                                     [matTooltip]="selectedCharacterIndex === 0 ? 'Create a copy of this character that you can customize with different traits and settings' : 'Create a copy of this character with all current settings'"
                                     matTooltipPosition="above">
                                 <mat-icon>content_copy</mat-icon> Duplicate
                             </button>
 
-                            <button mat-raised-button color="warn"
+                            <button mat-raised-button color="accent" class="secondary-character-button"
                                     [disabled]="selectedCharacterIndex === 0"
                                     (click)="deleteSelectedCharacter()"
                                     [matTooltip]="'Permanently delete the currently selected character'"

@@ -13,9 +13,17 @@ import { Subscription } from "rxjs";
 import { EventMessage, EventService, GameEvent } from "../../services/event.service";
 import { ProjectionsService } from "../../services/projections.service";
 import { GetSystemEventsMessage, SystemEventsMessage, TauriService } from "../../services/tauri.service";
+import { NavigationSubtabId, NavigationSubtabRailComponent } from "../navigation-subtab-rail/navigation-subtab-rail.component";
 
 type NavigationOption = { id: string; label: string; systemName: string; systemAddress: number | null };
 type NavigationRouteOption = NavigationOption & { scoopable: boolean | null };
+type NavigationRouteDetail = NavigationRouteOption & {
+    index: number;
+    isCurrent: boolean;
+    isDestination: boolean;
+    distanceFromPrevious: number | null;
+    accumulatedDistance: number;
+};
 
 @Component({
     selector: "app-navigation-container",
@@ -31,6 +39,7 @@ type NavigationRouteOption = NavigationOption & { scoopable: boolean | null };
         MatExpansionModule,
         MatFormFieldModule,
         MatSelectModule,
+        NavigationSubtabRailComponent,
     ],
     templateUrl: "./navigation-container.component.html",
     styleUrls: ["./navigation-container.component.scss"],
@@ -41,6 +50,8 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
     commanderSystemName: string = "Unknown";
     commanderSystemAddress: number | null = null;
     selectedNavigationTarget: "commander" | string = "commander";
+    activeNavigationSubtab: NavigationSubtabId = "location";
+    isSystemInfoLegendCollapsed = false;
     fleetCarriers: any = null;
     navInfo: any = null;
 
@@ -127,6 +138,20 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
         this.updateSystemContext(option.systemName || "Unknown", address);
     }
 
+    setActiveNavigationSubtab(subtab: NavigationSubtabId): void {
+        this.activeNavigationSubtab = subtab;
+    }
+
+    selectRouteSystem(option: NavigationRouteOption): void {
+        this.selectedNavigationTarget = option.id;
+        this.onNavigationTargetChange();
+        this.activeNavigationSubtab = "location";
+    }
+
+    toggleSystemInfoLegend(): void {
+        this.isSystemInfoLegendCollapsed = !this.isSystemInfoLegendCollapsed;
+    }
+
     getNavigationOptions(): NavigationOption[] {
         return [...this.getCarrierNavigationOptions(), ...this.getNavRouteNavigationOptions()];
     }
@@ -158,6 +183,39 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
                 };
             })
             .filter((entry: NavigationRouteOption) => entry.systemName !== "Unknown");
+    }
+
+    getNavRouteDetails(): NavigationRouteDetail[] {
+        const options = this.getNavRouteNavigationOptions();
+        let accumulatedDistance = 0;
+        return options.map((option, index) => {
+            const distanceFromPrevious = this.getRouteLegDistance(index);
+            if (distanceFromPrevious !== null) {
+                accumulatedDistance += distanceFromPrevious;
+            }
+            return {
+                ...option,
+                index,
+                isCurrent: index === 0,
+                isDestination: index === options.length - 1,
+                distanceFromPrevious,
+                accumulatedDistance,
+            };
+        });
+    }
+
+    getRouteDestinationName(): string {
+        const route = this.getNavRouteDetails();
+        return route[route.length - 1]?.systemName ?? "No destination";
+    }
+
+    getRouteJumpsLeft(): number {
+        return Math.max(0, this.getNavRouteNavigationOptions().length - 1);
+    }
+
+    getRouteDistanceRemaining(): number {
+        const route = this.getNavRouteDetails();
+        return route[route.length - 1]?.accumulatedDistance ?? 0;
     }
 
     formatNavigationOption(option: { label: string }): string {
@@ -198,6 +256,25 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
             }
         }
         return false;
+    }
+
+    private getRouteLegDistance(index: number): number | null {
+        if (index <= 0) {
+            return null;
+        }
+        const route = Array.isArray(this.navInfo?.NavRoute) ? this.navInfo.NavRoute : [];
+        const previous = route[index - 1]?.StarPos;
+        const current = route[index]?.StarPos;
+        if (!Array.isArray(previous) || !Array.isArray(current) || previous.length < 3 || current.length < 3) {
+            return null;
+        }
+        const dx = Number(current[0]) - Number(previous[0]);
+        const dy = Number(current[1]) - Number(previous[1]);
+        const dz = Number(current[2]) - Number(previous[2]);
+        if (![dx, dy, dz].every(Number.isFinite)) {
+            return null;
+        }
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
 
     private ensureValidNavigationTarget(): void {

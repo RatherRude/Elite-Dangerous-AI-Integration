@@ -3,16 +3,16 @@
 @include mat.core();
 
 $primary-palette: (
-  50: lighten(#fe8101, 40%),
-  100: lighten(#fe8101, 30%),
-  200: lighten(#fe8101, 20%),
-  300: lighten(#fe8101, 10%),
-  400: lighten(#fe8101, 5%),
-  500: #fe8101,
-  600: darken(#fe8101, 5%),
-  700: darken(#fe8101, 10%),
-  800: darken(#fe8101, 20%),
-  900: darken(#fe8101, 30%),
+  50: lighten(#ff7500, 40%),
+  100: lighten(#ff7500, 30%),
+  200: lighten(#ff7500, 20%),
+  300: lighten(#ff7500, 10%),
+  400: lighten(#ff7500, 5%),
+  500: #ff7500,
+  600: darken(#ff7500, 5%),
+  700: darken(#ff7500, 10%),
+  800: darken(#ff7500, 20%),
+  900: darken(#ff7500, 30%),
   contrast: (
     50: rgba(black, 0.87),
     100: rgba(black, 0.87),
@@ -77,7 +77,7 @@ $my-dark-theme: mat.define-dark-theme((
 @include mat.all-component-densities($my-density);
 
 :root {
-  --hud-orange: #fe8101;
+  --hud-orange: #ff7500;
   --hud-orange-soft: color-mix(in srgb, var(--hud-orange) 62%, white);
   --hud-orange-dark: color-mix(in srgb, var(--hud-orange) 22%, black);
   --hud-cyan: #14f5ff;

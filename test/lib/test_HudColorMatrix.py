@@ -13,7 +13,7 @@ class TestHudColorMatrix(unittest.TestCase):
         matrix = HudColorMatrix.identity()
 
         self.assertEqual(matrix.shift_reference_orange(), "#69d9da")
-        self.assertEqual(matrix.shift_primary_color(), "#fe8101")
+        self.assertEqual(matrix.shift_primary_color(), "#ff7500")
         self.assertEqual(matrix.shift_secondary_color(), "#69d9da")
         self.assertEqual(matrix.shift_color(*REFERENCE_ORANGE), REFERENCE_ORANGE)
 

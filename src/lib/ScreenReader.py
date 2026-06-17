@@ -715,7 +715,7 @@ class ScreenReader:
     ):
         self.hud_color_matrix = normalize_hud_color_matrix(hud_color_matrix)
         self.profiles = build_profiles(
-            sample_colors or ["69d9da", "fe8101"],
+            sample_colors or ["69d9da", "ff7500"],
             saturation_tolerance=saturation_tolerance,
             candidate_value_tolerance=candidate_value_tolerance,
             hue_tolerance_deg=hue_tolerance_deg,

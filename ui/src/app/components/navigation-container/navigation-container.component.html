@@ -1,4 +1,10 @@
 <div class="navigation-container">
+    <app-navigation-subtab-rail
+        [activeSubtab]="activeNavigationSubtab"
+        (activeSubtabChange)="setActiveNavigationSubtab($event)"
+    ></app-navigation-subtab-rail>
+
+    <div class="navigation-content">
     <div class="header">
         <div class="system-info">
             <div class="system-title">
@@ -76,34 +82,57 @@
             No navigation data yet. Perform a system scan to populate discoveries.
         </div>
     } @else if (systemRecord) {
-        @if (systemMeta.length) {
-            <div class="section system-meta">
-                @for (item of systemMeta; track item.label) {
-                    <div class="system-meta-item">
-                        <span class="label">{{ item.label }}</span>
-                        <span class="value">{{ item.value }}</span>
+        @if (activeNavigationSubtab === "location") {
+            <div
+                class="section system-map-panel location-panel"
+                (mouseenter)="clearHoveredMapNode()"
+                (mouseleave)="clearHoveredMapNode()"
+            >
+                @if (systemMap.length) {
+                    <div class="system-map-root">
+                        @for (node of systemMap; track node.id) {
+                            <ng-container
+                                [ngTemplateOutlet]="mapNode"
+                                [ngTemplateOutletContext]="{ $implicit: node }"
+                            ></ng-container>
+                        }
                     </div>
+                } @else {
+                    <div class="muted">No map data available yet.</div>
                 }
+
+                <aside
+                    class="system-info-legend"
+                    [class.collapsed]="isSystemInfoLegendCollapsed"
+                    aria-label="System information"
+                >
+                    <button
+                        type="button"
+                        class="legend-toggle"
+                        [attr.aria-expanded]="!isSystemInfoLegendCollapsed"
+                        (click)="toggleSystemInfoLegend()"
+                    >
+                        <span class="legend-title">System Information</span>
+                        <mat-icon>{{ isSystemInfoLegendCollapsed ? "keyboard_arrow_up" : "keyboard_arrow_down" }}</mat-icon>
+                    </button>
+                    @if (!isSystemInfoLegendCollapsed) {
+                        <div class="system-meta">
+                            @if (systemMeta.length) {
+                                @for (item of systemMeta; track item.label) {
+                                    <div class="system-meta-item">
+                                        <span class="label">{{ item.label }}</span>
+                                        <span class="value">{{ item.value }}</span>
+                                    </div>
+                                }
+                            } @else {
+                                <div class="muted">No system information recorded.</div>
+                            }
+                        </div>
+                    }
+                </aside>
             </div>
         }
-        <div
-            class="section system-map-panel"
-            (mouseenter)="clearHoveredMapNode()"
-            (mouseleave)="clearHoveredMapNode()"
-        >
-            @if (systemMap.length) {
-                <div class="system-map-root">
-                    @for (node of systemMap; track node.id) {
-                        <ng-container
-                            [ngTemplateOutlet]="mapNode"
-                            [ngTemplateOutletContext]="{ $implicit: node }"
-                        ></ng-container>
-                    }
-                </div>
-            } @else {
-                <div class="muted">No map data available yet.</div>
-            }
-        </div>
+        @if (activeNavigationSubtab === "list") {
         <mat-accordion>
             <mat-expansion-panel>
                 <mat-expansion-panel-header>
@@ -227,7 +256,74 @@
                 </div>
             </mat-expansion-panel>
         </mat-accordion>
+        }
+        @if (activeNavigationSubtab === "route") {
+            <section class="nav-route-panel" aria-label="Navigation route details">
+                @if (getNavRouteDetails().length) {
+                    <div class="route-summary-grid route-summary-grid--top">
+                        <div class="route-summary-card">
+                            <span class="label">Current location</span>
+                            <span class="value">{{ getNavRouteDetails()[0].systemName }}</span>
+                        </div>
+                        <div class="route-summary-card">
+                            <span class="label">Destination</span>
+                            <span class="value">{{ getRouteDestinationName() }}</span>
+                        </div>
+                    </div>
+
+                    <div class="route-detail-list">
+                        @for (entry of getNavRouteDetails(); track entry.id) {
+                            <button
+                                type="button"
+                                class="route-detail-row"
+                                [class.current]="entry.isCurrent"
+                                [class.destination]="entry.isDestination"
+                                (click)="selectRouteSystem(entry)"
+                            >
+                                <span class="route-index">{{ entry.index + 1 }}</span>
+                                <span class="route-system">
+                                    <strong>{{ entry.systemName }}</strong>
+                                    <small>
+                                        @if (entry.isCurrent) { Current system }
+                                        @else if (entry.isDestination) { Destination }
+                                        @else { Jump {{ entry.index }} }
+                                    </small>
+                                </span>
+                                <span class="route-scoop-status" [class.unscoopable]="entry.scoopable === false">
+                                    @if (entry.scoopable !== null) {
+                                        <mat-icon>local_gas_station</mat-icon>
+                                        <span>{{ entry.scoopable ? "Scoopable" : "Unscoopable" }}</span>
+                                    }
+                                </span>
+                                <span class="route-distance">
+                                    @if (entry.distanceFromPrevious !== null) {
+                                        {{ entry.distanceFromPrevious | number:'1.1-1' }} ly
+                                    } @else {
+                                        -
+                                    }
+                                </span>
+                                <span class="route-accumulated">{{ entry.accumulatedDistance | number:'1.1-1' }} ly total</span>
+                            </button>
+                        }
+                    </div>
+
+                    <div class="route-summary-grid route-summary-grid--bottom">
+                        <div class="route-summary-card">
+                            <span class="label">Jumps remaining</span>
+                            <span class="value">{{ getRouteJumpsLeft() }}</span>
+                        </div>
+                        <div class="route-summary-card">
+                            <span class="label">Distance remaining</span>
+                            <span class="value">{{ getRouteDistanceRemaining() | number:'1.1-1' }} ly</span>
+                        </div>
+                    </div>
+                } @else {
+                    <div class="empty-state">No plotted nav route available.</div>
+                }
+            </section>
+        }
     }
+    </div>
 </div>
 
 <ng-template #mapNode let-node>

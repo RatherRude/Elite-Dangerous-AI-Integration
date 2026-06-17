@@ -27,7 +27,7 @@ def bgr_from_rgb(rgb: tuple[int, int, int]) -> tuple[int, int, int]:
 
 def test_detect_selected_area_finds_largest_matching_rectangle() -> None:
     image = np.zeros((240, 320, 3), dtype=np.uint8)
-    orange = bgr_from_hex("fe8101")
+    orange = bgr_from_hex("ff7500")
     cv2.rectangle(image, (40, 30), (90, 80), orange, thickness=-1)
     cv2.rectangle(image, (120, 90), (260, 170), orange, thickness=-1)
 
@@ -38,7 +38,7 @@ def test_detect_selected_area_finds_largest_matching_rectangle() -> None:
     assert detection.y == 90
     assert detection.w == 141
     assert detection.h == 81
-    assert detection.profile == "sample-fe8101"
+    assert detection.profile == "sample-ff7500"
 
 
 def test_detect_selected_area_returns_none_without_matching_selection() -> None:

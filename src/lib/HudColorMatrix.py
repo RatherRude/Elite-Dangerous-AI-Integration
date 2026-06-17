@@ -3,7 +3,7 @@ from xml.etree.ElementTree import parse
 
 from .Logger import log
 
-REFERENCE_PRIMARY = (254, 129, 1)  # #FE8101
+REFERENCE_PRIMARY = (255, 117, 0)  # #FF7500
 REFERENCE_SECONDARY = (105, 217, 218)  # #69D9DA
 REFERENCE_ORANGE = REFERENCE_SECONDARY
 IDENTITY_MATRIX: list[list[float]] = [
