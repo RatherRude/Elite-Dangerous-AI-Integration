@@ -390,19 +390,18 @@
                     <h3 class="stat-header">UTILITY</h3>
                     <div class="utility-list">
                         <ng-container *ngFor="let module of getUtilityModules()">
-                            <div class="utility-item module-item">
-                                <div class="module-slot">{{ getUtilityModuleClassLabel(module) }}</div>
-                                <div class="module-content utility-details">
-                                    <div class="module-name utility-name">{{ formatUtilityModuleName(module.Item) }}</div>
-                                    <div class="module-engineering utility-engineering" *ngIf="module.Engineering">
-                                        <mat-icon class="engineering-icon">build</mat-icon>
-                                        <span class="engineering-text">{{ formatEngineeringName(module.Engineering.BlueprintName) }}
-                                            (G{{ module.Engineering.Level || '?' }})
+                            <div class="utility-item">
+                                <div class="utility-details">
+                                    <span class="utility-name">{{ formatUtilityModuleName(module.Item) }}</span>
+                                </div>
+                                <div class="utility-engineering" *ngIf="module.Engineering">
+                                    <mat-icon class="engineering-icon">build</mat-icon>
+                                    <span class="engineering-text">{{ formatEngineeringName(module.Engineering.BlueprintName) }}
+                                        (G{{ module.Engineering.Level || '?' }})
                                         <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
                                             - {{ module.Engineering.ExperimentalEffect_Localised }}
                                         </span>
                                     </span>
-                                    </div>
                                 </div>
                             </div>
                         </ng-container>
@@ -413,7 +412,7 @@
                 <!-- MIDDLE COLUMN - Defense Stats -->
                 <div class="sheet-column stats-column">
                     <div class="ship-defense-stats">
-                        <div class="defense-stat-item">
+                        <div class="defense-stat-item primary-defense-stat">
                             <div class="stat-label">HULL</div>
                             <div class="stat-value-with-bar">
                                 <div class="stat-value">{{ getShipHealth() }}</div>
@@ -422,7 +421,7 @@
                             </div>
                         </div>
 
-                        <div class="defense-stat-item">
+                        <div class="defense-stat-item primary-defense-stat">
                             <div class="stat-label">FUEL</div>
                             <div class="stat-value-with-bar">
                                 <div class="stat-value">{{ getFuelAmount() }}/{{ getFuelCapacity() }}</div>
@@ -431,7 +430,7 @@
                             </div>
                         </div>
 
-                        <div *ngIf="getCargoCapacity() > 0" class="defense-stat-item cargo-box"
+                        <div *ngIf="getCargoCapacity() > 0" class="defense-stat-item cargo-box primary-defense-stat"
                              (click)="toggleCargoDetails()">
                             <div class="stat-label">CARGO
                                 <mat-icon class="tiny-icon">{{ showCargoDetails ? 'expand_less' : 'expand_more' }}
@@ -516,19 +515,18 @@
                     <h3 class="stat-header">ARMAMENTS</h3>
                     <div class="hardpoints-list">
                         <ng-container *ngFor="let module of getWeaponModules()">
-                            <div class="hardpoint-item module-item">
-                                <div class="module-slot">{{ getModuleClassLabel(module) }}</div>
-                                <div class="module-content hardpoint-details">
-                                    <div class="module-name hardpoint-name">{{ formatModuleName(module.Item) }}</div>
-                                    <div class="module-engineering hardpoint-engineering" *ngIf="module.Engineering">
-                                        <mat-icon class="engineering-icon">build</mat-icon>
-                                        <span class="engineering-text">{{ formatEngineeringName(module.Engineering.BlueprintName) }}
-                                            (G{{ module.Engineering.Level || '?' }})
-                                            <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
-                                                - {{ module.Engineering.ExperimentalEffect_Localised }}
-                                            </span>
+                            <div class="hardpoint-item">
+                                <div class="hardpoint-details weapon-display">
+                                    <span class="hardpoint-name">{{ formatModuleName(module.Item) }}</span>
+                                </div>
+                                <div class="hardpoint-engineering" *ngIf="module.Engineering">
+                                    <mat-icon class="engineering-icon">build</mat-icon>
+                                    <span class="engineering-text">{{ formatEngineeringName(module.Engineering.BlueprintName) }}
+                                        (G{{ module.Engineering.Level || '?' }})
+                                        <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
+                                            - {{ module.Engineering.ExperimentalEffect_Localised }}
                                         </span>
-                                    </div>
+                                    </span>
                                 </div>
                             </div>
                         </ng-container>
