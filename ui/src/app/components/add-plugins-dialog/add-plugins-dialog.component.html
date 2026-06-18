@@ -1,0 +1,51 @@
+<h2 mat-dialog-title>Available Plugins</h2>
+<mat-dialog-content>
+  @if (loading) {
+    <div style="display: flex; justify-content: center; align-items: center; padding: 40px;">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+  } @else if (error) {
+    <div style="padding: 20px; text-align: center; color: red;">
+      <mat-icon>error</mat-icon>
+      <p>{{ error }}</p>
+    </div>
+  } @else if (plugins.length === 0) {
+    <div style="padding: 20px; text-align: center;">
+      <p>No plugins available.</p>
+    </div>
+  } @else {
+    <div style="display: flex; flex-direction: column; gap: 16px; max-height: 500px; overflow-y: auto;">
+      @for (plugin of plugins; track plugin.id) {
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>{{ plugin.name }}</mat-card-title>
+            <mat-card-subtitle>
+              by {{ plugin.author }} • v{{ plugin.version }}
+            </mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <p>{{ plugin.description }}</p>
+            <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+              <button mat-stroked-button (click)="openRepo(plugin.repo)" [disabled]="isInstalling(plugin.id)" style="margin-top: 8px;">
+                <mat-icon>code</mat-icon>
+                View Repository
+              </button>
+              <button mat-raised-button color="primary" (click)="installPlugin(plugin)" [disabled]="isInstalling(plugin.id)" style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
+                @if (isInstalling(plugin.id)) {
+                  <mat-spinner diameter="16" style="display: inline-block;"></mat-spinner>
+                  <span>Installing...</span>
+                } @else {
+                  <mat-icon>download</mat-icon>
+                  <span>Install</span>
+                }
+              </button>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
+    </div>
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onClose()">Close</button>
+</mat-dialog-actions>

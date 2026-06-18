@@ -1,0 +1,20 @@
+<div class="config-tab-shell">
+    <section class="config-tab-hero">
+        <div class="config-tab-copy">
+            <p class="config-eyebrow">{{ eyebrow }}</p>
+            <h2>{{ title }}</h2>
+            @if (description) {
+                <p class="config-description">{{ description }}</p>
+            }
+            <ng-content select="[shell-description]"></ng-content>
+        </div>
+
+        <div class="config-tab-actions">
+            <ng-content select="[shell-actions]"></ng-content>
+        </div>
+    </section>
+
+    <div class="config-tab-body">
+        <ng-content></ng-content>
+    </div>
+</div>

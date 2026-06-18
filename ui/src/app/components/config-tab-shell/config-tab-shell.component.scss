@@ -1,0 +1,78 @@
+:host {
+  display: block;
+}
+
+.config-tab-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 100%;
+  color: var(--config-bright, #f5f7fa);
+}
+
+.config-tab-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px;
+  border-radius: 16px;
+  border: 1px solid var(--config-border, rgba(255, 255, 255, 0.12));
+  background: var(--config-bg, rgba(8, 12, 20, 0.9));
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.16);
+}
+
+.config-eyebrow {
+  margin: 0 0 8px;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--config-muted, rgba(236, 241, 248, 0.68));
+}
+
+.config-tab-copy h2 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.config-description {
+  max-width: 64ch;
+  margin: 8px 0 0;
+  color: var(--config-muted, rgba(236, 241, 248, 0.68));
+  line-height: 1.55;
+}
+
+.config-tab-copy ::ng-deep [shell-description] {
+  max-width: 64ch;
+  margin: 8px 0 0;
+  color: var(--config-muted, rgba(236, 241, 248, 0.68));
+  line-height: 1.55;
+}
+
+.config-tab-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+}
+
+.config-tab-actions:empty {
+  display: none;
+}
+
+.config-tab-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+@media (max-width: 960px) {
+  .config-tab-hero {
+    flex-direction: column;
+    padding: 20px;
+  }
+
+  .config-tab-copy h2 {
+    font-size: 26px;
+  }
+}
