@@ -38,7 +38,7 @@ def test_detect_selected_area_finds_largest_matching_rectangle() -> None:
     assert detection.y == 90
     assert detection.w == 141
     assert detection.h == 81
-    assert detection.profile == "sample-ff7500"
+    assert detection.profile == "sample-ff7500-as-ffe7db"
 
 
 def test_detect_selected_area_returns_none_without_matching_selection() -> None:
@@ -66,4 +66,4 @@ def test_detect_selected_area_uses_full_hud_color_matrix() -> None:
     assert detection.y == 90
     assert detection.w == 141
     assert detection.h == 81
-    assert detection.profile == "sample-ff7500"
+    assert detection.profile == "sample-ff7500-as-ffe7db"

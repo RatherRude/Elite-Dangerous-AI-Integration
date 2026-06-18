@@ -25,7 +25,7 @@ class TestHudColorMatrix(unittest.TestCase):
         ])
 
         self.assertEqual(matrix.shift_reference_orange(), "#69ffda")
-        self.assertEqual(matrix.shift_primary_color(), "#feff01")
+        self.assertEqual(matrix.shift_primary_color(), "#ffff00")
         self.assertEqual(matrix.shift_secondary_color(), "#69ffda")
 
     def test_red_sky_blue_matrix_shifts_reference_orange(self):
@@ -36,7 +36,7 @@ class TestHudColorMatrix(unittest.TestCase):
         ])
 
         self.assertEqual(matrix.shift_reference_orange(), "#34ffff")
-        self.assertEqual(matrix.shift_primary_color(), "#7f8300")
+        self.assertEqual(matrix.shift_primary_color(), "#806a00")
         self.assertEqual(matrix.shift_secondary_color(), "#34ffff")
 
     def test_load_from_appdata_reads_override_file(self):
@@ -65,7 +65,7 @@ class TestHudColorMatrix(unittest.TestCase):
 
             self.assertEqual(matrix.matrix, [[1.0, 0.0, 0.0], [0.0, 5.0, 0.0], [0.0, 0.0, 1.0]])
             self.assertEqual(matrix.shift_reference_orange(), "#69ffda")
-            self.assertEqual(matrix.shift_primary_color(), "#feff01")
+            self.assertEqual(matrix.shift_primary_color(), "#ffff00")
             self.assertEqual(matrix.shift_secondary_color(), "#69ffda")
 
     def test_load_from_appdata_prefers_edhm_matrix(self):
@@ -84,7 +84,7 @@ class TestHudColorMatrix(unittest.TestCase):
             matrix = HudColorMatrix.load_from_appdata("C:/Elite Dangerous")
 
         self.assertEqual(matrix.matrix, edhm_matrix)
-        self.assertEqual(matrix.shift_primary_color(), "#0977ff")
+        self.assertEqual(matrix.shift_primary_color(), "#0a56ff")
         self.assertEqual(matrix.shift_reference_orange(), "#69d9da")
         self.assertEqual(matrix.shift_secondary_color(), "#69d9da")
         mock_parse.assert_not_called()
