@@ -1,6 +1,7 @@
 import os
 from xml.etree.ElementTree import parse
 
+from .EDHM import EDHM
 from .Logger import log
 
 REFERENCE_PRIMARY = (255, 117, 0)  # #FF7500
@@ -16,8 +17,9 @@ GRAPHICS_OVERRIDE_FILENAME = "GraphicsConfigurationOverride.xml"
 
 
 class HudColorMatrix:
-    def __init__(self, matrix: list[list[float]]):
+    def __init__(self, matrix: list[list[float]], preserve_secondary_color: bool = False):
         self._matrix = matrix
+        self._preserve_secondary_color = preserve_secondary_color
 
     @property
     def matrix(self) -> list[list[float]]:
@@ -29,6 +31,10 @@ class HudColorMatrix:
 
     @classmethod
     def load_from_appdata(cls, appdata_path: str) -> "HudColorMatrix":
+        edhm_matrix = EDHM.from_system().load_color_matrix()
+        if edhm_matrix is not None:
+            return cls(edhm_matrix, preserve_secondary_color=True)
+
         path = os.path.join(
             appdata_path,
             "Options",
@@ -89,13 +95,21 @@ class HudColorMatrix:
         return max(0, min(255, round(value * 255)))
 
     def shift_reference_orange(self) -> str:
+        if self._preserve_secondary_color:
+            return self._format_color(*REFERENCE_ORANGE)
         red, green, blue = self.shift_color(*REFERENCE_ORANGE)
-        return f"#{red:02x}{green:02x}{blue:02x}"
+        return self._format_color(red, green, blue)
 
     def shift_primary_color(self) -> str:
         red, green, blue = self.shift_color(*REFERENCE_PRIMARY)
-        return f"#{red:02x}{green:02x}{blue:02x}"
+        return self._format_color(red, green, blue)
 
     def shift_secondary_color(self) -> str:
+        if self._preserve_secondary_color:
+            return self._format_color(*REFERENCE_SECONDARY)
         red, green, blue = self.shift_color(*REFERENCE_SECONDARY)
+        return self._format_color(red, green, blue)
+
+    @staticmethod
+    def _format_color(red: int, green: int, blue: int) -> str:
         return f"#{red:02x}{green:02x}{blue:02x}"

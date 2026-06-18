@@ -40,7 +40,11 @@ class TestHudColorMatrix(unittest.TestCase):
         self.assertEqual(matrix.shift_secondary_color(), "#34ffff")
 
     def test_load_from_appdata_reads_override_file(self):
-        with mock.patch("src.lib.HudColorMatrix.parse") as mock_parse:
+        with (
+            mock.patch("src.lib.HudColorMatrix.EDHM") as mock_edhm,
+            mock.patch("src.lib.HudColorMatrix.parse") as mock_parse,
+        ):
+            mock_edhm.from_system.return_value.load_color_matrix.return_value = None
             mock_root = mock.MagicMock()
 
             def find_tag(path):
@@ -63,6 +67,27 @@ class TestHudColorMatrix(unittest.TestCase):
             self.assertEqual(matrix.shift_reference_orange(), "#69ffda")
             self.assertEqual(matrix.shift_primary_color(), "#feff01")
             self.assertEqual(matrix.shift_secondary_color(), "#69ffda")
+
+    def test_load_from_appdata_prefers_edhm_matrix(self):
+        edhm_matrix = [
+            [0.04, -0.12, 1.0],
+            [0.0, 1.0, 0.2],
+            [0.5, 0.05, -0.02],
+        ]
+
+        with (
+            mock.patch("src.lib.HudColorMatrix.EDHM") as mock_edhm,
+            mock.patch("src.lib.HudColorMatrix.parse") as mock_parse,
+        ):
+            mock_edhm.from_system.return_value.load_color_matrix.return_value = edhm_matrix
+
+            matrix = HudColorMatrix.load_from_appdata("C:/Elite Dangerous")
+
+        self.assertEqual(matrix.matrix, edhm_matrix)
+        self.assertEqual(matrix.shift_primary_color(), "#0977ff")
+        self.assertEqual(matrix.shift_reference_orange(), "#69d9da")
+        self.assertEqual(matrix.shift_secondary_color(), "#69d9da")
+        mock_parse.assert_not_called()
 
 
 if __name__ == "__main__":
