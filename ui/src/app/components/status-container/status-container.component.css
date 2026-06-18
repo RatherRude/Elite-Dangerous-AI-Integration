@@ -8,12 +8,12 @@
   --color-text-secondary: #bbb;
   --color-text-muted: #666;
   --color-background-dark: rgba(0, 0, 0, 0.3);
-  --color-border: #333;
+  --color-border: color-mix(in srgb, var(--hud-orange) 24%, black);
 }
 
 /* Main container */
 .status-container {
-  --status-box-border: color-mix(in srgb, var(--hud-orange-dark) 54%, black);
+  --status-box-border: color-mix(in srgb, var(--hud-orange) 24%, black);
   --status-box-glow: color-mix(in srgb, var(--hud-orange-dark) 16%, transparent);
   flex: 1;
   display: flex;
@@ -41,7 +41,7 @@
   left: 16px;
   right: 16px;
   background: rgba(0, 0, 0, 0.9);
-  border: 1px solid #333;
+  border: 1px solid var(--status-box-border);
   border-radius: 8px;
   padding: 20px;
   z-index: 100;
@@ -83,7 +83,7 @@
   line-height: 32px;
   color: #999;
   background: transparent;
-  border: 1px solid #444;
+  border: 1px solid var(--status-box-border);
   border-radius: 4px;
   transition: all 0.2s ease;
 }
@@ -121,7 +121,7 @@
   max-width: 120px;
   padding: 8px;
   background: rgba(0, 0, 0, 0.3);
-  border: 1px solid #444;
+  border: 1px solid var(--status-box-border);
   border-radius: 4px;
   text-align: center;
 }
@@ -221,7 +221,7 @@
   gap: 12px;
   align-items: flex-start;
   padding: 8px 0;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--status-box-border);
 }
 
 .module-content {
@@ -295,7 +295,7 @@
 .expanded-summary {
   margin-top: 8px;
   padding-top: 8px;
-  border-top: 1px solid #444;
+  border-top: 1px solid var(--status-box-border);
 }
 
 /* Suit class icon */
@@ -310,7 +310,7 @@
   display: flex;
   align-items: center;
   padding: 8px 0;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--status-box-border);
 }
 
 .friend-item mat-icon {
@@ -328,7 +328,7 @@
   display: flex;
   align-items: center;
   padding: 8px 0;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--status-box-border);
 }
 
 .wing-item mat-icon {
@@ -358,7 +358,7 @@
   display: flex;
   align-items: flex-start;
   padding: 12px 0;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--status-box-border);
 }
 
 .fighter-item mat-icon {
@@ -463,7 +463,7 @@
 
 .resource-item {
   padding: 8px 0;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--status-box-border);
 }
 
 .resource-details {
@@ -521,7 +521,7 @@
   width: 32px;
   height: 32px;
   background: rgba(0, 0, 0, 0.8);
-  border: 1px solid #333;
+  border: 1px solid var(--status-box-border);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -596,7 +596,7 @@
 .location-nav-container {
   margin-top: 80px; /* Account for fixed status icons */
   padding: 16px;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--status-box-border);
 }
 
 .location-info {
@@ -657,7 +657,7 @@
 .nav-details {
   margin: 20px 16px 16px 16px;
   background: rgba(0, 0, 0, 0.6);
-  border: 1px solid #444;
+  border: 1px solid var(--status-box-border);
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -673,7 +673,7 @@
   grid-template-columns: 30px 1fr auto auto auto;
   gap: 12px;
   padding: 12px;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--status-box-border);
   align-items: center;
 }
 
@@ -773,7 +773,7 @@
 .nav-details-header {
   /*margin: 16px 0;*/
   background: rgba(0, 0, 0, 0.4);
-  border: 1px solid #444;
+  border: 1px solid var(--status-box-border);
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -948,7 +948,7 @@
 .combat-stat-circle {
   width: 60px;
   height: 60px;
-  border: 2px solid #333;
+  border: 2px solid var(--status-box-border);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1275,10 +1275,10 @@
 .section-header, .stat-header {
   margin: 0 0 16px 0;
   font-size: 16px;
-  color: #d0a85c;
+  color: var(--hud-orange);
   font-weight: 500;
   letter-spacing: 1px;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--status-box-border);
   padding-bottom: 8px;
 }
 
@@ -1319,7 +1319,7 @@
 
 .backpack-details {
   padding: 12px;
-  border-top: 1px solid #333;
+  border-top: 1px solid var(--status-box-border);
 }
 
 .backpack-category-section {
@@ -1388,7 +1388,7 @@
   color: var(--hud-cyan);
   cursor: pointer;
   font-size: 12px;
-  border-top: 1px solid #333;
+  border-top: 1px solid var(--status-box-border);
   transition: background 0.3s ease;
 }
 

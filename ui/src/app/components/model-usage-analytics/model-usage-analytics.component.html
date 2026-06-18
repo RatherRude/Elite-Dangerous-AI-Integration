@@ -6,7 +6,8 @@
         <mat-select
           [ngModel]="selectedPreset"
           (ngModelChange)="onPresetChange($event)"
-          [disabled]="isLoading">
+          [disabled]="isLoading"
+          panelClass="usage-select-panel">
           @for (preset of presets; track preset) {
             <mat-option [value]="preset">{{ formatPresetLabel(preset) }}</mat-option>
           }
@@ -15,7 +16,7 @@
 
       <mat-form-field appearance="outline">
         <mat-label>Usage Kind</mat-label>
-        <mat-select [(ngModel)]="selectedUsageKind" (ngModelChange)="onUsageKindChange()">
+        <mat-select [(ngModel)]="selectedUsageKind" (ngModelChange)="onUsageKindChange()" panelClass="usage-select-panel">
           @for (kind of usageKinds; track kind) {
             <mat-option [value]="kind">{{ formatUsageKindLabel(kind) }}</mat-option>
           }
@@ -24,7 +25,7 @@
 
       <mat-form-field appearance="outline">
         <mat-label>Provider</mat-label>
-        <mat-select [(ngModel)]="selectedProvider" (ngModelChange)="onProviderChange()">
+        <mat-select [(ngModel)]="selectedProvider" (ngModelChange)="onProviderChange()" panelClass="usage-select-panel">
           <mat-option value="all">All providers</mat-option>
           @for (provider of availableProviders; track provider) {
             <mat-option [value]="provider">{{ provider }}</mat-option>
@@ -34,7 +35,7 @@
 
       <mat-form-field appearance="outline">
         <mat-label>Model</mat-label>
-        <mat-select [(ngModel)]="selectedModel" (ngModelChange)="onModelChange()">
+        <mat-select [(ngModel)]="selectedModel" (ngModelChange)="onModelChange()" panelClass="usage-select-panel">
           <mat-option value="all">All models</mat-option>
           @for (model of availableModels; track model) {
             <mat-option [value]="model">{{ model }}</mat-option>
@@ -44,7 +45,7 @@
 
       <mat-form-field appearance="outline">
         <mat-label>Use Case</mat-label>
-        <mat-select [(ngModel)]="selectedContext" (ngModelChange)="onContextChange()">
+        <mat-select [(ngModel)]="selectedContext" (ngModelChange)="onContextChange()" panelClass="usage-select-panel">
           <mat-option value="all">All use cases</mat-option>
           @for (context of availableContexts; track context) {
             <mat-option [value]="context">{{ formatContextLabel(context) }}</mat-option>

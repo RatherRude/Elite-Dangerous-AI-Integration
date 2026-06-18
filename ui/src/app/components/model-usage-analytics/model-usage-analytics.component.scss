@@ -553,6 +553,54 @@
   display: none;
 }
 
+::ng-deep .usage-shell .mat-mdc-form-field.mat-focused {
+  --mdc-outlined-text-field-focus-outline-color: var(--hud-cyan);
+  --mdc-outlined-text-field-focus-label-text-color: var(--hud-cyan);
+  --mdc-outlined-text-field-caret-color: var(--hud-cyan);
+  --mat-select-focused-arrow-color: var(--hud-cyan);
+}
+
+::ng-deep .usage-shell .mat-mdc-form-field.mat-focused .mat-mdc-floating-label,
+::ng-deep .usage-shell .mat-mdc-form-field.mat-focused .mat-mdc-select-arrow {
+  color: var(--hud-cyan) !important;
+  text-shadow: var(--hud-cyan-glow);
+}
+
+::ng-deep .usage-shell .mat-mdc-form-field.mat-focused .mdc-notched-outline__leading,
+::ng-deep .usage-shell .mat-mdc-form-field.mat-focused .mdc-notched-outline__notch,
+::ng-deep .usage-shell .mat-mdc-form-field.mat-focused .mdc-notched-outline__trailing {
+  border-color: var(--hud-cyan) !important;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--hud-cyan) 28%, transparent);
+}
+
+::ng-deep .usage-select-panel .mat-mdc-option.mdc-list-item--selected,
+::ng-deep .usage-select-panel .mat-mdc-option:hover:not(.mdc-list-item--disabled),
+::ng-deep .usage-select-panel .mat-mdc-option.mdc-list-item--activated {
+  --mdc-list-list-item-selected-label-text-color: var(--hud-cyan);
+  --mdc-list-list-item-hover-label-text-color: var(--hud-cyan);
+  --mat-option-selected-state-label-text-color: var(--hud-cyan);
+  --mat-option-focus-state-label-text-color: var(--hud-cyan);
+  color: var(--hud-cyan) !important;
+  text-shadow: var(--hud-cyan-glow);
+}
+
+::ng-deep .usage-select-panel .mat-mdc-option.mdc-list-item--selected .mdc-list-item__primary-text,
+::ng-deep .usage-select-panel .mat-mdc-option.mdc-list-item--activated .mdc-list-item__primary-text,
+::ng-deep .usage-select-panel .mat-mdc-option:hover:not(.mdc-list-item--disabled) .mdc-list-item__primary-text,
+::ng-deep .usage-select-panel .mat-mdc-option.mdc-list-item--selected .mat-pseudo-checkbox,
+::ng-deep .usage-select-panel .mat-mdc-option.mdc-list-item--selected .mat-pseudo-checkbox-checked,
+::ng-deep .usage-select-panel .mat-mdc-option.mdc-list-item--selected .mat-mdc-option-pseudo-checkbox,
+::ng-deep .usage-select-panel .mat-mdc-option.mdc-list-item--selected .mat-icon {
+  color: var(--hud-cyan) !important;
+  border-color: var(--hud-cyan) !important;
+}
+
+::ng-deep .usage-select-panel .mat-mdc-option.mdc-list-item--selected .mat-pseudo-checkbox-checked::after,
+::ng-deep .usage-select-panel .mat-mdc-option.mdc-list-item--selected .mat-mdc-option-pseudo-checkbox::after {
+  color: var(--hud-cyan) !important;
+  border-color: var(--hud-cyan) !important;
+}
+
 ::ng-deep .usage-shell .mat-button-toggle-group {
   background: rgba(255, 255, 255, 0.04);
   border-radius: 4px;
