@@ -738,6 +738,15 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
     return parts.join(' ') || 'Unknown Module';
   }
 
+  formatCoreModuleName(module: any): string {
+    const parts = [
+      this.formatSlotName(module?.Slot),
+      this.formatCoreModuleLabel(module?.Item)
+    ].filter(Boolean);
+
+    return parts.join(' ');
+  }
+
   formatOptionalModuleName(item: string): string {
     if (!item) {
       return 'Unknown Module';

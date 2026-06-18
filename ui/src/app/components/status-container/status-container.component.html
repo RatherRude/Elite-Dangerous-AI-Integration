@@ -542,19 +542,18 @@
                         <h3 class="section-header">CORE INTERNALS</h3>
                         <div class="module-list core-modules">
                             <ng-container *ngFor="let module of getCoreModules()">
-                                <div class="module-item">
-                                    <div class="module-slot">{{ formatSlotName(module.Slot) }}</div>
+                                <div class="internal-item">
                                     <div class="module-content">
-                                        <div class="module-name">{{ formatCoreModuleLabel(module.Item) }}</div>
-                                        <div class="module-engineering" *ngIf="module.Engineering">
-                                            <mat-icon class="engineering-icon">build</mat-icon>
-                                            <span class="engineering-text">{{ formatEngineeringName(module.Engineering.BlueprintName) }}
-                                                (G{{ module.Engineering.Level || '?' }})
-                                            <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
-                                                - {{ module.Engineering.ExperimentalEffect_Localised }}
-                                            </span>
+                                        <div class="module-name">{{ formatCoreModuleName(module) }}</div>
+                                    </div>
+                                    <div class="module-engineering" *ngIf="module.Engineering">
+                                        <mat-icon class="engineering-icon">build</mat-icon>
+                                        <span class="engineering-text">{{ formatEngineeringName(module.Engineering.BlueprintName) }}
+                                            (G{{ module.Engineering.Level || '?' }})
+                                        <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
+                                            - {{ module.Engineering.ExperimentalEffect_Localised }}
                                         </span>
-                                        </div>
+                                    </span>
                                     </div>
                                 </div>
                             </ng-container>
@@ -565,19 +564,21 @@
                         <h3 class="section-header">OPTIONAL INTERNALS</h3>
                         <div class="module-list optional-modules">
                             <ng-container *ngFor="let module of getOptionalModules(); let i = index">
-                                <div *ngIf="showAllModules || i < getVisibleModulesCount()" class="module-item">
-                                    <div class="module-slot">{{ getModuleClassLabel(module) }}</div>
+                                <div *ngIf="showAllModules || i < getVisibleModulesCount()" class="internal-item">
                                     <div class="module-content">
-                                        <div class="module-name">{{ formatOptionalModuleName(module.Item) }}</div>
-                                        <div class="module-engineering" *ngIf="module.Engineering">
-                                            <mat-icon class="engineering-icon">build</mat-icon>
-                                            <span class="engineering-text">{{ formatEngineeringName(module.Engineering.BlueprintName) }}
-                                                (G{{ module.Engineering.Level || '?' }})
-                                            <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
-                                                - {{ module.Engineering.ExperimentalEffect_Localised }}
-                                            </span>
-                                        </span>
+                                        <div class="module-name">
+                                            {{ formatOptionalModuleName(module.Item) }}
+                                            <span class="module-class-inline">({{ getModuleClassLabel(module) }})</span>
                                         </div>
+                                    </div>
+                                    <div class="module-engineering" *ngIf="module.Engineering">
+                                        <mat-icon class="engineering-icon">build</mat-icon>
+                                        <span class="engineering-text">{{ formatEngineeringName(module.Engineering.BlueprintName) }}
+                                            (G{{ module.Engineering.Level || '?' }})
+                                        <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
+                                            - {{ module.Engineering.ExperimentalEffect_Localised }}
+                                        </span>
+                                    </span>
                                     </div>
                                 </div>
                             </ng-container>

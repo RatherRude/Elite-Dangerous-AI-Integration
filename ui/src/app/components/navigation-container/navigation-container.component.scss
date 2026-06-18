@@ -528,7 +528,7 @@
     min-height: 0;
     flex-direction: column;
     gap: 14px;
-    overflow: auto;
+    overflow: hidden;
 }
 
 .route-summary-grid {
@@ -540,10 +540,6 @@
 .route-summary-grid--top,
 .route-summary-grid--bottom {
     flex: 0 0 auto;
-}
-
-.route-summary-grid--bottom {
-    margin-top: auto;
 }
 
 .route-summary-card {
@@ -577,7 +573,11 @@
     flex-direction: column;
     gap: 2px;
     min-height: 0;
-    overflow: auto;
+    max-height: min(52vh, 520px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
 }
 
 .route-detail-row {

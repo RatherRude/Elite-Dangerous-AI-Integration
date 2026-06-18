@@ -241,6 +241,11 @@ class ShipInfo(Projection[ShipInfoStateModel]):
         if isinstance(event, GameEvent) and event.content.get("event") == "FSDJump":
             self.state.JetConeBoost = 1
             self.state.FSDSynthesis = 0
+            for fighter in self.state.Fighters:
+                fighter.Status = "Ready"
+                fighter.ID = None
+                fighter.Pilot = None
+                fighter.RebuiltAt = None
 
         if isinstance(event, GameEvent) and event.content.get("event") == "Cargo":
             payload = cast(CargoEvent, event.content)

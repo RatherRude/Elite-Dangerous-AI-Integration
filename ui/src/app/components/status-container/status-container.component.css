@@ -1227,25 +1227,34 @@
 
 /* Utility and hardpoints */
 .utility-list,
-.hardpoints-list {
+.hardpoints-list,
+.module-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
 .utility-item,
-.hardpoint-item {
+.hardpoint-item,
+.internal-item {
   background: rgba(0, 0, 0, 0.2);
   border-radius: 6px;
   padding: 10px;
 }
 
 .utility-name,
-.hardpoint-name {
+.hardpoint-name,
+.module-name {
   font-size: 12px;
   color: #e0e0e0;
   font-weight: 500;
   margin-bottom: 6px;
+}
+
+.module-class-inline {
+  color: #bbb;
+  font-weight: 400;
+  margin-left: 4px;
 }
 
 .utility-engineering,
@@ -1603,9 +1612,12 @@
 }
 
 .character-sheet-footer {
-  border-top: 1px solid var(--status-box-border);
-  padding-top: 20px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 20px 0 0;
   margin-top: 10px;
+  box-shadow: none;
 }
 
 /* Ship Stats Styles */
@@ -1664,7 +1676,7 @@
   margin-bottom: 25px;
 }
 
-.hardpoints-list, .utility-list {
+.hardpoints-list, .utility-list, .module-list {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -1672,7 +1684,7 @@
   width: 100%;
 }
 
-.hardpoint-item, .utility-item {
+.hardpoint-item, .utility-item, .internal-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1690,17 +1702,19 @@
 }
 
 .utility-name,
-.hardpoint-name {
+.hardpoint-name,
+.module-name {
   color: var(--hud-text);
   text-shadow: none;
 }
 
 .utility-engineering .engineering-icon,
-.hardpoint-engineering .engineering-icon {
+.hardpoint-engineering .engineering-icon,
+.module-engineering .engineering-icon {
   color: var(--hud-orange);
 }
 
-.hardpoint-details, .utility-details {
+.hardpoint-details, .utility-details, .module-content {
   flex: 1;
 }
 
@@ -1710,7 +1724,7 @@
   padding: 2px 0;
 }
 
-.utility-engineering, .hardpoint-engineering {
+.utility-engineering, .hardpoint-engineering, .module-engineering {
   display: flex;
   align-items: center;
   margin-top: 2px;
