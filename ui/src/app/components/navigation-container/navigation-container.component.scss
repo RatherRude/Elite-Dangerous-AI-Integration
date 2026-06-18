@@ -531,6 +531,84 @@
     overflow: hidden;
 }
 
+.list-panel {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    flex-direction: column;
+    gap: 14px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.poi-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+}
+
+.poi-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+    padding: 8px 0;
+}
+
+.poi-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+}
+
+.poi-card-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.poi-title {
+    color: var(--hud-text);
+    font-weight: 700;
+}
+
+.poi-subtitle,
+.poi-distance,
+.poi-meta {
+    color: #a0a0a0;
+    font-size: 0.9rem;
+}
+
+.poi-distance {
+    flex: 0 0 auto;
+}
+
+.poi-detail-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.poi-detail-row {
+    display: flex;
+    gap: 10px;
+    line-height: 1.3;
+}
+
+.poi-detail-row .label {
+    min-width: 82px;
+    color: var(--hud-cyan);
+    text-shadow: var(--hud-cyan-glow);
+}
+
+.poi-detail-row .value {
+    color: var(--hud-text);
+}
+
+.poi-chips {
+    margin-bottom: 0;
+}
+
 .route-summary-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

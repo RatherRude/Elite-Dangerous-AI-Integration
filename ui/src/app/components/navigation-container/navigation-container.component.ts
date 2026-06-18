@@ -23,6 +23,9 @@ type NavigationRouteDetail = NavigationRouteOption & {
     distanceFromPrevious: number | null;
     accumulatedDistance: number;
 };
+type MiningHotspotBody = { body: any; rings: { name: string; signals: string[] }[] };
+type BiologicalSignalBody = { body: any; signals: string[]; genuses: string[] };
+type SpecialServiceStation = { station: any; services: string[] };
 
 @Component({
     selector: "app-navigation-container",
@@ -73,6 +76,20 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
     private subs: Subscription[] = [];
     private lastEventIndex = -1;
     private refreshScheduled = false;
+    private readonly materialTraderLabels: Record<string, string> = {
+        raw: "Raw Material Trader",
+        rawmaterialtrader: "Raw Material Trader",
+        encoded: "Encoded Material Trader",
+        encodedmaterialtrader: "Encoded Material Trader",
+        manufactured: "Manufactured Material Trader",
+        manufacturedmaterialtrader: "Manufactured Material Trader",
+    };
+    private readonly technologyBrokerLabels: Record<string, string> = {
+        human: "Human Technology Broker",
+        humantechnologybroker: "Human Technology Broker",
+        guardian: "Guardian Technology Broker",
+        guardiantechnologybroker: "Guardian Technology Broker",
+    };
     private readonly refreshEvents = new Set([
         "FSSDiscoveryScan",
         "FSSSignalDiscovered",
@@ -421,8 +438,81 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
         return this.formatCount(this.filteredBodies.length, filteredTotal);
     }
 
+    get pointsOfInterestCount(): number {
+        return this.getMiningHotspotBodies().length
+            + this.getBiologicalSignalBodies().length
+            + this.getSpecialServiceStations().length;
+    }
+
     get filteredBodies(): any[] {
         return this.bodies.filter((body: any) => !this.isUnknownBodyType(body));
+    }
+
+    getMiningHotspotBodies(): MiningHotspotBody[] {
+        return this.filteredBodies
+            .map((body: any): MiningHotspotBody | null => {
+                const rings = Array.isArray(body?.rings) ? body.rings : [];
+                const mappedRings = rings
+                    .map((ring: any) => {
+                        const signals = this.formatSignalList(Array.isArray(ring?.signals) ? ring.signals : []);
+                        if (!signals.length) {
+                            return null;
+                        }
+                        return {
+                            name: ring?.name || "Unknown ring",
+                            signals,
+                        };
+                    })
+                    .filter((ring: any): ring is { name: string; signals: string[] } => Boolean(ring));
+                if (!mappedRings.length) {
+                    return null;
+                }
+                return { body, rings: mappedRings };
+            })
+            .filter((entry: MiningHotspotBody | null): entry is MiningHotspotBody => Boolean(entry));
+    }
+
+    getBiologicalSignalBodies(): BiologicalSignalBody[] {
+        return this.filteredBodies
+            .map((body: any): BiologicalSignalBody | null => {
+                const signals = this.getLocalizedBodySignals(body).filter((signal) => this.isBiologicalSignal(signal));
+                const genuses = this.getLocalizedBodyGenuses(body);
+                if (!signals.length && !genuses.length) {
+                    return null;
+                }
+                return { body, signals, genuses };
+            })
+            .filter((entry: BiologicalSignalBody | null): entry is BiologicalSignalBody => Boolean(entry));
+    }
+
+    getSpecialServiceStations(): SpecialServiceStation[] {
+        return this.stations
+            .map((station: any): SpecialServiceStation | null => {
+                const services = this.getSpecialServiceLabels(station);
+                if (!services.length) {
+                    return null;
+                }
+                return { station, services };
+            })
+            .filter((entry: SpecialServiceStation | null): entry is SpecialServiceStation => Boolean(entry));
+    }
+
+    getCompactBiologicalSignalNames(): string[] {
+        const names = this.getBiologicalSignalBodies()
+            .flatMap((entry) => entry.genuses.map((genus) => this.cleanCompactPoiName(genus)));
+        return this.uniqueCompactNames(names);
+    }
+
+    getCompactHotspotNames(): string[] {
+        const names = this.getMiningHotspotBodies().flatMap((entry) => {
+            return entry.rings.flatMap((ring) => ring.signals.map((signal) => this.cleanCompactPoiName(signal)));
+        });
+        return this.uniqueCompactNames(names);
+    }
+
+    getCompactSpecialServiceNames(): string[] {
+        const names = this.getSpecialServiceStations().flatMap((entry) => entry.services);
+        return this.uniqueCompactNames(names);
     }
 
     getSignalDisplayName(signal: any): string {
@@ -715,6 +805,112 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
                 return String(name);
             })
             .filter((entry: any): entry is string => Boolean(entry));
+    }
+
+    getSpecialServiceLabels(station: any): string[] {
+        const labels: string[] = [];
+        const addLabel = (label: string | null | undefined) => {
+            if (label && !labels.includes(label)) {
+                labels.push(label);
+            }
+        };
+
+        const materialTrader = this.normalizeSpecialServiceToken(station?.materialTrader ?? station?.material_trader);
+        if (materialTrader) {
+            addLabel(this.materialTraderLabels[materialTrader] ?? "Material Trader");
+        }
+
+        const technologyBroker = this.normalizeSpecialServiceToken(station?.technologyBroker ?? station?.technology_broker);
+        if (technologyBroker) {
+            addLabel(this.technologyBrokerLabels[technologyBroker] ?? "Technology Broker");
+        }
+
+        const engineer = station?.engineer;
+        if (typeof engineer === "string" && engineer.trim()) {
+            addLabel(`Engineer: ${engineer.trim()}`);
+        } else if (engineer && typeof engineer === "object") {
+            const engineerName = engineer.name || engineer.Name || engineer.engineer;
+            addLabel(engineerName ? `Engineer: ${engineerName}` : "Engineer");
+        }
+
+        for (const service of this.getStationServiceNames(station)) {
+            const normalized = this.normalizeServiceName(service);
+            if (normalized.includes("rawmaterialtrader")) {
+                addLabel("Raw Material Trader");
+            } else if (normalized.includes("encodedmaterialtrader")) {
+                addLabel("Encoded Material Trader");
+            } else if (normalized.includes("manufacturedmaterialtrader")) {
+                addLabel("Manufactured Material Trader");
+            } else if (normalized.includes("materialtrader")) {
+                addLabel("Material Trader");
+            } else if (normalized.includes("interstellarfactors")) {
+                addLabel("Interstellar Factors");
+            } else if (normalized.includes("fleetcarriervendor") || normalized.includes("carriervendor")) {
+                addLabel("Carrier Vendor");
+            } else if (normalized.includes("humantechnologybroker")) {
+                addLabel("Human Technology Broker");
+            } else if (normalized.includes("guardiantechnologybroker")) {
+                addLabel("Guardian Technology Broker");
+            } else if (normalized.includes("technologybroker")) {
+                addLabel("Technology Broker");
+            } else if (normalized === "engineer" || normalized.includes("engineerworkshop")) {
+                addLabel("Engineer");
+            }
+        }
+
+        return labels;
+    }
+
+    private getStationServiceNames(station: any): string[] {
+        const services = Array.isArray(station?.services) ? station.services : [];
+        return services
+            .map((service: any) => {
+                if (typeof service === "string") {
+                    return service;
+                }
+                if (service && typeof service === "object") {
+                    return service.name || service.service || service.Name || null;
+                }
+                return null;
+            })
+            .filter((service: any): service is string => Boolean(service));
+    }
+
+    private normalizeSpecialServiceToken(value: unknown): string {
+        if (typeof value !== "string") {
+            return "";
+        }
+        return value.trim().toLowerCase().replace(/[^a-z]/g, "");
+    }
+
+    private normalizeServiceName(value: string): string {
+        return value.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+    }
+
+    private isBiologicalSignal(signal: string): boolean {
+        return signal.toLowerCase().includes("biological");
+    }
+
+    private cleanCompactPoiName(value: string): string {
+        return value
+            .replace(/^\d+\s+/, "")
+            .replace(/\s+\((?:scanned|unscanned)\)$/i, "")
+            .trim();
+    }
+
+    private uniqueCompactNames(values: string[]): string[] {
+        const seen = new Set<string>();
+        const result: string[] = [];
+        for (const value of values) {
+            const cleaned = value.trim();
+            const key = cleaned.toLowerCase();
+            if (!cleaned || seen.has(key)) {
+                continue;
+            }
+            seen.add(key);
+            result.push(cleaned);
+        }
+        return result;
     }
 
     private isUnknownBodyType(body: any): boolean {

@@ -121,11 +121,29 @@
                     </button>
                     @if (!isSystemInfoLegendCollapsed) {
                         <div class="system-meta">
-                            @if (systemMeta.length) {
+                            @if (systemMeta.length || pointsOfInterestCount) {
                                 @for (item of systemMeta; track item.label) {
                                     <div class="system-meta-item">
                                         <span class="label">{{ item.label }}</span>
                                         <span class="value">{{ item.value }}</span>
+                                    </div>
+                                }
+                                @if (getCompactBiologicalSignalNames().length) {
+                                    <div class="system-meta-item">
+                                        <span class="label">Bio signals</span>
+                                        <span class="value">{{ getCompactBiologicalSignalNames().join(", ") }}</span>
+                                    </div>
+                                }
+                                @if (getCompactHotspotNames().length) {
+                                    <div class="system-meta-item">
+                                        <span class="label">Hotspots</span>
+                                        <span class="value">{{ getCompactHotspotNames().join(", ") }}</span>
+                                    </div>
+                                }
+                                @if (getCompactSpecialServiceNames().length) {
+                                    <div class="system-meta-item">
+                                        <span class="label">Services</span>
+                                        <span class="value">{{ getCompactSpecialServiceNames().join(", ") }}</span>
                                     </div>
                                 }
                             } @else {
@@ -137,18 +155,159 @@
             </div>
         }
         @if (activeNavigationSubtab === "list") {
+        <section class="list-panel">
+        @if (pointsOfInterestCount) {
+            <div class="poi-summary">
+                @if (pointsOfInterestCount > 0) {
+                    <div class="route-summary-card">
+                        <span class="label">Points of interest</span>
+                        <span class="value">{{ pointsOfInterestCount }}</span>
+                    </div>
+                }
+                @if (getMiningHotspotBodies().length > 0) {
+                    <div class="route-summary-card">
+                        <span class="label">Mining hotspots</span>
+                        <span class="value">{{ getMiningHotspotBodies().length }}</span>
+                    </div>
+                }
+                @if (getBiologicalSignalBodies().length > 0) {
+                    <div class="route-summary-card">
+                        <span class="label">Biological signals</span>
+                        <span class="value">{{ getBiologicalSignalBodies().length }}</span>
+                    </div>
+                }
+                @if (getSpecialServiceStations().length > 0) {
+                    <div class="route-summary-card">
+                        <span class="label">Special services</span>
+                        <span class="value">{{ getSpecialServiceStations().length }}</span>
+                    </div>
+                }
+            </div>
+        }
         <mat-accordion>
+            @if (getMiningHotspotBodies().length) {
+                <mat-expansion-panel expanded>
+                    <mat-expansion-panel-header>
+                        <mat-panel-title>Mining Hotspots ({{ getMiningHotspotBodies().length }})</mat-panel-title>
+                    </mat-expansion-panel-header>
+                    <div class="poi-list">
+                        @for (entry of getMiningHotspotBodies(); track entry.body.bodyId || entry.body.body_id || entry.body.name) {
+                            <mat-card class="poi-card">
+                                <div class="poi-card-header">
+                                    <div>
+                                        <div class="poi-title">{{ entry.body.name || "Unknown body" }}</div>
+                                        @if (entry.body.subType || entry.body.type) {
+                                            <div class="poi-subtitle">{{ entry.body.subType || entry.body.type }}</div>
+                                        }
+                                    </div>
+                                    @if (getBodyOrbitDisplay(entry.body)) {
+                                        <span class="poi-distance">{{ getBodyOrbitDisplay(entry.body) }}</span>
+                                    }
+                                </div>
+                                <div class="poi-detail-list">
+                                    @for (ring of entry.rings; track ring.name) {
+                                        <div class="poi-detail-row">
+                                            <span class="label">{{ ring.name }}</span>
+                                            <span class="value">{{ ring.signals.join(", ") }}</span>
+                                        </div>
+                                    }
+                                </div>
+                            </mat-card>
+                        }
+                    </div>
+                </mat-expansion-panel>
+            }
+
+            @if (getBiologicalSignalBodies().length) {
+                <mat-expansion-panel [expanded]="getMiningHotspotBodies().length === 0">
+                    <mat-expansion-panel-header>
+                        <mat-panel-title>Xeno-Biology ({{ getBiologicalSignalBodies().length }})</mat-panel-title>
+                    </mat-expansion-panel-header>
+                    <div class="poi-list">
+                        @for (entry of getBiologicalSignalBodies(); track entry.body.bodyId || entry.body.body_id || entry.body.name) {
+                            <mat-card class="poi-card">
+                                <div class="poi-card-header">
+                                    <div>
+                                        <div class="poi-title">{{ entry.body.name || "Unknown body" }}</div>
+                                        @if (entry.body.subType || entry.body.type) {
+                                            <div class="poi-subtitle">{{ entry.body.subType || entry.body.type }}</div>
+                                        }
+                                    </div>
+                                    @if (getBodyOrbitDisplay(entry.body)) {
+                                        <span class="poi-distance">{{ getBodyOrbitDisplay(entry.body) }}</span>
+                                    }
+                                </div>
+                                <div class="poi-detail-list">
+                                    @if (entry.signals.length) {
+                                        <div class="poi-detail-row">
+                                            <span class="label">Signals</span>
+                                            <span class="value">{{ entry.signals.join(", ") }}</span>
+                                        </div>
+                                    }
+                                    @if (entry.genuses.length) {
+                                        <div class="poi-detail-row">
+                                            <span class="label">Genuses</span>
+                                            <span class="value">{{ entry.genuses.join(", ") }}</span>
+                                        </div>
+                                    }
+                                </div>
+                            </mat-card>
+                        }
+                    </div>
+                </mat-expansion-panel>
+            }
+
+            @if (getSpecialServiceStations().length) {
+                <mat-expansion-panel [expanded]="getMiningHotspotBodies().length === 0 && getBiologicalSignalBodies().length === 0">
+                    <mat-expansion-panel-header>
+                        <mat-panel-title>Special Services ({{ getSpecialServiceStations().length }})</mat-panel-title>
+                    </mat-expansion-panel-header>
+                    <div class="poi-list">
+                        @for (entry of getSpecialServiceStations(); track entry.station.name) {
+                            <mat-card class="poi-card">
+                                <div class="poi-card-header">
+                                    <div>
+                                        <div class="poi-title">{{ entry.station.name || "Unknown station" }}</div>
+                                        @if (entry.station.type) {
+                                            <div class="poi-subtitle">{{ entry.station.type }}</div>
+                                        }
+                                    </div>
+                                    @if (getOrbitDisplay(entry.station)) {
+                                        <span class="poi-distance">{{ getOrbitDisplay(entry.station) }}</span>
+                                    }
+                                </div>
+                                <div class="chips poi-chips">
+                                    @for (service of entry.services; track service) {
+                                        <mat-chip color="primary" selected>{{ service }}</mat-chip>
+                                    }
+                                </div>
+                                @if (entry.station.body || entry.station.controllingFaction) {
+                                    <div class="poi-meta">
+                                        @if (entry.station.body) { <span>{{ entry.station.body }}</span> }
+                                        @if (entry.station.body && entry.station.controllingFaction) { <span> - </span> }
+                                        @if (entry.station.controllingFaction) { <span>{{ entry.station.controllingFaction }}</span> }
+                                    </div>
+                                }
+                            </mat-card>
+                        }
+                    </div>
+                </mat-expansion-panel>
+            }
+
             <mat-expansion-panel>
                 <mat-expansion-panel-header>
                     <mat-panel-title>Signals ({{ signals.length }})</mat-panel-title>
                 </mat-expansion-panel-header>
                 <div class="section">
                     @if (signals.length) {
-                        <div class="chip-row">
+                        <div class="body-grid">
                             @for (signal of signals; track signal.name) {
-                                <mat-chip>
-                                    {{ getSignalDisplayName(signal) }} @if (signal.type) {<span class="chip-type">({{ signal.type }})</span>}
-                                </mat-chip>
+                                <mat-card class="body-card">
+                                    <div class="body-header">
+                                        <div class="body-name">{{ getSignalDisplayName(signal) }}</div>
+                                        <div class="body-type">{{ signal.type || "Signal" }}</div>
+                                    </div>
+                                </mat-card>
                             }
                         </div>
                     } @else {
@@ -163,23 +322,33 @@
                 </mat-expansion-panel-header>
                 <div class="section">
                     @if (stations.length) {
-                        <div class="chip-row">
+                        <div class="body-grid">
                             @for (station of stations; track station.name) {
-                                <mat-chip color="primary" selected class="station-chip-container">
-                                    <div class="station-chip">
-                                        <div class="station-chip-name">
-                                            {{ station.name }}
-                                            @if (station.type) {<span class="chip-type">({{ station.type }})</span>}
-                                        </div>
-                                        @if (station.controllingFaction || getOrbitDisplay(station)) {
-                                            <div class="station-chip-meta">
-                                                @if (station.controllingFaction) {<span>{{ station.controllingFaction }}</span>}
-                                                @if (station.controllingFaction && getOrbitDisplay(station)) {<span> - </span>}
-                                                @if (getOrbitDisplay(station)) {<span>{{ getOrbitDisplay(station) }}</span>}
-                                            </div>
-                                        }
+                                <mat-card class="body-card">
+                                    <div class="body-header">
+                                        <div class="body-name">{{ station.name || "Unknown station" }}</div>
+                                        <div class="body-type">{{ station.type || "Station" }}</div>
                                     </div>
-                                </mat-chip>
+                                    @if (station.controllingFaction || getOrbitDisplay(station)) {
+                                        <div class="body-meta">
+                                            @if (station.controllingFaction) {<span>{{ station.controllingFaction }}</span>}
+                                            @if (station.controllingFaction && getOrbitDisplay(station)) {<span> - </span>}
+                                            @if (getOrbitDisplay(station)) {<span>{{ getOrbitDisplay(station) }}</span>}
+                                        </div>
+                                    }
+                                    @if (station.body) {
+                                        <div class="body-meta">
+                                            <span>{{ station.body }}</span>
+                                        </div>
+                                    }
+                                    @if (getSpecialServiceLabels(station).length) {
+                                        <div class="chips">
+                                            @for (service of getSpecialServiceLabels(station); track service) {
+                                                <mat-chip color="primary" selected>{{ service }}</mat-chip>
+                                            }
+                                        </div>
+                                    }
+                                </mat-card>
                             }
                         </div>
                     } @else {
@@ -260,6 +429,7 @@
                 </div>
             </mat-expansion-panel>
         </mat-accordion>
+        </section>
         }
         @if (activeNavigationSubtab === "route") {
             <section class="nav-route-panel" aria-label="Navigation route details">

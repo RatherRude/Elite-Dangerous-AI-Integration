@@ -694,6 +694,12 @@ class SystemDatabase:
             system_info['stations'] = []
             self._upsert_system_fields(system_name, {'system_info': system_info})
 
+        try:
+            self._update_stations_from_spansh(system_name)
+        except Exception as e:
+            error_msg = str(e)
+            log('error', f"Error fetching Spansh stations for {system_name}: {error_msg}", traceback.format_exc())
+
         # Fetch bodies info from EDSM
         try:
             url = "https://www.edsm.net/api-system-v1/bodies"
@@ -1010,6 +1016,12 @@ class SystemDatabase:
             except Exception as update_err:
                 log('error', f"Error updating system {system_name} with empty stations: {update_err}")
 
+        try:
+            await self._update_stations_from_spansh_async(session, system_name)
+        except Exception as e:
+            error_msg = str(e)
+            log('error', f"Error fetching Spansh stations async for {system_name}: {error_msg}", traceback.format_exc())
+
     async def _fetch_bodies_async(self, session: aiohttp.ClientSession, system_name: str) -> None:
         """Fetch bodies info from EDSM API asynchronously"""
         try:
@@ -1111,6 +1123,154 @@ class SystemDatabase:
             "page": 0,
             "reference_system": system_name
         }
+
+    def _build_spansh_stations_request(self, system_name: str) -> Dict[str, Any]:
+        return {
+            "filters": {
+                "distance": {
+                    "min": "0",
+                    "max": "0"
+                }
+            },
+            "sort": [
+                {
+                    "distance_to_arrival": {
+                        "direction": "asc"
+                    }
+                }
+            ],
+            "size": 99,
+            "page": 0,
+            "reference_system": system_name
+        }
+
+    @staticmethod
+    def _map_spansh_services(services: Any) -> Optional[List[str]]:
+        if not isinstance(services, list):
+            return None
+        mapped: List[str] = []
+        for service in services:
+            if isinstance(service, str):
+                name = service
+            elif isinstance(service, dict):
+                name = service.get("name") or service.get("service")
+            else:
+                name = None
+            if isinstance(name, str) and name and name not in mapped:
+                mapped.append(name)
+        return mapped
+
+    def _merge_spansh_stations(self, system_name: str, spansh_stations: Any) -> None:
+        if not isinstance(spansh_stations, list) or not spansh_stations:
+            return
+
+        existing_data = self._get_system_record(system_name) or {}
+        system_info = existing_data.get('system_info')
+        if not isinstance(system_info, dict):
+            system_info = {}
+
+        stations = system_info.get('stations')
+        if not isinstance(stations, list):
+            stations = []
+            system_info['stations'] = stations
+
+        station_index = {
+            str(station.get("name", "")).casefold(): station
+            for station in stations
+            if isinstance(station, dict) and station.get("name")
+        }
+
+        updated = False
+        for spansh_station in spansh_stations:
+            if not isinstance(spansh_station, dict):
+                continue
+            station_name = spansh_station.get("name")
+            if not isinstance(station_name, str) or not station_name:
+                continue
+
+            station_key = station_name.casefold()
+            station_entry = station_index.get(station_key)
+            if station_entry is None:
+                station_entry = {"name": station_name}
+                stations.append(station_entry)
+                station_index[station_key] = station_entry
+                updated = True
+
+            field_map = {
+                "type": "type",
+                "distance_to_arrival": "orbit",
+                "allegiance": "allegiance",
+                "government": "government",
+                "economy": "economy",
+                "second_economy": "secondEconomy",
+                "is_planetary": "isPlanetary",
+                "has_large_pad": "hasLargePad",
+                "material_trader": "materialTrader",
+                "technology_broker": "technologyBroker",
+                "engineer": "engineer",
+            }
+            for source_key, target_key in field_map.items():
+                value = spansh_station.get(source_key)
+                if value is not None:
+                    station_entry[target_key] = value
+                    updated = True
+
+            controlling_faction = spansh_station.get("controlling_faction")
+            if isinstance(controlling_faction, dict):
+                faction_name = controlling_faction.get("name")
+                if faction_name:
+                    station_entry["controllingFaction"] = faction_name
+                    updated = True
+            elif isinstance(controlling_faction, str):
+                station_entry["controllingFaction"] = controlling_faction
+                updated = True
+
+            body = spansh_station.get("body")
+            if isinstance(body, dict) and body.get("name"):
+                station_entry["body"] = body["name"]
+                updated = True
+            elif isinstance(spansh_station.get("body_name"), str):
+                station_entry["body"] = spansh_station["body_name"]
+                updated = True
+
+            mapped_services = self._map_spansh_services(spansh_station.get("services"))
+            if mapped_services is not None:
+                current_services = station_entry.get("services")
+                if not isinstance(current_services, list):
+                    current_services = []
+                merged_services = list(current_services)
+                for service in mapped_services:
+                    if service not in merged_services:
+                        merged_services.append(service)
+                station_entry["services"] = merged_services
+                updated = True
+
+        if updated:
+            self._upsert_system_fields(system_name, {'system_info': system_info})
+
+    def _update_stations_from_spansh(self, system_name: str) -> None:
+        url = "https://spansh.co.uk/api/stations/search"
+        payload = self._build_spansh_stations_request(system_name)
+        headers = {
+            "User-Agent": EDSM_USER_AGENT
+        }
+        response = requests.post(url, json=payload, headers=headers, timeout=5)
+        response.raise_for_status()
+        data = response.json()
+        spansh_stations = data.get("results", [])
+        self._merge_spansh_stations(system_name, spansh_stations)
+
+    async def _update_stations_from_spansh_async(self, session: aiohttp.ClientSession, system_name: str) -> None:
+        url = "https://spansh.co.uk/api/stations/search"
+        payload = self._build_spansh_stations_request(system_name)
+        headers = {
+            "User-Agent": EDSM_USER_AGENT
+        }
+        async with session.post(url, json=payload, headers=headers) as response:
+            response.raise_for_status()
+            data = await response.json()
+            spansh_stations = data.get("results", [])
+            self._merge_spansh_stations(system_name, spansh_stations)
 
     @staticmethod
     def _normalize_body_id(body_id: Any) -> Any:
