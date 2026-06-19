@@ -76,20 +76,6 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
     private subs: Subscription[] = [];
     private lastEventIndex = -1;
     private refreshScheduled = false;
-    private readonly materialTraderLabels: Record<string, string> = {
-        raw: "Raw Material Trader",
-        rawmaterialtrader: "Raw Material Trader",
-        encoded: "Encoded Material Trader",
-        encodedmaterialtrader: "Encoded Material Trader",
-        manufactured: "Manufactured Material Trader",
-        manufacturedmaterialtrader: "Manufactured Material Trader",
-    };
-    private readonly technologyBrokerLabels: Record<string, string> = {
-        human: "Human Technology Broker",
-        humantechnologybroker: "Human Technology Broker",
-        guardian: "Guardian Technology Broker",
-        guardiantechnologybroker: "Guardian Technology Broker",
-    };
     private readonly refreshEvents = new Set([
         "FSSDiscoveryScan",
         "FSSSignalDiscovered",
@@ -816,20 +802,23 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
         };
 
         const materialTrader = this.normalizeSpecialServiceToken(station?.materialTrader ?? station?.material_trader);
-        if (materialTrader) {
-            addLabel(this.materialTraderLabels[materialTrader] ?? "Material Trader");
+        if (materialTrader === "raw" || materialTrader === "rawmaterialtrader") {
+            addLabel("Raw Material Trader");
+        } else if (materialTrader === "encoded" || materialTrader === "encodedmaterialtrader") {
+            addLabel("Encoded Material Trader");
+        } else if (materialTrader === "manufactured" || materialTrader === "manufacturedmaterialtrader") {
+            addLabel("Manufactured Material Trader");
         }
 
         const technologyBroker = this.normalizeSpecialServiceToken(station?.technologyBroker ?? station?.technology_broker);
-        if (technologyBroker) {
-            addLabel(this.technologyBrokerLabels[technologyBroker] ?? "Technology Broker");
+        if (technologyBroker === "human" || technologyBroker === "humantechnologybroker") {
+            addLabel("Human Technology Broker");
+        } else if (technologyBroker === "guardian" || technologyBroker === "guardiantechnologybroker") {
+            addLabel("Guardian Technology Broker");
         }
 
-        const engineer = station?.engineer;
-        if (typeof engineer === "string" && engineer.trim()) {
-            addLabel(`Engineer: ${engineer.trim()}`);
-        } else if (engineer && typeof engineer === "object") {
-            const engineerName = engineer.name || engineer.Name || engineer.engineer;
+        if (this.isEngineerStation(station)) {
+            const engineerName = typeof station?.controllingFaction === "string" ? station.controllingFaction.trim() : "";
             addLabel(engineerName ? `Engineer: ${engineerName}` : "Engineer");
         }
 
@@ -841,8 +830,6 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
                 addLabel("Encoded Material Trader");
             } else if (normalized.includes("manufacturedmaterialtrader")) {
                 addLabel("Manufactured Material Trader");
-            } else if (normalized.includes("materialtrader")) {
-                addLabel("Material Trader");
             } else if (normalized.includes("interstellarfactors")) {
                 addLabel("Interstellar Factors");
             } else if (normalized.includes("fleetcarriervendor") || normalized.includes("carriervendor")) {
@@ -851,10 +838,6 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
                 addLabel("Human Technology Broker");
             } else if (normalized.includes("guardiantechnologybroker")) {
                 addLabel("Guardian Technology Broker");
-            } else if (normalized.includes("technologybroker")) {
-                addLabel("Technology Broker");
-            } else if (normalized === "engineer" || normalized.includes("engineerworkshop")) {
-                addLabel("Engineer");
             }
         }
 
@@ -881,6 +864,11 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
             return "";
         }
         return value.trim().toLowerCase().replace(/[^a-z]/g, "");
+    }
+
+    private isEngineerStation(station: any): boolean {
+        const government = this.normalizeSpecialServiceToken(station?.government);
+        return government === "engineer" || government.includes("engineer");
     }
 
     private normalizeServiceName(value: string): string {

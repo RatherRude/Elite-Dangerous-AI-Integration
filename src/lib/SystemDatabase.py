@@ -1223,7 +1223,6 @@ class SystemDatabase:
                 "has_large_pad": "hasLargePad",
                 "material_trader": "materialTrader",
                 "technology_broker": "technologyBroker",
-                "engineer": "engineer",
             }
             for source_key, target_key in field_map.items():
                 value = spansh_station.get(source_key)
