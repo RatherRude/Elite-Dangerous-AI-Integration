@@ -412,7 +412,7 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
         const stations = Array.isArray(systemInfo?.stations) ? systemInfo.stations : [];
         this.stations = stations
             .slice()
-            .sort((a: any, b: any) => this.getOrbitLs(a) - this.getOrbitLs(b));
+            .sort((a: any, b: any) => this.compareStations(a, b));
         this.bodies = Array.isArray(systemInfo?.bodies) ? systemInfo.bodies : [];
         this.systemMap = this.buildSystemMap(this.bodies, systemName);
         this.systemMeta = this.buildSystemMeta(systemInfo);
@@ -929,6 +929,16 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
             return Number.isFinite(parsed) ? parsed : Number.POSITIVE_INFINITY;
         }
         return Number.POSITIVE_INFINITY;
+    }
+
+    private compareStations(a: any, b: any): number {
+        const aType = String(a?.type || "Station").trim().toLowerCase();
+        const bType = String(b?.type || "Station").trim().toLowerCase();
+        const typeComparison = aType.localeCompare(bType);
+        if (typeComparison !== 0) {
+            return typeComparison;
+        }
+        return this.getOrbitLs(a) - this.getOrbitLs(b);
     }
 
     private buildSystemMeta(systemInfo: any): { label: string; value: string }[] {
