@@ -1127,9 +1127,26 @@ class SystemDatabase:
     def _build_spansh_stations_request(self, system_name: str) -> Dict[str, Any]:
         return {
             "filters": {
-                "distance": {
-                    "min": "0",
-                    "max": "0"
+                "system_name":{
+                    "value": system_name
+                },
+                "type": {
+                    "value": [
+                        "Asteroid base",
+                        "Coriolis Starport",
+                        "Dockable Planet Station",
+                        "Dodec Starport",
+                        "Mega ship",
+                        "Ocellus Starport",
+                        "Orbis Starport",
+                        "Outpost",
+                        "Planetary Construction Depot",
+                        "Planetary Outpost",
+                        "Planetary Port",
+                        "Settlement",
+                        "Space Construction Depot",
+                        "Surface Settlement"
+                    ]
                 }
             },
             "sort": [
@@ -1139,9 +1156,8 @@ class SystemDatabase:
                     }
                 }
             ],
-            "size": 99,
-            "page": 0,
-            "reference_system": system_name
+            "size": 999,
+            "page": 0
         }
 
     @staticmethod
