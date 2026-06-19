@@ -187,6 +187,8 @@ def _build_edcopilot_panel_contents_status(contents: dict[str, Any] | None) -> s
     for gui_name, gui_instance in gui_instances.items():
         if not isinstance(gui_name, str) or not isinstance(gui_instance, dict):
             continue
+        if gui_name.lower() == "minibar":
+            continue
         panels = gui_instance.get("panels")
         if not isinstance(panels, dict) or not panels:
             gui_summaries.append(f"{gui_name}: no panel contents")

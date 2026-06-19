@@ -441,7 +441,7 @@
                             <div *ngIf="showCargoDetails" class="cargo-manifest">
                                 <div class="cargo-list">
                                     <div *ngFor="let item of getCargoItems()" class="cargo-item">
-                                        <span class="cargo-item-name">{{ item.Name_Localised || item.Name }}</span>
+                                        <span class="cargo-item-name">{{ item.Name_Localised || item.Name }}{{ item.Stolen ? ' (Stolen)' : '' }}</span>
                                         <span class="cargo-item-count">x{{ item.Count }}</span>
                                     </div>
                                     <div *ngIf="!hasCargoItems()" class="empty-state">Cargo hold empty</div>

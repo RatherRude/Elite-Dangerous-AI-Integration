@@ -181,6 +181,8 @@ mat-slide-toggle {
   right: 0.55rem;
   bottom: 0.45rem;
   display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
   justify-content: flex-end;
   padding: 0;
   border: 0;
@@ -188,7 +190,7 @@ mat-slide-toggle {
   pointer-events: none;
 }
 
-.preflight-detail-footer .preflight-advanced-link {
+.preflight-detail-footer button {
   pointer-events: auto;
 }
 

@@ -62,7 +62,7 @@
               <div class="cargo-list">
                 @for (item of getCargoItems(); track item.Name) {
                   <div class="cargo-item">
-                    <span class="cargo-item-name">{{ item.Name_Localised || item.Name }}</span>
+                    <span class="cargo-item-name">{{ item.Name_Localised || item.Name }}{{ item.Stolen ? ' (Stolen)' : '' }}</span>
                     <span class="cargo-item-count">x{{ item.Count }}</span>
                   </div>
                 }

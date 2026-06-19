@@ -88,22 +88,26 @@
     } @else if (systemRecord) {
         @if (activeNavigationSubtab === "location") {
             <div
-                class="section system-map-panel location-panel"
+                class="location-panel"
                 (mouseenter)="clearHoveredMapNode()"
                 (mouseleave)="clearHoveredMapNode()"
             >
-                @if (systemMap.length) {
-                    <div class="system-map-root">
-                        @for (node of systemMap; track node.id) {
-                            <ng-container
-                                [ngTemplateOutlet]="mapNode"
-                                [ngTemplateOutletContext]="{ $implicit: node }"
-                            ></ng-container>
+                <div class="section system-map-panel">
+                    <div class="system-map-scroll">
+                        @if (systemMap.length) {
+                            <div class="system-map-root">
+                                @for (node of systemMap; track node.id) {
+                                    <ng-container
+                                        [ngTemplateOutlet]="mapNode"
+                                        [ngTemplateOutletContext]="{ $implicit: node }"
+                                    ></ng-container>
+                                }
+                            </div>
+                        } @else {
+                            <div class="muted">No map data available yet.</div>
                         }
                     </div>
-                } @else {
-                    <div class="muted">No map data available yet.</div>
-                }
+                </div>
 
                 <aside
                     class="system-info-legend"

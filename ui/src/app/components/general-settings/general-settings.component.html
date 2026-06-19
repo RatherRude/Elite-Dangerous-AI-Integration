@@ -559,6 +559,16 @@
                                     </button>
                                 }
                                 @case ('covas') {
+                                    <button
+                                        mat-raised-button
+                                        color="warn"
+                                        type="button"
+                                        class="preflight-clear-conversation"
+                                        matTooltip="Clear current conversation history. Useful after changing character so the AI starts with a blank slate."
+                                        (click)="onClearHistory()">
+                                        <mat-icon>delete_sweep</mat-icon>
+                                        Clear Conversation
+                                    </button>
                                     <button mat-raised-button color="primary" type="button" class="preflight-advanced-link" (click)="openTarget('character')">
                                         Go to character settings
                                     </button>

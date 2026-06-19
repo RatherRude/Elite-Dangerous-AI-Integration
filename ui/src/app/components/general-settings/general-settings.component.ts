@@ -25,9 +25,12 @@ import { FormsModule } from "@angular/forms";
 import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
 import { MatSliderModule } from "@angular/material/slider";
+import { MatDialog } from "@angular/material/dialog";
 import { ScreenInfo } from "../../models/screen-info";
 import { Character, CharacterService } from "../../services/character.service";
 import { ModelProviderDefinition } from "../../services/plugin-settings";
+import { ConfirmationDialogComponent } from "../confirmation-dialog/confirmation-dialog.component.js";
+import { ChatService } from "../../services/chat.service.js";
 
 export type GeneralSettingsTarget =
     | "commander"
@@ -129,6 +132,8 @@ export class GeneralSettingsComponent implements OnDestroy {
         private snackBar: MatSnackBar,
         private characterService: CharacterService,
         private sanitizer: DomSanitizer,
+        private dialog: MatDialog,
+        private chatService: ChatService,
     ) {
         this.configSubscription = this.configService.config$.subscribe(
             (config) => {
@@ -519,6 +524,26 @@ export class GeneralSettingsComponent implements OnDestroy {
                 duration: 5000,
             });
         }
+    }
+
+    async onClearHistory(): Promise<void> {
+        const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+            data: {
+                title: "Clear Conversation",
+                message:
+                    "Are you sure you want to clear the conversation history? Game state and projections will be kept.",
+            },
+        });
+
+        dialogRef.afterClosed().subscribe(async (result) => {
+            if (result) {
+                await this.configService.clearHistory();
+                this.chatService.clearChat();
+                this.snackBar.open("Conversation history cleared", "OK", {
+                    duration: 3000,
+                });
+            }
+        });
     }
 
     formatOutputVolumeLabel = (value: number): string => value.toFixed(2);
