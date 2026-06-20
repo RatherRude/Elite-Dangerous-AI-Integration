@@ -107,55 +107,55 @@
                             <div class="muted">No map data available yet.</div>
                         }
                     </div>
-                </div>
 
-                <aside
-                    class="system-info-legend"
-                    [class.collapsed]="isSystemInfoLegendCollapsed"
-                    aria-label="System information"
-                >
-                    <button
-                        type="button"
-                        class="legend-toggle"
-                        [attr.aria-expanded]="!isSystemInfoLegendCollapsed"
-                        (click)="toggleSystemInfoLegend()"
+                    <aside
+                        class="system-info-legend"
+                        [class.collapsed]="isSystemInfoLegendCollapsed"
+                        aria-label="System information"
                     >
-                        <span class="legend-title">System Information</span>
-                        <mat-icon>{{ isSystemInfoLegendCollapsed ? "keyboard_arrow_up" : "keyboard_arrow_down" }}</mat-icon>
-                    </button>
-                    @if (!isSystemInfoLegendCollapsed) {
-                        <div class="system-meta">
-                            @if (systemMeta.length || pointsOfInterestCount) {
-                                @for (item of systemMeta; track item.label) {
-                                    <div class="system-meta-item">
-                                        <span class="label">{{ item.label }}</span>
-                                        <span class="value">{{ item.value }}</span>
-                                    </div>
+                        <button
+                            type="button"
+                            class="legend-toggle"
+                            [attr.aria-expanded]="!isSystemInfoLegendCollapsed"
+                            (click)="toggleSystemInfoLegend()"
+                        >
+                            <span class="legend-title">System Information</span>
+                            <mat-icon>{{ isSystemInfoLegendCollapsed ? "keyboard_arrow_up" : "keyboard_arrow_down" }}</mat-icon>
+                        </button>
+                        @if (!isSystemInfoLegendCollapsed) {
+                            <div class="system-meta">
+                                @if (systemMeta.length || pointsOfInterestCount) {
+                                    @for (item of systemMeta; track item.label) {
+                                        <div class="system-meta-item">
+                                            <span class="label">{{ item.label }}</span>
+                                            <span class="value">{{ item.value }}</span>
+                                        </div>
+                                    }
+                                    @if (getCompactBiologicalSignalNames().length) {
+                                        <div class="system-meta-item">
+                                            <span class="label">Bio signals</span>
+                                            <span class="value">{{ getCompactBiologicalSignalNames().join(", ") }}</span>
+                                        </div>
+                                    }
+                                    @if (getCompactHotspotNames().length) {
+                                        <div class="system-meta-item">
+                                            <span class="label">Hotspots</span>
+                                            <span class="value">{{ getCompactHotspotNames().join(", ") }}</span>
+                                        </div>
+                                    }
+                                    @if (getCompactSpecialServiceNames().length) {
+                                        <div class="system-meta-item">
+                                            <span class="label">Services</span>
+                                            <span class="value">{{ getCompactSpecialServiceNames().join(", ") }}</span>
+                                        </div>
+                                    }
+                                } @else {
+                                    <div class="muted">No system information recorded.</div>
                                 }
-                                @if (getCompactBiologicalSignalNames().length) {
-                                    <div class="system-meta-item">
-                                        <span class="label">Bio signals</span>
-                                        <span class="value">{{ getCompactBiologicalSignalNames().join(", ") }}</span>
-                                    </div>
-                                }
-                                @if (getCompactHotspotNames().length) {
-                                    <div class="system-meta-item">
-                                        <span class="label">Hotspots</span>
-                                        <span class="value">{{ getCompactHotspotNames().join(", ") }}</span>
-                                    </div>
-                                }
-                                @if (getCompactSpecialServiceNames().length) {
-                                    <div class="system-meta-item">
-                                        <span class="label">Services</span>
-                                        <span class="value">{{ getCompactSpecialServiceNames().join(", ") }}</span>
-                                    </div>
-                                }
-                            } @else {
-                                <div class="muted">No system information recorded.</div>
-                            }
-                        </div>
-                    }
-                </aside>
+                            </div>
+                        }
+                    </aside>
+                </div>
             </div>
         }
         @if (activeNavigationSubtab === "list") {

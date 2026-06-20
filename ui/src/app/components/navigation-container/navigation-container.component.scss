@@ -1,8 +1,18 @@
+:host {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+}
+
 .navigation-container {
     display: flex;
     flex-direction: row;
+    flex: 1 1 auto;
     gap: 12px;
-    min-height: 100%;
+    min-height: 0;
+    min-width: 0;
     padding: 16px;
     overflow: hidden;
 }
@@ -409,7 +419,6 @@
 .system-map-panel {
     position: relative;
     flex: 1 1 auto;
-    height: 100%;
     min-height: 0;
     background: #000;
     padding: 12px;
@@ -422,20 +431,22 @@
 }
 
 .location-panel {
-    position: relative;
+    display: flex;
+    flex-direction: column;
     flex: 1 1 auto;
-    height: calc(100vh - 116px);
-    min-height: 420px;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .system-info-legend {
     position: absolute;
-    right: 16px;
-    bottom: 16px;
+    right: 12px;
+    bottom: 12px;
     z-index: 3;
-    width: min(420px, calc(100% - 32px));
-    max-height: calc(100% - 32px);
+    width: min(420px, calc(100% - 24px));
+    max-height: calc(100% - 24px);
     overflow: auto;
+    pointer-events: auto;
     padding: 10px 12px 12px;
     border: 1px solid var(--hud-border);
     border-radius: 2px;

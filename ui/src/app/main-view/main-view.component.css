@@ -81,8 +81,17 @@
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0;
   overflow-y: auto;
   background: rgba(0, 0, 0, 0.18);
+}
+
+.navigation-container-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .log-container {
