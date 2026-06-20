@@ -832,6 +832,8 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
                 addLabel("Manufactured Material Trader");
             } else if (normalized.includes("interstellarfactors")) {
                 addLabel("Interstellar Factors");
+            } else if (normalized.includes("blackmarket")) {
+                addLabel("Black Market");
             } else if (normalized.includes("fleetcarriervendor") || normalized.includes("carriervendor")) {
                 addLabel("Carrier Vendor");
             } else if (normalized.includes("humantechnologybroker")) {

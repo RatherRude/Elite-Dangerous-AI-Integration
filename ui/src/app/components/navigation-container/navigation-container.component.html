@@ -190,7 +190,7 @@
         }
         <mat-accordion>
             @if (getMiningHotspotBodies().length) {
-                <mat-expansion-panel expanded>
+                <mat-expansion-panel>
                     <mat-expansion-panel-header>
                         <mat-panel-title>Mining Hotspots ({{ getMiningHotspotBodies().length }})</mat-panel-title>
                     </mat-expansion-panel-header>
@@ -223,7 +223,7 @@
             }
 
             @if (getBiologicalSignalBodies().length) {
-                <mat-expansion-panel [expanded]="getMiningHotspotBodies().length === 0">
+                <mat-expansion-panel>
                     <mat-expansion-panel-header>
                         <mat-panel-title>Xeno-Biology ({{ getBiologicalSignalBodies().length }})</mat-panel-title>
                     </mat-expansion-panel-header>
@@ -262,7 +262,7 @@
             }
 
             @if (getSpecialServiceStations().length) {
-                <mat-expansion-panel [expanded]="getMiningHotspotBodies().length === 0 && getBiologicalSignalBodies().length === 0">
+                <mat-expansion-panel>
                     <mat-expansion-panel-header>
                         <mat-panel-title>Special Services ({{ getSpecialServiceStations().length }})</mat-panel-title>
                     </mat-expansion-panel-header>
