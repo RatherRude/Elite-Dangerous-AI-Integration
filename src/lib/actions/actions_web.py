@@ -204,7 +204,6 @@ def web_search_agent(
                         "power": { "type": "array", "items": { "type": "string" } },
                         "primary_economy": { "type": "array", "items": { "type": "string" } },
                         "security": { "type": "array", "items": { "type": "string" } },
-                        "thargoid_war_state": { "type": "array", "items": { "type": "string" } },
                         "population": { "type": "object", "properties": { "comparison": { "type": "string", "enum": ["<", ">"] }, "value": { "type": "number" } } },
                         "sort_by": { "type": "string", "enum": ["distance", "population"], "description": "Sort systems by distance or by population (highest first). Default: distance." },
                         "size": { "type": "integer", "description": "Number of results to return (1-25). Default: 3." }
@@ -2296,18 +2295,6 @@ def prepare_system_request(obj, projected_states):# Helper function for fuzzy ma
             validated_security.append(matching_security)
         filters["security"] = {"value": validated_security}
 
-    thargoid_war_states = filter_empty_list_items(obj.get("thargoid_war_state"))
-    if thargoid_war_states:
-        validated_thargoid_states = []
-        for thargoid_war_state in thargoid_war_states:
-            # Find matching thargoid war state using fuzzy matching
-            matching_state = find_best_match(thargoid_war_state, known_thargoid_war_states)
-            if not matching_state:
-                raise Exception(
-                    f"Invalid thargoid war state: {thargoid_war_state}. {educated_guesses_message(thargoid_war_state, known_thargoid_war_states)}")
-            validated_thargoid_states.append(matching_state)
-        filters["thargoid_war_state"] = {"value": validated_thargoid_states}
-
     if "population" in obj and obj["population"]:
         comparison = obj["population"].get("comparison", ">")
         value = obj["population"].get("value", 0)
@@ -2377,10 +2364,6 @@ def filter_system_response(request, response):
 
         filtered_system["primary_economy"] = system.get("primary_economy", "None")
         filtered_system["security"] = system.get("security", "Anarchy")
-
-        # Only add thargoid war state if it was requested
-        if "thargoid_war_state" in request_filters and "thargoid_war_state" in system and system["thargoid_war_state"]:
-            filtered_system["thargoid_war_state"] = system.get("thargoid_war_state")
 
         # Only add if needs_permit is true
         if "needs_permit" in request_filters and "needs_permit" in system and system["needs_permit"]:

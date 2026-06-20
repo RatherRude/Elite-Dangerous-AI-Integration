@@ -649,15 +649,7 @@ class SystemDatabase:
                     "controllingFaction": station.get("controllingFaction", {}).get(
                         "name", "Unknown"
                     ),
-                    "services": [
-                        service
-                        for service, has_service in {
-                            "market": station.get("haveMarket", False),
-                            "shipyard": station.get("haveShipyard", False),
-                            "outfitting": station.get("haveOutfitting", False),
-                        }.items()
-                        if has_service
-                    ],
+                    "services": [],
                     **(
                         {"body": station["body"]["name"]}
                         if "body" in station and "name" in station["body"]

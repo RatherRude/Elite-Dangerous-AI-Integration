@@ -1535,5 +1535,3 @@ known_economies = [
     "Military", "None", "Refinery", "Service", "Terraforming", "Tourism"
 ]
 known_security_levels = ["Anarchy", "High", "Low", "Medium"]
-known_thargoid_war_states = ["None", "Thargoid Controlled", "Thargoid Harvest", "Thargoid Probing",
-                                "Thargoid Recovery", "Thargoid Stronghold"]
