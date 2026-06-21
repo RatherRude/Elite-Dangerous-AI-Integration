@@ -33,6 +33,7 @@ vision_model_name: str | None = None
 event_manager: EventManager = cast(EventManager, None)
 embedding_model: EmbeddingModel | None = None
 screen_reader_hud_color_matrix: HudColorMatrix | None = None
+in_system_navigation: bool = False
 
 chat_local_tabbed: bool = False
 chat_wing_tabbed: bool = False
@@ -449,6 +450,7 @@ def _plotter() -> Plotter:
         prepare_station_request=prepare_station_request,
         prepare_body_request=prepare_body_request,
         spansh_post=_spansh_post,
+        enable_in_system_navigation=in_system_navigation,
     )
 
 
@@ -1257,8 +1259,9 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
                       weapon_types_list: list | None = None,
                       agent_llm_model: LLMModel | None = None,
                       agent_llm_max_tries: int = 7,
-                      hud_color_matrix: HudColorMatrix | None = None):
-    global event_manager, vision_model, llm_model, vision_model_name, keys, weapon_types, embedding_model, screen_reader_hud_color_matrix
+                      hud_color_matrix: HudColorMatrix | None = None,
+                      in_system_navigation_flag: bool = False):
+    global event_manager, vision_model, llm_model, vision_model_name, keys, weapon_types, embedding_model, screen_reader_hud_color_matrix, in_system_navigation
     keys = edKeys
     event_manager = eventManager
     llm_model = llmModel
@@ -1267,6 +1270,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
     embedding_model = embeddingModel
     weapon_types = weapon_types_list or []
     screen_reader_hud_color_matrix = hud_color_matrix
+    in_system_navigation = in_system_navigation_flag
     global discovery_primary_var, discovery_firegroup_var
     discovery_primary_var = discovery_primary_var_flag
     discovery_firegroup_var = discovery_firegroup_var_flag

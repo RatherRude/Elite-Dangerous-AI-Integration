@@ -821,6 +821,9 @@ class Chat:
                 agent_llm_model=self.agent_llm_model,
                 agent_llm_max_tries=self.config.get("agent_llm_max_tries", 7),
                 hud_color_matrix=hud_color_matrix,
+                in_system_navigation_flag=self.config.get(
+                    "in_system_navigation", False
+                ),
             )
 
             log("info", "Actions ready.")

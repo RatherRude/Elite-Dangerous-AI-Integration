@@ -853,6 +853,7 @@ class Config(TypedDict):
     discovery_primary_var: bool
     discovery_firegroup_var: int
     weapon_types: list[WeaponType]
+    in_system_navigation: bool
     # Chat channel tab settings (whether channel has its own tab in-game)
     chat_local_tabbed_var: bool
     chat_wing_tabbed_var: bool
@@ -1360,6 +1361,7 @@ def load_config() -> Config:
         'discovery_firegroup_var': 1,
         'weapon_types': [],
         'prefer_primary_bindings': False,
+        'in_system_navigation': False,
         # Chat channel tab defaults
         'chat_local_tabbed_var': False,
         'chat_wing_tabbed_var': False,

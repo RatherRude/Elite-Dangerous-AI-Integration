@@ -61,6 +61,7 @@ class Plotter:
         prepare_station_request: Callable[[dict[str, Any], Any], dict[str, Any]] | None = None,
         prepare_body_request: Callable[[dict[str, Any], Any], dict[str, Any]] | None = None,
         spansh_post: Callable[[str, dict[str, Any]], dict[str, Any]] | None = None,
+        enable_in_system_navigation: bool = False,
     ) -> None:
         self.keys = keys
         self.event_manager = event_manager
@@ -69,6 +70,7 @@ class Plotter:
         self.prepare_station_request = prepare_station_request
         self.prepare_body_request = prepare_body_request
         self.spansh_post = spansh_post or self._spansh_post
+        self.enable_in_system_navigation = enable_in_system_navigation
 
     @staticmethod
     def normalize_plot_name(name: str) -> str:
@@ -414,6 +416,11 @@ class Plotter:
                 return f"Already in {resolved.system_name}."
 
             if resolved.target_type in ('station', 'body') and self._systems_match(resolved.system_name, current_system):
+                if not self.enable_in_system_navigation:
+                    return (
+                        f"Best location found: {json.dumps(resolved.details)}. "
+                        f"{resolved.name} is in the current system already."
+                    )
                 return self._plot_in_system(resolved, projected_states)
 
             return self._plot_galaxy_route(
@@ -590,7 +597,9 @@ class Plotter:
         self._require_ui_dependencies()
         current_gui = self._ensure_galaxy_map_open(projected_states, galaxymap_key)
         keep_galaxy_map_open = (
-            resolved_target is not None and resolved_target.target_type in ('station', 'body')
+            self.enable_in_system_navigation
+            and resolved_target is not None
+            and resolved_target.target_type in ('station', 'body')
         )
 
         collisions = self.keys.get_collisions('UI_Up')

@@ -146,6 +146,7 @@ export interface Config {
     discovery_firegroup_var: number;
     weapon_types: WeaponType[];
     prefer_primary_bindings: boolean;
+    in_system_navigation: boolean;
     // Chat channel tab settings
     chat_local_tabbed_var: boolean;
     chat_wing_tabbed_var: boolean;
