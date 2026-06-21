@@ -203,7 +203,7 @@ h1, h2, h3, h4, h5, h6,
 
 .mat-mdc-tab .mdc-tab__text-label {
   color: var(--hud-orange) !important;
-  text-shadow: var(--hud-glow);
+  //text-shadow: var(--hud-glow);
 }
 
 .mat-mdc-tab .mat-icon {
@@ -305,7 +305,7 @@ h1, h2, h3, h4, h5, h6,
   font-weight: 800 !important;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  text-shadow: var(--hud-glow);
+  //text-shadow: var(--hud-glow);
 }
 
 .mat-expansion-panel-header-title mat-icon,
@@ -386,7 +386,7 @@ h1, h2, h3, h4, h5, h6,
   --mdc-protected-button-label-text-color: var(--hud-orange);
   --mdc-fab-container-color: var(--hud-orange);
   --mdc-fab-icon-color: #140700;
-  text-shadow: var(--hud-glow);
+  //text-shadow: var(--hud-glow);
   transition: filter 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
 }
 
@@ -439,7 +439,7 @@ th {
   color: var(--hud-cyan);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  text-shadow: var(--hud-cyan-glow);
+  //text-shadow: var(--hud-cyan-glow);
 }
 
 td, th {

@@ -19,7 +19,7 @@
   font-size: 16px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  text-shadow: var(--hud-glow);
+  /*text-shadow: var(--hud-glow);*/
 }
 
 .selected-date-summary {

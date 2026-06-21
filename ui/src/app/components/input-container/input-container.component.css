@@ -24,7 +24,7 @@
     letter-spacing: 0.04em;
     line-height: 1.5;
     flex: 1;
-    text-shadow: var(--hud-glow);
+    /*text-shadow: var(--hud-glow);*/
 }
 
 .input-field::placeholder {

@@ -213,7 +213,7 @@ mat-slide-toggle {
 .keybind-warning-header mat-icon,
 .keybind-warning-header strong {
   color: var(--hud-orange);
-  text-shadow: var(--hud-glow);
+  /*text-shadow: var(--hud-glow);*/
 }
 
 .keybind-warning-content {

@@ -133,7 +133,7 @@ mat-slide-toggle {
   font-size: 0.75rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  text-shadow: var(--hud-cyan-glow);
+  /*text-shadow: var(--hud-cyan-glow);*/
 }
 
 .preflight-item.active .preflight-category-copy span,

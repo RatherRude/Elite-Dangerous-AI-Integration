@@ -269,7 +269,7 @@ app-chat-container.small {
 ::ng-deep app-station-container .section-header {
   border-bottom: 1px solid var(--hud-border) !important;
   color: var(--hud-orange) !important;
-  text-shadow: var(--hud-glow);
+  /*text-shadow: var(--hud-glow);*/
   text-transform: uppercase;
   letter-spacing: 0.07em;
 }
@@ -284,7 +284,7 @@ app-chat-container.small {
 ::ng-deep app-settings-menu h3,
 ::ng-deep app-settings-menu h4 {
   color: var(--hud-orange) !important;
-  text-shadow: var(--hud-glow);
+  /*text-shadow: var(--hud-glow);*/
 }
 
 ::ng-deep app-status-container .star-o,
@@ -295,7 +295,7 @@ app-chat-container.small {
 ::ng-deep app-materials-panel .item-count,
 ::ng-deep app-engineers-panel .item-count {
   color: var(--hud-cyan) !important;
-  text-shadow: var(--hud-cyan-glow);
+  /*text-shadow: var(--hud-cyan-glow);*/
 }
 
 ::ng-deep app-status-container .status-pending,

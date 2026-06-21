@@ -81,7 +81,7 @@ mat-slide-toggle {
   --mdc-protected-button-container-color: var(--hud-cyan-dark) !important;
   --mdc-protected-button-label-text-color: var(--hud-cyan) !important;
   color: var(--hud-cyan) !important;
-  text-shadow: var(--hud-cyan-glow);
+  //text-shadow: var(--hud-cyan-glow);
 }
 
 .character-buttons .secondary-character-button:not(:disabled) mat-icon {

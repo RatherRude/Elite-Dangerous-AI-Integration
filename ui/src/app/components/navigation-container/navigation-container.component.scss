@@ -478,7 +478,7 @@
     cursor: pointer;
     font: inherit;
     text-align: left;
-    text-shadow: var(--hud-glow);
+    //text-shadow: var(--hud-glow);
 }
 
 .legend-toggle:focus-visible {
@@ -537,7 +537,7 @@
 
 .system-info-legend .system-meta-item .label {
     color: var(--hud-cyan);
-    text-shadow: var(--hud-cyan-glow);
+    //text-shadow: var(--hud-cyan-glow);
 }
 
 .system-meta-item .value {
@@ -620,7 +620,7 @@
 .poi-detail-row .label {
     min-width: 82px;
     color: var(--hud-cyan);
-    text-shadow: var(--hud-cyan-glow);
+    //text-shadow: var(--hud-cyan-glow);
 }
 
 .poi-detail-row .value {
@@ -656,7 +656,7 @@
     color: var(--hud-cyan);
     font-size: 12px;
     letter-spacing: 0.08em;
-    text-shadow: var(--hud-cyan-glow);
+    //text-shadow: var(--hud-cyan-glow);
     text-transform: uppercase;
 }
 
@@ -664,7 +664,7 @@
     color: var(--hud-cyan);
     font-size: 18px;
     font-weight: 800;
-    text-shadow: var(--hud-cyan-glow);
+    //text-shadow: var(--hud-cyan-glow);
 }
 
 .route-detail-list {
@@ -705,7 +705,7 @@
 
 .route-detail-row.destination {
     color: var(--hud-orange);
-    text-shadow: var(--hud-glow);
+    //text-shadow: var(--hud-glow);
 }
 
 .route-system {

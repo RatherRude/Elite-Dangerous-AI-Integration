@@ -563,7 +563,7 @@
 ::ng-deep .usage-shell .mat-mdc-form-field.mat-focused .mat-mdc-floating-label,
 ::ng-deep .usage-shell .mat-mdc-form-field.mat-focused .mat-mdc-select-arrow {
   color: var(--hud-cyan) !important;
-  text-shadow: var(--hud-cyan-glow);
+  //text-shadow: var(--hud-cyan-glow);
 }
 
 ::ng-deep .usage-shell .mat-mdc-form-field.mat-focused .mdc-notched-outline__leading,
@@ -581,7 +581,7 @@
   --mat-option-selected-state-label-text-color: var(--hud-cyan);
   --mat-option-focus-state-label-text-color: var(--hud-cyan);
   color: var(--hud-cyan) !important;
-  text-shadow: var(--hud-cyan-glow);
+  //text-shadow: var(--hud-cyan-glow);
 }
 
 ::ng-deep .usage-select-panel .mat-mdc-option.mdc-list-item--selected .mdc-list-item__primary-text,

@@ -18,7 +18,7 @@
   font-weight: bold;
   margin-right: 8px;
   text-transform: uppercase;
-  text-shadow: var(--hud-glow);
+  /*text-shadow: var(--hud-glow);*/
 }
 
 .message {

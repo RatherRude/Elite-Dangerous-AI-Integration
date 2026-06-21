@@ -31,7 +31,7 @@
     color: var(--hud-orange);
     cursor: default;
     font: inherit;
-    text-shadow: var(--hud-glow);
+    //text-shadow: var(--hud-glow);
     transition: background 140ms ease, box-shadow 140ms ease, color 140ms ease, filter 140ms ease;
 }
 

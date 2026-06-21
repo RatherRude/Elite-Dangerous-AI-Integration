@@ -339,14 +339,6 @@ class EDCoPilotPlugin(PluginBase):
                                 type="toggle",
                                 readonly=False,
                                 placeholder=None,
-                                default_value=True
-                            ),
-                            ToggleSetting(
-                                key="read_edcp_ui",
-                                label="Read EDCP UI",
-                                type="toggle",
-                                readonly=False,
-                                placeholder=None,
                                 default_value=False
                             ),
                             ParagraphSetting(
@@ -355,8 +347,16 @@ class EDCoPilotPlugin(PluginBase):
                                 type="paragraph",
                                 readonly=False,
                                 placeholder=None,
-                                
+
                                 content="We strongly recommend to activate only one set of UI actions, either COVAS:NEXT's or EDCoPilot's."
+                            ),
+                            ToggleSetting(
+                                key="read_edcp_ui",
+                                label="EDCP UI Awareness",
+                                type="toggle",
+                                readonly=False,
+                                placeholder=None,
+                                default_value=True
                             ),
                             ToggleSetting(
                                 key="read_commentary",
