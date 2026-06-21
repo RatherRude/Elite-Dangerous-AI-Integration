@@ -32,6 +32,9 @@ from EDMesg.EDCoPilot import OpenPanelAction, PanelContentsEvent, PanelNavigatio
 from EDMesg.base import EDMesgWelcomeAction
 
 
+EDCOPILOT_AVATAR_URL = "assets/EDCoPilot.png"
+
+
 EDCoPilotPanelName = Literal[
     "bookmarks",
     "bookmarkgroups",
@@ -530,17 +533,39 @@ class EDCoPilotPlugin(PluginBase):
                 event = self.client.pending_events.get()
                 if isinstance(event, SpeakingPhraseEvent) and event.reason != 'covas':
                     # log('info', 'eedcopilot', event)
-                    self._helper.dispatch_event(PluginEvent(
-                        kind="plugin",
-                        plugin_event_name="EdCoPilotEvent",
-                        plugin_event_content={
-                            "text": event.text
-                        }
-                    ))
+                    text = event.text
+
+                    def dispatch_edcopilot_event(include_avatar: bool = False):
+                        content = {"text": text}
+                        if include_avatar:
+                            content["avatar_url"] = EDCOPILOT_AVATAR_URL
+                        self._helper.dispatch_event(PluginEvent(
+                            kind="plugin",
+                            plugin_event_name="EdCoPilotEvent",
+                            plugin_event_content=content
+                        ))
+
                     if read_commentary and event.duration == 0:
                         if event.interrupt:
                             self._helper._assistant.tts.abort()
-                        self._helper._assistant.tts.say(event.text, voice=voice, postprocessing=post_processing)
+
+                        def on_start():
+                            dispatch_edcopilot_event(include_avatar=True)
+                            self._helper._assistant.event_manager.add_assistant_speaking()
+
+                        def on_complete():
+                            if not self._helper._assistant.tts.has_queued_items():
+                                self._helper._assistant.event_manager.add_assistant_complete_event()
+
+                        self._helper._assistant.tts.say(
+                            text,
+                            voice=voice,
+                            postprocessing=post_processing,
+                            on_start=on_start,
+                            on_complete=on_complete,
+                        )
+                    else:
+                        dispatch_edcopilot_event()
                 if isinstance(event, PanelContentsEvent):
                     status_message = _build_edcopilot_panel_contents_status(event.contents)
                     self._helper.dispatch_event(PluginEvent(

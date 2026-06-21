@@ -436,11 +436,14 @@ class Chat:
             show_chat_message("memory", event.content)
         if event.kind == "plugin":
             event = cast(PluginEvent, event)
-            plugin_message = event.plugin_event_content.get("text") if isinstance(event.plugin_event_content, dict) else None
+            plugin_content = event.plugin_event_content if isinstance(event.plugin_event_content, dict) else {}
+            plugin_message = plugin_content.get("text")
+            avatar_url = plugin_content.get("avatar_url")
             show_chat_message(
                 "plugin",
                 plugin_message if isinstance(plugin_message, str) and plugin_message.strip() else event.plugin_event_name,
                 plugin_event_name=event.plugin_event_name,
+                avatar_url=avatar_url if isinstance(avatar_url, str) and avatar_url else None,
             )
         if event.kind == "quest":
             event = cast(QuestEvent, event)

@@ -101,8 +101,9 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
         if (!msg) {
           return;
         }
-        if (msg.role === "npc_message") {
-          void this.setScriptedAvatar(msg.avatar_id ?? msg.avatar_url);
+        const avatarRef = msg.avatar_id ?? msg.avatar_url;
+        if (msg.role === "npc_message" || (msg.plugin_event_name === "EdCoPilotEvent" && avatarRef)) {
+          void this.setScriptedAvatar(avatarRef);
         }
       }),
     );

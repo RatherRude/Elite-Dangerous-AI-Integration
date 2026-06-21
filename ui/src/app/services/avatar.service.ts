@@ -32,7 +32,7 @@ export class AvatarService {
     if (!reference) {
       return false;
     }
-    return /^(https?:|data:|blob:|file:)/i.test(reference);
+    return /^(https?:|data:|blob:|file:)/i.test(reference) || reference.startsWith('assets/');
   }
 
   public isObjectUrl(url: string | null | undefined): boolean {
