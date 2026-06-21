@@ -36,6 +36,34 @@ from .Logger import AudioUsageStats, LatencyUsageStats, TextUsageStats, log_tts_
 from .Models import TTSModel, OpenAITTSModel
 
 
+class TTSLine:
+    def __init__(self) -> None:
+        self._speaking = threading.Event()
+        self._completed = threading.Event()
+
+    def mark_speaking(self) -> None:
+        self._speaking.set()
+
+    def mark_completed(self) -> None:
+        self._completed.set()
+
+    def is_speaking(self) -> bool:
+        return self._speaking.is_set() and not self._completed.is_set()
+
+    def is_completed(self) -> bool:
+        return self._completed.is_set()
+
+    def wait_for_speaking(self) -> bool:
+        while not self._speaking.is_set():
+            if self._completed.is_set():
+                return False
+            self._speaking.wait(0.1)
+        return True
+
+    def wait_for_completion(self) -> None:
+        self._completed.wait()
+
+
 @dataclass
 class LowpassState:
     y_prev: float = 0.0
@@ -129,6 +157,7 @@ class TTS:
                 "on_start": None,
                 "on_complete": None,
                 "drop_if": None,
+                "line": None,
             }
         if isinstance(item, dict):
             return {
@@ -142,6 +171,7 @@ class TTS:
                 "on_start": item.get("on_start"),
                 "on_complete": item.get("on_complete"),
                 "drop_if": item.get("drop_if"),
+                "line": item.get("line"),
             }
         return {
             "type": "text",
@@ -154,6 +184,7 @@ class TTS:
             "on_start": None,
             "on_complete": None,
             "drop_if": None,
+            "line": None,
         }
 
     def set_output_volume_multiplier(self, value: float) -> None:
@@ -216,9 +247,15 @@ class TTS:
                     on_start = item.get("on_start")
                     on_complete = item.get("on_complete")
                     drop_if = item.get("drop_if")
+                    line = item.get("line")
                     if callable(drop_if) and drop_if():
+                        if isinstance(line, TTSLine):
+                            line.mark_completed()
                         continue
+                    requeued = False
                     try:
+                        if isinstance(line, TTSLine):
+                            line.mark_speaking()
                         if callable(on_start):
                             try:
                                 on_start()
@@ -241,8 +278,11 @@ class TTS:
                             )
                     except Exception as e:
                         self.read_queue.put(item)
+                        requeued = True
                         raise e
                     finally:
+                        if isinstance(line, TTSLine) and not requeued:
+                            line.mark_completed()
                         if callable(on_complete):
                             try:
                                 on_complete()
@@ -1313,7 +1353,8 @@ class TTS:
         on_start: Callable[[], None] | None = None,
         on_complete: Callable[[], None] | None = None,
         drop_if: Callable[[], bool] | None = None,
-    ):
+    ) -> TTSLine:
+        line = TTSLine()
         self.read_queue.put(
             {
                 "text": text,
@@ -1324,8 +1365,10 @@ class TTS:
                 "on_start": on_start,
                 "on_complete": on_complete,
                 "drop_if": drop_if,
+                "line": line,
             },
         )
+        return line
 
     def play_audio_file(
         self,
@@ -1357,7 +1400,10 @@ class TTS:
 
     def abort(self):
         while not self.read_queue.empty():
-            self.read_queue.get()
+            item = self._normalize_queue_item(self.read_queue.get())
+            line = item.get("line")
+            if isinstance(line, TTSLine):
+                line.mark_completed()
 
         self.is_aborted = True
 

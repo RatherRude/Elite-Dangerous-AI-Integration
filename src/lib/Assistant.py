@@ -934,14 +934,15 @@ class Assistant:
                     return
 
             if response_text and not response_actions:
-                self.event_manager.add_assistant_speaking()
-                self.tts.say(
+                line = self.tts.say(
                     response_text,
                     context="assistant",
                     postprocessing_layers=self._get_tts_postprocessing_layers(projected_states),
                 )
+                line.wait_for_speaking()
+                self.event_manager.add_assistant_speaking()
                 self.event_manager.add_conversation_event('assistant', response_text, reasons=reasons, processed_at=max_conversation_processed)
-                self.tts.wait_for_completion()
+                line.wait_for_completion()
                 self.event_manager.add_assistant_complete_event()
 
             if response_actions:

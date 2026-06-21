@@ -142,6 +142,34 @@ def test_edge_tts_playback(mock_pyaudio, mock_miniaudio, mock_openai):
     assert mock_pyaudio['stream'].write.call_count == 2
 
 
+def test_tts_say_returns_line_lifecycle(mock_pyaudio):
+    mock_model = MagicMock(spec=OpenAITTSModel)
+    mock_model.synthesize.return_value = [b'\x00\x00' * 1024]
+
+    tts = TTS(mock_model, voice="nova", speed=1.0)
+    line = tts.say("Hello world")
+
+    assert line.wait_for_speaking() is True
+    assert line.is_speaking()
+
+    line.wait_for_completion()
+
+    assert line.is_completed()
+
+
+def test_tts_dropped_line_completes_without_speaking(mock_pyaudio):
+    mock_model = MagicMock(spec=OpenAITTSModel)
+
+    tts = TTS(mock_model, voice="nova", speed=1.0)
+    line = tts.say("Hello world", drop_if=lambda: True)
+
+    assert line.wait_for_speaking() is False
+    line.wait_for_completion()
+
+    assert line.is_completed()
+    assert mock_model.synthesize.call_count == 0
+
+
 def test_postprocess_audio_applies_volume_and_distortion(mock_pyaudio):
     """Test TTS postprocessing reshapes synthesized audio"""
     tts = TTS(
