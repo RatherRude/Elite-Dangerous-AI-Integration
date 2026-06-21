@@ -251,7 +251,7 @@ h1, h2, h3, h4, h5, h6,
 
 .mat-expansion-panel {
   display: block !important;
-  background: rgba(255, 255, 255, 0.045) !important;
+  background: unset !important;
   border: 1px solid color-mix(in srgb, var(--hud-orange) 70%, black) !important;
   border-radius: 2px !important;
   color: var(--hud-text) !important;
