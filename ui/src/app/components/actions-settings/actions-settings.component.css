@@ -17,8 +17,9 @@ mat-slide-toggle {
   display: flex;
   gap: 0.35rem;
   align-items: center;
-  color: #ff9800;
+  color: #ff6b6b;
   margin-bottom: 0.75rem;
+  text-shadow: 0 0 10px color-mix(in srgb, #ff6b6b 45%, transparent);
 }
 
 .generative-ui-warning mat-icon {
@@ -186,11 +187,12 @@ mat-slide-toggle {
 
 /* Keybind warnings */
 .keybind-warning-box {
-  background-color: rgba(255, 152, 0, 0.1);
-  border-left: 4px solid #ff9800;
+  background-color: color-mix(in srgb, var(--hud-orange-dark) 42%, transparent);
+  border-left: 4px solid var(--hud-orange);
   padding: 12px;
   margin-bottom: 16px;
   border-radius: 4px;
+  box-shadow: inset 0 0 18px color-mix(in srgb, var(--hud-orange) 8%, transparent);
 }
 
 .keybind-warning-section {
@@ -206,6 +208,12 @@ mat-slide-toggle {
   align-items: center;
   gap: 8px;
   margin-bottom: 4px;
+}
+
+.keybind-warning-header mat-icon,
+.keybind-warning-header strong {
+  color: var(--hud-orange);
+  text-shadow: var(--hud-glow);
 }
 
 .keybind-warning-content {

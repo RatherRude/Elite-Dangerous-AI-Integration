@@ -186,6 +186,18 @@ div.output-device-column .mat-mdc-form-field-subscript-wrapper {
   width: 100%;
 }
 
+.logbook-actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 1rem;
+}
+
+.logbook-actions button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .focus-highlight {
   animation: focus-pulse 1.5s ease-in-out 1;
 }

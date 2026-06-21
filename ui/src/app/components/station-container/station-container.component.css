@@ -6,58 +6,6 @@
   position: relative;
 }
 
-/* Station Section Boxes - matching other components style */
-.station-section {
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid #333;
-  border-radius: 8px;
-  margin-bottom: 24px;
-}
-
-.section-header {
-  padding: 20px 20px 0 20px;
-  border-bottom: 1px solid #333;
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: background-color 0.2s ease;
-}
-
-.section-header:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-.section-header h3 {
-  margin: 0 0 16px 0;
-  font-size: 20px;
-  /*color: #e0e0e0;*/
-  font-weight: 600;
-}
-
-.collapse-icon {
-  color: #999;
-  transition: transform 0.2s ease;
-}
-
-.section-subtitle {
-  margin-bottom: 16px;
-  font-size: 14px;
-  color: #bbb;
-}
-
-.section-content {
-  padding: 20px;
-  transition: max-height 0.3s ease, opacity 0.3s ease;
-  overflow: hidden;
-}
-
-.section-content.collapsed {
-  max-height: 0;
-  padding: 0 20px;
-  opacity: 0;
-}
-
 .station-content {
   flex: 1;
   display: flex;
@@ -110,13 +58,13 @@
   justify-content: center;
   width: 40px;
   height: 40px;
-  background: rgba(64, 181, 246, 0.2);
+  background: color-mix(in srgb, var(--hud-cyan) 20%, transparent);
   border-radius: 50%;
   flex-shrink: 0;
 }
 
 .ship-icon mat-icon {
-  color: #40b5f6;
+  color: var(--hud-cyan);
   font-size: 20px;
 }
 
@@ -140,7 +88,7 @@
 
 .ship-location {
   font-size: 14px;
-  color: #64b5f6;
+  color: var(--hud-cyan);
   font-weight: 500;
 }
 
@@ -208,9 +156,9 @@
 }
 
 .station-services button.active {
-  background: rgba(64, 181, 246, 0.2);
-  border-color: #40b5f6;
-  color: #40b5f6;
+  background: color-mix(in srgb, var(--hud-cyan) 20%, transparent);
+  border-color: var(--hud-cyan);
+  color: var(--hud-cyan);
 }
 
 .station-services button mat-icon {
@@ -231,32 +179,52 @@
 
 /* Search Box */
 .search-box {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
   margin-bottom: 16px;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid #444;
-  border-radius: 6px;
+  padding: 0;
+  background: transparent;
+  border: none;
 }
 
 .search-box mat-icon {
-  color: #888;
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  transform: translateY(-50%);
+  color: var(--hud-orange);
   font-size: 20px;
+  pointer-events: none;
 }
 
 .search-box input {
   flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: #e0e0e0;
+  width: 100%;
+  height: 42px;
+  box-sizing: border-box;
+  padding: 10px 12px 10px 40px;
+  background: rgba(8, 4, 0, 0.94);
+  border: 1px solid var(--hud-border);
+  border-radius: 2px;
+  color: var(--hud-text);
+  font-family: var(--hud-font);
   font-size: 14px;
+  box-shadow: inset 0 0 18px color-mix(in srgb, var(--hud-orange) 8%, transparent);
+}
+
+.search-box input:hover {
+  border-color: color-mix(in srgb, var(--hud-orange) 75%, transparent);
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: var(--hud-orange);
+  box-shadow: inset 0 0 18px color-mix(in srgb, var(--hud-orange) 12%, transparent), 0 0 12px color-mix(in srgb, var(--hud-orange) 24%, transparent);
 }
 
 .search-box input::placeholder {
-  color: #888;
+  color: rgba(223, 251, 255, 0.42);
 }
 
 /* Tables */

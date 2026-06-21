@@ -2,25 +2,26 @@ import json
 import platform
 import threading
 from time import sleep
-import math
 from typing import Any, Literal, cast
 from pyautogui import typewrite
 
 import openai
-import requests
 from pydantic import BaseModel
 
 from .actions_web import register_web_actions
+from .Plotter import Plotter
 from .actions_ui import register_ui_actions
 from .actions_genui import register_genui_actions
 
 from ..Logger import log, show_chat_message
+from ..Screenshot import get_windows_game_window_handle, screenshot_game_window, set_game_window_active
 from ..EDKeys import EDKeys
 from ..EventManager import EventManager
 from ..ActionManager import ActionManager
 from ..PromptGenerator import PromptGenerator
 from ..Models import LLMModel, EmbeddingModel
 from ..Projections import get_state_dict, ProjectedStates
+from ..HudColorMatrix import HudColorMatrix
 
 keys: EDKeys = cast(EDKeys, None)
 discovery_primary_var: bool = True
@@ -31,6 +32,8 @@ llm_model: LLMModel = cast(LLMModel, None)
 vision_model_name: str | None = None
 event_manager: EventManager = cast(EventManager, None)
 embedding_model: EmbeddingModel | None = None
+screen_reader_hud_color_matrix: HudColorMatrix | None = None
+in_system_navigation: bool = False
 
 chat_local_tabbed: bool = False
 chat_wing_tabbed: bool = False
@@ -433,98 +436,47 @@ def charge_field_neutraliser(args, projected_states):
 
 
 def calculate_navigation_distance_and_timing(current_system: str, target_system: str) -> tuple[float, int]:
-    distance_ly = 0.0  # Default value in case API call fails
-
-    if current_system != 'Unknown' and target_system:
-        try:
-            # Request coordinates for both systems from EDSM API
-            edsm_url = "https://www.edsm.net/api-v1/systems"
-            params = {
-                'systemName[]': [current_system, target_system],
-                'showCoordinates': 1
-            }
-
-            log('debug', 'Distance Calculation', f"Requesting coordinates for {current_system} -> {target_system}")
-            response = requests.get(edsm_url, params=params, timeout=5)
-
-            if response.status_code == 200:
-                systems_data = response.json()
-
-                if len(systems_data) >= 2:
-                    # Find the systems in the response
-                    current_coords = None
-                    target_coords = None
-
-                    for system in systems_data:
-                        if system.get('name', '').lower() == current_system.lower():
-                            current_coords = system.get('coords')
-                        elif system.get('name', '').lower() == target_system.lower():
-                            target_coords = system.get('coords')
-
-                    # Calculate distance if both coordinate sets are available
-                    if current_coords and target_coords:
-                        x1, y1, z1 = current_coords['x'], current_coords['y'], current_coords['z']
-                        x2, y2, z2 = target_coords['x'], target_coords['y'], target_coords['z']
-
-                        distance_ly = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2)
-                        distance_ly = round(distance_ly, 2)
-
-                        # Check if distance is too far to plot
-                        if distance_ly > 20000:
-                            raise Exception(f"Distance of {distance_ly} LY from {current_system} to {target_system} is too far to plot (max 20000 LY)")
-                    else:
-                        log('warn', 'Distance Calculation', f"Could not find coordinates for one or both systems: {current_system}, {target_system}")
-                else:
-                    log('warn', 'Distance Calculation', f"EDSM API returned insufficient data for systems: {current_system}, {target_system}")
-            else:
-                log('warn', 'Distance Calculation', f"EDSM API request failed with status {response.status_code}")
-
-        except requests.RequestException as e:
-            log('error', 'Distance Calculation', f"Failed to request system coordinates from EDSM API: {str(e)}")
-        except Exception as e:
-            # Re-raise if it's our distance check exception
-            if "too far to plot" in str(e):
-                raise
-            log('error', 'Distance Calculation', f"Unexpected error during distance calculation: {str(e)}")
-
-    # Determine wait time based on distance
-    zoom_wait_time = 3
-
-    # Add additional second for every 1000 LY
-    if distance_ly > 0:
-        additional_time = int(distance_ly / 1000)
-        zoom_wait_time += additional_time
-
-    # Add additional 2 seconds if distance couldn't be determined (still 0)
-    if distance_ly == 0:
-        zoom_wait_time += 2
-        log('warn', 'Navigation Timing', f"Distance could not be determined, adding 2 extra seconds to wait time")
-
-    return distance_ly, zoom_wait_time
+    return Plotter.calculate_navigation_distance_and_timing(current_system, target_system)
 
 
-def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
-    # Trigger the GUI open
+def _plotter() -> Plotter:
+    from .actions_web import _spansh_post, prepare_body_request, prepare_station_request, prepare_system_request
+
+    return Plotter(
+        keys=keys,
+        event_manager=event_manager,
+        screen_reader_hud_color_matrix=screen_reader_hud_color_matrix,
+        prepare_system_request=prepare_system_request,
+        prepare_station_request=prepare_station_request,
+        prepare_body_request=prepare_body_request,
+        spansh_post=_spansh_post,
+        enable_in_system_navigation=in_system_navigation,
+    )
+
+
+def plot_to_target(args, projected_states, galaxymap_key="GalaxyMapOpen"):
+    return _plotter().plot_to_target(args, projected_states, galaxymap_key)
+
+
+def galaxy_map_open_or_close(args, projected_states, galaxymap_key="GalaxyMapOpen"):
     setGameWindowActive()
     current_gui = get_state_dict(projected_states, 'CurrentStatus').get('GuiFocus', '')
 
-    if 'start_navigation' in args and args['start_navigation']:
-        nav_route = get_state_dict(projected_states, 'NavInfo').get('NavRoute', [])
-        if nav_route and nav_route[-1].get('StarSystem') == args.get('system_name'):
-            return f"The route to {args['system_name']} is already set"
+    if args.get('desired_state') == "close":
+        if current_gui == 'GalaxyMap':
+            keys.send(galaxymap_key)
+            return "Galaxy map has been closed."
+        return "Galaxy map is not open, nothing to close."
 
     if current_gui in ['SAA', 'FSS', 'Codex']:
         raise Exception('Galaxy map can not be opened currently, the active GUI needs to be closed first')
 
     if current_gui == 'GalaxyMap':
-        if not 'system_name' in args:
-            return "Galaxy map is already open"
-    else:
-        keys.send(galaxymap_key)
+        return "Galaxy map is already open"
 
+    keys.send(galaxymap_key)
     try:
         event_manager.wait_for_condition('CurrentStatus', lambda s: s.GuiFocus == "GalaxyMap", 4)
-
     except TimeoutError:
         keys.send("UI_Back", repeat=10, repeat_delay=0.05)
         keys.send(galaxymap_key)
@@ -533,90 +485,15 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
         except TimeoutError:
             return "Galaxy map can not be opened currently, the current GUI needs to be closed first"
 
-    if 'system_name' in args:
-
-        # Check if UI keys have a collision with CamTranslate
-        collisions = keys.get_collisions('UI_Up')
-        if 'CamTranslateForward' in collisions:
-            raise Exception(
-                "Unable to enter system name due to a collision between the 'UI Panel Up' and 'Galaxy Cam Translate Forward' keys. "
-                + "Please change the keybinding for 'Galaxy Cam Translate' to Shift + WASD under General Controls > Galaxy Map.")
-
-        collisions = keys.get_collisions('UI_Right')
-        if 'CamTranslateRight' in collisions:
-            raise Exception(
-                "Unable to enter system name due to a collision between the 'UI Panel Right' and 'Galaxy Cam Translate Right' keys. "
-                + "Please change the keybinding for 'Galaxy Cam Translate' to Shift + WASD under General Controls > Galaxy Map.")
-
-        keys.send('CamZoomIn')
-        sleep(0.05)
-
-        keys.send('UI_Up')
-        sleep(.05)
-        if current_gui == "GalaxyMap":
-            keys.send('UI_Left', repeat=3)
-            sleep(.05)
-            keys.send('UI_Right')
-            sleep(.05)
-            keys.send('UI_Up')
-            sleep(.05)
-        keys.send('UI_Select')
-        sleep(.05)
-
-        # type in the System name
-        typewrite(args['system_name'], interval=0.02)
-        sleep(0.05)
-
-        # send enter key
-        keys.send_key('Down', 'Key_Enter')
-        sleep(0.05)
-        keys.send_key('Up', 'Key_Enter')
-
-        sleep(0.05)
-        keys.send('UI_Right')
-        sleep(.5)
-        keys.send('UI_Select')
-
-        if 'start_navigation' in args and args['start_navigation']:
-            # Get current location from projected states and calculate distance/timing
-            current_system = get_state_dict(projected_states, 'Location').get('StarSystem', 'Unknown')
-            target_system = args['system_name']
-
-            distance_ly, zoom_wait_time = calculate_navigation_distance_and_timing(current_system, target_system)
-            log('info', 'zoom_wait_time', zoom_wait_time)
-            # Continue with the navigation logic
-            sleep(0.05)
-            keys.send('CamZoomOut')
-            sleep(zoom_wait_time)
-            keys.send('UI_Select', hold=1)
-
-            sleep(0.05)
-
-            try:
-                data = event_manager.wait_for_condition('NavInfo',
-                                                        lambda s: s.NavRoute and len(s.NavRoute) > 0 and s.NavRoute[-1].StarSystem.lower() == args['system_name'].lower(), zoom_wait_time)
-                jumpAmount = len(data.NavRoute) if data else 0  # amount of jumps to do
-
-                if not current_gui == "GalaxyMap":  # if we are already in the galaxy map we don't want to close it
-                    keys.send(galaxymap_key)
-
-                return (f"Best location found: {json.dumps(args['details'])}. " if 'details' in args else '') + f"Route to {args['system_name']} successfully plotted ({f'Distance: {distance_ly} LY, ' if distance_ly > 0 else ''}Jumps: {jumpAmount})"
-
-            except TimeoutError:
-                return f"Failed to plot a route to {args['system_name']}"
-
-        return f"The galaxy map has opened. It is now zoomed in on \"{args['system_name']}\". No route was plotted yet, only the commander can do that."
-
     return "Galaxy map opened"
 
 
-def galaxy_map_close(args, projected_states, galaxymap_key="GalaxyMapOpen"):
-    if get_state_dict(projected_states, 'CurrentStatus').get('GuiFocus') == 'GalaxyMap':
-        keys.send(galaxymap_key)
-    else:
-        return "Galaxy map is already closed"
+def plot_to_target_buggy(args, projected_states):
+    return plot_to_target(args, projected_states, "GalaxyMapOpen_Buggy")
 
-    return "Galaxy map closed"
+
+def galaxy_map_open_or_close_buggy(args, projected_states):
+    return galaxy_map_open_or_close(args, projected_states, "GalaxyMapOpen_Buggy")
 
 
 def system_map_open_or_close(args, projected_states, sys_map_key='SystemMapOpen'):
@@ -1066,16 +943,6 @@ def recall_dismiss_ship_buggy(args, projected_states):
     return "Remote ship has been recalled or dismissed."
 
 
-def galaxy_map_open_buggy(args, projected_states) -> Any | Literal['Galaxy map is already closed', 'Galaxy map closed']:
-    setGameWindowActive()
-    if args['desired_state'] == "open":
-        response = galaxy_map_open(args, projected_states, "GalaxyMapOpen_Buggy")
-    else:
-        response = galaxy_map_close(args, projected_states, "GalaxyMapOpen_Buggy")
-
-    return response
-
-
 def system_map_open_buggy(args, projected_states):
     setGameWindowActive()
     current_gui = get_state_dict(projected_states, 'CurrentStatus').get('GuiFocus', '')
@@ -1161,7 +1028,7 @@ def battery_humanoid(args, projected_states):
     return "Battery used."
 
 
-def galaxy_map_open_humanoid(args, projected_states):
+def galaxy_map_open_or_close_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('GalaxyMapOpen_Humanoid')
     return "Galaxy map opened or closed."
@@ -1197,67 +1064,18 @@ def get_game_window_handle():
     global handle
     if platform.system() != 'Windows':
         return None
-    import win32gui
 
     if not handle:
-        handle = win32gui.FindWindow(0, "Elite - Dangerous (CLIENT)")
+        handle = get_windows_game_window_handle()
     return handle
 
 
 def setGameWindowActive():
-    if platform.system() != 'Windows':
-        return None
-    handle = get_game_window_handle()
-    import win32gui
-
-    if handle:
-        try:
-            win32gui.SetForegroundWindow(handle)  # give focus to ED
-            sleep(.15)
-            log("debug", "Set game window as active")
-        except:
-            log("warn", "Failed to set game window as active")
-    else:
-        log("info", "Unable to find Elite game window")
+    set_game_window_active()
 
 
 def screenshot(new_height: int = 720):
-    if platform.system() != 'Windows':
-        return None
-    handle = get_game_window_handle()
-    import win32gui
-    import pyautogui
-    from PIL import Image
-    if handle:
-        setGameWindowActive()
-        x, y, x1, y1 = win32gui.GetClientRect(handle)
-        x, y = win32gui.ClientToScreen(handle, (x, y))
-        x1, y1 = win32gui.ClientToScreen(handle, (x1, y1))
-        width = x1 - x
-        height = y1 - y
-        im = pyautogui.screenshot(region=(x, y, width, height))
-
-        # Convert the screenshot to a PIL image
-        im = im.convert("RGB")
-
-        # Resize to height 720 while maintaining aspect ratio
-        aspect_ratio = width / height
-        new_width = int(new_height * aspect_ratio)
-        im = im.resize((new_width, new_height), Image.Resampling.LANCZOS)
-
-        # Crop the center to a 16:9 aspect ratio
-        target_aspect_ratio = 16 / 9
-        target_width = int(new_height * target_aspect_ratio)
-        left = (new_width - target_width) / 2
-        top = 0
-        right = left + target_width
-        bottom = new_height
-        im = im.crop((left, top, right, bottom))
-
-        return im
-    else:
-        log("warn", 'Window not found!')
-        return None
+    return screenshot_game_window(new_height)
 
 
 def format_image(image, query=""):
@@ -1438,10 +1256,12 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
                      chat_squadron_tabbed_flag: bool = False,
                      chat_direct_tabbed_flag: bool = False,
                      overlay_show_hud: bool = False,
-                     weapon_types_list: list | None = None,
-                     agent_llm_model: LLMModel | None = None,
-                     agent_llm_max_tries: int = 7):
-    global event_manager, vision_model, llm_model, vision_model_name, keys, weapon_types, embedding_model
+                      weapon_types_list: list | None = None,
+                      agent_llm_model: LLMModel | None = None,
+                      agent_llm_max_tries: int = 7,
+                      hud_color_matrix: HudColorMatrix | None = None,
+                      in_system_navigation_flag: bool = False):
+    global event_manager, vision_model, llm_model, vision_model_name, keys, weapon_types, embedding_model, screen_reader_hud_color_matrix, in_system_navigation
     keys = edKeys
     event_manager = eventManager
     llm_model = llmModel
@@ -1449,6 +1269,8 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
     vision_model_name = visionModelName
     embedding_model = embeddingModel
     weapon_types = weapon_types_list or []
+    screen_reader_hud_color_matrix = hud_color_matrix
+    in_system_navigation = in_system_navigation_flag
     global discovery_primary_var, discovery_firegroup_var
     discovery_primary_var = discovery_primary_var_flag
     discovery_firegroup_var = discovery_firegroup_var_flag
@@ -1619,33 +1441,43 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "pips to systems": {"power_category": ["Systems"], "pips": [2]},
     })
 
-    actionManager.registerAction('galaxyMapOpen', "Open galaxy map. If asked, also focus on a system or start a navigation route. Navigation closes map, no further close required.", {
+    actionManager.registerAction('plotToTarget', "Plot a navigation route to a system, station, or body. Uses Spansh to resolve the target, then plots via the galaxy map or navigates in the current system map when already there.", {
         "type": "object",
         "properties": {
-            "system_name": {
+            "system": {
                 "type": "string",
-                "description": "System to display or plot to",
+                "description": "Target system name",
             },
-            "start_navigation": {
-                "type": "boolean",
-                "description": "Start navigation route to the system",
-            }
+            "station": {
+                "type": "string",
+                "description": "Target station name",
+            },
+            "body": {
+                "type": "string",
+                "description": "Target body name",
+            },
         },
-    }, galaxy_map_open, 'ship', permission='galaxyMapOpen', cache_prefill={
-        "galaxy map": {},
-        "open galaxy map": {},
-        "galmap": {},
+    }, plot_to_target, 'ship', permission='plotToTarget', cache_prefill={
         "navigation": {},
-        "star map": {},
-        "show galaxy map": {},
-        "nav map": {},
     })
 
-    actionManager.registerAction('galaxyMapClose', "Close galaxy map", {
+    actionManager.registerAction('galaxyMapOpenOrClose', "Open or close the galaxy map", {
         "type": "object",
-        "properties": {},
-    }, galaxy_map_close, 'ship', permission='galaxyMapClose', cache_prefill={
-        "close galaxy map": {},
+        "properties": {
+            "desired_state": {
+                "type": "string",
+                "enum": ["open", "close"],
+                "description": "Desired state for the galaxy map: open or close.",
+            },
+        },
+    }, galaxy_map_open_or_close, 'ship', permission='galaxyMapOpenOrClose', cache_prefill={
+        "galaxy map": {"desired_state": "open"},
+        "open galaxy map": {"desired_state": "open"},
+        "close galaxy map": {"desired_state": "close"},
+        "galmap": {"desired_state": "open"},
+        "star map": {"desired_state": "open"},
+        "show galaxy map": {"desired_state": "open"},
+        "nav map": {"desired_state": "open"},
     })
 
     actionManager.registerAction('systemMapOpenOrClose', "Open or close system map", {
@@ -2277,7 +2109,31 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "ship pickup": {},
     })
 
-    actionManager.registerAction('galaxyMapOpenOrCloseBuggy', "Open galaxy map. If asked, also focus on a system or start a navigation route", {
+    actionManager.registerAction('plotToTargetBuggy', "Plot a navigation route to a system, station, or body from the SRV.", {
+        "type": "object",
+        "properties": {
+            "system": {
+                "type": "string",
+                "description": "Target system name",
+            },
+            "station": {
+                "type": "string",
+                "description": "Target station name",
+            },
+            "body": {
+                "type": "string",
+                "description": "Target body name",
+            },
+        },
+    }, plot_to_target_buggy, 'buggy', permission='plotToTargetBuggy', cache_prefill={
+        "navigation": {},
+        "plot route": {},
+        "set course": {},
+        "plot course": {},
+        "navigate to": {},
+    })
+
+    actionManager.registerAction('galaxyMapOpenOrCloseBuggy', "Open or close the galaxy map from the SRV.", {
         "type": "object",
         "properties": {
             "desired_state": {
@@ -2285,21 +2141,12 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
                 "enum": ["open", "close"],
                 "description": "Open or close galaxy map",
             },
-            "system_name": {
-                "type": "string",
-                "description": "System to display or plot to.",
-            },
-            "start_navigation": {
-                "type": "boolean",
-                "description": "Start navigation route to the system",
-            }
         },
-    }, galaxy_map_open_buggy, 'buggy', permission='galaxyMapOpenOrCloseBuggy', cache_prefill={
+    }, galaxy_map_open_or_close_buggy, 'buggy', permission='galaxyMapOpenOrCloseBuggy', cache_prefill={
         "galaxy map": {"desired_state": "open"},
         "open galaxy map": {"desired_state": "open"},
         "close galaxy map": {"desired_state": "close"},
         "galmap": {"desired_state": "open"},
-        "navigation": {"desired_state": "open"},
         "star map": {"desired_state": "open"},
         "nav map": {"desired_state": "open"},
     })
@@ -2462,7 +2309,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
     actionManager.registerAction('galaxyMapOpenOrCloseHumanoid', "Open or Close Galaxy Map", {
         "type": "object",
         "properties": {}
-    }, galaxy_map_open_humanoid, 'humanoid', permission='galaxyMapOpenOrCloseHumanoid', cache_prefill={
+    }, galaxy_map_open_or_close_humanoid, 'humanoid', permission='galaxyMapOpenOrCloseHumanoid', cache_prefill={
         "galaxy map": {},
         "open galaxy map": {},
         "galmap": {},

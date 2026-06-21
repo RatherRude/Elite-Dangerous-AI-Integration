@@ -61,6 +61,8 @@ export class MainViewComponent implements OnInit, OnDestroy {
     isInCombat = false;
     isDockedAtStation = false;
     isShipIdentUnknown = false;
+    currentGameModeLabel = "Status";
+    currentGameModeIcon = "info";
     selectedTabIndex: number = 0;
     config: Config|undefined;
     hasLogbook = true;
@@ -72,6 +74,7 @@ export class MainViewComponent implements OnInit, OnDestroy {
     private hasAutoStarted = false;
     public usageDisclaimerAccepted = false;
     public isQuestEditorOpen = false;
+    private systemSubscription?: Subscription;
 
     constructor(
         private tauri: TauriService,
@@ -90,7 +93,25 @@ export class MainViewComponent implements OnInit, OnDestroy {
         );
     }
 
+    private applyHudColors(system?: { hud_accent_color?: string; hud_secondary_color?: string } | null): void {
+        this.setHudColor("--hud-orange", system?.hud_accent_color);
+        this.setHudColor("--hud-cyan", system?.hud_secondary_color);
+    }
+
+    private setHudColor(variable: "--hud-orange" | "--hud-cyan", color?: string): void {
+        if (!color || !/^#[0-9a-fA-F]{6}$/.test(color)) {
+            return;
+        }
+
+        document.documentElement.style.setProperty(variable, color);
+    }
+
     ngOnInit(): void {
+        this.applyHudColors(this.configService.systemInfo);
+        this.systemSubscription = this.configService.system$.subscribe((system) => {
+            this.applyHudColors(system);
+        });
+
         this.configSubscription = this.configService.config$.subscribe(
             (config) => {
                 this.config = config ?? undefined;
@@ -188,6 +209,8 @@ export class MainViewComponent implements OnInit, OnDestroy {
         this.currentStatusSubscription = this.projectionsService.currentStatus$
             .subscribe((currentStatusData) => {
                 this.isDockedAtStation = Boolean(currentStatusData?.flags?.Docked === true);
+                this.currentGameModeLabel = this.getCurrentGameModeLabel(currentStatusData);
+                this.currentGameModeIcon = this.getCurrentGameModeIcon(currentStatusData);
             });
 
         // Subscribe to ShipInfo projection to track unknown ship ident
@@ -203,6 +226,9 @@ export class MainViewComponent implements OnInit, OnDestroy {
     }
 
     ngOnDestroy(): void { // Implement ngOnDestroy
+        if (this.systemSubscription) {
+            this.systemSubscription.unsubscribe();
+        }
         if (this.configSubscription) {
             this.configSubscription.unsubscribe();
         }
@@ -218,6 +244,42 @@ export class MainViewComponent implements OnInit, OnDestroy {
         if (this.shipInfoSubscription) {
             this.shipInfoSubscription.unsubscribe();
         }
+    }
+
+    private getCurrentGameModeLabel(currentStatusData: any): string {
+        if (!currentStatusData) {
+            return "Status";
+        }
+
+        if (currentStatusData.flags2?.OnFoot) {
+            return "Suit";
+        }
+        if (currentStatusData.flags?.InSRV) {
+            return "SRV";
+        }
+        if (currentStatusData.flags?.InFighter) {
+            return "SLF";
+        }
+
+        return "Ship";
+    }
+
+    private getCurrentGameModeIcon(currentStatusData: any): string {
+        if (!currentStatusData) {
+            return "info";
+        }
+
+        if (currentStatusData.flags2?.OnFoot) {
+            return "directions_walk";
+        }
+        if (currentStatusData.flags?.InSRV) {
+            return "directions_car";
+        }
+        if (currentStatusData.flags?.InFighter) {
+            return "flight";
+        }
+
+        return "rocket_launch";
     }
 
     // Called by the floating FAB when the policy is not yet accepted

@@ -7,6 +7,7 @@ import { MatTabsModule } from "@angular/material/tabs";
 import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatProgressBarModule } from "@angular/material/progress-bar";
+import { MatExpansionModule } from "@angular/material/expansion";
 import { MaterialsPanelComponent } from "../materials-panel/materials-panel.component";
 import { StoredModulesComponent } from "../stored-modules/stored-modules.component";
 import { EngineersPanelComponent } from "../engineers-panel/engineers-panel.component";
@@ -18,7 +19,7 @@ import { Subscription } from "rxjs";
 @Component({
   selector: "app-storage-container",
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatTabsModule, MatButtonToggleModule, MatTooltipModule, MatProgressBarModule, MaterialsPanelComponent, StoredModulesComponent, EngineersPanelComponent, EngineeringBlueprintsComponent, FleetCarrierCardComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, MatTabsModule, MatButtonToggleModule, MatTooltipModule, MatProgressBarModule, MatExpansionModule, MaterialsPanelComponent, StoredModulesComponent, EngineersPanelComponent, EngineeringBlueprintsComponent, FleetCarrierCardComponent],
   templateUrl: "./storage-container.component.html",
   styleUrl: "./storage-container.component.css",
 })
@@ -31,20 +32,6 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
   storedShips: any = null;
   fleetCarriers: any = null;
   
-
-  // Collapsible sections state
-  sectionsCollapsed = {
-    materials: true,
-    shipLocker: true,
-    engineers: true,
-    onFootEngineers: true,
-    colonisation: true,
-    cargo: true,
-    fleetCarriers: true,
-    storedModules: true,
-    storedShips: true,
-    engineeringBlueprints: true,
-  };
 
   carrierSectionsCollapsed: Record<number, boolean> = {};
   
@@ -96,11 +83,6 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
       .replace(/_/g, ' ')
       .replace(/([A-Z])/g, ' $1')
       .replace(/\w\S*/g, txt => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
-  }
-
-  // Collapsible section methods
-  toggleSection(section: keyof typeof this.sectionsCollapsed): void {
-    this.sectionsCollapsed[section] = !this.sectionsCollapsed[section];
   }
 
   // Colonisation methods

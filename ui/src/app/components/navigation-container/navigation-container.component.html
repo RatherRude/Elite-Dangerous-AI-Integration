@@ -1,44 +1,52 @@
 <div class="navigation-container">
+    <app-navigation-subtab-rail
+        [activeSubtab]="activeNavigationSubtab"
+        (activeSubtabChange)="setActiveNavigationSubtab($event)"
+    ></app-navigation-subtab-rail>
+
+    <div class="navigation-content">
     <div class="header">
         <div class="system-info">
-            <div class="system-title">
-                <h2>{{ currentSystemName || 'Unknown System' }}</h2>
-                @if (getNavigationOptions().length) {
-                    <mat-form-field class="system-selector" appearance="fill">
-                        <mat-select [(ngModel)]="selectedNavigationTarget" (selectionChange)="onNavigationTargetChange()">
-                            <mat-select-trigger>{{ getSelectedNavigationTargetLabel() }}</mat-select-trigger>
-                            <mat-option value="commander">Current Location</mat-option>
-                            @if (getCarrierNavigationOptions().length) {
-                                <mat-optgroup label="Carriers">
-                                    @for (option of getCarrierNavigationOptions(); track option.id) {
-                                        <mat-option [value]="option.id">{{ formatNavigationOption(option) }}</mat-option>
-                                    }
-                                </mat-optgroup>
-                            }
-                            @if (getNavRouteNavigationOptions().length) {
-                                <mat-optgroup label="Nav Route">
-                                    @for (option of getNavRouteNavigationOptions(); track option.id) {
-                                        <mat-option [value]="option.id">
-                                            <span class="nav-route-option">
-                                                <span class="nav-route-option-main">{{ formatNavigationOption(option) }}</span>
-                                                @if (option.scoopable !== null) {
-                                                    <mat-icon
-                                                        class="nav-route-scoop-icon"
-                                                        [class.nav-route-scoop-icon--unscoopable]="!option.scoopable"
-                                                        [attr.aria-label]="option.scoopable ? 'Scoopable star' : 'Not scoopable'"
-                                                    >
-                                                        local_gas_station
-                                                    </mat-icon>
-                                                }
-                                            </span>
-                                        </mat-option>
-                                    }
-                                </mat-optgroup>
-                            }
-                        </mat-select>
-                    </mat-form-field>
-                }
-            </div>
+            @if (activeNavigationSubtab !== "route") {
+                <div class="system-title">
+                    <h2>{{ currentSystemName || 'Unknown System' }}</h2>
+                    @if (getNavigationOptions().length) {
+                        <mat-form-field class="system-selector" appearance="fill">
+                            <mat-select [(ngModel)]="selectedNavigationTarget" (selectionChange)="onNavigationTargetChange()">
+                                <mat-select-trigger>{{ getSelectedNavigationTargetLabel() }}</mat-select-trigger>
+                                <mat-option value="commander">Current Location</mat-option>
+                                @if (getCarrierNavigationOptions().length) {
+                                    <mat-optgroup label="Carriers">
+                                        @for (option of getCarrierNavigationOptions(); track option.id) {
+                                            <mat-option [value]="option.id">{{ formatNavigationOption(option) }}</mat-option>
+                                        }
+                                    </mat-optgroup>
+                                }
+                                @if (getNavRouteNavigationOptions().length) {
+                                    <mat-optgroup label="Nav Route">
+                                        @for (option of getNavRouteNavigationOptions(); track option.id) {
+                                            <mat-option [value]="option.id">
+                                                <span class="nav-route-option">
+                                                    <span class="nav-route-option-main">{{ formatNavigationOption(option) }}</span>
+                                                    @if (option.scoopable !== null) {
+                                                        <mat-icon
+                                                            class="nav-route-scoop-icon"
+                                                            [class.nav-route-scoop-icon--unscoopable]="!option.scoopable"
+                                                            [attr.aria-label]="option.scoopable ? 'Scoopable star' : 'Not scoopable'"
+                                                        >
+                                                            local_gas_station
+                                                        </mat-icon>
+                                                    }
+                                                </span>
+                                            </mat-option>
+                                        }
+                                    </mat-optgroup>
+                                }
+                            </mat-select>
+                        </mat-form-field>
+                    }
+                </div>
+            }
             <div class="meta">
 <!--                <span>Address: {{ currentSystemAddress ?? 'Unknown' }}</span>-->
                 @if (systemRecord?.star_class) {
@@ -46,11 +54,13 @@
                 }
             </div>
         </div>
-        <div class="meta header-meta">
-            @if (lastUpdatedMs) {
-                <span>Updated {{ lastUpdatedMs | date:'short' }}</span>
-            }
-        </div>
+        @if (activeNavigationSubtab !== "route") {
+            <div class="meta header-meta">
+                @if (lastUpdatedMs) {
+                    <span>Updated {{ lastUpdatedMs | date:'short' }}</span>
+                }
+            </div>
+        }
 <!--        <button mat-stroked-button color="primary" (click)="manualRefresh()" [disabled]="currentSystemAddress === null || isLoading">-->
 <!--            <mat-icon>refresh</mat-icon>-->
 <!--            Refresh-->
@@ -76,46 +86,232 @@
             No navigation data yet. Perform a system scan to populate discoveries.
         </div>
     } @else if (systemRecord) {
-        @if (systemMeta.length) {
-            <div class="section system-meta">
-                @for (item of systemMeta; track item.label) {
-                    <div class="system-meta-item">
-                        <span class="label">{{ item.label }}</span>
-                        <span class="value">{{ item.value }}</span>
+        @if (activeNavigationSubtab === "location") {
+            <div
+                class="location-panel"
+                (mouseenter)="clearHoveredMapNode()"
+                (mouseleave)="clearHoveredMapNode()"
+            >
+                <div class="section system-map-panel">
+                    <div class="system-map-scroll">
+                        @if (systemMap.length) {
+                            <div class="system-map-root">
+                                @for (node of systemMap; track node.id) {
+                                    <ng-container
+                                        [ngTemplateOutlet]="mapNode"
+                                        [ngTemplateOutletContext]="{ $implicit: node }"
+                                    ></ng-container>
+                                }
+                            </div>
+                        } @else {
+                            <div class="muted">No map data available yet.</div>
+                        }
+                    </div>
+
+                    <aside
+                        class="system-info-legend"
+                        [class.collapsed]="isSystemInfoLegendCollapsed"
+                        aria-label="System information"
+                    >
+                        <button
+                            type="button"
+                            class="legend-toggle"
+                            [attr.aria-expanded]="!isSystemInfoLegendCollapsed"
+                            (click)="toggleSystemInfoLegend()"
+                        >
+                            <span class="legend-title">System Information</span>
+                            <mat-icon>{{ isSystemInfoLegendCollapsed ? "keyboard_arrow_up" : "keyboard_arrow_down" }}</mat-icon>
+                        </button>
+                        @if (!isSystemInfoLegendCollapsed) {
+                            <div class="system-meta">
+                                @if (systemMeta.length || pointsOfInterestCount) {
+                                    @for (item of systemMeta; track item.label) {
+                                        <div class="system-meta-item">
+                                            <span class="label">{{ item.label }}</span>
+                                            <span class="value">{{ item.value }}</span>
+                                        </div>
+                                    }
+                                    @if (getCompactBiologicalSignalNames().length) {
+                                        <div class="system-meta-item">
+                                            <span class="label">Bio signals</span>
+                                            <span class="value">{{ getCompactBiologicalSignalNames().join(", ") }}</span>
+                                        </div>
+                                    }
+                                    @if (getCompactHotspotNames().length) {
+                                        <div class="system-meta-item">
+                                            <span class="label">Hotspots</span>
+                                            <span class="value">{{ getCompactHotspotNames().join(", ") }}</span>
+                                        </div>
+                                    }
+                                    @if (getCompactSpecialServiceNames().length) {
+                                        <div class="system-meta-item">
+                                            <span class="label">Services</span>
+                                            <span class="value">{{ getCompactSpecialServiceNames().join(", ") }}</span>
+                                        </div>
+                                    }
+                                } @else {
+                                    <div class="muted">No system information recorded.</div>
+                                }
+                            </div>
+                        }
+                    </aside>
+                </div>
+            </div>
+        }
+        @if (activeNavigationSubtab === "list") {
+        <section class="list-panel">
+        @if (pointsOfInterestCount) {
+            <div class="poi-summary">
+                @if (pointsOfInterestCount > 0) {
+                    <div class="route-summary-card">
+                        <span class="label">Points of interest</span>
+                        <span class="value">{{ pointsOfInterestCount }}</span>
+                    </div>
+                }
+                @if (getMiningHotspotBodies().length > 0) {
+                    <div class="route-summary-card">
+                        <span class="label">Mining hotspots</span>
+                        <span class="value">{{ getMiningHotspotBodies().length }}</span>
+                    </div>
+                }
+                @if (getBiologicalSignalBodies().length > 0) {
+                    <div class="route-summary-card">
+                        <span class="label">Biological signals</span>
+                        <span class="value">{{ getBiologicalSignalBodies().length }}</span>
+                    </div>
+                }
+                @if (getSpecialServiceStations().length > 0) {
+                    <div class="route-summary-card">
+                        <span class="label">Special services</span>
+                        <span class="value">{{ getSpecialServiceStations().length }}</span>
                     </div>
                 }
             </div>
         }
-        <div
-            class="section system-map-panel"
-            (mouseenter)="clearHoveredMapNode()"
-            (mouseleave)="clearHoveredMapNode()"
-        >
-            @if (systemMap.length) {
-                <div class="system-map-root">
-                    @for (node of systemMap; track node.id) {
-                        <ng-container
-                            [ngTemplateOutlet]="mapNode"
-                            [ngTemplateOutletContext]="{ $implicit: node }"
-                        ></ng-container>
-                    }
-                </div>
-            } @else {
-                <div class="muted">No map data available yet.</div>
-            }
-        </div>
         <mat-accordion>
+            @if (getMiningHotspotBodies().length) {
+                <mat-expansion-panel>
+                    <mat-expansion-panel-header>
+                        <mat-panel-title>Mining Hotspots ({{ getMiningHotspotBodies().length }})</mat-panel-title>
+                    </mat-expansion-panel-header>
+                    <div class="poi-list">
+                        @for (entry of getMiningHotspotBodies(); track entry.body.bodyId || entry.body.body_id || entry.body.name) {
+                            <mat-card class="poi-card">
+                                <div class="poi-card-header">
+                                    <div>
+                                        <div class="poi-title">{{ entry.body.name || "Unknown body" }}</div>
+                                        @if (entry.body.subType || entry.body.type) {
+                                            <div class="poi-subtitle">{{ entry.body.subType || entry.body.type }}</div>
+                                        }
+                                    </div>
+                                    @if (getBodyOrbitDisplay(entry.body)) {
+                                        <span class="poi-distance">{{ getBodyOrbitDisplay(entry.body) }}</span>
+                                    }
+                                </div>
+                                <div class="poi-detail-list">
+                                    @for (ring of entry.rings; track ring.name) {
+                                        <div class="poi-detail-row">
+                                            <span class="label">{{ ring.name }}</span>
+                                            <span class="value">{{ ring.signals.join(", ") }}</span>
+                                        </div>
+                                    }
+                                </div>
+                            </mat-card>
+                        }
+                    </div>
+                </mat-expansion-panel>
+            }
+
+            @if (getBiologicalSignalBodies().length) {
+                <mat-expansion-panel>
+                    <mat-expansion-panel-header>
+                        <mat-panel-title>Xeno-Biology ({{ getBiologicalSignalBodies().length }})</mat-panel-title>
+                    </mat-expansion-panel-header>
+                    <div class="poi-list">
+                        @for (entry of getBiologicalSignalBodies(); track entry.body.bodyId || entry.body.body_id || entry.body.name) {
+                            <mat-card class="poi-card">
+                                <div class="poi-card-header">
+                                    <div>
+                                        <div class="poi-title">{{ entry.body.name || "Unknown body" }}</div>
+                                        @if (entry.body.subType || entry.body.type) {
+                                            <div class="poi-subtitle">{{ entry.body.subType || entry.body.type }}</div>
+                                        }
+                                    </div>
+                                    @if (getBodyOrbitDisplay(entry.body)) {
+                                        <span class="poi-distance">{{ getBodyOrbitDisplay(entry.body) }}</span>
+                                    }
+                                </div>
+                                <div class="poi-detail-list">
+                                    @if (entry.signals.length) {
+                                        <div class="poi-detail-row">
+                                            <span class="label">Signals</span>
+                                            <span class="value">{{ entry.signals.join(", ") }}</span>
+                                        </div>
+                                    }
+                                    @if (entry.genuses.length) {
+                                        <div class="poi-detail-row">
+                                            <span class="label">Genuses</span>
+                                            <span class="value">{{ entry.genuses.join(", ") }}</span>
+                                        </div>
+                                    }
+                                </div>
+                            </mat-card>
+                        }
+                    </div>
+                </mat-expansion-panel>
+            }
+
+            @if (getSpecialServiceStations().length) {
+                <mat-expansion-panel>
+                    <mat-expansion-panel-header>
+                        <mat-panel-title>Special Services ({{ getSpecialServiceStations().length }})</mat-panel-title>
+                    </mat-expansion-panel-header>
+                    <div class="poi-list">
+                        @for (entry of getSpecialServiceStations(); track entry.station.name) {
+                            <mat-card class="poi-card">
+                                <div class="poi-card-header">
+                                    <div>
+                                        <div class="poi-title">{{ entry.station.name || "Unknown station" }}</div>
+                                        @if (entry.station.type) {
+                                            <div class="poi-subtitle">{{ entry.station.type }}</div>
+                                        }
+                                    </div>
+                                    @if (getOrbitDisplay(entry.station)) {
+                                        <span class="poi-distance">{{ getOrbitDisplay(entry.station) }}</span>
+                                    }
+                                </div>
+                                <div class="chips poi-chips">
+                                    @for (service of entry.services; track service) {
+                                        <mat-chip color="primary" selected>{{ service }}</mat-chip>
+                                    }
+                                </div>
+                                @if (entry.station.body || entry.station.controllingFaction) {
+                                    <div class="poi-meta">
+                                        @if (entry.station.body) { <span>{{ entry.station.body }}</span> }
+                                        @if (entry.station.body && entry.station.controllingFaction) { <span> - </span> }
+                                        @if (entry.station.controllingFaction) { <span>{{ entry.station.controllingFaction }}</span> }
+                                    </div>
+                                }
+                            </mat-card>
+                        }
+                    </div>
+                </mat-expansion-panel>
+            }
+
             <mat-expansion-panel>
                 <mat-expansion-panel-header>
                     <mat-panel-title>Signals ({{ signals.length }})</mat-panel-title>
                 </mat-expansion-panel-header>
                 <div class="section">
                     @if (signals.length) {
-                        <div class="chip-row">
+                        <div class="body-grid">
                             @for (signal of signals; track signal.name) {
-                                <mat-chip>
-                                    {{ getSignalDisplayName(signal) }} @if (signal.type) {<span class="chip-type">({{ signal.type }})</span>}
-                                </mat-chip>
+                                <mat-card class="body-card">
+                                    <div class="body-header">
+                                        <div class="body-name">{{ getSignalDisplayName(signal) }}</div>
+                                        <div class="body-type">{{ signal.type || "Signal" }}</div>
+                                    </div>
+                                </mat-card>
                             }
                         </div>
                     } @else {
@@ -130,23 +326,33 @@
                 </mat-expansion-panel-header>
                 <div class="section">
                     @if (stations.length) {
-                        <div class="chip-row">
+                        <div class="body-grid">
                             @for (station of stations; track station.name) {
-                                <mat-chip color="primary" selected class="station-chip-container">
-                                    <div class="station-chip">
-                                        <div class="station-chip-name">
-                                            {{ station.name }}
-                                            @if (station.type) {<span class="chip-type">({{ station.type }})</span>}
-                                        </div>
-                                        @if (station.controllingFaction || getOrbitDisplay(station)) {
-                                            <div class="station-chip-meta">
-                                                @if (station.controllingFaction) {<span>{{ station.controllingFaction }}</span>}
-                                                @if (station.controllingFaction && getOrbitDisplay(station)) {<span> - </span>}
-                                                @if (getOrbitDisplay(station)) {<span>{{ getOrbitDisplay(station) }}</span>}
-                                            </div>
-                                        }
+                                <mat-card class="body-card">
+                                    <div class="body-header">
+                                        <div class="body-name">{{ station.name || "Unknown station" }}</div>
+                                        <div class="body-type">{{ station.type || "Station" }}</div>
                                     </div>
-                                </mat-chip>
+                                    @if (station.controllingFaction || getOrbitDisplay(station)) {
+                                        <div class="body-meta">
+                                            @if (station.controllingFaction) {<span>{{ station.controllingFaction }}</span>}
+                                            @if (station.controllingFaction && getOrbitDisplay(station)) {<span> - </span>}
+                                            @if (getOrbitDisplay(station)) {<span>{{ getOrbitDisplay(station) }}</span>}
+                                        </div>
+                                    }
+                                    @if (station.body) {
+                                        <div class="body-meta">
+                                            <span>{{ station.body }}</span>
+                                        </div>
+                                    }
+                                    @if (getSpecialServiceLabels(station).length) {
+                                        <div class="chips">
+                                            @for (service of getSpecialServiceLabels(station); track service) {
+                                                <mat-chip color="primary" selected>{{ service }}</mat-chip>
+                                            }
+                                        </div>
+                                    }
+                                </mat-card>
                             }
                         </div>
                     } @else {
@@ -227,7 +433,77 @@
                 </div>
             </mat-expansion-panel>
         </mat-accordion>
+        </section>
+        }
+        @if (activeNavigationSubtab === "route") {
+            <section class="nav-route-panel" aria-label="Navigation route details">
+                @if (getNavRouteDetails().length) {
+                    <div class="route-summary-grid route-summary-grid--top">
+                        <div class="route-summary-card">
+                            <span class="label">Current location</span>
+                            <span class="value">{{ commanderSystemName }}</span>
+                        </div>
+                        <div class="route-summary-card">
+                            <span class="label">Destination</span>
+                            <span class="value">{{ getRouteDestinationName() }}</span>
+                        </div>
+                    </div>
+
+                    <div class="route-detail-list">
+                        @for (entry of getNavRouteDetails(); track entry.id) {
+                            <button
+                                type="button"
+                                class="route-detail-row"
+                                [class.destination]="entry.isDestination"
+                                (click)="selectRouteSystem(entry)"
+                            >
+                                <span class="route-system">
+                                    <strong>{{ entry.systemName }}</strong>
+                                    <small>
+                                        @if (entry.isDestination) { Destination }
+                                        @else { Jump {{ entry.index + 1 }} }
+                                    </small>
+                                </span>
+                                <span class="route-scoop-status" [class.unscoopable]="entry.scoopable === false">
+                                    @if (entry.scoopable !== null) {
+                                        <mat-icon
+                                            class="route-scoop-icon"
+                                            [class.route-scoop-icon--unscoopable]="entry.scoopable === false"
+                                            [attr.aria-label]="entry.scoopable ? 'Scoopable star' : 'Not scoopable'"
+                                        >
+                                            local_gas_station
+                                        </mat-icon>
+                                    }
+                                </span>
+                                <span class="route-distance">
+                                    @if (entry.distanceFromPrevious !== null) {
+                                        {{ entry.distanceFromPrevious | number:'1.1-1' }} ly
+                                    } @else {
+                                        -
+                                    }
+                                </span>
+                                <span class="route-accumulated">{{ entry.accumulatedDistance | number:'1.1-1' }} ly total</span>
+                            </button>
+                        }
+                    </div>
+
+                    <div class="route-summary-grid route-summary-grid--bottom">
+                        <div class="route-summary-card">
+                            <span class="label">Jumps remaining</span>
+                            <span class="value">{{ getRouteJumpsLeft() }}</span>
+                        </div>
+                        <div class="route-summary-card">
+                            <span class="label">Distance remaining</span>
+                            <span class="value">{{ getRouteDistanceRemaining() | number:'1.1-1' }} ly</span>
+                        </div>
+                    </div>
+                } @else {
+                    <div class="empty-state">No plotted nav route available.</div>
+                }
+            </section>
+        }
     }
+    </div>
 </div>
 
 <ng-template #mapNode let-node>

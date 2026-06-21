@@ -50,6 +50,7 @@ pygame==2.6.0
 PyGetWindow==0.0.9
 pyinstaller==6.11.1
 pyinstaller-hooks-contrib==2024.10
+pyobjc-framework-Quartz==12.1 ; sys_platform == "darwin"
 PyMsgBox==1.0.9
 pynput==1.7.7
 pyperclip==1.9.0
@@ -67,6 +68,7 @@ pywin32==306 ; sys_platform == "win32"
 pywin32-ctypes==0.2.2 ; sys_platform == "win32"
 PyYAML==6.0.1
 requests==2.32.3
+rapidocr-onnxruntime==1.4.4
 samplerate==0.2.4
 six==1.16.0
 sniffio==1.3.1
@@ -84,10 +86,9 @@ typing-extensions==4.15.0
 urllib3==2.2.2
 wrapt==1.16.0
 zipp==3.19.2
-EDMesg @ git+https://github.com/RatherRude/EDMesg.git@4052f96
+EDMesg @ git+https://github.com/RatherRude/EDMesg.git@67a5eb0
 python-json-logger==3.3.0
 opentelemetry-api==1.38.0 
 opentelemetry-sdk==1.38.0 
 opentelemetry-exporter-otlp==1.38.0
-opentelemetry-instrumentation-openai==0.48.0
 quickjs==1.19.4

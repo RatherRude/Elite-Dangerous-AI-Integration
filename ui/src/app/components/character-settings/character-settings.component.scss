@@ -77,6 +77,22 @@ mat-slide-toggle {
   min-width: 100px;
 }
 
+.character-buttons .secondary-character-button:not(:disabled) {
+  --mdc-protected-button-container-color: var(--hud-cyan-dark) !important;
+  --mdc-protected-button-label-text-color: var(--hud-cyan) !important;
+  color: var(--hud-cyan) !important;
+  text-shadow: var(--hud-cyan-glow);
+}
+
+.character-buttons .secondary-character-button:not(:disabled) mat-icon {
+  color: currentColor !important;
+}
+
+.character-buttons .secondary-character-button:hover:not(:disabled),
+.character-buttons .secondary-character-button:focus-visible:not(:disabled) {
+  box-shadow: inset 0 0 20px color-mix(in srgb, var(--hud-cyan) 20%, transparent), 0 0 18px color-mix(in srgb, var(--hud-cyan) 35%, transparent) !important;
+}
+
 /* Loading state */
 .loading-overlay {
   position: absolute;

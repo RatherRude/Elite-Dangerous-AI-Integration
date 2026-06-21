@@ -5,8 +5,8 @@
                 @if (keybindsData.start_mismatch) {
                     <div class="keybind-warning-section">
                         <div class="keybind-warning-header">
-                            <mat-icon style="color: #ff9800;">playlist_remove</mat-icon>
-                            <strong style="color: #ff9800;">Error loading keybinds</strong>
+                            <mat-icon>playlist_remove</mat-icon>
+                            <strong>Error loading keybinds</strong>
                         </div>
                         <div class="keybind-warning-content">
                             Different keybind profiles are selected for the four game modes. Please refer to <a target="_blank" rel="noopener noreferrer" href="https://ratherrude.github.io/Elite-Dangerous-AI-Integration/20_actions/">our documentation</a> for more information.
@@ -27,8 +27,8 @@
                 @if (keybindsData.missing.length > 0) {
                     <div class="keybind-warning-section">
                         <div class="keybind-warning-header">
-                            <mat-icon style="color: #ff9800;">warning</mat-icon>
-                            <strong style="color: #ff9800;">Missing Keybinds ({{ keybindsData.missing.length }})</strong>
+                            <mat-icon>warning</mat-icon>
+                            <strong>Missing Keybinds ({{ keybindsData.missing.length }})</strong>
                         </div>
                         <div class="keybind-warning-content">
                             {{ keybindsData.missing.join(', ') }}
@@ -39,8 +39,8 @@
                 @if (keybindsData.collisions.length > 0) {
                     <div class="keybind-warning-section">
                         <div class="keybind-warning-header">
-                            <mat-icon style="color: #ff9800;">error_outline</mat-icon>
-                            <strong style="color: #ff9800;">Keybind Collisions ({{ keybindsData.collisions.length }})</strong>
+                            <mat-icon>error_outline</mat-icon>
+                            <strong>Keybind Collisions ({{ keybindsData.collisions.length }})</strong>
                         </div>
                         <div class="keybind-warning-content">
                             @for (collision of keybindsData.collisions; track $index) {
@@ -53,8 +53,8 @@
                 @if (keybindsData.unsupported.length > 0) {
                     <div class="keybind-warning-section">
                         <div class="keybind-warning-header">
-                            <mat-icon style="color: #ff9800;">report_problem</mat-icon>
-                            <strong style="color: #ff9800;">Unsupported Keybinds ({{ keybindsData.unsupported.length }})</strong>
+                            <mat-icon>report_problem</mat-icon>
+                            <strong>Unsupported Keybinds ({{ keybindsData.unsupported.length }})</strong>
                         </div>
                         <div class="keybind-warning-content">
                             {{ keybindsData.unsupported.join(', ') }}
@@ -265,6 +265,15 @@
                                                     </div>
                                                 }
                                             </div>
+                                        </div>
+                                    }
+                                    @if (perm === 'plotToTarget') {
+                                        <div style="display:flex; flex-direction: column; gap: 4px; margin-left:12px; margin-top: 8px;">
+                                            <mat-slide-toggle [ngModel]="config.in_system_navigation"
+                                                              (ngModelChange)="onConfigChange({in_system_navigation: $event})">
+                                                Enable In-System Navigation
+                                            </mat-slide-toggle>
+                                            <p style="margin: 0; opacity: .8;">Allows plotToTarget to use the system map to select stations and bodies.</p>
                                         </div>
                                     }
                                     @if (perm === 'textMessage') {

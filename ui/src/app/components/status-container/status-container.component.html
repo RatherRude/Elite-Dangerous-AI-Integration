@@ -290,11 +290,6 @@
                             </div>
                         </div>
                     </div>
-                    <div *ngIf="hasNavRoute()" class="nav-info" (click)="toggleNavDetails()">
-                        <mat-icon>navigation</mat-icon>
-                        <span>{{ getNavRouteInfo() }}</span>
-                        <mat-icon class="expander">{{ showNavDetails ? 'expand_less' : 'expand_more' }}</mat-icon>
-                    </div>
                 </div>
 
                 <!-- Target info -->
@@ -387,31 +382,6 @@
                 </div>
             </div>
 
-            <!-- Nav Route Details - integrated into character sheet -->
-            <div *ngIf="showNavDetails" class="nav-details-header">
-                <div class="nav-route-list">
-                    <div *ngFor="let system of getNavRouteDetails(); let i = index" class="nav-route-item">
-                        <div class="nav-index">{{ i + 1 }}</div>
-                        <div class="nav-system">{{ system.StarSystem }}</div>
-                        <div class="nav-star-info" *ngIf="system.StarClass">
-                            <mat-icon class="star-icon" [ngClass]="getStarClassColor(system.StarClass)">
-                                {{ getStarTypeIcon(system.StarClass) }}
-                            </mat-icon>
-                            <span class="star-class">{{ system.StarClass }}</span>
-                        </div>
-                        <div class="nav-distance" *ngIf="system.StarPos && i > 0">
-                            {{ getJumpDistance(i) }} ly
-                        </div>
-                        <div class="star-scoopable" *ngIf="system.Scoopable !== undefined">
-                            <mat-icon class="fuel-icon" [ngClass]="system.Scoopable ? 'scoopable' : 'not-scoopable'">
-                                {{ system.Scoopable ? 'local_gas_station' : 'not_interested' }}
-                            </mat-icon>
-                            <span class="small-text">{{ system.Scoopable ? 'Scoopable' : 'Not scoopable' }}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- SHIP SHEET MAIN SECTION -->
             <div class="character-sheet-body">
                 <!-- LEFT COLUMN - Utility -->
@@ -422,16 +392,16 @@
                         <ng-container *ngFor="let module of getUtilityModules()">
                             <div class="utility-item">
                                 <div class="utility-details">
-                                    <span class="utility-name">{{ formatModuleName(module.Item) }}</span>
+                                    <span class="utility-name">{{ formatUtilityModuleName(module.Item) }}</span>
                                 </div>
                                 <div class="utility-engineering" *ngIf="module.Engineering">
                                     <mat-icon class="engineering-icon">build</mat-icon>
                                     <span class="engineering-text">{{ formatEngineeringName(module.Engineering.BlueprintName) }}
                                         (G{{ module.Engineering.Level || '?' }})
-                                    <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
-                                        - {{ module.Engineering.ExperimentalEffect_Localised }}
+                                        <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
+                                            - {{ module.Engineering.ExperimentalEffect_Localised }}
+                                        </span>
                                     </span>
-                                </span>
                                 </div>
                             </div>
                         </ng-container>
@@ -442,7 +412,7 @@
                 <!-- MIDDLE COLUMN - Defense Stats -->
                 <div class="sheet-column stats-column">
                     <div class="ship-defense-stats">
-                        <div class="defense-stat-item">
+                        <div class="defense-stat-item primary-defense-stat">
                             <div class="stat-label">HULL</div>
                             <div class="stat-value-with-bar">
                                 <div class="stat-value">{{ getShipHealth() }}</div>
@@ -451,7 +421,7 @@
                             </div>
                         </div>
 
-                        <div class="defense-stat-item">
+                        <div class="defense-stat-item primary-defense-stat">
                             <div class="stat-label">FUEL</div>
                             <div class="stat-value-with-bar">
                                 <div class="stat-value">{{ getFuelAmount() }}/{{ getFuelCapacity() }}</div>
@@ -460,7 +430,7 @@
                             </div>
                         </div>
 
-                        <div *ngIf="getCargoCapacity() > 0" class="defense-stat-item cargo-box"
+                        <div *ngIf="getCargoCapacity() > 0" class="defense-stat-item cargo-box primary-defense-stat"
                              (click)="toggleCargoDetails()">
                             <div class="stat-label">CARGO
                                 <mat-icon class="tiny-icon">{{ showCargoDetails ? 'expand_less' : 'expand_more' }}
@@ -471,7 +441,7 @@
                             <div *ngIf="showCargoDetails" class="cargo-manifest">
                                 <div class="cargo-list">
                                     <div *ngFor="let item of getCargoItems()" class="cargo-item">
-                                        <span class="cargo-item-name">{{ item.Name_Localised || item.Name }}</span>
+                                        <span class="cargo-item-name">{{ item.Name_Localised || item.Name }}{{ item.Stolen ? ' (Stolen)' : '' }}</span>
                                         <span class="cargo-item-count">x{{ item.Count }}</span>
                                     </div>
                                     <div *ngIf="!hasCargoItems()" class="empty-state">Cargo hold empty</div>
@@ -553,10 +523,10 @@
                                     <mat-icon class="engineering-icon">build</mat-icon>
                                     <span class="engineering-text">{{ formatEngineeringName(module.Engineering.BlueprintName) }}
                                         (G{{ module.Engineering.Level || '?' }})
-                                    <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
-                                        - {{ module.Engineering.ExperimentalEffect_Localised }}
+                                        <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
+                                            - {{ module.Engineering.ExperimentalEffect_Localised }}
+                                        </span>
                                     </span>
-                                </span>
                                 </div>
                             </div>
                         </ng-container>
@@ -572,19 +542,18 @@
                         <h3 class="section-header">CORE INTERNALS</h3>
                         <div class="module-list core-modules">
                             <ng-container *ngFor="let module of getCoreModules()">
-                                <div class="module-item">
-                                    <div class="module-slot">{{ formatSlotName(module.Slot) }}</div>
+                                <div class="internal-item">
                                     <div class="module-content">
-                                        <div class="module-name">{{ formatModuleName(module.Item) }}</div>
-                                        <div class="module-engineering" *ngIf="module.Engineering">
-                                            <mat-icon class="engineering-icon">build</mat-icon>
-                                            <span class="engineering-text">{{ formatEngineeringName(module.Engineering.BlueprintName) }}
-                                                (G{{ module.Engineering.Level || '?' }})
-                                            <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
-                                                - {{ module.Engineering.ExperimentalEffect_Localised }}
-                                            </span>
+                                        <div class="module-name">{{ formatCoreModuleName(module) }}</div>
+                                    </div>
+                                    <div class="module-engineering" *ngIf="module.Engineering">
+                                        <mat-icon class="engineering-icon">build</mat-icon>
+                                        <span class="engineering-text">{{ formatEngineeringName(module.Engineering.BlueprintName) }}
+                                            (G{{ module.Engineering.Level || '?' }})
+                                        <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
+                                            - {{ module.Engineering.ExperimentalEffect_Localised }}
                                         </span>
-                                        </div>
+                                    </span>
                                     </div>
                                 </div>
                             </ng-container>
@@ -595,19 +564,21 @@
                         <h3 class="section-header">OPTIONAL INTERNALS</h3>
                         <div class="module-list optional-modules">
                             <ng-container *ngFor="let module of getOptionalModules(); let i = index">
-                                <div *ngIf="showAllModules || i < getVisibleModulesCount()" class="module-item">
-                                    <div class="module-slot">{{ getModuleClassLabel(module) }}</div>
+                                <div *ngIf="showAllModules || i < getVisibleModulesCount()" class="internal-item">
                                     <div class="module-content">
-                                        <div class="module-name">{{ formatModuleName(module.Item) }}</div>
-                                        <div class="module-engineering" *ngIf="module.Engineering">
-                                            <mat-icon class="engineering-icon">build</mat-icon>
-                                            <span class="engineering-text">{{ formatEngineeringName(module.Engineering.BlueprintName) }}
-                                                (G{{ module.Engineering.Level || '?' }})
-                                            <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
-                                                - {{ module.Engineering.ExperimentalEffect_Localised }}
-                                            </span>
-                                        </span>
+                                        <div class="module-name">
+                                            {{ formatOptionalModuleName(module.Item) }}
+                                            <span class="module-class-inline">({{ getModuleClassLabel(module) }})</span>
                                         </div>
+                                    </div>
+                                    <div class="module-engineering" *ngIf="module.Engineering">
+                                        <mat-icon class="engineering-icon">build</mat-icon>
+                                        <span class="engineering-text">{{ formatEngineeringName(module.Engineering.BlueprintName) }}
+                                            (G{{ module.Engineering.Level || '?' }})
+                                        <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
+                                            - {{ module.Engineering.ExperimentalEffect_Localised }}
+                                        </span>
+                                    </span>
                                     </div>
                                 </div>
                             </ng-container>

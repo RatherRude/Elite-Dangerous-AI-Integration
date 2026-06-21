@@ -22,7 +22,6 @@ from opentelemetry._logs import set_logger_provider
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.exporter.otlp.proto.http._log_exporter import OTLPLogExporter
-from opentelemetry.instrumentation.openai import OpenAIInstrumentor
 
 from .UI import emit_message, send_message
 
@@ -149,10 +148,6 @@ def enable_remote_tracing(username: str, attributes: dict[str, str]):
 
     otel_log_handler.addFilter(NoTelemetryLibsFilter())
     logging.getLogger().addHandler(otel_log_handler)
-
-    # Instrument OpenAI for automatic tracing
-    log("debug", "Instrumenting OpenAI API calls")
-    OpenAIInstrumentor().instrument()
 
     # Register shutdown handler to ensure spans and logs are flushed on exit
     def shutdown_telemetry():

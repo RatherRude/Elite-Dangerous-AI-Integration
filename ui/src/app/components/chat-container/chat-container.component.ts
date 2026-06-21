@@ -11,6 +11,9 @@ import { Subscription } from "rxjs";
   imports: [CommonModule, MatCardModule],
   templateUrl: "./chat-container.component.html",
   styleUrl: "./chat-container.component.css",
+  host: {
+    "[style.display]": "chat.length ? null : 'none'",
+  },
 })
 export class ChatContainerComponent implements AfterViewChecked, OnChanges, OnDestroy {
   @Input() limit?: number;

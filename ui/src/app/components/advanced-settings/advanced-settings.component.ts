@@ -602,4 +602,32 @@ export class AdvancedSettingsComponent implements OnDestroy {
             });
         });
     }
+
+    async onDeleteCurrentLogbook(): Promise<void> {
+        const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+            data: {
+                title: "Delete Current Logbook",
+                message:
+                    "Are you sure you want to delete the current logbook? This removes all long-term memory entries and cannot be undone.",
+            },
+        });
+
+        dialogRef.afterClosed().subscribe(async (result) => {
+            if (!result) {
+                return;
+            }
+
+            try {
+                await this.configService.deleteCurrentLogbook();
+                this.snackBar.open("Current logbook deleted", "OK", {
+                    duration: 3000,
+                });
+            } catch (error) {
+                console.error("Error deleting current logbook:", error);
+                this.snackBar.open("Failed to delete current logbook", "OK", {
+                    duration: 5000,
+                });
+            }
+        });
+    }
 }

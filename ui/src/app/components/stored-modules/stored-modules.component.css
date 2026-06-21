@@ -18,24 +18,30 @@
   top: 50%;
   left: 12px;
   transform: translateY(-50%);
-  color: #888;
+  color: var(--hud-orange);
   font-size: 20px;
   pointer-events: none;
 }
 
 .stored-modules .search-box input {
   width: calc(100% - 54px);
-  padding: 12px 14px 12px 40px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid #444;
-  border-radius: 6px;
-  color: #e0e0e0;
+  height: 42px;
+  box-sizing: border-box;
+  padding: 10px 40px 10px 40px;
+  background: rgba(8, 4, 0, 0.94);
+  border: 1px solid var(--hud-border);
+  border-radius: 2px;
+  color: var(--hud-text);
+  font-family: var(--hud-font);
   font-size: 14px;
+  box-shadow: inset 0 0 18px color-mix(in srgb, var(--hud-orange) 8%, transparent);
 }
-.stored-modules .search-box .clear-btn { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: #aaa; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; }
-.stored-modules .search-box .clear-btn:hover { color: #fff; }
+.stored-modules .search-box input:hover { border-color: color-mix(in srgb, var(--hud-orange) 75%, transparent); }
+.stored-modules .search-box input:focus { outline: none; border-color: var(--hud-orange); box-shadow: inset 0 0 18px color-mix(in srgb, var(--hud-orange) 12%, transparent), 0 0 12px color-mix(in srgb, var(--hud-orange) 24%, transparent); }
+.stored-modules .search-box .clear-btn { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: var(--hud-orange); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; }
+.stored-modules .search-box .clear-btn:hover { color: var(--hud-orange-soft); }
 
-.stored-modules .search-box input::placeholder { color: #999; }
+.stored-modules .search-box input::placeholder { color: rgba(223, 251, 255, 0.42); }
 
 /* Stored Modules table */
 .stored-modules .stored-modules-table {
@@ -71,7 +77,7 @@
 .stored-modules .name-cell { display: flex; flex-direction: column; gap: 4px; }
 .stored-modules .module-name { display: flex; align-items: center; gap: 8px; }
 .stored-modules .hot-badge { padding: 2px 6px; background: rgba(244, 67, 54, 0.2); color: #f44336; border-radius: 3px; font-size: 10px; font-weight: 600; text-transform: uppercase; }
-.stored-modules .module-eng { font-size: 12px; color: #64b5f6; }
+.stored-modules .module-eng { font-size: 12px; color: var(--hud-cyan); }
 
 
 .stored-modules .pagination { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 10px 0; }

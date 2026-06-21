@@ -204,7 +204,6 @@ def web_search_agent(
                         "power": { "type": "array", "items": { "type": "string" } },
                         "primary_economy": { "type": "array", "items": { "type": "string" } },
                         "security": { "type": "array", "items": { "type": "string" } },
-                        "thargoid_war_state": { "type": "array", "items": { "type": "string" } },
                         "population": { "type": "object", "properties": { "comparison": { "type": "string", "enum": ["<", ">"] }, "value": { "type": "number" } } },
                         "sort_by": { "type": "string", "enum": ["distance", "population"], "description": "Sort systems by distance or by population (highest first). Default: distance." },
                         "size": { "type": "integer", "description": "Number of results to return (1-25). Default: 3." }
@@ -2296,18 +2295,6 @@ def prepare_system_request(obj, projected_states):# Helper function for fuzzy ma
             validated_security.append(matching_security)
         filters["security"] = {"value": validated_security}
 
-    thargoid_war_states = filter_empty_list_items(obj.get("thargoid_war_state"))
-    if thargoid_war_states:
-        validated_thargoid_states = []
-        for thargoid_war_state in thargoid_war_states:
-            # Find matching thargoid war state using fuzzy matching
-            matching_state = find_best_match(thargoid_war_state, known_thargoid_war_states)
-            if not matching_state:
-                raise Exception(
-                    f"Invalid thargoid war state: {thargoid_war_state}. {educated_guesses_message(thargoid_war_state, known_thargoid_war_states)}")
-            validated_thargoid_states.append(matching_state)
-        filters["thargoid_war_state"] = {"value": validated_thargoid_states}
-
     if "population" in obj and obj["population"]:
         comparison = obj["population"].get("comparison", ">")
         value = obj["population"].get("value", 0)
@@ -2377,10 +2364,6 @@ def filter_system_response(request, response):
 
         filtered_system["primary_economy"] = system.get("primary_economy", "None")
         filtered_system["security"] = system.get("security", "Anarchy")
-
-        # Only add thargoid war state if it was requested
-        if "thargoid_war_state" in request_filters and "thargoid_war_state" in system and system["thargoid_war_state"]:
-            filtered_system["thargoid_war_state"] = system.get("thargoid_war_state")
 
         # Only add if needs_permit is true
         if "needs_permit" in request_filters and "needs_permit" in system and system["needs_permit"]:
@@ -2575,6 +2558,97 @@ def filter_body_response(request, response):
         "amount_displayed": min(response["count"], response["size"]),
         "results": filtered_results,
     }
+
+
+from .Plotter import (
+    PLOT_TARGET_SEARCH_SIZE,
+    SPANSH_BODIES_URL,
+    SPANSH_STATIONS_URL,
+    SPANSH_SYSTEMS_URL,
+    STATION_TYPE_SYSTEM_MAP_CATEGORY,
+    Plotter,
+    ResolvedPlotTarget,
+)
+
+
+def _plotter() -> Plotter:
+    return Plotter(
+        prepare_system_request=prepare_system_request,
+        prepare_station_request=prepare_station_request,
+        prepare_body_request=prepare_body_request,
+        spansh_post=_spansh_post,
+    )
+
+
+def normalize_plot_name(name: str) -> str:
+    return Plotter.normalize_plot_name(name)
+
+
+def is_plot_name_exact_match(query: str, candidate: str) -> bool:
+    return Plotter.is_plot_name_exact_match(query, candidate)
+
+
+def plot_name_match_score(query: str, candidate: str) -> float:
+    return Plotter.plot_name_match_score(query, candidate)
+
+
+def system_map_category_for_station(station: dict[str, Any]) -> str | None:
+    return Plotter.system_map_category_for_station(station)
+
+
+def ensure_in_system_plot_target(resolved: ResolvedPlotTarget) -> None:
+    Plotter.ensure_in_system_plot_target(resolved)
+
+
+def _spansh_post(url: str, request_body: dict[str, Any]) -> dict[str, Any]:
+    return Plotter._spansh_post(url, request_body)
+
+
+def spansh_plot_search_name(query: str) -> str:
+    return Plotter.spansh_plot_search_name(query)
+
+
+def _plot_search_obj(query: str) -> dict[str, Any]:
+    return Plotter._plot_search_obj(query)
+
+
+def _plot_candidates_from_systems(query: str, projected_states: Any) -> list[ResolvedPlotTarget]:
+    return _plotter()._plot_candidates_from_systems(query, projected_states)
+
+
+def _plot_candidates_from_stations(query: str, projected_states: Any) -> list[ResolvedPlotTarget]:
+    return _plotter()._plot_candidates_from_stations(query, projected_states)
+
+
+def _plot_candidates_from_bodies(query: str, projected_states: Any) -> list[ResolvedPlotTarget]:
+    return _plotter()._plot_candidates_from_bodies(query, projected_states)
+
+
+def _select_best_plot_target(candidates: list[ResolvedPlotTarget], query: str) -> ResolvedPlotTarget | None:
+    return Plotter._select_best_plot_target(candidates, query)
+
+
+def plot_search_query(
+    *,
+    system: str | None = None,
+    station: str | None = None,
+    body: str | None = None,
+) -> str | None:
+    return Plotter.plot_search_query(system=system, station=station, body=body)
+
+
+def lookup_plot_target(
+    *,
+    system: str | None = None,
+    station: str | None = None,
+    body: str | None = None,
+    projected_states: Any,
+) -> ResolvedPlotTarget | None:
+    return _plotter().lookup_plot_target(system=system, station=station, body=body, projected_states=projected_states)
+
+
+def resolve_plot_target(query: str, projected_states: Any) -> ResolvedPlotTarget | None:
+    return _plotter().resolve_plot_target(query, projected_states)
 
 
 # Body finder function that sends the request to the Spansh API

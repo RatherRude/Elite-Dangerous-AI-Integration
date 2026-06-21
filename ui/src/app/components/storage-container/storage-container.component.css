@@ -98,16 +98,16 @@
   justify-content: center;
   width: 40px;
   height: 40px;
-  background: rgba(64, 181, 246, 0.2);
+  background: color-mix(in srgb, var(--hud-cyan) 20%, transparent);
   border-radius: 50%;
 }
 
-.ship-icon mat-icon { color: #40b5f6; font-size: 20px; }
+.ship-icon mat-icon { color: var(--hud-cyan); font-size: 20px; }
 
 .ship-title { display: flex; flex-direction: column; gap: 2px; }
 .ship-name { font-size: 16px; font-weight: 600; color: #e0e0e0; }
 .ship-type { font-size: 13px; color: #bbb; }
-.ship-location { font-size: 13px; color: #64b5f6; font-weight: 500; }
+.ship-location { font-size: 13px; color: var(--hud-cyan); font-weight: 500; }
 
 .ship-hot {
   display: inline-block;
@@ -195,8 +195,8 @@
 }
 
 .mission-tag {
-  background-color: rgba(33, 150, 243, 0.2);
-  color: #2196F3;
+  background-color: color-mix(in srgb, var(--hud-cyan) 20%, transparent);
+  color: var(--hud-cyan);
 }
 
 .owner-tag {
@@ -288,7 +288,7 @@
 
 .progress-bar {
   height: 100%;
-  background-color: #2196f3;
+  background-color: var(--hud-cyan);
 }
 
 .status-badge {
@@ -306,8 +306,8 @@
 }
 
 .status-badge.invited {
-  background-color: rgba(33, 150, 243, 0.2);
-  color: #2196F3;
+  background-color: color-mix(in srgb, var(--hud-cyan) 20%, transparent);
+  color: var(--hud-cyan);
 }
 
 .status-badge.known {
@@ -436,7 +436,7 @@
 
 .colony-header h4 {
   margin: 0;
-  color: #64b5f6;
+  color: var(--hud-cyan);
   font-size: 18px;
 }
 
@@ -449,8 +449,8 @@
 }
 
 .colony-status.status-active {
-  background: rgba(33, 150, 243, 0.2);
-  color: #2196f3;
+  background: color-mix(in srgb, var(--hud-cyan) 20%, transparent);
+  color: var(--hud-cyan);
 }
 
 .colony-status.status-complete {

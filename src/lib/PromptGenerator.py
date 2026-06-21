@@ -2764,8 +2764,22 @@ class PromptGenerator:
                 if has_service
             ]
         else:
-            normalized["services"] = station.get("services", [])
-            
+            normalized["services"] = [
+                service
+                for service in station.get("services", [])
+                if service in {"Market", "Outfitting", "Shipyard", "Black Market", "Interstellar Factors Contact"}
+            ]
+
+        government = station.get("government", "")
+        if "engineer" in government.strip().casefold():
+            normalized["services"].append("Engineer")
+        material_trader = station.get("materialTrader")
+        if material_trader:
+            normalized["services"].append(material_trader + " Material Trader")
+        technology_broker = station.get("technologyBroker")
+        if material_trader:
+            normalized["services"].append(technology_broker + " Technology Broker")
+
         # Add all other basic fields
         normalized["name"] = station.get("name", "Unknown")
         normalized["type"] = station.get("type", "Unknown")

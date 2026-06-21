@@ -9,6 +9,7 @@ import os
 import sys
 from openai import OpenAI, APIError
 
+from .HudColorMatrix import HudColorMatrix
 from .Logger import log
 from .UI import emit_message
 
@@ -852,6 +853,7 @@ class Config(TypedDict):
     discovery_primary_var: bool
     discovery_firegroup_var: int
     weapon_types: list[WeaponType]
+    in_system_navigation: bool
     # Chat channel tab settings (whether channel has its own tab in-game)
     chat_local_tabbed_var: bool
     chat_wing_tabbed_var: bool
@@ -923,9 +925,15 @@ def get_ed_appdata_path(config: Config) -> str:
     from os import environ
     return environ.get('LOCALAPPDATA', '') + "\\Frontier Developments\\Elite Dangerous"
 
-def get_color_matrix(config: Config):
-    appdata = get_ed_appdata_path(config)
-    return os.path.join(appdata, "Options/Graphics")
+_hud_color_matrix: HudColorMatrix | None = None
+
+
+def load_hud_color_matrix(config: Config) -> HudColorMatrix:
+    global _hud_color_matrix
+    if _hud_color_matrix is None:
+        _hud_color_matrix = HudColorMatrix.load_from_appdata(get_ed_appdata_path(config))
+    return _hud_color_matrix
+
 
 def get_asset_path(filename: str) -> str:
     assets_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../assets'))
@@ -1353,6 +1361,7 @@ def load_config() -> Config:
         'discovery_firegroup_var': 1,
         'weapon_types': [],
         'prefer_primary_bindings': False,
+        'in_system_navigation': False,
         # Chat channel tab defaults
         'chat_local_tabbed_var': False,
         'chat_wing_tabbed_var': False,
@@ -1554,14 +1563,19 @@ class SystemInfo(TypedDict):
     input_device_names: list[str]
     output_device_names: list[str]
     hud_color_matrix: list[list[float]]
+    hud_accent_color: str
+    hud_secondary_color: str
 
 
 def get_system_info() -> SystemInfo:
+    hud_color = _hud_color_matrix or HudColorMatrix.identity()
     return {
         "os": platform.system(),
         "input_device_names": get_input_device_names(),
         "output_device_names": get_output_device_names(),
-        "hud_color_matrix": [[0.2, 0, 0], [-2, 1, 0], [0, 0, 1]]
+        "hud_color_matrix": hud_color.matrix,
+        "hud_accent_color": hud_color.shift_primary_color(),
+        "hud_secondary_color": hud_color.shift_secondary_color(),
     }
 
 

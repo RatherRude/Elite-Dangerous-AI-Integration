@@ -1,0 +1,15 @@
+<nav class="navigation-subtab-rail" aria-label="Navigation sections">
+    @for (subtab of subtabs; track subtab.id) {
+        <button
+            type="button"
+            class="navigation-subtab"
+            [class.active]="activeSubtab === subtab.id"
+            [attr.aria-pressed]="activeSubtab === subtab.id"
+            [attr.aria-label]="subtab.label"
+            (click)="setActiveSubtab(subtab.id)"
+        >
+            <mat-icon>{{ subtab.icon }}</mat-icon>
+            <span>{{ subtab.label }}</span>
+        </button>
+    }
+</nav>

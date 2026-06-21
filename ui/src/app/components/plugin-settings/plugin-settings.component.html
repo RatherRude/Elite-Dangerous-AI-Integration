@@ -1,25 +1,27 @@
-<p class="plugins-info-link">
-    Learn more about plugins:
-    <a href="https://ratherrude.github.io/Elite-Dangerous-AI-Integration/plugins/" target="_blank" rel="noopener noreferrer">Documentation</a>.
-</p>
-@for (plugin_settings_config of plugin_settings_configs; track plugin_settings_config[0]) {
-    <mat-expansion-panel>
-        <mat-expansion-panel-header>
-            <mat-panel-title>
-                <mat-icon class="tab-icon">{{ plugin_settings_config[1].icon }}</mat-icon>
-                {{ plugin_settings_config[1].label }}
-            </mat-panel-title>
-        </mat-expansion-panel-header>
-        @if (config) {
-            @for (grid of plugin_settings_config[1].grids; track grid.key) {
-                <app-settings-grid
-                    [grid]="grid"
-                    [getValue]="createGetValueFn(plugin_settings_config[0])"
-                    [setValue]="createSetValueFn(plugin_settings_config[0])"
-                    [headerLevel]="'h2'"
-                    [gridClass]="'settings-grid'">
-                </app-settings-grid>
+<div class="plugin-settings-stack">
+    <p class="plugins-info-link">
+        Learn more about plugins:
+        <a href="https://ratherrude.github.io/Elite-Dangerous-AI-Integration/plugins/" target="_blank" rel="noopener noreferrer">Documentation</a>.
+    </p>
+    @for (plugin_settings_config of plugin_settings_configs; track plugin_settings_config[0]) {
+        <mat-expansion-panel>
+            <mat-expansion-panel-header>
+                <mat-panel-title>
+                    <mat-icon class="tab-icon">{{ plugin_settings_config[1].icon }}</mat-icon>
+                    {{ plugin_settings_config[1].label }}
+                </mat-panel-title>
+            </mat-expansion-panel-header>
+            @if (config) {
+                @for (grid of plugin_settings_config[1].grids; track grid.key) {
+                    <app-settings-grid
+                        [grid]="grid"
+                        [getValue]="createGetValueFn(plugin_settings_config[0])"
+                        [setValue]="createSetValueFn(plugin_settings_config[0])"
+                        [headerLevel]="'h2'"
+                        [gridClass]="'settings-grid'">
+                    </app-settings-grid>
+                }
             }
-        }
-    </mat-expansion-panel>
-}
+        </mat-expansion-panel>
+    }
+</div>

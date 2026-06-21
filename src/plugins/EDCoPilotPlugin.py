@@ -6,7 +6,8 @@ from typing import Any, override, Optional, Iterable, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
-from lib.PluginHelper import PluginHelper, TTSModel, LLMModel, STTModel, EmbeddingModel, PluginEvent
+from lib.Event import Event
+from lib.PluginHelper import PluginHelper, TTSModel, LLMModel, STTModel, EmbeddingModel, PluginEvent, Projection
 from lib.PluginSettingDefinitions import (
     PluginSettings, 
     SettingsGrid, 
@@ -26,7 +27,8 @@ from EDMesg.CovasNext import (
     CovasReplied,
     ConfigurationUpdated
 )
-from EDMesg.EDCoPilot import create_edcopilot_client, OpenPanelAction, PanelNavigationAction, SpeakingPhraseEvent
+import EDMesg.EDCoPilot as EDCoPilot
+from EDMesg.EDCoPilot import OpenPanelAction, PanelContentsEvent, PanelNavigationAction, SpeakingPhraseEvent as BaseSpeakingPhraseEvent
 from EDMesg.base import EDMesgWelcomeAction
 
 
@@ -87,6 +89,151 @@ class EDCoPilotNavigatePanelParams(BaseModel):
         if self.navigate == "selectItem" and self.selectItem is None:
             raise ValueError("selectItem is required when navigate is 'selectItem'")
         return self
+
+
+class SpeakingPhraseEvent(BaseSpeakingPhraseEvent):
+    interrupt: bool = False
+
+
+class EDCoPilotPanelContentsState(BaseModel):
+    """Latest panel contents received from EDCoPilot."""
+
+    timestamp: str | None = None
+    contents: dict[str, Any] | None = None
+    status_message: str | list[str] | None = None
+
+
+def _format_edcopilot_row(row: dict[str, Any], columns: list[dict[str, Any]]) -> str:
+    values: list[str] = []
+    for column in columns:
+        key = column.get("key")
+        if not isinstance(key, str) or key not in row:
+            continue
+        label = column.get("label")
+        label_text = label if isinstance(label, str) and label else key
+        values.append(f"{label_text}: {row[key]}")
+    if not values:
+        values = [f"{key}: {value}" for key, value in row.items()]
+    return ", ".join(values)
+
+
+def _format_edcopilot_table(table_name: str, table: Any) -> str:
+    if not isinstance(table, dict):
+        return table_name
+
+    row_count = table.get("row_count")
+    rows = table.get("rows")
+    columns = table.get("columns")
+    column_list = columns if isinstance(columns, list) else []
+    row_list = rows if isinstance(rows, list) else []
+
+    parts = [table_name]
+    if isinstance(row_count, int):
+        parts.append(f"{row_count} rows")
+    elif row_list:
+        parts.append(f"{len(row_list)} rows")
+
+    row_summaries = [
+        _format_edcopilot_row(row, column_list)
+        for row in row_list[:5]
+        if isinstance(row, dict)
+    ]
+    if row_summaries:
+        parts.append("rows: " + "; ".join(row_summaries))
+        if len(row_list) > len(row_summaries):
+            parts.append(f"{len(row_list) - len(row_summaries)} more rows")
+
+    return " (".join([parts[0], "; ".join(parts[1:]) + ")"]) if len(parts) > 1 else parts[0]
+
+
+def _format_edcopilot_panel(panel_name: str, panel: Any) -> str:
+    if not isinstance(panel, dict):
+        return panel_name
+
+    title = panel.get("panel_title")
+    status = panel.get("status")
+    message = panel.get("message")
+    tables = panel.get("tables")
+
+    panel_bits = [panel_name]
+    if isinstance(title, str) and title and title != panel_name:
+        panel_bits.append(title)
+    if isinstance(status, str) and status:
+        panel_bits.append(f"status: {status}")
+    if isinstance(message, str) and message:
+        panel_bits.append(f"message: {message}")
+
+    if isinstance(tables, dict) and tables:
+        table_summaries = [
+            _format_edcopilot_table(table_name, table)
+            for table_name, table in tables.items()
+            if isinstance(table_name, str)
+        ]
+        if table_summaries:
+            panel_bits.append("tables: " + "; ".join(table_summaries))
+
+    return " - ".join(panel_bits)
+
+
+def _build_edcopilot_panel_contents_status(contents: dict[str, Any] | None) -> str | list[str] | None:
+    if not isinstance(contents, dict):
+        return None
+
+    gui_instances = contents.get("gui_instances")
+    if not isinstance(gui_instances, dict) or not gui_instances:
+        return None
+
+    gui_summaries: list[str] = []
+    for gui_name, gui_instance in gui_instances.items():
+        if not isinstance(gui_name, str) or not isinstance(gui_instance, dict):
+            continue
+        if gui_name.lower() == "minibar":
+            continue
+        panels = gui_instance.get("panels")
+        if not isinstance(panels, dict) or not panels:
+            gui_summaries.append(f"{gui_name}: no panel contents")
+            continue
+
+        panel_summaries = [
+            _format_edcopilot_panel(panel_name, panel)
+            for panel_name, panel in panels.items()
+            if isinstance(panel_name, str)
+        ]
+        if panel_summaries:
+            gui_summaries.append(f"{gui_name}: " + " | ".join(panel_summaries))
+
+    if not gui_summaries:
+        return None
+    if len(gui_summaries) == 1:
+        return gui_summaries[0]
+    return gui_summaries
+
+
+class EDCoPilotPanelContents(Projection[EDCoPilotPanelContentsState]):
+    StateModel = EDCoPilotPanelContentsState
+
+    @override
+    def process(self, event: Event) -> None:
+        if not isinstance(event, PluginEvent):
+            return
+        if event.plugin_event_name != "EdCoPilotPanelContentsEvent":
+            return
+        if not isinstance(event.plugin_event_content, dict):
+            return
+
+        timestamp = event.plugin_event_content.get("timestamp")
+        contents = event.plugin_event_content.get("contents")
+        status_message = event.plugin_event_content.get("status_message")
+        if isinstance(timestamp, str):
+            self.state.timestamp = timestamp
+        self.state.contents = contents if isinstance(contents, dict) else None
+        if isinstance(status_message, str) or (
+            isinstance(status_message, list)
+            and all(isinstance(item, str) for item in status_message)
+        ):
+            self.state.status_message = status_message
+        else:
+            self.state.status_message = _build_edcopilot_panel_contents_status(self.state.contents)
 
 
 def get_install_path() -> (str | None):
@@ -193,6 +340,14 @@ class EDCoPilotPlugin(PluginBase):
                                 readonly=False,
                                 placeholder=None,
                                 default_value=True
+                            ),
+                            ToggleSetting(
+                                key="read_edcp_ui",
+                                label="Read EDCP UI",
+                                type="toggle",
+                                readonly=False,
+                                placeholder=None,
+                                default_value=False
                             ),
                             ParagraphSetting(
                                 key="actions_warning",
@@ -339,6 +494,20 @@ class EDCoPilotPlugin(PluginBase):
                 CovasReplied(muted=is_edcopilot_dominant, text=message, reasons=reasons)
             )
 
+    def _edcopilot_panel_contents_status(self, projected_states: dict[str, Any]) -> list[tuple[str, Any]]:
+        if not self.settings.get("read_edcp_ui", False):
+            return []
+
+        state = projected_states.get("EDCoPilotPanelContents")
+        if state is None:
+            return []
+
+        status_message = getattr(state, "status_message", None)
+        if not status_message:
+            return []
+
+        return [("EDCoPilot UI contents", status_message)]
+
     def get_setting(self, key: str, default=None):
         """Helper to get plugin settings"""
         # This will be implemented via the PluginHelper in on_chat_start
@@ -360,7 +529,7 @@ class EDCoPilotPlugin(PluginBase):
             if not self.client.pending_events.empty():
                 event = self.client.pending_events.get()
                 if isinstance(event, SpeakingPhraseEvent) and event.reason != 'covas':
-                    log('info', 'eedcopilot', event)
+                    # log('info', 'eedcopilot', event)
                     self._helper.dispatch_event(PluginEvent(
                         kind="plugin",
                         plugin_event_name="EdCoPilotEvent",
@@ -369,7 +538,20 @@ class EDCoPilotPlugin(PluginBase):
                         }
                     ))
                     if read_commentary and event.duration == 0:
+                        if event.interrupt:
+                            self._helper._assistant.tts.abort()
                         self._helper._assistant.tts.say(event.text, voice=voice, postprocessing=post_processing)
+                if isinstance(event, PanelContentsEvent):
+                    status_message = _build_edcopilot_panel_contents_status(event.contents)
+                    self._helper.dispatch_event(PluginEvent(
+                        kind="plugin",
+                        plugin_event_name="EdCoPilotPanelContentsEvent",
+                        plugin_event_content={
+                            "timestamp": event.timestamp,
+                            "contents": event.contents,
+                            "status_message": status_message,
+                        }
+                    ))
             time.sleep(0.1)
         # return
     @override
@@ -391,7 +573,13 @@ class EDCoPilotPlugin(PluginBase):
         
         # Initialize EDCoPilot connection
         try:
-            self.client = create_edcopilot_client()
+            EDCoPilot.events = [
+                SpeakingPhraseEvent if event_type is BaseSpeakingPhraseEvent else event_type
+                for event_type in EDCoPilot.events
+            ]
+            if PanelContentsEvent not in EDCoPilot.events:
+                EDCoPilot.events.append(PanelContentsEvent)
+            self.client = EDCoPilot.create_edcopilot_client()
             self.provider = create_covasnext_provider()
             log('info', 'Successfully connected to EDCoPilot via EDMesg')
         except Exception as e:
@@ -410,6 +598,8 @@ class EDCoPilotPlugin(PluginBase):
         self.event_listener_thread.start()
         should_reply_to_edcp = self.settings.get("react_to_commentary", False)
         self._helper.register_event("EdCoPilotEvent", lambda event: should_reply_to_edcp, lambda event: "Received EdCoPilot Message: "+event.plugin_event_content.get("text", '-'))
+        self._helper.register_projection(EDCoPilotPanelContents())
+        self._helper.register_status_generator(self._edcopilot_panel_contents_status)
 
 
         # Register actions if enabled

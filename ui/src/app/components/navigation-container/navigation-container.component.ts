@@ -13,9 +13,19 @@ import { Subscription } from "rxjs";
 import { EventMessage, EventService, GameEvent } from "../../services/event.service";
 import { ProjectionsService } from "../../services/projections.service";
 import { GetSystemEventsMessage, SystemEventsMessage, TauriService } from "../../services/tauri.service";
+import { NavigationSubtabId, NavigationSubtabRailComponent } from "../navigation-subtab-rail/navigation-subtab-rail.component";
 
 type NavigationOption = { id: string; label: string; systemName: string; systemAddress: number | null };
 type NavigationRouteOption = NavigationOption & { scoopable: boolean | null };
+type NavigationRouteDetail = NavigationRouteOption & {
+    index: number;
+    isDestination: boolean;
+    distanceFromPrevious: number | null;
+    accumulatedDistance: number;
+};
+type MiningHotspotBody = { body: any; rings: { name: string; signals: string[] }[] };
+type BiologicalSignalBody = { body: any; signals: string[]; genuses: string[] };
+type SpecialServiceStation = { station: any; services: string[] };
 
 @Component({
     selector: "app-navigation-container",
@@ -31,6 +41,7 @@ type NavigationRouteOption = NavigationOption & { scoopable: boolean | null };
         MatExpansionModule,
         MatFormFieldModule,
         MatSelectModule,
+        NavigationSubtabRailComponent,
     ],
     templateUrl: "./navigation-container.component.html",
     styleUrls: ["./navigation-container.component.scss"],
@@ -40,7 +51,10 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
     currentSystemAddress: number | null = null;
     commanderSystemName: string = "Unknown";
     commanderSystemAddress: number | null = null;
+    commanderStarPos: number[] | null = null;
     selectedNavigationTarget: "commander" | string = "commander";
+    activeNavigationSubtab: NavigationSubtabId = "location";
+    isSystemInfoLegendCollapsed = false;
     fleetCarriers: any = null;
     navInfo: any = null;
 
@@ -82,6 +96,7 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
             this.projectionsService.location$.subscribe((location) => {
                 this.commanderSystemName = location?.StarSystem ?? "Unknown";
                 this.commanderSystemAddress = location?.SystemAddress ?? null;
+                this.commanderStarPos = this.normalizeStarPos(location?.StarPos);
                 if (this.selectedNavigationTarget === "commander") {
                     this.updateSystemContext(this.commanderSystemName, this.commanderSystemAddress);
                 }
@@ -127,6 +142,20 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
         this.updateSystemContext(option.systemName || "Unknown", address);
     }
 
+    setActiveNavigationSubtab(subtab: NavigationSubtabId): void {
+        this.activeNavigationSubtab = subtab;
+    }
+
+    selectRouteSystem(option: NavigationRouteOption): void {
+        this.selectedNavigationTarget = option.id;
+        this.onNavigationTargetChange();
+        this.activeNavigationSubtab = "location";
+    }
+
+    toggleSystemInfoLegend(): void {
+        this.isSystemInfoLegendCollapsed = !this.isSystemInfoLegendCollapsed;
+    }
+
     getNavigationOptions(): NavigationOption[] {
         return [...this.getCarrierNavigationOptions(), ...this.getNavRouteNavigationOptions()];
     }
@@ -158,6 +187,38 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
                 };
             })
             .filter((entry: NavigationRouteOption) => entry.systemName !== "Unknown");
+    }
+
+    getNavRouteDetails(): NavigationRouteDetail[] {
+        const options = this.getNavRouteNavigationOptions();
+        let accumulatedDistance = 0;
+        return options.map((option, index) => {
+            const distanceFromPrevious = this.getRouteLegDistance(index);
+            if (distanceFromPrevious !== null) {
+                accumulatedDistance += distanceFromPrevious;
+            }
+            return {
+                ...option,
+                index,
+                isDestination: index === options.length - 1,
+                distanceFromPrevious,
+                accumulatedDistance,
+            };
+        });
+    }
+
+    getRouteDestinationName(): string {
+        const route = this.getNavRouteDetails();
+        return route[route.length - 1]?.systemName ?? "No destination";
+    }
+
+    getRouteJumpsLeft(): number {
+        return Math.max(0, this.getNavRouteNavigationOptions().length);
+    }
+
+    getRouteDistanceRemaining(): number {
+        const route = this.getNavRouteDetails();
+        return route[route.length - 1]?.accumulatedDistance ?? 0;
     }
 
     formatNavigationOption(option: { label: string }): string {
@@ -198,6 +259,36 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
             }
         }
         return false;
+    }
+
+    private getRouteLegDistance(index: number): number | null {
+        const route = Array.isArray(this.navInfo?.NavRoute) ? this.navInfo.NavRoute : [];
+        const previous = index === 0 ? this.commanderStarPos : route[index - 1]?.StarPos;
+        const current = route[index]?.StarPos;
+        return this.getStarPosDistance(previous, current);
+    }
+
+    private normalizeStarPos(starPos: unknown): number[] | null {
+        if (!Array.isArray(starPos) || starPos.length < 3) {
+            return null;
+        }
+        const values = starPos.slice(0, 3).map((value) => Number(value));
+        return values.every(Number.isFinite) ? values : null;
+    }
+
+    private getStarPosDistance(previous: unknown, current: unknown): number | null {
+        const previousPos = this.normalizeStarPos(previous);
+        const currentPos = this.normalizeStarPos(current);
+        if (!previousPos || !currentPos) {
+            return null;
+        }
+        const dx = currentPos[0] - previousPos[0];
+        const dy = currentPos[1] - previousPos[1];
+        const dz = currentPos[2] - previousPos[2];
+        if (![dx, dy, dz].every(Number.isFinite)) {
+            return null;
+        }
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
 
     private ensureValidNavigationTarget(): void {
@@ -321,7 +412,7 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
         const stations = Array.isArray(systemInfo?.stations) ? systemInfo.stations : [];
         this.stations = stations
             .slice()
-            .sort((a: any, b: any) => this.getOrbitLs(a) - this.getOrbitLs(b));
+            .sort((a: any, b: any) => this.compareStations(a, b));
         this.bodies = Array.isArray(systemInfo?.bodies) ? systemInfo.bodies : [];
         this.systemMap = this.buildSystemMap(this.bodies, systemName);
         this.systemMeta = this.buildSystemMeta(systemInfo);
@@ -333,8 +424,81 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
         return this.formatCount(this.filteredBodies.length, filteredTotal);
     }
 
+    get pointsOfInterestCount(): number {
+        return this.getMiningHotspotBodies().length
+            + this.getBiologicalSignalBodies().length
+            + this.getSpecialServiceStations().length;
+    }
+
     get filteredBodies(): any[] {
         return this.bodies.filter((body: any) => !this.isUnknownBodyType(body));
+    }
+
+    getMiningHotspotBodies(): MiningHotspotBody[] {
+        return this.filteredBodies
+            .map((body: any): MiningHotspotBody | null => {
+                const rings = Array.isArray(body?.rings) ? body.rings : [];
+                const mappedRings = rings
+                    .map((ring: any) => {
+                        const signals = this.formatSignalList(Array.isArray(ring?.signals) ? ring.signals : []);
+                        if (!signals.length) {
+                            return null;
+                        }
+                        return {
+                            name: ring?.name || "Unknown ring",
+                            signals,
+                        };
+                    })
+                    .filter((ring: any): ring is { name: string; signals: string[] } => Boolean(ring));
+                if (!mappedRings.length) {
+                    return null;
+                }
+                return { body, rings: mappedRings };
+            })
+            .filter((entry: MiningHotspotBody | null): entry is MiningHotspotBody => Boolean(entry));
+    }
+
+    getBiologicalSignalBodies(): BiologicalSignalBody[] {
+        return this.filteredBodies
+            .map((body: any): BiologicalSignalBody | null => {
+                const signals = this.getLocalizedBodySignals(body).filter((signal) => this.isBiologicalSignal(signal));
+                const genuses = this.getLocalizedBodyGenuses(body);
+                if (!signals.length && !genuses.length) {
+                    return null;
+                }
+                return { body, signals, genuses };
+            })
+            .filter((entry: BiologicalSignalBody | null): entry is BiologicalSignalBody => Boolean(entry));
+    }
+
+    getSpecialServiceStations(): SpecialServiceStation[] {
+        return this.stations
+            .map((station: any): SpecialServiceStation | null => {
+                const services = this.getSpecialServiceLabels(station);
+                if (!services.length) {
+                    return null;
+                }
+                return { station, services };
+            })
+            .filter((entry: SpecialServiceStation | null): entry is SpecialServiceStation => Boolean(entry));
+    }
+
+    getCompactBiologicalSignalNames(): string[] {
+        const names = this.getBiologicalSignalBodies()
+            .flatMap((entry) => entry.genuses.map((genus) => this.cleanCompactPoiName(genus)));
+        return this.uniqueCompactNames(names);
+    }
+
+    getCompactHotspotNames(): string[] {
+        const names = this.getMiningHotspotBodies().flatMap((entry) => {
+            return entry.rings.flatMap((ring) => ring.signals.map((signal) => this.cleanCompactPoiName(signal)));
+        });
+        return this.uniqueCompactNames(names);
+    }
+
+    getCompactSpecialServiceNames(): string[] {
+        const names = this.getSpecialServiceStations().flatMap((entry) => entry.services);
+        return this.uniqueCompactNames(names);
     }
 
     getSignalDisplayName(signal: any): string {
@@ -629,6 +793,116 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
             .filter((entry: any): entry is string => Boolean(entry));
     }
 
+    getSpecialServiceLabels(station: any): string[] {
+        const labels: string[] = [];
+        const addLabel = (label: string | null | undefined) => {
+            if (label && !labels.includes(label)) {
+                labels.push(label);
+            }
+        };
+
+        const materialTrader = this.normalizeSpecialServiceToken(station?.materialTrader ?? station?.material_trader);
+        if (materialTrader === "raw" || materialTrader === "rawmaterialtrader") {
+            addLabel("Raw Material Trader");
+        } else if (materialTrader === "encoded" || materialTrader === "encodedmaterialtrader") {
+            addLabel("Encoded Material Trader");
+        } else if (materialTrader === "manufactured" || materialTrader === "manufacturedmaterialtrader") {
+            addLabel("Manufactured Material Trader");
+        }
+
+        const technologyBroker = this.normalizeSpecialServiceToken(station?.technologyBroker ?? station?.technology_broker);
+        if (technologyBroker === "human" || technologyBroker === "humantechnologybroker") {
+            addLabel("Human Technology Broker");
+        } else if (technologyBroker === "guardian" || technologyBroker === "guardiantechnologybroker") {
+            addLabel("Guardian Technology Broker");
+        }
+
+        if (this.isEngineerStation(station)) {
+            const engineerName = typeof station?.controllingFaction === "string" ? station.controllingFaction.trim() : "";
+            addLabel(engineerName ? `Engineer: ${engineerName}` : "Engineer");
+        }
+
+        for (const service of this.getStationServiceNames(station)) {
+            const normalized = this.normalizeServiceName(service);
+            if (normalized.includes("rawmaterialtrader")) {
+                addLabel("Raw Material Trader");
+            } else if (normalized.includes("encodedmaterialtrader")) {
+                addLabel("Encoded Material Trader");
+            } else if (normalized.includes("manufacturedmaterialtrader")) {
+                addLabel("Manufactured Material Trader");
+            } else if (normalized.includes("interstellarfactors")) {
+                addLabel("Interstellar Factors");
+            } else if (normalized.includes("blackmarket")) {
+                addLabel("Black Market");
+            } else if (normalized.includes("fleetcarriervendor") || normalized.includes("carriervendor")) {
+                addLabel("Carrier Vendor");
+            } else if (normalized.includes("humantechnologybroker")) {
+                addLabel("Human Technology Broker");
+            } else if (normalized.includes("guardiantechnologybroker")) {
+                addLabel("Guardian Technology Broker");
+            }
+        }
+
+        return labels;
+    }
+
+    private getStationServiceNames(station: any): string[] {
+        const services = Array.isArray(station?.services) ? station.services : [];
+        return services
+            .map((service: any) => {
+                if (typeof service === "string") {
+                    return service;
+                }
+                if (service && typeof service === "object") {
+                    return service.name || service.service || service.Name || null;
+                }
+                return null;
+            })
+            .filter((service: any): service is string => Boolean(service));
+    }
+
+    private normalizeSpecialServiceToken(value: unknown): string {
+        if (typeof value !== "string") {
+            return "";
+        }
+        return value.trim().toLowerCase().replace(/[^a-z]/g, "");
+    }
+
+    private isEngineerStation(station: any): boolean {
+        const government = this.normalizeSpecialServiceToken(station?.government);
+        return government === "engineer" || government.includes("engineer");
+    }
+
+    private normalizeServiceName(value: string): string {
+        return value.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+    }
+
+    private isBiologicalSignal(signal: string): boolean {
+        return signal.toLowerCase().includes("biological");
+    }
+
+    private cleanCompactPoiName(value: string): string {
+        return value
+            .replace(/^\d+\s+/, "")
+            .replace(/\s+\((?:scanned|unscanned)\)$/i, "")
+            .trim();
+    }
+
+    private uniqueCompactNames(values: string[]): string[] {
+        const seen = new Set<string>();
+        const result: string[] = [];
+        for (const value of values) {
+            const cleaned = value.trim();
+            const key = cleaned.toLowerCase();
+            if (!cleaned || seen.has(key)) {
+                continue;
+            }
+            seen.add(key);
+            result.push(cleaned);
+        }
+        return result;
+    }
+
     private isUnknownBodyType(body: any): boolean {
         const type = String(body?.type ?? "").trim().toLowerCase();
         return type === "unknown";
@@ -657,6 +931,16 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
             return Number.isFinite(parsed) ? parsed : Number.POSITIVE_INFINITY;
         }
         return Number.POSITIVE_INFINITY;
+    }
+
+    private compareStations(a: any, b: any): number {
+        const aType = String(a?.type || "Station").trim().toLowerCase();
+        const bType = String(b?.type || "Station").trim().toLowerCase();
+        const typeComparison = aType.localeCompare(bType);
+        if (typeComparison !== 0) {
+            return typeComparison;
+        }
+        return this.getOrbitLs(a) - this.getOrbitLs(b);
     }
 
     private buildSystemMeta(systemInfo: any): { label: string; value: string }[] {
