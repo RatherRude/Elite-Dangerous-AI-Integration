@@ -223,6 +223,8 @@
   :root {
     --speak-duration: .82s;
     --hand-enter-duration: .55s;
+    --hand-exit-duration: .45s;
+    --hand-exit-easing: cubic-bezier(.55,.06,.68,.19);
   }
 
   .mouth-smile,
@@ -248,6 +250,26 @@
   .hand-thinking-wrap,
   .hand-tablet-wrap {
     opacity: 0;
+  }
+
+  /*
+   * The hand wrappers rest below the viewport. State selectors transition
+   * them into place; removing a state transitions them smoothly back out.
+   */
+  .hand-thinking-wrap {
+    transform: translateY(138px);
+    transition:
+      opacity .18s ease-in .27s,
+      transform var(--hand-exit-duration) var(--hand-exit-easing);
+    will-change: transform, opacity;
+  }
+
+  .hand-tablet-wrap {
+    transform: translateY(150px);
+    transition:
+      opacity .18s ease-in .27s,
+      transform var(--hand-exit-duration) var(--hand-exit-easing);
+    will-change: transform, opacity;
   }
 
   .smoke-puff {
@@ -306,7 +328,10 @@
   .thinking .smoke-puff-8 { animation-delay: 3.85s; }
   .thinking .hand-thinking-wrap {
     opacity: 1;
-    animation: think-hand-enter var(--hand-enter-duration) cubic-bezier(.22,1,.36,1) forwards;
+    transform: translateY(0px);
+    transition:
+      opacity .24s ease-out,
+      transform var(--hand-enter-duration) cubic-bezier(.22,1.12,.36,1);
   }
 
   .acting .mouth-smile { opacity: 0; }
@@ -328,7 +353,10 @@
   }
   .acting .hand-tablet-wrap {
     opacity: 1;
-    animation: tablet-enter .5s cubic-bezier(.22,1,.36,1) forwards;
+    transform: translateY(0px);
+    transition:
+      opacity .24s ease-out,
+      transform .5s cubic-bezier(.22,1,.36,1);
   }
 
   .acting .hand-tablet-bg {
@@ -398,16 +426,6 @@
     100% { opacity: 0; transform: translateY(-6px) scale(1.08); }
   }
 
-  @keyframes think-hand-enter {
-    0%   { opacity: 0; transform: translateY(138px); }
-    72%  { opacity: 1; transform: translateY(-4px); }
-    100% { opacity: 1; transform: translateY(0px); }
-  }
-
-  @keyframes tablet-enter {
-    0%   { opacity: 0; transform: translateY(150px); }
-    100% { opacity: 1; transform: translateY(0px); }
-  }
 
   @keyframes typing-hand-triangle {
     0%, 100% { transform: translate(0px, 0px) rotate(-20deg); }
