@@ -617,30 +617,30 @@ class Plotter:
             )
 
         self.keys.send('CamZoomIn')
-        sleep(0.05)
+        sleep(0.5)
 
         self.keys.send('UI_Up')
-        sleep(.05)
+        sleep(.5)
         if current_gui == "GalaxyMap":
             self.keys.send('UI_Left', repeat=3)
-            sleep(.05)
+            sleep(.5)
             self.keys.send('UI_Right')
-            sleep(.05)
+            sleep(.5)
             self.keys.send('UI_Up')
-            sleep(.05)
+            sleep(.5)
         self.keys.send('UI_Select')
-        sleep(.05)
+        sleep(.5)
 
         typewrite(system_name, interval=0.02)
-        sleep(0.05)
+        sleep(0.5)
 
         self.keys.send_key('Down', 'Key_Enter')
-        sleep(0.05)
+        sleep(0.5)
         self.keys.send_key('Up', 'Key_Enter')
 
-        sleep(0.05)
+        sleep(0.5)
         self.keys.send('UI_Right')
-        sleep(.5)
+        sleep(0.5)
         self.keys.send('UI_Select')
 
         current_system = get_state_dict(projected_states, 'Location').get('StarSystem', 'Unknown')
