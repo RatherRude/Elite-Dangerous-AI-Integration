@@ -1998,11 +1998,11 @@ class PromptGenerator:
             is_thargoid = escape_event.get('IsThargoid', False)
             
             if is_thargoid:
-                return f"{self.commander_name} has escaped interdiction from a Thargoid."
+                return f"{self.commander_name} escaped a thargoid's attempt to pull them out of supercruise."
             elif is_player:
-                return f"{self.commander_name} has escaped interdiction from Commander {interdictor}."
+                return f"{self.commander_name} escaped Commander {interdictor}'s attempt to pull them out of supercruise."
             else:
-                return f"{self.commander_name} has escaped interdiction from {interdictor}."
+                return f"{self.commander_name} escaped an attempt by {interdictor} to pull them out of supercruise."
             
         if event_name == 'FactionKillBond':
             faction_bond_event = cast(Dict[str, Any], content)
@@ -2122,21 +2122,23 @@ class PromptGenerator:
         if event_name == 'Interdicted':
             interdicted_event = cast(InterdictedEvent, content)
             if interdicted_event.get('IsThargoid'):
-                interdictor = "a Thargoid"
+                interdictor = "a thargoid"
             elif interdicted_event.get('Interdictor'):
                 interdictor = interdicted_event.get('Interdictor_Localised', interdicted_event.get('Interdictor'))
             else:
                 interdictor = "an unknown ship"
             
-            outcome = "submitted to" if interdicted_event.get('Submitted') else "was forcibly interdicted by"
-            return f"{self.commander_name} {outcome} {interdictor}."
+            if interdicted_event.get('Submitted'):
+                return f"{self.commander_name} submitted when {interdictor} tried to pull them out of supercruise."
+            return f"{self.commander_name} was pulled out of supercruise by {interdictor}."
 
         if event_name == 'Interdiction':
             interdiction_event = cast(Dict[str, Any], content)
             target = interdiction_event.get('Target', 'unknown ship')
             success = interdiction_event.get('Success', False)
-            result = "successfully interdicted" if success else "failed to interdict"
-            return f"{self.commander_name} has {result} {target}."
+            if success:
+                return f"{self.commander_name} successfully pulled {target} out of supercruise."
+            return f"{self.commander_name} failed to pull {target} out of supercruise."
 
         if event_name == 'MassModuleStore':
             mass_store_event = cast(Dict[str, Any], content)
@@ -2399,7 +2401,7 @@ class PromptGenerator:
         if event_name == 'FsdCharging':
             return 'Frame Shift Drive charging, preparing for jump'
         if event_name == "BeingInterdicted":
-            return "Supercruise is being interdicted."
+            return f"{self.commander_name} is being pulled out of supercruise."
         if event_name == 'SrvHandbrakeOff':
             return 'SRV handbrake released, free to move'
         if event_name == 'SrvHandbrakeOn':
