@@ -727,7 +727,7 @@ class Plotter:
                 }
 
                 log('debug', 'Distance Calculation', f"Requesting coordinates for {current_system} -> {target_system}")
-                response = requests.get(edsm_url, params=params, timeout=5)
+                response = requests.get(edsm_url, params=params, headers={'User-Agent': 'COVAS:NEXT'}, timeout=5)
 
                 if response.status_code == 200:
                     systems_data = response.json()
