@@ -1441,7 +1441,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "pips to systems": {"power_category": ["Systems"], "pips": [2]},
     })
 
-    actionManager.registerAction('plotToTarget', "Plot a navigation route to a system, station, or body. Uses Spansh to resolve the target, then plots via the galaxy map or navigates in the current system map when already there.", {
+    actionManager.registerAction('plotToTarget', "Plot a navigation route to a system, station, or body. Uses Spansh to resolve the target, then plots via the galaxy map or navigates in the current system map when already there. Set clear_nav_route to true to clear the current navigation route; when a route exists this plots to the final stop in that route.", {
         "type": "object",
         "properties": {
             "system": {
@@ -1456,9 +1456,14 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
                 "type": "string",
                 "description": "Target body name",
             },
+            "clear_nav_route": {
+                "type": "boolean",
+                "description": "Clear the current navigation route.",
+            },
         },
     }, plot_to_target, 'ship', permission='plotToTarget', cache_prefill={
-        "navigation": {},
+        "clear nav route": {"clear_nav_route": True},
+        "clear navigation route": {"clear_nav_route": True},
     })
 
     actionManager.registerAction('galaxyMapOpenOrClose', "Open or close the galaxy map", {
@@ -2109,7 +2114,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "ship pickup": {},
     })
 
-    actionManager.registerAction('plotToTargetBuggy', "Plot a navigation route to a system, station, or body from the SRV.", {
+    actionManager.registerAction('plotToTargetBuggy', "Plot a navigation route to a system, station, or body from the SRV. Set clear_nav_route to true to clear the current navigation route; when a route exists this plots to the final stop in that route.", {
         "type": "object",
         "properties": {
             "system": {
@@ -2124,13 +2129,14 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
                 "type": "string",
                 "description": "Target body name",
             },
+            "clear_nav_route": {
+                "type": "boolean",
+                "description": "Clear the current navigation route. If a route exists, this plots to the final stop in that route to clear it. If no route exists, this succeeds only when no system, station, or body target was provided.",
+            },
         },
     }, plot_to_target_buggy, 'buggy', permission='plotToTargetBuggy', cache_prefill={
-        "navigation": {},
-        "plot route": {},
-        "set course": {},
-        "plot course": {},
-        "navigate to": {},
+        "clear nav route": {"clear_nav_route": True},
+        "clear navigation route": {"clear_nav_route": True},
     })
 
     actionManager.registerAction('galaxyMapOpenOrCloseBuggy', "Open or close the galaxy map from the SRV.", {

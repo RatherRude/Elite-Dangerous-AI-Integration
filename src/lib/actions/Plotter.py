@@ -393,8 +393,27 @@ class Plotter:
         return best_match
 
     def plot_to_target(self, args: dict[str, Any], projected_states: ProjectedStates, galaxymap_key: str = "GalaxyMapOpen") -> str:
-        set_game_window_active()
         system, station, body = self._parse_plot_target_args(args)
+        clear_nav_route = bool(args.get('clear_nav_route'))
+
+        nav_route = get_state_dict(projected_states, 'NavInfo').get('NavRoute', [])
+        if clear_nav_route and nav_route:
+            final_stop = self._nav_route_item_system(nav_route[-1])
+            if not final_stop:
+                raise Exception("Could not determine final stop in the current navigation route.")
+            set_game_window_active()
+            return self._plot_galaxy_route(
+                final_stop,
+                None,
+                projected_states,
+                galaxymap_key,
+                clear_nav_route=True,
+            )
+
+        if clear_nav_route and not any((system, station, body)):
+            return "Navigation route is already clear."
+
+        set_game_window_active()
         if not any((system, station, body)):
             raise Exception("At least one of system, station, or body must be provided.")
 
@@ -407,7 +426,6 @@ class Plotter:
         current_system = get_state_dict(projected_states, 'Location').get('StarSystem', 'Unknown')
 
         if resolved:
-            nav_route = get_state_dict(projected_states, 'NavInfo').get('NavRoute', [])
             if nav_route and self._systems_match(nav_route[-1].get('StarSystem', ''), resolved.system_name):
                 if resolved.target_type == 'system' or not self._systems_match(resolved.system_name, current_system):
                     return f"The route to {resolved.system_name} is already set"
@@ -432,7 +450,6 @@ class Plotter:
             )
 
         if system:
-            nav_route = get_state_dict(projected_states, 'NavInfo').get('NavRoute', [])
             if nav_route and self._systems_match(nav_route[-1].get('StarSystem', ''), system):
                 return f"The route to {system} is already set"
             if self._systems_match(system, current_system):
@@ -456,6 +473,17 @@ class Plotter:
     @staticmethod
     def _systems_match(system_a: str, system_b: str) -> bool:
         return system_a.strip().casefold() == system_b.strip().casefold()
+
+    @staticmethod
+    def _nav_route_item_system(nav_route_item: Any) -> str | None:
+        if isinstance(nav_route_item, dict):
+            system = nav_route_item.get('StarSystem')
+        else:
+            system = getattr(nav_route_item, 'StarSystem', None)
+        if system is None:
+            return None
+        system = str(system).strip()
+        return system or None
 
     def _navigate_system_map_target(self, resolved_target: ResolvedPlotTarget) -> None:
         from ..ScreenReader import ScreenReader
@@ -593,6 +621,7 @@ class Plotter:
         projected_states: ProjectedStates,
         galaxymap_key: str = "GalaxyMapOpen",
         resolved_target: ResolvedPlotTarget | None = None,
+        clear_nav_route: bool = False,
     ) -> str:
         self._require_ui_dependencies()
         current_gui = self._ensure_galaxy_map_open(projected_states, galaxymap_key)
@@ -656,13 +685,20 @@ class Plotter:
         try:
             data = self.event_manager.wait_for_condition(
                 'NavInfo',
-                lambda s: s.NavRoute and len(s.NavRoute) > 0 and s.NavRoute[-1].StarSystem.lower() == system_name.lower(),
+                lambda s: (
+                    not s.NavRoute or len(s.NavRoute) == 0
+                    if clear_nav_route
+                    else s.NavRoute and len(s.NavRoute) > 0 and s.NavRoute[-1].StarSystem.lower() == system_name.lower()
+                ),
                 zoom_wait_time,
             )
             jump_amount = len(data.NavRoute) if data else 0
 
             if not keep_galaxy_map_open and current_gui != "GalaxyMap":
                 self.keys.send(galaxymap_key)
+
+            if clear_nav_route:
+                return "Navigation route successfully cleared"
 
             prefix = f"Best location found: {json.dumps(details)}. " if details else ""
             distance_text = f"Distance: {distance_ly} LY, " if distance_ly > 0 else ""
@@ -674,6 +710,8 @@ class Plotter:
 
             return message
         except TimeoutError:
+            if clear_nav_route:
+                return "Failed to clear navigation route"
             return f"Failed to plot a route to {system_name}"
 
     @staticmethod
