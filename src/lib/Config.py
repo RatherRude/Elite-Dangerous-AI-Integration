@@ -1240,6 +1240,12 @@ def migrate(data: dict) -> dict:
             data['overlay_mode'] = 'both'
         data.pop('overlay_vr_streamer_mode', None)
 
+    if data['config_version'] < 18:
+        data['config_version'] = 18
+        allowed_actions = data.get('allowed_actions')
+        if isinstance(allowed_actions, list) and allowed_actions and 'plotToTarget' not in allowed_actions:
+            allowed_actions.append('plotToTarget')
+
     return data
 
 
@@ -1342,7 +1348,7 @@ def getDefaultCharacter(config: Config) -> Character:
 
 def load_config() -> Config:
     defaults: Config = {
-        'config_version': 17,
+        'config_version': 18,
         'commander_name': "",
         'characters': [],
         'active_character_index': 0,  # -1 means using the default legacy character
