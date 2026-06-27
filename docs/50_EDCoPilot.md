@@ -1,41 +1,67 @@
 # EDCoPilot Integration
-We are excited to work with Razzafrag on integrating **COVAS:NEXT** with **EDCoPilot**!
 
-**Disclaimer:** EDCoPilot does not share the contents of its UI, nor any other data. **It adds zero functionality or knowledge to the AI**.
+We are excited to work with Razzafrag on integrating **COVAS:NEXT** with **EDCoPilot**.
 
-This currently has three benefits:
+The EDCoPilot integration lets both applications coordinate speech output, show COVAS:NEXT dialogue in EDCoPilot, optionally read or react to EDCoPilot commentary through COVAS:NEXT, and optionally let COVAS:NEXT control EDCoPilot's UI.
 
-1) You can see the COVAS:NEXT dialogue in EDCoPilot's "Voice Activity" panel
+## Availability
 
-2) You can prevent both applications from talking over each other
+COVAS:NEXT only shows the EDCoPilot plugin settings when EDCoPilot is installed. The integration is disabled by default. To enable it, open **Plugin Settings -> EDCoPilot** and turn on **Enable EDCoPilot Integration**.
 
-3) You can control EDCoPilot's UI via COVAS:NEXT's tools
+## Privacy and Shared Context
 
-## Show dialogue in EDCoPilot
-With EDCoPilot installed, COVAS:NEXT will automatically add a new configuration option to enable EDCoPilot.
-This option is enabled by default, so it should work without further modification.
+By default, EDCoPilot does not add gameplay knowledge to COVAS:NEXT. The integration primarily exchanges conversation and speech coordination messages.
 
-## Preventing both applications from talking at the same time
-By default, both EDCoPilot and COVAS:NEXT will react to certain events inside your game. 
+If **EDCP UI Awareness** is enabled, COVAS:NEXT receives a summary of the currently visible EDCoPilot panel contents and may use that summary as context. This setting is enabled by default after the EDCoPilot integration itself is enabled.
 
-We provide two different solutions:
+## Show Dialogue in EDCoPilot
 
-1) Let COVAS:NEXT decide what, where and how to comment **(COVAS:NEXT Dominant Mode)**
-  
-2) Let EDCoPilot decide what, where and how to comment **(EDCoPilot Dominant Mode)**
+When the integration is enabled, COVAS:NEXT forwards commander messages and COVAS:NEXT replies to EDCoPilot. EDCoPilot can display this dialogue in its voice/activity UI.
 
-### 1. COVAS:NEXT Dominant Mode 
-This mode lets you talk to COVAS:NEXT as usual, while EDCoPilot's event commentary is muted. This is the default mode and ensures that COVAS:NEXT comments are low-latency and not delayed by EDCoPilot commentary.
+## Choose How COVAS:NEXT Is Voiced
 
-In order to mute EDCoPilot game commentary, you should open EDCoPilot Settings -> Ship AI Personality -> Disable "EDCoPilot Dominant"
+The integration supports two ways to voice COVAS:NEXT responses:
 
-### 2. EDCoPilot Dominant Mode
+1. **Voice via COVAS:NEXT**
+2. **Voice via EDCoPilot**
 
-This mode also lets you talk to COVAS:NEXT, while EDCoPilot also generates its own commentary. In order to avoid excessive and redundant commentary, you should configure the behaviour of COVAS:NEXT to only respond to those events that EDCoPilot does not already comment on in the Behaviour tab.
-   
-In order to enable both applications' commentary, you need to enable the `EDCoPilot-Dominant` setting inside of COVAS:NEXT.
+### 1. Voice via COVAS:NEXT
 
-This setting will mute COVAS:NEXT's Text-to-Speech and instead sends all text over to EDCoPilot, where it will be read out, but might be delayed by ongoing EDCoPilot commentary and generally higher latency.
+This is the normal mode. Choose any COVAS:NEXT TTS provider you like.
+
+In this mode, COVAS:NEXT speaks its own responses directly, taking advantage of COVAS:NEXT's low-latency TTS and immersive TTS filters. This avoids routing COVAS:NEXT responses through EDCoPilot's speech queue.
+
+### 2. Voice via EDCoPilot
+
+Use this mode when you want EDCoPilot to handle COVAS:NEXT speech output.
+
+To enable it, open **Advanced Settings -> TTS Settings** and select EDCoPilot as the TTS provider.
+
+In this mode, COVAS:NEXT sends its response text to EDCoPilot. EDCoPilot then handles the actual voice output. Slower or delayed responses are expected because COVAS:NEXT speech is routed through EDCoPilot.
+
+## Read EDCoPilot Commentary Through COVAS:NEXT
+
+The **Read out EDCoPilot commentary** setting lets COVAS:NEXT voice EDCoPilot commentary through COVAS:NEXT's current TTS setup.
+
+If EDCoPilot sends an interrupting phrase, COVAS:NEXT stops its current TTS before reading the EDCoPilot commentary. You can set **EDCoPilot Voice** to choose which COVAS:NEXT character voice should read EDCoPilot commentary.
+
+## React to EDCoPilot Commentary
+
+The **React to EDCoPilot commentary** setting lets EDCoPilot commentary become an event that COVAS:NEXT can react to.
+
+This is disabled by default. Enable it only if you want COVAS:NEXT to generate responses based on EDCoPilot's spoken commentary.
+
+## EDCoPilot UI Awareness
+
+The **EDCP UI Awareness** setting lets COVAS:NEXT receive a compact summary of the currently visible EDCoPilot panels, including panel titles, status messages, and table summaries.
+
+This can help COVAS:NEXT answer questions about what EDCoPilot is currently showing. Disable this setting if you do not want EDCoPilot panel summaries included in COVAS:NEXT context.
 
 ## Control EDCoPilot's UI via COVAS:NEXT
-By default EDCoPilot's UI actions are disabled. We strongly recommend to only activate one set of UI actions, either COVAS:NEXT's or EDCoPilot's.
+
+EDCoPilot UI actions are disabled by default. If you enable **Enable EDCoPilot UI Actions**, COVAS:NEXT can use tools to:
+
+1. Open specific EDCoPilot panels.
+2. Navigate the current EDCoPilot panel by scrolling, going back, or selecting an item.
+
+We strongly recommend enabling only one set of UI actions at a time, either COVAS:NEXT's or EDCoPilot's.
