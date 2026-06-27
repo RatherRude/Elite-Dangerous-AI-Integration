@@ -2777,10 +2777,10 @@ class PromptGenerator:
             normalized["services"].append("Engineer")
         material_trader = station.get("materialTrader")
         if material_trader:
-            normalized["services"].append(material_trader + " Material Trader")
+            normalized["services"].append(f"{material_trader} Material Trader")
         technology_broker = station.get("technologyBroker")
-        if material_trader:
-            normalized["services"].append(technology_broker + " Technology Broker")
+        if technology_broker:
+            normalized["services"].append(f"{technology_broker} Technology Broker")
 
         # Add all other basic fields
         normalized["name"] = station.get("name", "Unknown")
