@@ -25,7 +25,17 @@ type NavigationRouteDetail = NavigationRouteOption & {
 };
 type MiningHotspotBody = { body: any; rings: { name: string; signals: string[] }[] };
 type BiologicalSignalBody = { body: any; signals: string[]; genuses: string[] };
+type InterestingBody = { body: any; reasons: { label: string; values: string[] }[] };
 type SpecialServiceStation = { station: any; services: string[] };
+
+const NOTEWORTHY_BODY_SUBTYPES = new Set([
+    "Ammonia world",
+    "Earth-like world",
+    "Water world",
+    "Black Hole",
+    "Supermassive Black Hole",
+    "Neutron Star",
+]);
 
 @Component({
     selector: "app-navigation-container",
@@ -425,7 +435,8 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
     }
 
     get pointsOfInterestCount(): number {
-        return this.getMiningHotspotBodies().length
+        return this.getInterestingBodies().length
+            + this.getMiningHotspotBodies().length
             + this.getBiologicalSignalBodies().length
             + this.getSpecialServiceStations().length;
     }
@@ -456,6 +467,18 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
                 return { body, rings: mappedRings };
             })
             .filter((entry: MiningHotspotBody | null): entry is MiningHotspotBody => Boolean(entry));
+    }
+
+    getInterestingBodies(): InterestingBody[] {
+        return this.filteredBodies
+            .map((body: any): InterestingBody | null => {
+                const reasons = this.getInterestingBodyReasons(body);
+                if (!reasons.length) {
+                    return null;
+                }
+                return { body, reasons };
+            })
+            .filter((entry: InterestingBody | null): entry is InterestingBody => Boolean(entry));
     }
 
     getBiologicalSignalBodies(): BiologicalSignalBody[] {
@@ -540,6 +563,19 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
             const names = this.formatSignalList(signals);
             if (!names.length) continue;
             results.push(`${names.join(", ")}`);
+        }
+        return results;
+    }
+
+    getLocalizedRingSignalDetails(body: any): string[] {
+        const rings = Array.isArray(body?.rings) ? body.rings : [];
+        const results: string[] = [];
+        for (const ring of rings) {
+            const signals = Array.isArray(ring?.signals) ? ring.signals : [];
+            const names = this.formatSignalList(signals);
+            if (!names.length) continue;
+            const ringName = ring?.name || "Unknown ring";
+            results.push(`${ringName}: ${names.join(", ")}`);
         }
         return results;
     }
@@ -655,6 +691,17 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
             highlights.push(body.volcanismType);
         }
         return highlights;
+    }
+
+    getInterestingBodyReasons(body: any): { label: string; values: string[] }[] {
+        const reasons: { label: string; values: string[] }[] = [];
+        const subtype = typeof body?.subType === "string" ? body.subType : null;
+
+        if (subtype && NOTEWORTHY_BODY_SUBTYPES.has(subtype)) {
+            reasons.push({ label: "Subtype", values: [subtype] });
+        }
+
+        return reasons;
     }
 
     private buildSystemMap(bodies: any[], systemName: string | null): any[] {

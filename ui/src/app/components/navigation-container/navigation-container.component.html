@@ -168,6 +168,12 @@
                         <span class="value">{{ pointsOfInterestCount }}</span>
                     </div>
                 }
+                @if (getInterestingBodies().length > 0) {
+                    <div class="route-summary-card">
+                        <span class="label">Interesting bodies</span>
+                        <span class="value">{{ getInterestingBodies().length }}</span>
+                    </div>
+                }
                 @if (getMiningHotspotBodies().length > 0) {
                     <div class="route-summary-card">
                         <span class="label">Mining hotspots</span>
@@ -189,6 +195,39 @@
             </div>
         }
         <mat-accordion>
+            @if (getInterestingBodies().length) {
+                <mat-expansion-panel>
+                    <mat-expansion-panel-header>
+                        <mat-panel-title>Interesting Bodies ({{ getInterestingBodies().length }})</mat-panel-title>
+                    </mat-expansion-panel-header>
+                    <div class="poi-list">
+                        @for (entry of getInterestingBodies(); track entry.body.bodyId || entry.body.body_id || entry.body.name) {
+                            <mat-card class="poi-card">
+                                <div class="poi-card-header">
+                                    <div>
+                                        <div class="poi-title">{{ entry.body.name || "Unknown body" }}</div>
+                                        @if (entry.body.subType || entry.body.type) {
+                                            <div class="poi-subtitle">{{ entry.body.subType || entry.body.type }}</div>
+                                        }
+                                    </div>
+                                    @if (getBodyOrbitDisplay(entry.body)) {
+                                        <span class="poi-distance">{{ getBodyOrbitDisplay(entry.body) }}</span>
+                                    }
+                                </div>
+                                <div class="poi-detail-list">
+                                    @for (reason of entry.reasons; track reason.label) {
+                                        <div class="poi-detail-row">
+                                            <span class="label">{{ reason.label }}</span>
+                                            <span class="value">{{ reason.values.join(", ") }}</span>
+                                        </div>
+                                    }
+                                </div>
+                            </mat-card>
+                        }
+                    </div>
+                </mat-expansion-panel>
+            }
+
             @if (getMiningHotspotBodies().length) {
                 <mat-expansion-panel>
                     <mat-expansion-panel-header>
