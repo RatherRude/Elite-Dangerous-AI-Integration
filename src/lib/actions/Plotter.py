@@ -660,7 +660,7 @@ class Plotter:
         self.keys.send('UI_Select')
         sleep(.05)
 
-        typewrite(system_name, interval=0.02)
+        typewrite(system_name.split('+', 1)[0], interval=0.02)
         sleep(0.05)
 
         self.keys.send_key('Down', 'Key_Enter')
