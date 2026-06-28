@@ -7,19 +7,19 @@ import { MatTabsModule } from "@angular/material/tabs";
 import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatProgressBarModule } from "@angular/material/progress-bar";
-import { MatExpansionModule } from "@angular/material/expansion";
 import { MaterialsPanelComponent } from "../materials-panel/materials-panel.component";
 import { StoredModulesComponent } from "../stored-modules/stored-modules.component";
 import { EngineersPanelComponent } from "../engineers-panel/engineers-panel.component";
 import { EngineeringBlueprintsComponent } from "../engineering-blueprints/engineering-blueprints.component";
 import { FleetCarrierCardComponent } from "../fleet-carrier-card/fleet-carrier-card.component";
+import { StorageSubtab, StorageSubtabId, StorageSubtabRailComponent } from "../storage-subtab-rail/storage-subtab-rail.component";
 import { ProjectionsService } from "../../services/projections.service";
 import { Subscription } from "rxjs";
 
 @Component({
   selector: "app-storage-container",
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatTabsModule, MatButtonToggleModule, MatTooltipModule, MatProgressBarModule, MatExpansionModule, MaterialsPanelComponent, StoredModulesComponent, EngineersPanelComponent, EngineeringBlueprintsComponent, FleetCarrierCardComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, MatTabsModule, MatButtonToggleModule, MatTooltipModule, MatProgressBarModule, MaterialsPanelComponent, StoredModulesComponent, EngineersPanelComponent, EngineeringBlueprintsComponent, FleetCarrierCardComponent, StorageSubtabRailComponent],
   templateUrl: "./storage-container.component.html",
   styleUrl: "./storage-container.component.css",
 })
@@ -34,6 +34,7 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
   
 
   carrierSectionsCollapsed: Record<number, boolean> = {};
+  activeStorageSubtab: StorageSubtabId = "materials";
   
   private subscriptions: Subscription[] = [];
 
@@ -48,14 +49,17 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
     this.subscriptions.push(
       this.projectionsService.shipLocker$.subscribe(shipLocker => {
         this.shipLocker = shipLocker;
+        this.ensureValidStorageSubtab();
       }),
 
       this.projectionsService.colonisationConstruction$.subscribe(colonisation => {
         this.colonisationConstruction = colonisation;
+        this.ensureValidStorageSubtab();
       }),
       
       this.projectionsService.cargo$.subscribe(cargo => {
         this.cargo = cargo;
+        this.ensureValidStorageSubtab();
       }),
       
       this.projectionsService.shipInfo$.subscribe(shipInfo => {
@@ -69,6 +73,7 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
       this.projectionsService.getProjection("FleetCarriers").subscribe(fleetCarriers => {
         this.fleetCarriers = fleetCarriers;
         this.syncCarrierCollapseState();
+        this.ensureValidStorageSubtab();
       })
     );
   }
@@ -83,6 +88,36 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
       .replace(/_/g, ' ')
       .replace(/([A-Z])/g, ' $1')
       .replace(/\w\S*/g, txt => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+  }
+
+  setActiveStorageSubtab(subtab: StorageSubtabId): void {
+    this.activeStorageSubtab = subtab;
+  }
+
+  getStorageSubtabs(): StorageSubtab[] {
+    const subtabs: StorageSubtab[] = [];
+
+    if (this.isColonisationActive()) {
+      subtabs.push({ id: "colonisation", icon: "construction", label: "Colony" });
+    }
+
+    if (this.getCargoCapacity() > 0) {
+      subtabs.push({ id: "cargo", icon: "inventory_2", label: "Cargo" });
+    }
+
+    if (this.hasFleetCarriers()) {
+      subtabs.push({ id: "carriers", icon: "dns", label: "Carriers" });
+    }
+
+    return [
+      ...subtabs,
+      { id: "materials", icon: "category", label: "Materials" },
+      { id: "locker", icon: "backpack", label: "Locker" },
+      { id: "engineers", icon: "engineering", label: "Engineers" },
+      { id: "blueprints", icon: "schema", label: "Blueprints" },
+      { id: "modules", icon: "extension", label: "Modules" },
+      { id: "ships", icon: "directions_boat", label: "Ships" },
+    ];
   }
 
   // Colonisation methods
@@ -201,6 +236,12 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
       }
     });
     this.carrierSectionsCollapsed = nextState;
+  }
+
+  private ensureValidStorageSubtab(): void {
+    if (!this.getStorageSubtabs().some(tab => tab.id === this.activeStorageSubtab)) {
+      this.activeStorageSubtab = "materials";
+    }
   }
   
 } 

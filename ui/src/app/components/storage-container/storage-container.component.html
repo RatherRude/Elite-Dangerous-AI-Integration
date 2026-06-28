@@ -1,108 +1,116 @@
 <div class="storage-container">
+  <app-storage-subtab-rail
+    [subtabs]="getStorageSubtabs()"
+    [activeSubtab]="activeStorageSubtab"
+    (activeSubtabChange)="setActiveStorageSubtab($event)"
+  ></app-storage-subtab-rail>
+
   <div class="storage-content">
-    <mat-accordion multi>
-      @if (isColonisationActive()) {
-        <mat-expansion-panel>
-          <mat-expansion-panel-header>
-            <mat-panel-title>Colony Construction</mat-panel-title>
-          </mat-expansion-panel-header>
-          <div class="colonisation-container">
-            <div class="colony-header">
-              <h4>{{ getColonisationSystem() }}</h4>
-              <div class="colony-status" [ngClass]="getColonisationStatusClass()">
-                {{ getColonisationStatusText() }}
-              </div>
+    @if (activeStorageSubtab === "colonisation" && isColonisationActive()) {
+      <section class="storage-panel" aria-label="Colony construction">
+        <div class="storage-panel-header">
+          <h3>Colony Construction</h3>
+        </div>
+        <div class="colonisation-container">
+          <div class="colony-header">
+            <h4>{{ getColonisationSystem() }}</h4>
+            <div class="colony-status" [ngClass]="getColonisationStatusClass()">
+              {{ getColonisationStatusText() }}
             </div>
+          </div>
 
-            <div class="progress-container">
-              <h4>Construction Progress</h4>
-              <div class="stat-bar">
-                <mat-progress-bar mode="determinate" [value]="getColonisationProgressValue()"></mat-progress-bar>
-                <span>{{ formatPercentage(getColonisationProgress()) }}</span>
-              </div>
+          <div class="progress-container">
+            <h4>Construction Progress</h4>
+            <div class="stat-bar">
+              <mat-progress-bar mode="determinate" [value]="getColonisationProgressValue()"></mat-progress-bar>
+              <span>{{ formatPercentage(getColonisationProgress()) }}</span>
             </div>
+          </div>
 
-            @if (getColonisationResources().length > 0) {
-              <div class="resources-needed">
-                <h4>Resources Needed</h4>
-                <div class="resources-list">
-                  @for (resource of getColonisationResources(); track resource.Name) {
-                    <div class="resource-item">
-                      <div class="resource-details">
-                        <span class="resource-name">{{ resource.Name_Localised || resource.Name }}</span>
-                        <div class="resource-progress">
-                          <mat-progress-bar mode="determinate" [value]="(resource.ProvidedAmount / resource.RequiredAmount) * 100"></mat-progress-bar>
-                          <span class="resource-count">{{ resource.ProvidedAmount }}/{{ resource.RequiredAmount }}</span>
-                        </div>
+          @if (getColonisationResources().length > 0) {
+            <div class="resources-needed">
+              <h4>Resources Needed</h4>
+              <div class="resources-list">
+                @for (resource of getColonisationResources(); track resource.Name) {
+                  <div class="resource-item">
+                    <div class="resource-details">
+                      <span class="resource-name">{{ resource.Name_Localised || resource.Name }}</span>
+                      <div class="resource-progress">
+                        <mat-progress-bar mode="determinate" [value]="(resource.ProvidedAmount / resource.RequiredAmount) * 100"></mat-progress-bar>
+                        <span class="resource-count">{{ resource.ProvidedAmount }}/{{ resource.RequiredAmount }}</span>
                       </div>
                     </div>
-                  }
-                </div>
-              </div>
-            }
-          </div>
-        </mat-expansion-panel>
-      }
-
-      @if (getCargoCapacity() > 0) {
-        <mat-expansion-panel>
-          <mat-expansion-panel-header>
-            <mat-panel-title>Cargo Hold</mat-panel-title>
-          </mat-expansion-panel-header>
-          <div class="cargo-container">
-            <div class="cargo-summary">
-              <div class="cargo-info">
-                <span class="cargo-amount">{{ getCargoAmount() }}/{{ getCargoCapacity() }}</span>
-                <mat-progress-bar mode="determinate" [value]="getCargoPercentage()" class="cargo-progress"></mat-progress-bar>
-              </div>
-            </div>
-
-            <div class="cargo-manifest">
-              <h4>Cargo Manifest</h4>
-              <div class="cargo-list">
-                @for (item of getCargoItems(); track item.Name) {
-                  <div class="cargo-item">
-                    <span class="cargo-item-name">{{ item.Name_Localised || item.Name }}{{ item.Stolen ? ' (Stolen)' : '' }}</span>
-                    <span class="cargo-item-count">x{{ item.Count }}</span>
                   </div>
                 }
-                @if (!hasCargoItems()) {
-                  <div class="empty-state">Cargo hold empty</div>
-                }
               </div>
             </div>
-          </div>
-        </mat-expansion-panel>
-      }
+          }
+        </div>
+      </section>
+    }
 
-      @if (hasFleetCarriers()) {
-        <mat-expansion-panel>
-          <mat-expansion-panel-header>
-            <mat-panel-title>Fleet Carriers</mat-panel-title>
-          </mat-expansion-panel-header>
-          <div class="carrier-list">
-            @for (carrier of getFleetCarriers(); track carrier.CarrierID) {
-              <app-fleet-carrier-card
-                [carrier]="carrier"
-                [collapsed]="carrierSectionsCollapsed[carrier.CarrierID]"
-                (toggle)="toggleCarrierSection($event)">
-              </app-fleet-carrier-card>
-            }
+    @if (activeStorageSubtab === "cargo" && getCargoCapacity() > 0) {
+      <section class="storage-panel" aria-label="Cargo hold">
+        <div class="storage-panel-header">
+          <h3>Cargo Hold</h3>
+        </div>
+        <div class="cargo-container">
+          <div class="cargo-summary">
+            <div class="cargo-info">
+              <span class="cargo-amount">{{ getCargoAmount() }}/{{ getCargoCapacity() }}</span>
+              <mat-progress-bar mode="determinate" [value]="getCargoPercentage()" class="cargo-progress"></mat-progress-bar>
+            </div>
           </div>
-        </mat-expansion-panel>
-      }
 
-      <mat-expansion-panel>
-        <mat-expansion-panel-header>
-          <mat-panel-title>Materials</mat-panel-title>
-        </mat-expansion-panel-header>
+          <div class="cargo-manifest">
+            <h4>Cargo Manifest</h4>
+            <div class="cargo-list">
+              @for (item of getCargoItems(); track item.Name) {
+                <div class="cargo-item">
+                  <span class="cargo-item-name">{{ item.Name_Localised || item.Name }}{{ item.Stolen ? ' (Stolen)' : '' }}</span>
+                  <span class="cargo-item-count">x{{ item.Count }}</span>
+                </div>
+              }
+              @if (!hasCargoItems()) {
+                <div class="empty-state">Cargo hold empty</div>
+              }
+            </div>
+          </div>
+        </div>
+      </section>
+    }
+
+    @if (activeStorageSubtab === "carriers" && hasFleetCarriers()) {
+      <section class="storage-panel" aria-label="Fleet carriers">
+        <div class="storage-panel-header">
+          <h3>Fleet Carriers</h3>
+        </div>
+        <div class="carrier-list">
+          @for (carrier of getFleetCarriers(); track carrier.CarrierID) {
+            <app-fleet-carrier-card
+              [carrier]="carrier"
+              [collapsed]="carrierSectionsCollapsed[carrier.CarrierID]"
+              (toggle)="toggleCarrierSection($event)">
+            </app-fleet-carrier-card>
+          }
+        </div>
+      </section>
+    }
+
+    @if (activeStorageSubtab === "materials") {
+      <section class="storage-panel" aria-label="Materials">
+        <div class="storage-panel-header">
+          <h3>Materials</h3>
+        </div>
         <app-materials-panel></app-materials-panel>
-      </mat-expansion-panel>
+      </section>
+    }
 
-      <mat-expansion-panel>
-        <mat-expansion-panel-header>
-          <mat-panel-title>Ship Locker</mat-panel-title>
-        </mat-expansion-panel-header>
+    @if (activeStorageSubtab === "locker") {
+      <section class="storage-panel" aria-label="Ship locker">
+        <div class="storage-panel-header">
+          <h3>Ship Locker</h3>
+        </div>
         <div class="locker-container">
           <mat-tab-group>
             <mat-tab label="Items">
@@ -175,38 +183,46 @@
             </mat-tab>
           </mat-tab-group>
         </div>
-      </mat-expansion-panel>
+      </section>
+    }
 
-      <mat-expansion-panel>
-        <mat-expansion-panel-header>
-          <mat-panel-title>Engineers</mat-panel-title>
-        </mat-expansion-panel-header>
+    @if (activeStorageSubtab === "engineers") {
+      <section class="storage-panel" aria-label="Engineers">
+        <div class="storage-panel-header">
+          <h3>Engineers</h3>
+        </div>
         <app-engineers-panel></app-engineers-panel>
-      </mat-expansion-panel>
+      </section>
+    }
 
-      <mat-expansion-panel>
-        <mat-expansion-panel-header>
-          <mat-panel-title>Blueprints</mat-panel-title>
-        </mat-expansion-panel-header>
+    @if (activeStorageSubtab === "blueprints") {
+      <section class="storage-panel" aria-label="Blueprints">
+        <div class="storage-panel-header">
+          <h3>Blueprints</h3>
+        </div>
         <app-engineering-blueprints></app-engineering-blueprints>
-      </mat-expansion-panel>
+      </section>
+    }
 
-      <mat-expansion-panel>
-        <mat-expansion-panel-header>
-          <mat-panel-title>Stored Modules</mat-panel-title>
-        </mat-expansion-panel-header>
+    @if (activeStorageSubtab === "modules") {
+      <section class="storage-panel" aria-label="Stored modules">
+        <div class="storage-panel-header">
+          <h3>Stored Modules</h3>
+        </div>
         <app-stored-modules></app-stored-modules>
-      </mat-expansion-panel>
+      </section>
+    }
 
-      <mat-expansion-panel>
-        <mat-expansion-panel-header>
-          <mat-panel-title>Stored Ships</mat-panel-title>
-          @if (storedShips?.StationName || storedShips?.StarSystem) {
-            <mat-panel-description>
-              Recorded at {{ storedShips?.StationName || 'Unknown Station' }}, {{ storedShips?.StarSystem || 'Unknown System' }}
-            </mat-panel-description>
-          }
-        </mat-expansion-panel-header>
+    @if (activeStorageSubtab === "ships") {
+      <section class="storage-panel" aria-label="Stored ships">
+        <div class="storage-panel-header">
+          <div>
+            <h3>Stored Ships</h3>
+            @if (storedShips?.StationName || storedShips?.StarSystem) {
+              <p>Recorded at {{ storedShips?.StationName || 'Unknown Station' }}, {{ storedShips?.StarSystem || 'Unknown System' }}</p>
+            }
+          </div>
+        </div>
         <mat-tab-group>
           <mat-tab label="Ships Here">
             @if (getShipsHere().length > 0) {
@@ -266,7 +282,7 @@
             }
           </mat-tab>
         </mat-tab-group>
-      </mat-expansion-panel>
-    </mat-accordion>
+      </section>
+    }
   </div>
 </div>

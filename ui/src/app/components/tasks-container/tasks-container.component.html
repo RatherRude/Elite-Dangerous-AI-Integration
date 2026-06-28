@@ -1,10 +1,16 @@
 <div class="tasks-container">
+  <app-tasks-subtab-rail
+    [subtabs]="getTasksSubtabs()"
+    [activeSubtab]="activeTasksSubtab"
+    (activeSubtabChange)="setActiveTasksSubtab($event)"
+  ></app-tasks-subtab-rail>
+
   <div class="tasks-content">
-    <mat-accordion multi>
-      <mat-expansion-panel>
-        <mat-expansion-panel-header>
-          <mat-panel-title>Missions</mat-panel-title>
-        </mat-expansion-panel-header>
+    @if (activeTasksSubtab === "missions") {
+      <section class="tasks-panel" aria-label="Missions">
+        <div class="tasks-panel-header">
+          <h3>Missions</h3>
+        </div>
         @if (getActiveMissions().length > 0) {
           <div class="missions-list">
             @for (mission of getActiveMissions(); track mission.MissionID) {
@@ -43,48 +49,50 @@
             No active missions.
           </div>
         }
-      </mat-expansion-panel>
+      </section>
+    }
 
-      @if (getActiveQuests().length > 0 || questsError) {
-        <mat-expansion-panel>
-          <mat-expansion-panel-header>
-            <mat-panel-title>Quests</mat-panel-title>
-          </mat-expansion-panel-header>
-          @if (questsError) {
-            <div class="no-data-message">
-              <mat-icon>warning</mat-icon>
-              {{ questsError }}
-            </div>
-          } @else {
-            <div class="quests-list">
-              @for (quest of getActiveQuests(); track quest.id) {
-                <div class="quest-item">
-                  <div class="quest-header">
-                    <div class="quest-title">{{ quest.title || quest.id }}</div>
-                    <div class="quest-stage">{{ quest.stage_title || quest.stage_id }}</div>
-                  </div>
-                  <div class="quest-details">
-                    @if (quest.description) {
-                      <div class="quest-description">{{ quest.description }}</div>
-                    }
-                    @if (quest.instructions) {
-                      <div class="quest-instructions">
-                        <mat-icon>flag</mat-icon>
-                        {{ quest.instructions }}
-                      </div>
-                    }
-                  </div>
+    @if (activeTasksSubtab === "quests" && (getActiveQuests().length > 0 || questsError)) {
+      <section class="tasks-panel" aria-label="Quests">
+        <div class="tasks-panel-header">
+          <h3>Quests</h3>
+        </div>
+        @if (questsError) {
+          <div class="no-data-message">
+            <mat-icon>warning</mat-icon>
+            {{ questsError }}
+          </div>
+        } @else {
+          <div class="quests-list">
+            @for (quest of getActiveQuests(); track quest.id) {
+              <div class="quest-item">
+                <div class="quest-header">
+                  <div class="quest-title">{{ quest.title || quest.id }}</div>
+                  <div class="quest-stage">{{ quest.stage_title || quest.stage_id }}</div>
                 </div>
-              }
-            </div>
-          }
-        </mat-expansion-panel>
-      }
+                <div class="quest-details">
+                  @if (quest.description) {
+                    <div class="quest-description">{{ quest.description }}</div>
+                  }
+                  @if (quest.instructions) {
+                    <div class="quest-instructions">
+                      <mat-icon>flag</mat-icon>
+                      {{ quest.instructions }}
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </section>
+    }
 
-      <mat-expansion-panel>
-        <mat-expansion-panel-header>
-          <mat-panel-title>Community Goals</mat-panel-title>
-        </mat-expansion-panel-header>
+    @if (activeTasksSubtab === "community-goals") {
+      <section class="tasks-panel" aria-label="Community goals">
+        <div class="tasks-panel-header">
+          <h3>Community Goals</h3>
+        </div>
         @if (getCurrentGoals().length > 0) {
           <div class="cg-list">
             @for (goal of getCurrentGoals(); track goal.CGID) {
@@ -115,7 +123,7 @@
             No community goals available.
           </div>
         }
-      </mat-expansion-panel>
-    </mat-accordion>
+      </section>
+    }
   </div>
 </div>

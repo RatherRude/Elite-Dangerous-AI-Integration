@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
-import { MatExpansionModule } from "@angular/material/expansion";
+import { TasksSubtab, TasksSubtabId, TasksSubtabRailComponent } from "../tasks-subtab-rail/tasks-subtab-rail.component";
 import { ProjectionsService } from "../../services/projections.service";
 import { Subscription } from "rxjs";
 import { EventMessage, EventService, QuestEvent } from "../../services/event.service";
@@ -11,7 +11,7 @@ import { GetQuestsMessage, QuestsMessage, TauriService } from "../../services/ta
 @Component({
   selector: "app-tasks-container",
   standalone: true,
-  imports: [CommonModule, MatIconModule, MatButtonModule, MatExpansionModule],
+  imports: [CommonModule, MatIconModule, MatButtonModule, TasksSubtabRailComponent],
   templateUrl: "./tasks-container.component.html",
   styleUrl: "./tasks-container.component.css",
 })
@@ -21,6 +21,7 @@ export class TasksContainerComponent implements OnInit, OnDestroy {
   communityGoal: any = null;
   quests: any[] = [];
   questsError: string | null = null;
+  activeTasksSubtab: TasksSubtabId = "missions";
 
   private subscriptions: Subscription[] = [];
   private lastEventIndex = -1;
@@ -65,6 +66,24 @@ export class TasksContainerComponent implements OnInit, OnDestroy {
     return Array.isArray(this.quests) ? this.quests : [];
   }
 
+  setActiveTasksSubtab(subtab: TasksSubtabId): void {
+    this.activeTasksSubtab = subtab;
+  }
+
+  getTasksSubtabs(): TasksSubtab[] {
+    const subtabs: TasksSubtab[] = [
+      { id: "missions", icon: "assignment", label: "Missions" },
+    ];
+
+    if (this.getActiveQuests().length > 0 || this.questsError) {
+      subtabs.push({ id: "quests", icon: "flag", label: "Quests" });
+    }
+
+    subtabs.push({ id: "community-goals", icon: "emoji_events", label: "Community Goals" });
+
+    return subtabs;
+  }
+
   private handleBackendMessage(message: any): void {
     const typed = message as QuestsMessage;
     if (typed.type !== "quests") {
@@ -73,10 +92,12 @@ export class TasksContainerComponent implements OnInit, OnDestroy {
     if ((typed.data as any)?.error) {
       this.questsError = (typed.data as any).error;
       this.quests = [];
+      this.ensureValidTasksSubtab();
       return;
     }
     this.questsError = null;
     this.quests = (typed.data as any)?.quests ?? [];
+    this.ensureValidTasksSubtab();
   }
 
   private handleGameEvents(events: EventMessage[]): void {
@@ -132,6 +153,12 @@ export class TasksContainerComponent implements OnInit, OnDestroy {
     if (days > 0) return `${days}d ${hours}h`;
     if (hours > 0) return `${hours}h ${minutes}m`;
     return `${minutes}m`;
+  }
+
+  private ensureValidTasksSubtab(): void {
+    if (!this.getTasksSubtabs().some(tab => tab.id === this.activeTasksSubtab)) {
+      this.activeTasksSubtab = "missions";
+    }
   }
 }
 

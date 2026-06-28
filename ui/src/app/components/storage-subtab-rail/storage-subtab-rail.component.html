@@ -1,0 +1,15 @@
+<nav class="storage-subtab-rail" aria-label="Storage sections">
+  @for (subtab of subtabs; track subtab.id) {
+    <button
+      type="button"
+      class="storage-subtab"
+      [class.active]="activeSubtab === subtab.id"
+      [attr.aria-pressed]="activeSubtab === subtab.id"
+      [attr.aria-label]="subtab.label"
+      (click)="setActiveSubtab(subtab.id)"
+    >
+      <mat-icon>{{ subtab.icon }}</mat-icon>
+      <span>{{ subtab.label }}</span>
+    </button>
+  }
+</nav>
