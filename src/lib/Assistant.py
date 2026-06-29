@@ -796,8 +796,13 @@ class Assistant:
             action_input_desc = self.action_manager.getActionDesc(action, projected_states)
             action_descriptions.append(action_input_desc)
             if action_input_desc:
+                spoken_action_desc = (
+                    "Searching"
+                    if self.config.get("mute_search", False) and action.function.name == "web_search_agent"
+                    else action_input_desc
+                )
                 self.tts.say(
-                    action_input_desc,
+                    spoken_action_desc,
                     context="assistant_acting",
                     postprocessing_layers=self._get_tts_postprocessing_layers(projected_states),
                 )
@@ -1067,6 +1072,7 @@ class Assistant:
 
         method = action_descriptor.get('method')
         args = {'query': query}
+        spoken_search_text = "Searching" if self.config.get("mute_search", False) else f"Searching: {query}"
         request = [{
             "id": f"call_{int(datetime.now().timestamp())}",
             "type": "function",
@@ -1076,7 +1082,7 @@ class Assistant:
             }
         }]
         self.tts.say(
-            f"Searching: {query}",
+            spoken_search_text,
             context="web_search",
             postprocessing_layers=self._get_tts_postprocessing_layers(projected_states),
         )

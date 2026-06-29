@@ -1259,7 +1259,6 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
                       weapon_types_list: list | None = None,
                       agent_llm_model: LLMModel | None = None,
                       agent_llm_max_tries: int = 7,
-                      mute_search: bool = False,
                       hud_color_matrix: HudColorMatrix | None = None,
                       in_system_navigation_flag: bool = False):
     global event_manager, vision_model, llm_model, vision_model_name, keys, weapon_types, embedding_model, screen_reader_hud_color_matrix, in_system_navigation
@@ -2377,8 +2376,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         actionManager, eventManager,
         promptGenerator, agent_llm_model,
         embedding_model,
-        agent_llm_max_tries,
-        mute_search
+        agent_llm_max_tries
     )
 
     register_ui_actions(
