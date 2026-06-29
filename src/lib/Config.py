@@ -820,6 +820,7 @@ class Config(TypedDict):
     agent_llm_api_key: str
     agent_llm_temperature: float
     agent_llm_max_tries: int
+    mute_search: bool
     vision_provider: Literal['openai', 'google-ai-studio', 'custom', 'none', 'local-ai-server']
     vision_model_name: str
     vision_endpoint: str
@@ -1391,6 +1392,7 @@ def load_config() -> Config:
         'agent_llm_api_key': "",
         'agent_llm_temperature': 1.0,
         'agent_llm_max_tries': 7,
+        'mute_search': False,
         'ptt_key': '',
         'ptt_key_secondary': '',
         'vision_provider': "none",

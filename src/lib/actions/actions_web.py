@@ -2678,7 +2678,8 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
                         promptGenerator: PromptGenerator,
                          llmModel: LLMModel | None,
                          embeddingModel: EmbeddingModel | None,
-                         agentMaxTries: int = 7):
+                         agentMaxTries: int = 7,
+                         mute_search: bool = False):
     global event_manager, llm_model, embedding_model, prompt_generator, agent_max_tries
     event_manager = eventManager
     prompt_generator = promptGenerator
@@ -2701,7 +2702,7 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
         },
         web_search,
         'web',
-        input_template=lambda i, s: f"Searching: {i.get('query', '')}",
+        input_template=lambda i, s: "Searching" if mute_search else f"Searching: {i.get('query', '')}",
     )
 
     # Retrieve memories via semantic search
