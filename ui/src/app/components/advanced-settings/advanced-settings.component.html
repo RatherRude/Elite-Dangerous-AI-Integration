@@ -310,12 +310,6 @@
                    [(ngModel)]="config.agent_llm_max_tries"
                    (ngModelChange)="onConfigChange({agent_llm_max_tries: $event})">
         </mat-form-field>
-        <label>
-            <mat-slide-toggle [(ngModel)]="config.mute_search"
-                              (ngModelChange)="onConfigChange({mute_search: $event})">
-                Don't read out search parameters
-            </mat-slide-toggle>
-        </label>
         @if (config.agent_llm_provider === "openai")
         {
             <mat-form-field>
@@ -498,6 +492,12 @@
                 }
             }
         }
+        <label>
+            <mat-slide-toggle [(ngModel)]="config.mute_search"
+                              (ngModelChange)="onConfigChange({mute_search: $event})">
+                Don't read out search parameters
+            </mat-slide-toggle>
+        </label><br />
         <label>
             <mat-slide-toggle [(ngModel)]="config.overlay_show_hud"
                               (ngModelChange)="onConfigChange({overlay_show_hud: $event})">
