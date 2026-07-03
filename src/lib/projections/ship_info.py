@@ -152,10 +152,10 @@ class ShipInfo(Projection[ShipInfoStateModel]):
                 fighter_count = 0
                 for module in modules:
                     module_item = module.get("Item", "")
-                    if module_item == "int_fighterbay_size5_class1":
+                    if module_item in ["int_fighterbay_size5_class1", "int_fighterbaymk2_size5_class1", "int_fighterbaymk2_size5_class1_free", ]:
                         fighter_count = 1
                         break
-                    elif module_item in ["int_fighterbay_size6_class1", "int_fighterbay_size7_class1"]:
+                    elif module_item in ["int_fighterbay_size6_class1", "int_fighterbaymk2_size6_class1", "int_fighterbaymk2_size6_class1_free", "int_fighterbay_size7_class1", "int_fighterbaymk2_size7_class1", "int_fighterbaymk2_size7_class1_free"]:
                         fighter_count = 2
                         break
 
