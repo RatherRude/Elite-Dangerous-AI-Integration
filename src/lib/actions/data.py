@@ -658,6 +658,7 @@ known_modules = [
     "Enzyme Missile Rack",
     "Experimental Weapon Stabiliser",
     "Fighter Hangar",
+    "Mk II Vessel Hangar",
     "First Class Passenger Cabin",
     "Fragment Cannon",
     "Frame Shift Drive",
