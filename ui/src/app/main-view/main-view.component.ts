@@ -254,11 +254,11 @@ export class MainViewComponent implements OnInit, OnDestroy {
         if (currentStatusData.flags2?.OnFoot) {
             return "Suit";
         }
+        if (currentStatusData.flags?.InFighter || (currentStatusData.flags?.InSRV && !currentStatusData.flags?.Landed)) {
+            return "SLF";
+        }
         if (currentStatusData.flags?.InSRV) {
             return "SRV";
-        }
-        if (currentStatusData.flags?.InFighter) {
-            return "SLF";
         }
 
         return "Ship";
@@ -272,11 +272,11 @@ export class MainViewComponent implements OnInit, OnDestroy {
         if (currentStatusData.flags2?.OnFoot) {
             return "directions_walk";
         }
+        if (currentStatusData.flags?.InFighter || (currentStatusData.flags?.InSRV && !currentStatusData.flags?.Landed)) {
+            return "flight";
+        }
         if (currentStatusData.flags?.InSRV) {
             return "directions_car";
-        }
-        if (currentStatusData.flags?.InFighter) {
-            return "flight";
         }
 
         return "rocket_launch";
