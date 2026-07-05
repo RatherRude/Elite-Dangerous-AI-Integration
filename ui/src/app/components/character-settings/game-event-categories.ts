@@ -28,7 +28,7 @@ export const GameEventCategories: Record<string, string[]> = {
         "CapShipBond",
         "Interdiction",
         "Interdicted",
-        "BeingInterdicted",
+        //"BeingInterdicted",
         "EscapeInterdiction",
         "FactionKillBond",
         "FighterDestroyed",
