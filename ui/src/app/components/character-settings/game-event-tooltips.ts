@@ -28,7 +28,7 @@ export const GameEventTooltips: Record<string, string> = {
   "CapShipBond": "Occurs when you earn a combat bond for helping defeat a capital ship, including factions and rewards.",
   "Interdiction": "Occurs when you attempt to interdict a target in supercruise, including the result and target details.",
   "Interdicted": "Occurs when you are interdicted by another ship, including the source and outcome of the attempt.",
-  "BeingInterdicted": "Occurs when your ship is undergoing an interdiction attempt.",
+  //"BeingInterdicted": "Occurs when your ship is undergoing an interdiction attempt.",
   "EscapeInterdiction": "Occurs when you successfully evade an interdiction.",
   "FactionKillBond": "Occurs when you earn a combat bond for assisting in a faction conflict.",
   "FighterDestroyed": "Occurs when one of your deployed fighters is destroyed.",
