@@ -2400,8 +2400,8 @@ class PromptGenerator:
             return 'Warning: High gravity environment detected, gravity exceeds 2G'
         if event_name == 'FsdCharging':
             return 'Frame Shift Drive charging, preparing for jump'
-        if event_name == "BeingInterdicted":
-            return f"{self.commander_name} is being pulled out of supercruise."
+        #if event_name == "BeingInterdicted":
+        #    return f"{self.commander_name} is being pulled out of supercruise."
         if event_name == 'SrvHandbrakeOff':
             return 'SRV handbrake released, free to move'
         if event_name == 'SrvHandbrakeOn':
