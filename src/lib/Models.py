@@ -899,6 +899,93 @@ class EdgeTTSModel(TTSModel):
         for i in pcm_stream:
             yield i.tobytes()
 
+class Player2TTSModel(TTSModel):
+    def __init__(self, api_key: str, voice_id: str | None = None, speed: float = 1.0, provider_name: str | None = None):
+        super().__init__("player2-tts", provider_name=provider_name)
+        self.api_key = api_key
+        self.voice_id = voice_id
+        self.speed = max(0.25, min(4.0, speed))
+        self.prebuffer_size = 4
+
+    def synthesize(self, text: str, voice: str) -> Iterable[bytes]:
+        import requests
+
+        # Use voice as a Player2 voice_id if provided, otherwise fall back to gender/language defaults
+        voice_ids = [voice] if voice and not voice.startswith("default") else None
+
+        payload = {
+            "text": text,
+            "speed": self.speed,
+            "audio_format": "mp3",
+        }
+        if voice_ids:
+            payload["voice_ids"] = voice_ids
+
+        try:
+            response = requests.post(
+                "https://api.player2.game/v1/tts/stream",
+                json=payload,
+                headers={"Authorization": f"Bearer {self.api_key}"},
+                stream=True,
+                timeout=30,
+            )
+            response.raise_for_status()
+
+            # Stream MP3 chunks and convert to PCM via miniaudio
+            def mp3_chunk_generator():
+                for chunk in response.iter_content(chunk_size=4096):
+                    if chunk:
+                        yield {"type": "audio", "data": chunk}
+
+            pcm_stream = miniaudio.stream_any(
+                source=Mp3Stream(mp3_chunk_generator(), self.prebuffer_size),
+                source_format=miniaudio.FileFormat.MP3,
+                output_format=miniaudio.SampleFormat.SIGNED16,
+                nchannels=1,
+                sample_rate=24000,
+                frames_to_read=1024 // 2,
+            )
+            for frame in pcm_stream:
+                yield frame.tobytes()
+
+        except Exception as e:
+            raise LLMError(f"Player2 TTS error: {str(e)}", e)
+
+
+class Player2STTModel(STTModel):
+    def __init__(self, api_key: str, language: str = "en-US", provider_name: str | None = None):
+        super().__init__("player2-stt", provider_name=provider_name)
+        self.api_key = api_key
+        self.language = language or "en-US"
+
+    def transcribe(self, audio: sr.AudioData) -> str:
+        import requests
+
+        # Send raw PCM (linear16) directly — avoids WAV conversion issues
+        # and linear16 is natively supported by Player2 STT
+        audio_raw = audio.get_raw_data(convert_rate=16000, convert_width=2)
+
+        try:
+            response = requests.post(
+                "https://api.player2.game/v1/stt/audio",
+                params={
+                    "encoding": "linear16",
+                    "sample_rate": "16000",
+                    "language": self.language,
+                },
+                data=audio_raw,
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/octet-stream",
+                },
+                timeout=30,
+            )
+            response.raise_for_status()
+            return response.json().get("transcript", "")
+
+        except Exception as e:
+            raise LLMError(f"Player2 STT error: {str(e)}", e)
+
 def create_llm_model(provider: str, config: dict, prefix: str = "llm") -> LLMModel:
     base_url = str(config.get(f"{prefix}_endpoint", ""))
     api_key = str(config.get("api_key") if config.get(f"{prefix}_api_key", "") == "" else config.get(f"{prefix}_api_key"))
@@ -917,6 +1004,10 @@ def create_llm_model(provider: str, config: dict, prefix: str = "llm") -> LLMMod
     elif provider == "openrouter":
         if not base_url:
             base_url = "https://openrouter.ai/api/v1"
+
+    elif provider == "player2":
+        if not base_url:
+            base_url = "https://api.player2.game/v1"        
             
     extra_body = {}
     extra_headers = {}
@@ -958,6 +1049,10 @@ def create_embedding_model(provider: str, config: dict, prefix: str = "embedding
     elif provider == "openrouter":
         if not base_url:
             base_url = "https://openrouter.ai/api/v1"
+
+    elif provider == "player2":
+        if not base_url:
+            base_url = "https://api.player2.game/v1"        
           
 
     return OpenAIEmbeddingModel(
@@ -998,6 +1093,11 @@ def create_stt_model(provider: str, config: dict, prefix: str = "stt") -> STTMod
             prompt,
             provider_name=provider,
         )
+
+    elif provider == "player2":
+        api_key = str(config.get("stt_api_key") if config.get("stt_api_key") else config.get("llm_api_key", ""))
+        language = config.get(f"{prefix}_language", "en-US")
+        return Player2STTModel(api_key=api_key, language=language, provider_name=provider)    
     
     return None
 
@@ -1025,5 +1125,10 @@ def create_tts_model(provider: str, config: dict, prefix: str = "tts") -> TTSMod
 
     elif provider == "edge-tts":
         return EdgeTTSModel(model_name, speed, provider_name=provider)
+
+    elif provider == "player2":
+        api_key = str(config.get("tts_api_key") if config.get("tts_api_key") else config.get("llm_api_key", ""))
+        speed = float(config.get(f"{prefix}_speed", 1.0))
+        return Player2TTSModel(api_key=api_key, speed=speed, provider_name=provider)    
     
     return None

@@ -126,6 +126,18 @@ export class AdvancedSettingsComponent implements OnDestroy {
     pluginTTSProviders: ModelProviderDefinition[] = [];
     pluginEmbeddingProviders: ModelProviderDefinition[] = [];
 
+    //Player2
+    player2ClientId = '019f1e5c-109c-78c1-828c-f4d8f6253572'; // Replace with your Game Client ID from the Player2 Developer Dashboard
+    player2VerificationUri = '';
+    player2UserCode = '';
+    player2AuthState: { llm: 'idle' | 'pending' | 'error', agent_llm: 'idle' | 'pending' | 'error' } = {
+        llm: 'idle',
+        agent_llm: 'idle'
+    };
+    private player2PollInterval: any = null;
+    player2Voices: { id: string, name: string }[] = [];
+    player2VoicesLoading = false;
+
     constructor(
         private configService: ConfigService,
         private characterService: CharacterService,
@@ -139,6 +151,11 @@ export class AdvancedSettingsComponent implements OnDestroy {
             (config) => {
                 this.config = config;
                 this.assigningPTTIndex = null;
+
+                // Load Player2 voices automatically when the provider is selected and the key is available
+                if (config?.tts_provider === 'player2' && this.player2Voices.length === 0) {
+                    void this.loadPlayer2Voices();
+                }
             },
         );
         this.systemSubscription = this.configService.system$.subscribe(
@@ -183,6 +200,7 @@ export class AdvancedSettingsComponent implements OnDestroy {
         if (this.screensSubscription) {
             this.screensSubscription.unsubscribe();
         }
+        clearInterval(this.player2PollInterval);
     }
 
     public focusSetting(target: AdvancedSettingsFocusTarget): void {
@@ -629,5 +647,143 @@ export class AdvancedSettingsComponent implements OnDestroy {
                 });
             }
         });
+    }
+
+    //Player2 Authentication Methods
+    async startPlayer2Auth(target: 'llm' | 'agent_llm'): Promise<void> {
+        this.player2AuthState[target] = 'pending';
+
+        // Path 1: Try the local Player2 app first (instant, no user interaction needed)
+        try {
+            const localResponse = await fetch(
+                `http://localhost:4315/v1/login/web/${this.player2ClientId}`,
+                { method: 'POST' }
+            );
+            if (localResponse.ok) {
+                const data = await localResponse.json();
+                if (data.p2Key) {
+                    this.player2AuthState[target] = 'idle';
+                    const update: Partial<Config> = target === 'llm'
+                        ? { llm_api_key: data.p2Key }
+                        : { agent_llm_api_key: data.p2Key };
+
+                    // If connecting the main LLM, also auto-configure STT and TTS to Player2
+                    if (target === 'llm') {
+                    update.stt_provider = 'player2';
+                    update.tts_provider = 'player2';
+                    update.stt_api_key = data.p2Key;
+                    update.tts_api_key = data.p2Key;
+                    update.vision_provider = 'player2';
+                    update.vision_api_key = data.p2Key;
+                    update.vision_var = true;
+                    update.embedding_provider = 'player2';
+                    update.embedding_api_key = data.p2Key;
+                }
+
+                    await this.onConfigChange(update);
+                    this.snackBar.open('Player2 connected! STT and TTS configured automatically.', 'OK', { duration: 3000 });
+                    return;
+                }
+            }
+        } catch {
+            // Local Player2 app is not running, fall through to Device Code flow
+        }
+
+        // Path 2: OAuth Device Code flow — opens the browser automatically,
+        // polls in the background until the user approves. No copy-pasting required.
+        try {
+            const response = await fetch('https://api.player2.game/v1/login/device/new', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ client_id: this.player2ClientId })
+            });
+            const data = await response.json();
+
+            this.player2VerificationUri = data.verificationUriComplete || data.verificationUri;
+            this.player2UserCode = data.userCode;
+
+            // Open the authorization page in the user's default browser
+            window.open(this.player2VerificationUri, '_blank');
+
+            // Poll for the API key at the interval specified by the server
+            this.player2PollInterval = setInterval(async () => {
+                await this.pollPlayer2Token(target, data.deviceCode, data.interval);
+            }, (data.interval || 5) * 1000);
+
+        } catch (error) {
+            console.error('Player2 auth error:', error);
+            this.player2AuthState[target] = 'error';
+        }
+    }
+
+    //Player2 Voices Loading
+    async loadPlayer2Voices(): Promise<void> {
+        if (!this.config?.llm_api_key) return;
+        this.player2VoicesLoading = true;
+        try {
+            const response = await fetch('https://api.player2.game/v1/tts/voices', {
+                headers: { 'Authorization': `Bearer ${this.config.llm_api_key}` }
+            });
+            const data = await response.json();
+            this.player2Voices = (data.voices || []).map((v: any) => ({
+                id: v.id,
+                name: `${v.name} (${v.language} / ${v.gender})`
+            }));
+        } catch (error) {
+            console.error('Failed to load Player2 voices:', error);
+        } finally {
+            this.player2VoicesLoading = false;
+        }
+    }
+
+    private async pollPlayer2Token(target: 'llm' | 'agent_llm', deviceCode: string, interval: number): Promise<void> {
+        try {
+            const response = await fetch('https://api.player2.game/v1/login/device/token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    client_id: this.player2ClientId,
+                    device_code: deviceCode,
+                    grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
+                })
+            });
+
+            if (response.status === 200) {
+                const data = await response.json();
+                if (data.p2Key) {
+                    clearInterval(this.player2PollInterval);
+                    this.player2AuthState[target] = 'idle';
+                    this.player2VerificationUri = '';
+                    this.player2UserCode = '';
+
+                    const update: Partial<Config> = target === 'llm'
+                        ? { llm_api_key: data.p2Key }
+                        : { agent_llm_api_key: data.p2Key };
+
+                    // If connecting the main LLM, also auto-configure STT and TTS to Player2
+                    if (target === 'llm') {
+                        update.stt_provider = 'player2';
+                        update.tts_provider = 'player2';
+                        update.stt_api_key = data.p2Key;
+                        update.tts_api_key = data.p2Key;
+                    }
+
+                    await this.onConfigChange(update);
+                    this.snackBar.open('Player2 connected! STT and TTS configured automatically.', 'OK', { duration: 4000 });
+                }
+            }
+            // If 4xx/5xx just keep polling (authorization_pending)
+        } catch (error) {
+            console.error('Player2 poll error:', error);
+        }
+    }
+
+    disconnectPlayer2(target: 'llm' | 'agent_llm'): void {
+        clearInterval(this.player2PollInterval);
+        this.player2AuthState[target] = 'idle';
+        const update = target === 'llm'
+            ? { llm_api_key: '' }
+            : { agent_llm_api_key: '' };
+        this.onConfigChange(update);
     }
 }

@@ -235,7 +235,14 @@ export class GeneralSettingsComponent implements OnDestroy {
     }
 
     get commanderReady(): boolean {
-        return !!this.config?.commander_name?.trim() && !!this.config?.api_key?.trim();
+        if (!this.config?.commander_name?.trim()) return false;
+        
+        // Player2 uses OAuth — the p2Key is stored in llm_api_key, not api_key
+        if (this.config.llm_provider === 'player2') {
+            return !!this.config.llm_api_key?.trim();
+        }
+        
+        return !!this.config.api_key?.trim();
     }
 
     get soundInputReady(): boolean {
@@ -376,6 +383,8 @@ export class GeneralSettingsComponent implements OnDestroy {
                 return "Custom Multi-Modal";
             case "none":
                 return "None";
+            case "player2":
+                return "Player2";    
             default:
                 return provider;
         }

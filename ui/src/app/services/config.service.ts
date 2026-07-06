@@ -87,7 +87,8 @@ export interface Config {
         | "openrouter"
         | "google-ai-studio"
         | "custom"
-        | "local-ai-server";
+        | "local-ai-server"
+        | "player2";
     llm_model_name: string;
     llm_reasoning_effort: 'default' | 'none' | 'minimal' | 'low' | 'medium' | 'high' | null;
     llm_api_key: string;
@@ -98,7 +99,8 @@ export interface Config {
         | "openrouter"
         | "google-ai-studio"
         | "custom"
-        | "local-ai-server";
+        | "local-ai-server"
+        | "player2";
     agent_llm_model_name: string;
     agent_llm_reasoning_effort: 'default' | 'none' | 'minimal' | 'low' | 'medium' | 'high' | null;
     agent_llm_api_key: string;
@@ -106,7 +108,7 @@ export interface Config {
     agent_llm_temperature: number;
     agent_llm_max_tries: number;
     mute_search: boolean;
-    vision_provider: "openai" | "google-ai-studio" | "custom" | "none" | "local-ai-server";
+    vision_provider: "openai" | "google-ai-studio" | "custom" | "none" | "local-ai-server" | "player2";
     vision_model_name: string;
     vision_endpoint: string;
     vision_api_key: string;
@@ -117,6 +119,7 @@ export interface Config {
         | "google-ai-studio"
         | "none"
         | "local-ai-server"
+        | "player2"
         | string;
     stt_model_name: string;
     stt_api_key: string;
@@ -124,12 +127,12 @@ export interface Config {
     stt_language: string;
     stt_custom_prompt: string;
     stt_required_word: string;
-    tts_provider: "openai" | "edge-tts" | "custom" | "none" | "local-ai-server" | string;
+    tts_provider: "openai" | "edge-tts" | "custom" | "none" | "local-ai-server" | "player2" | string;
     tts_model_name: string;
     tts_api_key: string;
     tts_endpoint: string;
     // Embedding settings
-    embedding_provider: "openai" | "google-ai-studio" | "custom" | "none" | "local-ai-server" | string;
+    embedding_provider: "openai" | "google-ai-studio" | "custom" | "none" | "local-ai-server" | "player2" | string;
     embedding_model_name: string;
     embedding_api_key: string;
     embedding_endpoint: string;

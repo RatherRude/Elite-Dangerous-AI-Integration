@@ -809,11 +809,11 @@ class Config(TypedDict):
     commander_name: str
     characters: List[Character]
     active_character_index: int
-    llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom', 'local-ai-server']
+    llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom', 'local-ai-server', 'player2']
     llm_model_name: str
     llm_reasoning_effort: Literal['default', 'none', 'minimal', 'low', 'medium', 'high'] | None
     llm_temperature: float
-    agent_llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom', 'local-ai-server']
+    agent_llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom', 'local-ai-server', 'player2']
     agent_llm_model_name: str
     agent_llm_reasoning_effort: Literal['default', 'none', 'minimal', 'low', 'medium', 'high'] | None
     agent_llm_endpoint: str
@@ -821,23 +821,23 @@ class Config(TypedDict):
     agent_llm_temperature: float
     agent_llm_max_tries: int
     mute_search: bool
-    vision_provider: Literal['openai', 'google-ai-studio', 'custom', 'none', 'local-ai-server']
+    vision_provider: Literal['openai', 'google-ai-studio', 'custom', 'none', 'local-ai-server', 'player2']
     vision_model_name: str
     vision_endpoint: str
     vision_api_key: str
-    stt_provider: Literal['openai', 'custom', 'custom-multi-modal', 'google-ai-studio', 'none', 'local-ai-server']
+    stt_provider: Literal['openai', 'custom', 'custom-multi-modal', 'google-ai-studio', 'none', 'local-ai-server', 'player2']
     stt_model_name: str
     stt_api_key: str
     stt_endpoint: str
     stt_language: str
     stt_custom_prompt: str
     stt_required_word: str
-    tts_provider: Literal['openai', 'edge-tts', 'custom', 'none', 'local-ai-server']
+    tts_provider: Literal['openai', 'edge-tts', 'custom', 'none', 'local-ai-server', 'player2']
     tts_model_name: str
     tts_api_key: str
     tts_endpoint: str
     # Embedding settings
-    embedding_provider: Literal['openai', 'google-ai-studio', 'custom', 'none', 'local-ai-server']
+    embedding_provider: Literal['openai', 'google-ai-studio', 'custom', 'none', 'local-ai-server', 'player2']
     embedding_model_name: str
     embedding_endpoint: str
     embedding_api_key: str
@@ -1092,6 +1092,12 @@ def migrate(data: dict) -> dict:
                 data["embedding_endpoint"] = "http://127.0.0.1:8080"
                 data["embedding_model_name"] = "text-embedding-3-small"
                 data["embedding_api_key"] = ''
+            elif data["llm_provider"] == "player2":
+                data["llm_endpoint"] = "https://api.player2.game/v1"
+                data["llm_model_name"] = ""
+                data["llm_api_key"] = ""
+                data["tools_var"] = True
+                data["llm_reasoning_effort"] = 'default'    
             else:
                 data['embedding_provider'] = 'none'
         else:
@@ -1631,6 +1637,10 @@ def check_and_upgrade_model(config: Config) -> ModelValidationResult:
     Returns:
         A ModelValidationResult object containing validation results and messages
     """
+    # Player2 uses OAuth — skip standard API key validation entirely
+    if config.get('llm_provider') == 'player2':
+        return {'skipped': True, 'success': True, 'config': None, 'message': None}
+
     # Make a copy of the config to avoid modifying the original
     updated_config = cast(Config, {k: v for k, v in config.items()})
     
@@ -1832,6 +1842,7 @@ def update_config(config: Config, data: dict) -> Config:
         data["output_volume_multiplier"] = max(0.0, min(1.5, v))
     
     # Update provider-specific settings
+    # Update provider-specific settings
     if data.get("llm_provider"):
         if data["llm_provider"] == "openai":
             data["llm_endpoint"] = "https://api.openai.com/v1"
@@ -1868,6 +1879,13 @@ def update_config(config: Config, data: dict) -> Config:
             data["tools_var"] = False
             data["llm_reasoning_effort"] = 'default'
 
+        elif data["llm_provider"] == "player2":
+            data["llm_endpoint"] = "https://api.player2.game/v1"
+            data["llm_model_name"] = ""
+            data["llm_api_key"] = ""
+            data["tools_var"] = True
+            data["llm_reasoning_effort"] = 'default'
+
     if data.get("agent_llm_provider"):
         if data["agent_llm_provider"] == "openai":
             data["agent_llm_endpoint"] = "https://api.openai.com/v1"
@@ -1899,6 +1917,12 @@ def update_config(config: Config, data: dict) -> Config:
             data["agent_llm_api_key"] = ""
             data["agent_llm_reasoning_effort"] = 'default'
 
+        elif data["agent_llm_provider"] == "player2":
+            data["agent_llm_endpoint"] = "https://api.player2.game/v1"
+            data["agent_llm_model_name"] = ""
+            data["agent_llm_api_key"] = ""
+            data["agent_llm_reasoning_effort"] = 'default'
+
     if data.get("agent_llm_max_tries") is not None:
         try:
             agent_tries = int(data["agent_llm_max_tries"])
@@ -1920,6 +1944,12 @@ def update_config(config: Config, data: dict) -> Config:
             data["vision_model_name"] = "gemini-2.5-flash"
             data["vision_api_key"] = ""
             data["vision_var"] = True
+
+        elif data["vision_provider"] == "player2":
+            data["vision_endpoint"] = "https://api.player2.game/v1"
+            data["vision_model_name"] = ""
+            data["vision_api_key"] = ""
+            data["vision_var"] = True    
 
         elif data["vision_provider"] == "custom":
             data["vision_endpoint"] = "https://api.openai.com/v1"
@@ -1955,6 +1985,11 @@ def update_config(config: Config, data: dict) -> Config:
             data["stt_endpoint"] = "https://api.openai.com/v1"
             data["stt_model_name"] = "whisper-1"
             data["stt_api_key"] = ""
+
+        if data["stt_provider"] == "player2":
+            data["stt_endpoint"] = ""
+            data["stt_model_name"] = ""
+            data["stt_api_key"] = ""    
 
         if data["stt_provider"] == "google-ai-studio":
             data["stt_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
@@ -1993,6 +2028,13 @@ def update_config(config: Config, data: dict) -> Config:
                 character["tts_voice"] = "en-US-AvaMultilingualNeural"
             data["tts_api_key"] = ""
 
+        if data["tts_provider"] == "player2":
+            data["tts_endpoint"] = ""
+            data["tts_model_name"] = ""
+            for character in config["characters"]:
+                character["tts_voice"] = "default"
+            data["tts_api_key"] = ""    
+
         if data["tts_provider"] == "custom":
             data["tts_endpoint"] = "https://api.openai.com/v1"
             data["tts_model_name"] = "gpt-4o-mini-tts"
@@ -2018,6 +2060,11 @@ def update_config(config: Config, data: dict) -> Config:
             data["embedding_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
             data["embedding_model_name"] = "gemini-embedding-001"
             data["embedding_api_key"] = ""
+
+        elif data["embedding_provider"] == "player2":
+            data["embedding_endpoint"] = "https://api.player2.game/v1"
+            data["embedding_model_name"] = "text-embedding-3-small"
+            data["embedding_api_key"] = ""    
 
         elif data["embedding_provider"] == "custom":
             # Leave endpoint/model/api_key as provided or default to OpenAI-compatible
