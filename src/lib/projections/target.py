@@ -53,8 +53,8 @@ class Target(Projection[TargetStateModel]):
         projected_events: list[ProjectedEvent] = []
 
         if isinstance(event, GameEvent) and event.content.get("event") in [
-            "LoadGame", "Shutdown", "Died", "ShipDestroyed",
-            "SupercruiseEntry", "Disembark", "Embark",
+            "LoadGame", "Shutdown", "Died", "DockSRV", "LaunchSRV", "SRVDestroyed",
+            "SupercruiseEntry", "Disembark", "Embark", "LaunchFighter", "DockFighter", "ShipDestroyed"
         ]:
             self._reset_state()
         if isinstance(event, GameEvent) and event.content.get("event") == "ShipTargeted":
