@@ -2350,6 +2350,8 @@ class PromptGenerator:
         if event_name == 'LegalStateChanged':
             return f"Legal state is now {status['LegalState']}"
         if event_name == 'WeaponSelected':
+            if status['SelectedWeapon'] == '$humanoid_fists_name;':
+                return "Handheld equipment has been sheathed"
             return f"Selected weapon {status['SelectedWeapon']}"
 
         if event_name == "HudSwitchedToCombatMode":
