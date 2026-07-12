@@ -2106,6 +2106,13 @@ class PromptGenerator:
 
         if event_name == 'Died':
             died_event = cast(DiedEvent, content)
+            killers = died_event.get('Killers', [])
+            if killers:
+                killer_descriptions = ', '.join(
+                    f"{killer.get('Name', 'unknown killer')} ({killer.get('Ship', 'unknown ship')}, {killer.get('Rank', 'unknown rank')})"
+                    for killer in killers
+                )
+                return f"{self.commander_name} has been killed by a wing: {killer_descriptions}."
             if died_event.get('KillerName'):
                 return f"{self.commander_name} has been killed by {died_event.get('KillerName')} ({died_event.get('KillerShip', 'unknown ship')}, {died_event.get('KillerRank', 'unknown rank')})."
             return f"{self.commander_name} has been killed."
