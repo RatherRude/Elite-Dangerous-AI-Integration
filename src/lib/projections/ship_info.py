@@ -15,6 +15,7 @@ from ..StatusParser import Status
 from ..EventModels import (
     CargoEvent,
     DockFighterEvent,
+    DockSRVEvent,
     FighterDestroyedEvent,
     FighterRebuiltEvent,
     JetConeBoostEvent,
@@ -292,11 +293,11 @@ class ShipInfo(Projection[ShipInfoStateModel]):
                             fighter.Pilot = pilot
                             break
 
-        if isinstance(event, GameEvent) and event.content.get("event") == "DockFighter":
-            payload = cast(DockFighterEvent, event.content)
+        if isinstance(event, GameEvent) and event.content.get("event") in ["DockFighter", "DockSRV"]:
+            payload = cast(DockFighterEvent | DockSRVEvent, event.content)
             fighter_id = payload.get("ID")
 
-            # Find fighter by ID and set to ready, clear ID
+            # Fighters launched by telepresence can be reported as DockSRV.
             for fighter in self.state.Fighters:
                 if fighter.ID == fighter_id:
                     fighter.Status = "Ready"
