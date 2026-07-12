@@ -128,7 +128,7 @@ class PromptGenerator:
         depth = pad['depth']
         return f"{clock} o'clock, {depth} (Pad {pad_number}, clock orientation: mail slot entry with green on right)"
 
-    def get_event_template(self, event: Union[GameEvent, ProjectedEvent, ExternalEvent, QuestEvent]):
+    def get_event_template(self, event: Union[GameEvent, ProjectedEvent, ExternalEvent, QuestEvent], projected_states: ProjectedStates | None = None):
         content: Any = event.content
         event_name = content.get('event')
         
@@ -2029,13 +2029,25 @@ class PromptGenerator:
                 ship_name = ship_targeted_event.get('Ship_Localised', ship_targeted_event.get('Ship', 'ship'))
                 legal_status = ship_targeted_event.get('LegalStatus', '')
                 commander_name = pilot_name.partition('$cmdr_decorate:#name=')[2].partition(';')[0]
+                local_commander_name = get_state_dict(projected_states, 'Commander').get('Name', '') if projected_states else ''
+                is_own_ship = bool(commander_name) and commander_name.casefold() == local_commander_name.casefold()
                 target_description = None
                 if pilot_name.startswith('$RolePanel2_unmanned;') and commander_name:
-                    target_description = f"{legal_status} unmanned {ship_name} belonging to CMDR {commander_name}"
+                    target_description = (
+                        f"your unmanned main ship, {ship_name}"
+                        if is_own_ship else f"{legal_status} unmanned {ship_name} belonging to CMDR {commander_name}"
+                    )
                 elif pilot_name.startswith('$RolePanel2_crew;') and commander_name:
-                    target_description = f"{legal_status} {ship_name} steered by CMDR {commander_name}'s NPC crew"
+                    target_description = (
+                        f"your main ship, {ship_name}, steered by your NPC crew"
+                        if is_own_ship else f"{legal_status} {ship_name} steered by CMDR {commander_name}'s NPC crew"
+                    )
                 if target_description:
                     if ship_targeted_event.get('Subsystem_Localised'):
+                        if is_own_ship and pilot_name.startswith('$RolePanel2_unmanned;'):
+                            return f"Weapons now targeting your unmanned main ship's {ship_targeted_event.get('Subsystem_Localised')}"
+                        if is_own_ship:
+                            return f"Weapons now targeting your main ship's {ship_targeted_event.get('Subsystem_Localised')}, operated by your NPC crew"
                         return f"Weapons now targeting {target_description}'s {ship_targeted_event.get('Subsystem_Localised')}"
                     return f"Sensors and weapons locked on to {target_description}"
                 if ship_targeted_event.get('Subsystem_Localised'):
@@ -2452,8 +2464,8 @@ class PromptGenerator:
 
         return None
 
-    def event_message(self, event: Union[GameEvent, ProjectedEvent, ExternalEvent, QuestEvent], timeoffset: str, is_important: bool):
-        message = self.get_event_template(event)
+    def event_message(self, event: Union[GameEvent, ProjectedEvent, ExternalEvent, QuestEvent], timeoffset: str, is_important: bool, projected_states: ProjectedStates | None = None):
+        message = self.get_event_template(event, projected_states)
         if message:
             return {
                 "role": "user",
@@ -3654,7 +3666,7 @@ class PromptGenerator:
 
                 if len(conversational_pieces) < 20:
                     is_important = is_pending and event_type in self.important_game_events
-                    message = self.event_message(event, time_offset, is_important)
+                    message = self.event_message(event, time_offset, is_important, projected_states)
                     if message:
                         piece = message
                         conversational_pieces.append(piece)
