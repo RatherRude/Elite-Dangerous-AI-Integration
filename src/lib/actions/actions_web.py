@@ -224,10 +224,12 @@ def web_search_agent(
                         "name": { "type": "string", "description": "Required string in station name" },
                         "distance": { "type": "number", "description": "The maximum distance to search in" },
                         "has_large_pad": { "type": "boolean", "description": "Filter for stations with large landing pad" },
+                        "include_planetary_stations": { "type": "boolean", "description": "Include planetary stations. Default: true." },
                         "material_trader": { "type": "array", "items": { "type": "string", "enum": ["Encoded", "Manufactured", "Raw"] } },
                         "technology_broker": { "type": "array", "items": { "type": "string", "enum": ["Guardian", "Human"] } },
                         "modules": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" }, "class": { "type": "array", "items": { "type": "string" } }, "rating": { "type": "array", "items": { "type": "string" } } }, "required": ["name"] } },
                         "commodities": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" }, "amount": { "type": "integer" }, "transaction": { "type": "string", "enum": ["Buy", "Sell"] } }, "required": ["name", "amount", "transaction"]} },
+                        "market_days_old": { "type": "integer", "minimum": 1, "description": "Maximum age of commodity market data in days. Used only for commodity searches. Default: 2." },
                         "ships": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" } }, "required": ["name"] } },
                         "services": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string", "enum": ["Black Market", "Interstellar Factors Contact"] } }, "required": ["name"] } },
                         "sort_by": { "type": "string", "enum": ["distance", "bestprice"], "description": "Sort stations either by distance or best price when commodities are included. Default: bestprice." },
@@ -2010,6 +2012,8 @@ def prepare_station_request(obj, projected_states):# Helper function for fuzzy m
     requires_large_pad = ship_info.get('LandingPadSize') == 'L'
     if requires_large_pad:
         filters["has_large_pad"] = {"value": True}
+    if obj.get("include_planetary_stations") is False:
+        filters["is_planetary"] = {"value": False}
     material_trader = filter_empty_list_items(obj.get("material_trader"))
     if has_meaningful_filter_value(material_trader):
         filters["material_trader"] = {"value": material_trader}
@@ -2018,6 +2022,13 @@ def prepare_station_request(obj, projected_states):# Helper function for fuzzy m
         filters["technology_broker"] = {"value": technology_broker}
     commodities = filter_empty_list_items(obj.get("commodities"))
     if commodities:
+        market_days_old = obj.get("market_days_old", 2)
+        if isinstance(market_days_old, bool) or not isinstance(market_days_old, int) or market_days_old < 1:
+            raise Exception("market_days_old must be a positive whole number.")
+        filters["market_updated_at"] = {
+            "comparison": "<=>",
+            "value": [f"now-{market_days_old}d", "now"]
+        }
         market_filters = []
         for market_item in commodities:
             # Find matching commodity name using fuzzy matching
@@ -2183,11 +2194,15 @@ def filter_station_response(request, response, unfiltered_results=None):
 
         filtered_results.append(filtered_result)
 
-    return {
+    filtered_response = {
         "amount_total": response["count"],
         "amount_displayed": min(response["count"], response["size"]),
         "results": filtered_results
     }
+    market_updated_at = request["filters"].get("market_updated_at")
+    if market_updated_at:
+        filtered_response["market_data_max_age_days"] = int(market_updated_at["value"][0][4:-1])
+    return filtered_response
 
 
 def station_finder(obj, projected_states):
