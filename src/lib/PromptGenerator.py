@@ -2026,24 +2026,22 @@ class PromptGenerator:
             ship_targeted_event = cast(ShipTargetedEvent, content)
             if ship_targeted_event.get('TargetLocked'):
                 pilot_name = ship_targeted_event.get('PilotName', '')
-                pilot_name_localised = ship_targeted_event.get('PilotName_Localised', '')
                 ship_name = ship_targeted_event.get('Ship_Localised', ship_targeted_event.get('Ship', 'ship'))
                 legal_status = ship_targeted_event.get('LegalStatus', '')
+                commander_name = pilot_name.partition('$cmdr_decorate:#name=')[2].partition(';')[0]
                 target_description = None
-                if pilot_name.startswith('$RolePanel2_unmanned;') and pilot_name_localised.startswith('unmanned '):
-                    commander_name = pilot_name_localised.removeprefix('unmanned ')
-                    target_description = f"{legal_status} unmanned {ship_name} belonging to {commander_name}"
-                elif pilot_name.startswith('$RolePanel2_crew;') and pilot_name_localised.startswith('Crew '):
-                    commander_name = pilot_name_localised.removeprefix('Crew ')
-                    target_description = f"{legal_status} {ship_name} steered by {commander_name}'s NPC crew"
+                if pilot_name.startswith('$RolePanel2_unmanned;') and commander_name:
+                    target_description = f"{legal_status} unmanned {ship_name} belonging to CMDR {commander_name}"
+                elif pilot_name.startswith('$RolePanel2_crew;') and commander_name:
+                    target_description = f"{legal_status} {ship_name} steered by CMDR {commander_name}'s NPC crew"
                 if target_description:
                     if ship_targeted_event.get('Subsystem_Localised'):
                         return f"Weapons now targeting {target_description}'s {ship_targeted_event.get('Subsystem_Localised')}"
                     return f"Sensors and weapons locked on to {target_description}"
                 if ship_targeted_event.get('Subsystem_Localised'):
-                    return f"Weapons now targeting {ship_targeted_event.get('LegalState', '')} pilot {ship_targeted_event.get('PilotName_Localised')}'s {ship_targeted_event.get('Subsystem_Localised')}"
+                    return f"Weapons now targeting {legal_status} pilot {ship_targeted_event.get('PilotName_Localised')}'s {ship_targeted_event.get('Subsystem_Localised')}"
                 if ship_targeted_event.get('PilotName_Localised'):
-                    return f"Sensors and weapons locked on to {ship_targeted_event.get('LegalState', '')} pilot {ship_targeted_event.get('PilotName_Localised')}'s {ship_targeted_event.get('Ship','ship').capitalize()}"
+                    return f"Sensors and weapons locked on to {legal_status} pilot {ship_targeted_event.get('PilotName_Localised')}'s {ship_targeted_event.get('Ship','ship').capitalize()}"
                 else:
                     return f"Sensors and weapons locked on to the {ship_targeted_event.get('Ship','ship').capitalize()}"
             else:
