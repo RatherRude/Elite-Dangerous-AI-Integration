@@ -17,6 +17,7 @@ from lib.PluginSettingDefinitions import (
 )
 from lib.Logger import log, show_chat_message
 from lib.PluginBase import PluginBase, PluginManifest
+from lib.Config import load_config
 
 from EDMesg.CovasNext import (
     ExternalChatNotification,
@@ -423,7 +424,12 @@ class EDCoPilotPlugin(PluginBase):
     
     def is_installed(self) -> bool:
         """Check if EDCoPilot is installed"""
-        return self.install_path is not None
+        if self.install_path is not None:
+            return True
+
+        helper = getattr(self, '_helper', None)
+        config = helper._config if helper else load_config()
+        return config.get('linux_edcp', False)
     
     def is_running(self) -> bool:
         """Check if EDCoPilot is running"""

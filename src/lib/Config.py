@@ -869,6 +869,7 @@ class Config(TypedDict):
     cn_autostart: bool
     ed_journal_path: str
     ed_appdata_path: str
+    linux_edcp: bool
     qol_autobrake: bool  # Quality of life: Auto brake when approaching stations
     qol_autoscan: bool  # Quality of life: Auto scan when entering new systems
     prefer_primary_bindings: bool  # Prefer primary keybinds over secondary entries
@@ -1417,6 +1418,7 @@ def load_config() -> Config:
         'embedding_api_key': "",
         "ed_journal_path": "",
         "ed_appdata_path": "",
+        "linux_edcp": False,
         "qol_autobrake": False,  # Quality of life: Auto brake when approaching stations
         "qol_autoscan": False,  # Quality of life: Auto scan when entering new systems
 
