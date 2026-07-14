@@ -320,6 +320,78 @@ def test_spansh_plot_search_name_disables_fuzzy_matching() -> None:
     }
 
 
+def test_station_request_excludes_carriers_and_includes_planetary_stations_by_default() -> None:
+    request = actions_web.prepare_station_request({}, {})
+
+    assert "Drake-Class Carrier" not in request["filters"]["type"]["value"]
+    assert "is_planetary" not in request["filters"]
+
+
+def test_station_request_includes_carriers_and_excludes_planetary_stations() -> None:
+    request = actions_web.prepare_station_request({
+        "include_player_fleetcarrier": True,
+        "include_planetary_stations": False,
+    }, {})
+
+    assert request["filters"]["type"]["value"][-1] == "Drake-Class Carrier"
+    assert request["filters"]["is_planetary"] == {"value": False}
+
+
+def test_station_request_uses_default_commodity_market_data_age() -> None:
+    request = actions_web.prepare_station_request({
+        "commodities": [{"name": "Tritium", "amount": 100, "transaction": "Buy"}],
+    }, {})
+
+    assert request["filters"]["market_updated_at"] == {
+        "comparison": "<=>",
+        "value": ["now-2d", "now"],
+    }
+
+
+def test_station_request_uses_requested_commodity_market_data_age() -> None:
+    request = actions_web.prepare_station_request({
+        "commodities": [{"name": "Tritium", "amount": 100, "transaction": "Buy"}],
+        "market_days_old": 7,
+    }, {})
+
+    assert request["filters"]["market_updated_at"]["value"] == ["now-7d", "now"]
+
+
+def test_station_request_rejects_invalid_commodity_market_data_age() -> None:
+    try:
+        actions_web.prepare_station_request({
+            "commodities": [{"name": "Tritium", "amount": 100, "transaction": "Buy"}],
+            "market_days_old": 0,
+        }, {})
+    except Exception as error:
+        assert str(error) == "market_days_old must be a positive whole number."
+    else:
+        raise AssertionError("Expected an invalid market data age to be rejected")
+
+
+def test_station_response_reports_effective_commodity_market_data_age() -> None:
+    response = actions_web.filter_station_response({
+        "filters": {
+            "market": [{"name": "Tritium"}],
+            "market_updated_at": {"comparison": "<=>", "value": ["now-7d", "now"]},
+        },
+    }, {
+        "count": 1,
+        "size": 1,
+        "results": [{
+            "name": "Test Station",
+            "system_name": "Sol",
+            "distance": 0,
+            "distance_to_arrival": 10,
+            "is_planetary": False,
+            "services": [],
+            "market": [],
+        }],
+    })
+
+    assert response["market_data_max_age_days"] == 7
+
+
 def test_resolve_plot_target_queries_all_spansh_endpoints(monkeypatch) -> None:
     posted_urls: list[str] = []
 

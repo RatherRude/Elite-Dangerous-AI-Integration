@@ -2080,10 +2080,17 @@ class SearchAndRescueEvent(TypedDict):
     Count: int
 
 
-# Died: 744 characters, 8 entries
+# Died: player was killed, optionally by a wing
+class DiedEventKiller(TypedDict):
+    Name: str
+    Ship: str
+    Rank: str
+
+
 class DiedEvent(TypedDict):
     KillerShip: NotRequired[str]
     KillerName: NotRequired[Literal["Elvis Sims"]]
+    Killers: NotRequired[list[DiedEventKiller]]
     event: Literal["Died"]
     timestamp: str
     KillerRank: NotRequired[str]

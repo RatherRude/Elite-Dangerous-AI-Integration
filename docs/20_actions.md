@@ -1325,14 +1325,16 @@ These call external services or game APIs (Galnet, Spansh):
     - `name`: require text in the station name.
     - `distance`: maximum search radius.
     - `has_large_pad`: only include stations with large pads.
+    - `include_planetary_stations`: include planetary stations. Defaults to `true`; set to `false` to return only non-planetary stations.
     - `material_trader`: look for Raw, Manufactured, or Encoded material traders.
     - `technology_broker`: look for Human or Guardian tech brokers.
     - `modules`: search for specific outfitting items; can further narrow by class and rating.
     - `commodities`: search for markets buying or selling a named commodity, with requested amount.
+    - `market_days_old`: maximum age in days for commodity market data. Used only with `commodities` and defaults to `2`; results state the effective limit.
     - `ships`: search for shipyards stocking a named ship.
     - `services`: look for special services such as Black Market or Interstellar Factors.
     - `sort_by`: order results by distance or best price.
-    - `include_player_fleetcarrier`: include player-owned carriers in the results.
+    - `include_player_fleetcarrier`: include player-owned Drake-Class Carriers in the results. Defaults to `false`.
     - `unfiltered_results`: return full commodity/module/ship data instead of only the matched entries.
     - `size`: number of results to return.
 
