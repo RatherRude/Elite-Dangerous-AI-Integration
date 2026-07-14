@@ -6,6 +6,7 @@ import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatOptionModule } from "@angular/material/core";
+import { MatButtonModule } from "@angular/material/button";
 import { SettingBase } from "../../services/plugin-settings";
 
 /**
@@ -23,6 +24,7 @@ import { SettingBase } from "../../services/plugin-settings";
         MatSelectModule,
         MatSlideToggleModule,
         MatOptionModule,
+        MatButtonModule,
     ],
     templateUrl: "./settings-field.component.html",
     styleUrl: "./settings-field.component.css",
@@ -37,13 +39,20 @@ export class SettingsFieldComponent {
      * The current value of the field.
      */
     @Input() value: any;
+
+    @Input() buttonEnabled: boolean = true;
     
     /**
      * Emitted when the field value changes.
      */
     @Output() valueChange = new EventEmitter<any>();
+    @Output() buttonClick = new EventEmitter<void>();
 
     onValueChange(newValue: any): void {
         this.valueChange.emit(newValue);
+    }
+
+    onButtonClick(): void {
+        this.buttonClick.emit();
     }
 }

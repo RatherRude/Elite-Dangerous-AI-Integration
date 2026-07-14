@@ -228,7 +228,18 @@ class PluginManager:
                     module.settings = new_config.get('plugin_settings', {}).get(module.plugin_manifest.guid) or {}
             except Exception as e:
                 log('error', f"Failed to execute on_settings_changed hook for {module.plugin_manifest.name}: {e}")
-    
+
+    def on_settings_button(self, plugin_guid: str, key: str):
+        """Route a plugin settings button click to its owning plugin."""
+        plugin = self.plugin_list.get(plugin_guid)
+        if plugin is None:
+            log('warning', f"Ignoring settings button click for unknown plugin {plugin_guid}")
+            return
+        try:
+            plugin.on_settings_button(key)
+        except Exception as e:
+            log('error', f"Plugin settings button '{key}' raised an exception: {e}")
+
     def on_chat_start(self, helper: 'PluginHelper'):
         """
         Executed when the chat is started, and will call the on_chat_start hook for each plugin.

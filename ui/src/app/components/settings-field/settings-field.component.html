@@ -5,6 +5,11 @@
             {{ field.label }}
         </mat-slide-toggle>
     }
+    @case ('button') {
+        <button mat-stroked-button type="button" [disabled]="field.readonly || !buttonEnabled" (click)="onButtonClick()">
+            {{ field.label }}
+        </button>
+    }
     @case ('paragraph') {
         <div class="paragraph-field">
             @if (field.label) {

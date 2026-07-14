@@ -17,6 +17,7 @@
                         [grid]="grid"
                         [getValue]="createGetValueFn(plugin_settings_config[0])"
                         [setValue]="createSetValueFn(plugin_settings_config[0])"
+                        [onButtonClick]="createButtonClickFn(plugin_settings_config[0])"
                         [headerLevel]="'h2'"
                         [gridClass]="'settings-grid'">
                     </app-settings-grid>

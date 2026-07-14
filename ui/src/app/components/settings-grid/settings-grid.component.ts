@@ -34,6 +34,8 @@ export class SettingsGridComponent {
      * Signature: (fieldKey: string, value: any) => void
      */
     @Input() setValue!: (fieldKey: string, value: any) => void;
+
+    @Input() onButtonClick?: (fieldKey: string) => void;
     
     /**
      * Optional: Header level for the grid label (default: h3).
@@ -52,5 +54,9 @@ export class SettingsGridComponent {
 
     getFieldValue(field: SettingBase): any {
         return this.getValue(field.key, field.default_value);
+    }
+
+    handleButtonClick(field: SettingBase): void {
+        this.onButtonClick?.(field.key);
     }
 }
