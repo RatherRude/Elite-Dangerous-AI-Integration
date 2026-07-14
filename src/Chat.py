@@ -1006,6 +1006,11 @@ def read_stdin(chat: Chat):
                         )
             if data.get("type") == "submit_input":
                 chat.submit_input(data["input"])
+            if data.get("type") == "plugin_settings_button":
+                plugin_guid = data.get("plugin_guid")
+                key = data.get("key")
+                if isinstance(plugin_guid, str) and isinstance(key, str):
+                    chat.plugin_manager.on_settings_button(plugin_guid, key)
             if data.get("type") == "query_memories":
                 query = data.get("query", "")
                 top_k = data.get("top_k", 5)

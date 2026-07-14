@@ -10,13 +10,13 @@ export interface PluginSettings {
 export interface SettingsGrid {
     key: string;
     label: string;
-    fields: TextSetting[] | NumericalSetting[] | ToggleSetting[] | SelectSetting[];
+    fields: (TextSetting | TextAreaSetting | NumericalSetting | ToggleSetting | SelectSetting | ButtonSetting | ParagraphSetting | ErrorSetting)[];
 }
 
 export interface SettingBase {
     key: string;
     label: string;
-    type: "paragraph" | "number" | "toggle" | "text" | "textarea" | "select" | "error";
+    type: "paragraph" | "number" | "toggle" | "text" | "textarea" | "select" | "button" | "error";
     readonly: boolean | null;
     placeholder: string | null;
     default_value?: any;
@@ -58,6 +58,12 @@ export interface NumericalSetting extends SettingBase {
 export interface ToggleSetting extends SettingBase {
     default_value: boolean | null;
 }
+
+export interface ButtonSetting extends SettingBase {}
+
+export interface ParagraphSetting extends SettingBase {}
+
+export interface ErrorSetting extends SettingBase {}
 
 export interface SelectSetting extends SettingBase {
     default_value: string | string[] | null;

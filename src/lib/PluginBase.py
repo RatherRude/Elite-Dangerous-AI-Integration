@@ -75,6 +75,10 @@ class PluginBase(ABC):
         """
         pass
 
+    def on_settings_button(self, key: str):
+        """Handle a click on a button declared in this plugin's settings UI."""
+        pass
+
     def create_model(self, provider_id: str, settings: dict[str, Any]) -> 'LLMModel | STTModel | TTSModel | EmbeddingModel':
         """
         Create a model instance for the given provider.

@@ -120,6 +120,9 @@ The `PluginBase` base class has the following methods that can be overridden:
 - `on_chat_stop(self, helper: PluginHelper)`:  
    Called when the chat is stopped. Use this to perform any cleanup or finalization needed by your plugin.
 
+- `on_settings_button(self, key: str)`:
+   Called when the user clicks a `ButtonSetting` in the plugin settings UI. The button's `key` identifies which button was clicked.
+
 The `PluginHelper` instance provides utilities for registering actions, projections, side effects, and more. You can access most of the internal features you need from the `helper` object, such as `send_key()`, various event handler registrations, and more.
 
 ## PluginHelper Methods

@@ -24,6 +24,12 @@ export interface ChangeEventConfigMessage extends BaseCommand {
     value: any;
 }
 
+export interface PluginSettingsButtonMessage extends BaseCommand {
+    type: "plugin_settings_button";
+    plugin_guid: string;
+    key: string;
+}
+
 export interface RefreshSystemInfoMessage extends BaseCommand {
     type: "refresh_system_info";
 }
@@ -347,6 +353,16 @@ export class ConfigService {
             config: { plugin_settings: updatedPluginSettings },
         };
 
+        await this.tauriService.send_command(message);
+    }
+
+    public async clickPluginSettingsButton(pluginGuid: string, key: string): Promise<void> {
+        const message: PluginSettingsButtonMessage = {
+            type: "plugin_settings_button",
+            timestamp: new Date().toISOString(),
+            plugin_guid: pluginGuid,
+            key,
+        };
         await this.tauriService.send_command(message);
     }
 

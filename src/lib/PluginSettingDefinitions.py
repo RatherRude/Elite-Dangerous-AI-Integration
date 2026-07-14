@@ -45,6 +45,10 @@ class ToggleSetting(SettingBase):
     """Used to display a toggle switch."""
     default_value: bool | None
 
+class ButtonSetting(SettingBase):
+    """Used to display a button that invokes the plugin's settings-button hook."""
+    pass
+
 class ParagraphSetting(SettingBase):
     """Used to display a paragraph of text. The label is used as the title."""
     content: str
@@ -57,7 +61,7 @@ class SettingsGrid(TypedDict):
     """Defines a grid of settings for a plugin."""
     key: str
     label: str
-    fields: list[TextSetting | TextAreaSetting | SelectSetting | NumericalSetting | ToggleSetting | ParagraphSetting]
+    fields: list[TextSetting | TextAreaSetting | SelectSetting | NumericalSetting | ToggleSetting | ButtonSetting | ParagraphSetting | ErrorSetting]
 
 class PluginSettings(TypedDict):
     """Used to define the settings for a plugin."""
