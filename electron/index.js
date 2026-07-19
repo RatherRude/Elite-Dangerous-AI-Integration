@@ -1,6 +1,8 @@
 import { app, BrowserWindow, dialog, ipcMain, protocol, net, screen, shell, systemPreferences } from 'electron';
 import { spawn } from 'child_process';
 import http from 'node:http';
+import crypto from 'node:crypto';
+import os from 'node:os';
 import path from 'path';
 import url from 'node:url';
 import fs from 'node:fs';
@@ -903,11 +905,116 @@ async function serveRemoteUiRequest(request, response) {
   }
 }
 
+function getRemoteInterfaceBindAddresses() {
+  const addresses = new Set(['127.0.0.1', '0.0.0.0']);
+  for (const network of Object.values(os.networkInterfaces())) {
+    for (const address of network ?? []) {
+      if (address.family === 'IPv4' && !address.internal) {
+        addresses.add(address.address);
+      }
+    }
+  }
+  return [...addresses];
+}
+
+function getRemoteInterfaceUrl(host, port) {
+  const displayHost = host === '0.0.0.0'
+    ? getRemoteInterfaceBindAddresses().find((address) => address !== '127.0.0.1' && address !== '0.0.0.0') ?? '127.0.0.1'
+    : host;
+  return `http://${displayHost}:${port}/`;
+}
+
+function parseCookies(request) {
+  return Object.fromEntries((request.headers.cookie ?? '')
+    .split(';')
+    .map((cookie) => cookie.trim().split(/=(.*)/s, 2))
+    .filter(([name]) => name));
+}
+
+function tokensMatch(value, expected) {
+  if (typeof value !== 'string' || value.length !== expected.length) {
+    return false;
+  }
+  const valueBuffer = Buffer.from(value);
+  const expectedBuffer = Buffer.from(expected);
+  return valueBuffer.length === expectedBuffer.length && crypto.timingSafeEqual(valueBuffer, expectedBuffer);
+}
+
+function remoteInterfaceLoginPage(error = false) {
+  return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>COVAS:NEXT Remote Interface</title><style>
+body { align-items: center; background: #121212; color: #f2f2f2; display: flex; font: 16px system-ui, sans-serif; justify-content: center; margin: 0; min-height: 100vh; }
+main { background: #202020; border-radius: 10px; box-shadow: 0 12px 32px #0008; max-width: 22rem; padding: 2rem; width: calc(100% - 4rem); }
+h1 { font-size: 1.25rem; margin-top: 0; } p { color: #c7c7c7; } input, button { box-sizing: border-box; font: inherit; width: 100%; } input { border: 1px solid #777; border-radius: 4px; letter-spacing: .2em; margin: 1rem 0; padding: .75rem; } button { background: #3f51b5; border: 0; border-radius: 4px; color: white; cursor: pointer; padding: .75rem; } .error { color: #ff8a80; }
+</style></head><body><main><h1>COVAS:NEXT Remote Interface</h1><p>Enter the four-digit PIN shown in the desktop app.</p>${error ? '<p class="error">Incorrect PIN. Please try again.</p>' : ''}<form method="post" action="/auth"><input aria-label="PIN" autocomplete="one-time-code" inputmode="numeric" maxlength="4" name="pin" pattern="[0-9]{4}" required type="password"><button type="submit">Open interface</button></form></main><script>const pin = new URLSearchParams(location.hash.slice(1)).get('pin'); if (/^\\d{4}$/.test(pin ?? '')) { document.querySelector('input[name="pin"]').value = pin; document.querySelector('form').requestSubmit(); }</script></body></html>`;
+}
+
+function sendRemoteInterfaceLogin(response, statusCode, error = false) {
+  response.writeHead(statusCode, {
+    'Content-Type': 'text/html; charset=utf-8',
+    'Cache-Control': 'no-store',
+  });
+  response.end(remoteInterfaceLoginPage(error));
+}
+
+async function handleRemoteInterfaceRequest(request, response, interfaceState) {
+  const requestUrl = new URL(request.url, `http://${interfaceState.host}:${interfaceState.port}`);
+  if (requestUrl.pathname === '/auth') {
+    if (request.method !== 'POST') {
+      response.writeHead(405, { Allow: 'POST' });
+      response.end('Method not allowed');
+      return;
+    }
+
+    let body = '';
+    for await (const chunk of request) {
+      body += chunk;
+      if (body.length > 1024) {
+        response.writeHead(413);
+        response.end('Request too large');
+        return;
+      }
+    }
+    const pin = new URLSearchParams(body).get('pin') ?? '';
+    if (!tokensMatch(pin, interfaceState.pin)) {
+      interfaceState.failedPinAttempts += 1;
+      const delayMilliseconds = interfaceState.failedPinAttempts * 1000;
+      await new Promise((resolve) => setTimeout(resolve, delayMilliseconds));
+      sendRemoteInterfaceLogin(response, 401, true);
+      return;
+    }
+
+    interfaceState.failedPinAttempts = 0;
+    response.writeHead(303, {
+      Location: '/',
+      'Cache-Control': 'no-store',
+      'Set-Cookie': `covas_remote_session=${interfaceState.sessionToken}; HttpOnly; Path=/; SameSite=Strict`,
+    });
+    response.end();
+    return;
+  }
+
+  if (!tokensMatch(parseCookies(request).covas_remote_session, interfaceState.sessionToken)) {
+    sendRemoteInterfaceLogin(response, 401);
+    return;
+  }
+  await serveRemoteUiRequest(request, response);
+}
+
 function createRemoteInterface(backend, opts = {}) {
-  const host = opts.host === '127.0.0.1' ? opts.host : '127.0.0.1';
-  const port = Number.isInteger(opts.port) ? opts.port : 4048;
+  const availableHosts = getRemoteInterfaceBindAddresses();
+  const host = availableHosts.includes(opts.host) ? opts.host : '127.0.0.1';
+  const port = Number.isInteger(opts.port) && opts.port >= 1 && opts.port <= 65535 ? opts.port : 4048;
+  const interfaceState = {
+    host,
+    port,
+    pin: crypto.randomInt(0, 10000).toString().padStart(4, '0'),
+    sessionToken: crypto.randomBytes(32).toString('base64url'),
+    failedPinAttempts: 0,
+  };
   const server = http.createServer((request, response) => {
-    void serveRemoteUiRequest(request, response);
+    void handleRemoteInterfaceRequest(request, response, interfaceState);
   });
   const webSocketServer = new WebSocketServer({ noServer: true });
 
@@ -954,8 +1061,9 @@ function createRemoteInterface(backend, opts = {}) {
 
   server.on('upgrade', (request, socket, head) => {
     const requestUrl = new URL(request.url, `http://${host}:${port}`);
-    if (requestUrl.pathname !== '/ws') {
+    if (requestUrl.pathname !== '/ws' || !tokensMatch(parseCookies(request).covas_remote_session, interfaceState.sessionToken)) {
       logger.warn('Rejected remote web interface WebSocket upgrade:', requestUrl.pathname);
+      socket.write('HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n');
       socket.destroy();
       return;
     }
@@ -974,9 +1082,10 @@ function createRemoteInterface(backend, opts = {}) {
         running: true,
         host,
         port,
-        url: `http://${host}:${port}/`,
+        url: getRemoteInterfaceUrl(host, port),
         server,
         webSocketServer,
+        ...interfaceState,
       };
       logger.info('Remote web interface started:', state.url);
       resolve(state);
@@ -1009,6 +1118,7 @@ function getRemoteInterfaceState() {
     host: remoteInterface.host,
     port: remoteInterface.port,
     url: remoteInterface.url,
+    pin: remoteInterface.pin,
   };
 }
 
@@ -1071,13 +1181,14 @@ app.whenReady().then(async ()=>{
     }
 
     remoteInterface = await createRemoteInterface(backend, {
-      host: '127.0.0.1',
-      port: Number.isInteger(opts?.port) ? opts.port : 4048,
+      host: opts?.host,
+      port: opts?.port,
     });
     return getRemoteInterfaceState();
   });
   ipcMain.handle('stop_remote_interface', async () => stopRemoteInterface());
   ipcMain.handle('get_remote_interface_state', async () => getRemoteInterfaceState());
+  ipcMain.handle('get_remote_interface_bind_addresses', async () => getRemoteInterfaceBindAddresses());
   ipcMain.handle('get_overlay_runtime_info', async () => getOverlayRuntimeInfo());
   ipcMain.handle('get_available_screens', async (event) => {
     const displays = screen.getAllDisplays();

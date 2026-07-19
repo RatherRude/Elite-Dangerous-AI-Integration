@@ -3,25 +3,6 @@
         <p>This section allows you to customize advanced settings. It is recommended to leave these settings
             at their default values unless you know what you are doing.</p>
 
-        <div class="remote-interface-section">
-            <div>
-                <strong>Remote Web Interface</strong>
-                <p>Start a local browser interface at <code>http://127.0.0.1:4048/</code>.</p>
-                @if (remoteInterfaceUrl) {
-                    <p>Running at <a [href]="remoteInterfaceUrl" target="_blank" rel="noopener noreferrer">{{ remoteInterfaceUrl }}</a></p>
-                }
-            </div>
-            <button
-                mat-raised-button
-                color="primary"
-                type="button"
-                [disabled]="isStartingRemoteInterface"
-                (click)="startRemoteInterface()">
-                <mat-icon>public</mat-icon>
-                Start Remote Interface
-            </button>
-        </div>
-
         <mat-accordion multi>
         <mat-expansion-panel
             [expanded]="expandedPanels.commander"
@@ -1370,6 +1351,81 @@
             </mat-form-field>
             </mat-expansion-panel>
         }
+
+        <mat-expansion-panel
+            [expanded]="expandedPanels['remote-interface']"
+            (opened)="expandedPanels['remote-interface'] = true"
+            (closed)="expandedPanels['remote-interface'] = false">
+            <mat-expansion-panel-header>
+                <mat-panel-title>
+                    <mat-icon>public</mat-icon>
+                    Remote Web Interface
+                </mat-panel-title>
+            </mat-expansion-panel-header>
+            @if (remoteInterfaceUrl) {
+                <div class="remote-interface-running">
+                    <div class="remote-interface-share-card">
+                        <div class="remote-interface-share-content">
+                            <div class="remote-interface-status"><mat-icon>check_circle</mat-icon> Running</div>
+                            <p>Share this link to open the interface without manually entering the PIN.</p>
+                            <div class="remote-interface-value">
+                                <span>Connection link</span>
+                                <div>
+                                    <code>{{ remoteInterfaceShareUrl }}</code>
+                                    <button mat-icon-button type="button" (click)="copyRemoteInterfaceUrl()" aria-label="Copy remote interface link" matTooltip="Copy remote interface link">
+                                        <mat-icon>content_copy</mat-icon>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="remote-interface-value remote-interface-pin-value">
+                                <span>PIN</span>
+                                <div>
+                                    <code>{{ remoteInterfacePin }}</code>
+                                    <button mat-icon-button type="button" (click)="copyRemoteInterfacePin()" aria-label="Copy remote interface PIN" matTooltip="Copy remote interface PIN">
+                                        <mat-icon>content_copy</mat-icon>
+                                    </button>
+                                </div>
+                            </div>
+                            <a mat-stroked-button class="remote-interface-open" [href]="remoteInterfaceShareUrl" target="_blank" rel="noopener noreferrer">
+                                <mat-icon>open_in_new</mat-icon>
+                                Open in local browser
+                            </a>
+                        </div>
+                        @if (remoteInterfaceQrCode) {
+                            <div class="remote-interface-qr-wrap">
+                                <img class="remote-interface-qr" [src]="remoteInterfaceQrCode" alt="QR code for the remote interface link">
+                                <span>Scan to connect</span>
+                            </div>
+                        }
+                    </div>
+                    <div class="remote-interface-stop">
+                        <span>Stop this server before changing the bind address or port.</span>
+                        <button mat-stroked-button type="button" [disabled]="isStartingRemoteInterface" (click)="stopRemoteInterface()">Stop Remote Interface</button>
+                    </div>
+                </div>
+            } @else {
+                <p>Run the interface in another browser on your network. Anyone opening it must enter the PIN below.</p>
+                <div class="remote-interface-controls">
+                    <mat-form-field>
+                        <mat-label>Bind IP address</mat-label>
+                        <mat-select [(ngModel)]="remoteInterfaceHost">
+                            @for (address of remoteInterfaceBindAddresses; track address) {
+                                <mat-option [value]="address">{{ address === '0.0.0.0' ? 'All addresses (0.0.0.0)' : address }}</mat-option>
+                            }
+                        </mat-select>
+                    </mat-form-field>
+                    <mat-form-field>
+                        <mat-label>Port</mat-label>
+                        <input matInput type="number" min="1" max="65535" step="1" [(ngModel)]="remoteInterfacePort">
+                    </mat-form-field>
+                </div>
+                <div class="remote-interface-actions">
+                    <button mat-raised-button color="primary" type="button" [disabled]="isStartingRemoteInterface || !isValidRemoteInterfacePort()" (click)="startRemoteInterface()">
+                        Start Remote Interface
+                    </button>
+                </div>
+            }
+        </mat-expansion-panel>
 
         <mat-expansion-panel>
             <mat-expansion-panel-header>
