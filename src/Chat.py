@@ -1227,6 +1227,11 @@ if __name__ == "__main__":
                     except Exception as e:
                         log("error", f"Failed to reset quest progress: {e}")
                         emit_message("quest_progress_reset", success=False, message=str(e))
+                if data.get("type") == "plugin_settings_button":
+                    plugin_guid = data.get("plugin_guid")
+                    key = data.get("key")
+                    if isinstance(plugin_guid, str) and isinstance(key, str):
+                        plugin_manager.on_settings_button(plugin_guid, key)        
                 if data.get("type") == "enable_remote_tracing":
                     from lib.Logger import enable_remote_tracing
 

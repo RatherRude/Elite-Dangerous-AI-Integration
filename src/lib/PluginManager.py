@@ -231,7 +231,11 @@ class PluginManager:
 
     def on_settings_button(self, plugin_guid: str, key: str):
         """Route a plugin settings button click to its owning plugin."""
-        plugin = self.plugin_list.get(plugin_guid)
+        plugin = None
+        for p in self.plugin_list.values():
+            if p.plugin_manifest.guid == plugin_guid:
+                plugin = p
+                break
         if plugin is None:
             log('warning', f"Ignoring settings button click for unknown plugin {plugin_guid}")
             return
