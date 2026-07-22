@@ -1633,6 +1633,11 @@ def check_and_upgrade_model(config: Config) -> ModelValidationResult:
     Returns:
         A ModelValidationResult object containing validation results and messages
     """
+
+    # Skip validation for plugin providers — they handle their own auth
+    if config.get('llm_provider', '').startswith('plugin:'):
+        return {'skipped': True, 'success': True, 'config': None, 'message': None}
+        
     # Make a copy of the config to avoid modifying the original
     updated_config = cast(Config, {k: v for k, v in config.items()})
     
