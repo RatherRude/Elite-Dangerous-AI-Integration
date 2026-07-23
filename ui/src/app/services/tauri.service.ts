@@ -361,9 +361,6 @@ export class TauriService {
                 if (message.type === "start") {
                     this.runModeSubject.next("running");
                 }
-                if (message.type === "model_validation") {
-                    this.runModeSubject.next("configuring");
-                }
                 if (message.type === "config") {
                     this.runModeSubject.next("configuring");
                 }
