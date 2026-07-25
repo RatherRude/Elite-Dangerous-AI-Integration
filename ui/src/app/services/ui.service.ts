@@ -9,11 +9,13 @@ export interface UIMessage extends BaseMessage {
     scroll?: "top" | "up" | "down" | "bottom",
 }
 
+type UIChange = Pick<UIMessage, "type" | "show" | "submenu" | "scroll">;
+
 @Injectable({
     providedIn: "root",
 })
 export class UIService {
-    private changeUISubject = new BehaviorSubject<UIMessage | null>(null);
+    private changeUISubject = new BehaviorSubject<UIChange | null>(null);
     public changeUI$ = this.changeUISubject.asObservable();
 
     constructor(private tauriService: TauriService) {
