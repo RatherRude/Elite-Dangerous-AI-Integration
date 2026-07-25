@@ -4,10 +4,9 @@ from pathlib import Path
 import platform
 from threading import Semaphore
 import traceback
-from typing import Any, Literal, TypedDict, Optional, Dict, Union, cast, Tuple, List
+from typing import Any, Literal, TypedDict, Dict, cast, List
 import os
 import sys
-from openai import OpenAI, APIError
 
 from .HudColorMatrix import HudColorMatrix
 from .Logger import log
@@ -1589,157 +1588,7 @@ def get_system_info() -> SystemInfo:
     }
 
 
-def validate_model_availability(
-        model_names: list[str],
-        api_key: str,
-        endpoint: str = "https://api.openai.com/v1"
-) -> tuple[list[bool] | None, Optional[str]]:
-    try:
-        client = OpenAI(
-            base_url=endpoint,
-            timeout=3,
-            api_key=api_key,
-        )
-        available_models = client.models.list()
-        available_models_names = [model.id for model in available_models]
-        
-        return [model in available_models_names for model in model_names], None
-
-    except APIError as e:
-        if e.code == "invalid_api_key":
-            return None, f"The API key you have provided isn't valid. Please check your API key."
-        else:
-            return None, f"API Error: {str(e)}"
-    except Exception as e:
-        print(e, traceback.format_exc())
-        return None, f"Unexpected error: {str(e)}"
-
-
-class ModelValidationResult(TypedDict):
-    """Result of model validation with information about upgrades or fallbacks"""
-    skipped: bool
-    success: bool
-    config: Config|None
-    message: str|None
-
-
-def check_and_upgrade_model(config: Config) -> ModelValidationResult:
-    """
-    Checks if the model configuration is valid and upgrades models if possible.
-
-    Args:
-        config: The current configuration
-
-    Returns:
-        A ModelValidationResult object containing validation results and messages
-    """
-    # Make a copy of the config to avoid modifying the original
-    updated_config = cast(Config, {k: v for k, v in config.items()})
-    
-    # Check LLM model
-    llm_endpoint = config['llm_endpoint'] if config['llm_endpoint'] else "https://api.openai.com/v1"
-    llm_api_key = config['llm_api_key'] if config['llm_api_key'] else config['api_key']
-    llm_model_name = config['llm_model_name']
-
-    if llm_endpoint == "https://api.openai.com/v1":
-        available_models, err = validate_model_availability([llm_model_name, 'gpt-4.1-mini', 'gpt-4o-mini', 'gpt-3.5-turbo'], llm_api_key, llm_endpoint)
-        if not available_models or err:
-            return {
-                'skipped': False,
-                'success': False,
-                'config': None,
-                'message': err
-            }
-        
-        [current_model, gpt41mini, gpt4oMini, gpt35turbo] = available_models
-        
-        if llm_model_name == 'gpt-4.1-mini' and not current_model and gpt4oMini:
-            updated_config['llm_model_name'] = 'gpt-4o-mini'
-            return {
-                'skipped': False,
-                'success': True,
-                'config': updated_config,
-                'message': f'Your model provider doesn\'t serve "{llm_model_name}" to you. Falling back to "gpt-4o-mini".'
-            }
-            
-        if llm_model_name == 'gpt-4.1-mini' and not current_model and gpt35turbo:
-            updated_config['llm_model_name'] = 'gpt-3.5-turbo'
-            return {
-                'skipped': False,
-                'success': True,
-                'config': updated_config,
-                'message': f'Your model provider doesn\'t serve "{llm_model_name}" to you. Falling back to "gpt-3.5-turbo".'
-            }
-        
-        if llm_model_name == 'gpt-4o-mini' and not current_model and gpt41mini:
-            updated_config['llm_model_name'] = 'gpt-4.1-mini'
-            return {
-                'skipped': False,
-                'success': True,
-                'config': updated_config,
-                'message': f'Your model provider doesn\'t serve "{llm_model_name}" to you. Upgrading to "gpt-4.1-mini".'
-            }
-        
-        if llm_model_name == 'gpt-4o-mini' and not current_model and gpt35turbo:
-            updated_config['llm_model_name'] = 'gpt-3.5-turbo'
-            return {
-                'skipped': False,
-                'success': True,
-                'config': updated_config,
-                'message': f'Your model provider doesn\'t serve "{llm_model_name}" to you. Falling back to "gpt-3.5-turbo".'
-            }
-        
-        if llm_model_name == 'gpt-3.5-turbo' and gpt41mini:
-            updated_config['llm_model_name'] = 'gpt-4.1-mini'
-            return {
-                'skipped': False,
-                'success': True,
-                'config': updated_config,
-                'message': f'Your model provider now serves "gpt-4.1-mini". Upgrading to "gpt-4.1-mini".'
-            }
-        if llm_model_name == 'gpt-3.5-turbo' and gpt4oMini:
-            updated_config['llm_model_name'] = 'gpt-4o-mini'
-            return {
-                'skipped': False,
-                'success': True,
-                'config': updated_config,
-                'message': f'Your model provider now serves "gpt-4o-mini". Upgrading to "gpt-4o-mini".'
-            }
-        
-        if not current_model:
-            return {
-                'skipped': False,
-                'success': False,
-                'config': None,
-                'message': f'Your model provider doesn\'t serve "{llm_model_name}" to you. Please check your model name.'
-            }
-
-    return {
-        'skipped': True,
-        'success': True,
-        'config': None,
-        'message': None
-    }
-
-
 def validate_config(config: Config) -> Config | None:
-
-    validation_result = check_and_upgrade_model({**config})
-
-    # Send validation result message
-    if not validation_result['skipped']:
-        if validation_result['message']:
-            emit_message(
-                "model_validation",
-                success=validation_result['success'],
-                message=validation_result['message'],
-            )
-        
-        if validation_result['success']:
-            return validation_result['config']
-        else:
-            return None
-
     return config
 
 class UpdateCharacterRequest(TypedDict):

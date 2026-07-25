@@ -83,7 +83,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     private configSubscription?: Subscription;
     private systemSubscription?: Subscription;
     private plugin_settings_message_subscription?: Subscription;
-    private validationSubscription?: Subscription;
     public usageDisclaimerAccepted = false;
 
     // Track current tab and temporary highlight state
@@ -182,21 +181,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
                 },
             );
 
-        this.validationSubscription = this.configService.validation$
-            .subscribe((validation) => {
-                if (validation) {
-                    // Show snackbar for validation messages
-                    const snackBarDuration = validation.success ? 3000 : 6000;
-                    const snackBarClass = validation.success
-                        ? "validation-success-snackbar"
-                        : "validation-error-snackbar";
-
-                    this.snackBar.open(validation.message, "Dismiss", {
-                        duration: snackBarDuration,
-                        panelClass: [snackBarClass],
-                    });
-                }
-            });
     }
 
     ngOnDestroy() {
@@ -205,9 +189,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
         }
         if (this.systemSubscription) {
             this.systemSubscription.unsubscribe();
-        }
-        if (this.validationSubscription) {
-            this.validationSubscription.unsubscribe();
         }
         if (this.plugin_settings_message_subscription) {
             this.plugin_settings_message_subscription.unsubscribe();

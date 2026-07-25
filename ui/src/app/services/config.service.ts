@@ -34,16 +34,6 @@ export interface RefreshSystemInfoMessage extends BaseCommand {
     type: "refresh_system_info";
 }
 
-export interface ModelValidationMessage extends BaseMessage {
-    type: "model_validation";
-    success: boolean;
-    message: string;
-}
-
-export interface StartMessage extends BaseMessage {
-    type: "start";
-}
-
 export interface KeybindsMessages extends BaseMessage {
     type: "keybinds";
     missing: string[];
@@ -207,11 +197,6 @@ export class ConfigService {
     private screensSubject = new BehaviorSubject<ScreenInfo[] | null>(null);
     public screens$ = this.screensSubject.asObservable();
 
-    private validationSubject = new BehaviorSubject<
-        ModelValidationMessage | null
-    >(null);
-    public validation$ = this.validationSubject.asObservable();
-
     private plugin_settings_message_subject = new BehaviorSubject<
         PluginSettingsMessage | null
     >(null);
@@ -239,21 +224,17 @@ export class ConfigService {
                 | ConfigMessage
                 | RunningConfigMessage
                 | SystemInfoMessage
-                | ModelValidationMessage
                 | PluginSettingsMessage
                 | PluginModelProvidersMessage
-                | StartMessage
                 | KeybindsMessages =>
                 message.type === "config" ||
                 message.type === "running_config" ||
                 message.type === "system" ||
-                message.type === "model_validation" ||
                 message.type === "plugin_settings_configs" ||
                 message.type === "plugin_model_providers" ||
-                message.type === "start" ||
                 message.type === "keybinds"
             ),
-        ).subscribe((message: ConfigMessage | RunningConfigMessage | SystemInfoMessage | ModelValidationMessage | PluginSettingsMessage | PluginModelProvidersMessage | StartMessage | KeybindsMessages) => {
+        ).subscribe((message: ConfigMessage | RunningConfigMessage | SystemInfoMessage | PluginSettingsMessage | PluginModelProvidersMessage | KeybindsMessages) => {
             if (message.type === "config") {
                 this.configSubject.next(message.config);
             } else if (message.type === "running_config") {
@@ -275,14 +256,10 @@ export class ConfigService {
                         "service.install.id": this.tauriService.installId,
                     })
                 };
-            } else if (message.type === "model_validation") {
-                this.validationSubject.next(message);
             } else if (message.type === "plugin_settings_configs") {
                 this.plugin_settings_message_subject.next(message);
             } else if (message.type === "plugin_model_providers") {
                 this.plugin_model_providers_subject.next(message.providers);
-            } else if (message.type === "start") {
-                this.validationSubject.next(null);
             } else if (message.type === "keybinds") {
                 this.keybinds_subject.next(message);
             }
