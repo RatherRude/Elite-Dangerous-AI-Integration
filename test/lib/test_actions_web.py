@@ -100,6 +100,29 @@ def test_web_search_agent_returns_actionable_loop_error() -> None:
     )
 
 
+def test_blueprint_finder_handles_default_inventory_states() -> None:
+    projected_states = {
+        "Materials": {
+            "Raw": [{"Name": "carbon", "Count": 0, "Name_Localised": None}],
+            "Manufactured": [],
+            "Encoded": [],
+        },
+        "ShipLocker": {
+            "Items": None,
+            "Components": None,
+            "Data": None,
+            "Consumables": None,
+        },
+    }
+
+    result = actions_web.blueprint_finder({
+        "modifications": ["Extra Backpack Capacity"],
+    }, projected_states)
+
+    assert "Extra Backpack Capacity" in result
+    assert actions_web.material_finder({}, projected_states) == "No materials found"
+
+
 def test_plot_name_match_score_prefers_exact_match() -> None:
     assert actions_web.plot_name_match_score("Sol", "Sol") == 1.0
     assert actions_web.plot_name_match_score("Jameson Memorial", "jameson memorial") == 1.0

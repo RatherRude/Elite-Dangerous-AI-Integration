@@ -832,20 +832,20 @@ def blueprint_finder(obj, projected_states):
         
         # Check Materials projection (ship materials)
         for material_type in ['Raw', 'Manufactured', 'Encoded']:
-            type_materials = materials_data.get(material_type, [])
+            type_materials = materials_data.get(material_type) or []
             for material in type_materials:
                 # Check both Name and Name_Localised for matching
                 if (material.get('Name', '').lower() == material_name_lower or
-                    material.get('Name_Localised', '').lower() == material_name_lower):
+                    (material.get('Name_Localised') or '').lower() == material_name_lower):
                     total_count += material.get('Count', 0)
         
         # Check ShipLocker projection (suit materials)
         for locker_type in ['Items', 'Components', 'Data', 'Consumables']:
-            type_materials = shiplocker_data.get(locker_type, [])
+            type_materials = shiplocker_data.get(locker_type) or []
             for material in type_materials:
                 # Check both Name and Name_Localised for matching
                 if (material.get('Name', '').lower() == material_name_lower or
-                    material.get('Name_Localised', '').lower() == material_name_lower):
+                    (material.get('Name_Localised') or '').lower() == material_name_lower):
                     total_count += material.get('Count', 0)
         
         return total_count
@@ -1530,7 +1530,7 @@ def material_finder(obj, projected_states):
     # Process ship materials from Materials projection
     if materials_data:
         for material_type in ['Raw', 'Manufactured', 'Encoded']:
-            type_materials = materials_data.get(material_type, [])
+            type_materials = materials_data.get(material_type) or []
 
             for material in type_materials:
                 material_name = material.get('Name', '').lower()
@@ -1568,7 +1568,7 @@ def material_finder(obj, projected_states):
     # Process suit materials from ShipLocker projection
     if shiplocker_data:
         for material_type in ['Items', 'Components', 'Data', 'Consumables']:
-            type_materials = shiplocker_data.get(material_type, [])
+            type_materials = shiplocker_data.get(material_type) or []
 
             for material in type_materials:
                 material_name = material.get('Name', '').lower()
