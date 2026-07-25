@@ -5,7 +5,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
-import sqlean as sqlite3
+import pysqlite3 as sqlite3
 import sqlite_vec
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))

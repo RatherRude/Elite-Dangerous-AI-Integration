@@ -2,7 +2,7 @@ import json
 import math
 import os
 from numpy import insert
-import sqlean as sqlite3
+import pysqlite3 as sqlite3
 from dataclasses import dataclass
 from datetime import date
 from typing import Any, Mapping, TypedDict, final
@@ -31,7 +31,6 @@ _thread_local = threading.local()
 def get_connection():
     # Check if this thread already has a connection
     if not hasattr(_thread_local, 'conn'):
-        # Use sqlite3 module instead of sqlean for better type annotation support
         _thread_local.conn = sqlite3.connect(get_db_path(), timeout=3) # Added timeout
         _thread_local.conn.execute("PRAGMA journal_mode=WAL;") # Enable WAL mode
         _thread_local.conn.enable_load_extension(True)

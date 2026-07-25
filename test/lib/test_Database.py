@@ -1,5 +1,5 @@
 import pytest
-import sqlean as sqlite3
+import pysqlite3 as sqlite3
 from datetime import datetime
 from dataclasses import dataclass
 from pathlib import Path
@@ -258,6 +258,27 @@ def test_kv_store_delete_all(kv_store: KeyValueStore) -> None:
 
 
 # VectorStore Tests
+def test_sqlite_vec_table_lifecycle(mock_connection: sqlite3.Connection) -> None:
+    mock_connection.execute('''
+        CREATE VIRTUAL TABLE test_vector_lifecycle USING vec0(
+            embedding FLOAT[2]
+        )
+    ''')
+    mock_connection.execute('''
+        INSERT INTO test_vector_lifecycle (rowid, embedding)
+        VALUES (1, '[1.0, 0.0]')
+    ''')
+
+    result = mock_connection.execute('''
+        SELECT rowid
+        FROM test_vector_lifecycle
+        WHERE embedding MATCH '[1.0, 0.0]' AND k = 1
+    ''').fetchone()
+    assert result == (1,)
+
+    mock_connection.execute('DROP TABLE test_vector_lifecycle')
+
+
 def test_vector_store_vector_and_keyword_search(vector_store: VectorStore, mock_connection: sqlite3.Connection) -> None:
     """Vector search ranks hybrid scores and returns typed payloads"""
     _ = mock_connection
