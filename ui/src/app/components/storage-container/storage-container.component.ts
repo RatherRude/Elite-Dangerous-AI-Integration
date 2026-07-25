@@ -15,6 +15,7 @@ import { FleetCarrierCardComponent } from "../fleet-carrier-card/fleet-carrier-c
 import { StorageSubtab, StorageSubtabId, StorageSubtabRailComponent } from "../storage-subtab-rail/storage-subtab-rail.component";
 import { ProjectionsService } from "../../services/projections.service";
 import { Subscription } from "rxjs";
+import { UIService } from "../../services/ui.service";
 
 @Component({
   selector: "app-storage-container",
@@ -42,11 +43,20 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
   readonly STORAGE_TAB = 'storage';
 
 
-  constructor(private projectionsService: ProjectionsService) {}
+  constructor(
+    private projectionsService: ProjectionsService,
+    private uiService: UIService,
+  ) {}
 
   ngOnInit(): void {
     // Subscribe to relevant projections
     this.subscriptions.push(
+      this.uiService.changeUI$.subscribe((message) => {
+        if (message?.show !== "storage" || !message.submenu) return;
+        if (this.getStorageSubtabs().some((tab) => tab.id === message.submenu)) {
+          this.activeStorageSubtab = message.submenu as StorageSubtabId;
+        }
+      }),
       this.projectionsService.shipLocker$.subscribe(shipLocker => {
         this.shipLocker = shipLocker;
         this.ensureValidStorageSubtab();

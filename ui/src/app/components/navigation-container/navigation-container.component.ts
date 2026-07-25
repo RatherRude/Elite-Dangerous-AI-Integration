@@ -14,6 +14,7 @@ import { EventMessage, EventService, GameEvent } from "../../services/event.serv
 import { ProjectionsService } from "../../services/projections.service";
 import { GetSystemEventsMessage, SystemEventsMessage, TauriService } from "../../services/tauri.service";
 import { NavigationSubtabId, NavigationSubtabRailComponent } from "../navigation-subtab-rail/navigation-subtab-rail.component";
+import { UIService } from "../../services/ui.service";
 
 type NavigationOption = { id: string; label: string; systemName: string; systemAddress: number | null };
 type NavigationRouteOption = NavigationOption & { scoopable: boolean | null };
@@ -99,10 +100,17 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
         private projectionsService: ProjectionsService,
         private tauriService: TauriService,
         private eventService: EventService,
+        private uiService: UIService,
     ) {}
 
     ngOnInit(): void {
         this.subs.push(
+            this.uiService.changeUI$.subscribe((message) => {
+                if (message?.show !== "navigation" || !message.submenu) return;
+                if (["location", "list", "route"].includes(message.submenu)) {
+                    this.activeNavigationSubtab = message.submenu as NavigationSubtabId;
+                }
+            }),
             this.projectionsService.location$.subscribe((location) => {
                 this.commanderSystemName = location?.StarSystem ?? "Unknown";
                 this.commanderSystemAddress = location?.SystemAddress ?? null;
