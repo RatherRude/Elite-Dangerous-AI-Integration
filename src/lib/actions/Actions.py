@@ -121,12 +121,14 @@ def fire_weapons(args, projected_states):
         # Allow per-call overrides, fallback to configured globals
         fg_value = args.get('discoveryFiregroup', discovery_firegroup_var)
         primary_flag = args.get('discoveryPrimary', discovery_primary_var)
-        # Set desired firegroup (1..8 => index 0..7)
+        # Set desired firegroup (1..8 => index 0..7); 0 keeps the current group.
         try:
-            fg_index = max(0, min(7, int(fg_value) - 1))
+            fg_value = int(fg_value)
         except Exception:
-            fg_index = 0
-        cycle_fire_group({'fire_group': fg_index}, projected_states)
+            fg_value = 1
+        if fg_value > 0:
+            fg_index = max(0, min(7, fg_value - 1))
+            cycle_fire_group({'fire_group': fg_index}, projected_states)
         # Use primary or secondary based on flag
         keys.send('PrimaryFire' if bool(primary_flag) else 'SecondaryFire', hold=6)
         return f"Discovery scan has been performed{' by the ship computer' if 'qol' in args else ''}."

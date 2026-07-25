@@ -112,6 +112,7 @@
                                                     <mat-label>Discovery Firegroup</mat-label>
                                                     <mat-select [ngModel]="config.discovery_firegroup_var"
                                                                (ngModelChange)="onConfigChange({discovery_firegroup_var: $event})">
+                                                        <mat-option [value]="0">Keep Current</mat-option>
                                                         <mat-option [value]="1">1</mat-option>
                                                         <mat-option [value]="2">2</mat-option>
                                                         <mat-option [value]="3">3</mat-option>
@@ -369,6 +370,7 @@
                 <mat-label>Discovery Firegroup</mat-label>
                 <mat-select [ngModel]="config.discovery_firegroup_var"
                         (ngModelChange)="onConfigChange({discovery_firegroup_var: $event})">
+                    <mat-option [value]="0">Keep Current</mat-option>
                     <mat-option [value]="1">1</mat-option>
                     <mat-option [value]="2">2</mat-option>
                     <mat-option [value]="3">3</mat-option>
