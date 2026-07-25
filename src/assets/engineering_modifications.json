@@ -2154,5 +2154,18 @@
                 "1": {"cost": {"Credits": 1000000, "Digital Designs": 5, "Operational Manual": 5, "Production Schedule": 5, "Encrypted Memory Chip": 8, "Circuit Board": 3}, "engineers": ["Eleanor Bresa", "Kit Fowler", "Uma Laszlo"]}
             }
         }
+    },
+    "Scope": {
+        "module_recipes": {
+            "Kinematic Armaments Weapons": {
+                "1": {"cost": {"Credits": 500000, "Spectral Analysis Data": 5, "Biometric Data": 3, "Optical Lens": 5, "Optical Fibre": 3}, "engineers": ["Oden Geiger", "Rosa Dayette", "Wellington Beck"]}
+            },
+            "Takada Weapons": {
+                "1": {"cost": {"Credits": 500000, "Spectral Analysis Data": 5, "Biometric Data": 3, "Optical Lens": 5, "Optical Fibre": 3}, "engineers": ["Oden Geiger", "Rosa Dayette", "Wellington Beck"]}
+            },
+            "Manticore weapons": {
+                "1": {"cost": {"Credits": 500000, "Spectral Analysis Data": 5, "Biometric Data": 3, "Optical Lens": 5, "Optical Fibre": 3}, "engineers": ["Oden Geiger", "Rosa Dayette", "Wellington Beck"]}
+            }
+        }
     }
 }
