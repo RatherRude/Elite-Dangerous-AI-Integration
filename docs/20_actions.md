@@ -1412,7 +1412,13 @@ These are driven primarily by local projections and static data; they never perf
 
 1. **Show UI**
 
-    - `tab`: String (options: "chat", "status", "storage", "station")
+    - `tab`: String (options: "chat", "status", "navigation", "storage", "station", "tasks", "logbook", "search")
+    - `submenu`: Optional string. Available submenus depend on the selected tab:
+      - Navigation: "location", "list", "route"
+      - Storage: "colonisation", "cargo", "carriers", "materials", "locker", "engineers", "blueprints", "modules", "ships"
+      - Tasks: "missions", "quests", "community-goals"
+
+    The action rejects a submenu that does not belong to the selected tab. Some submenus are only available when their related game data exists, such as Cargo, Carriers, Colonisation, and Quests.
 
     <details>
     <summary>Examples</summary>
@@ -1421,6 +1427,36 @@ These are driven primarily by local projections and static data; they never perf
     - show status
     - open storage
     - open station tab
+    - show location
+    - show list
+    - show route
+    - show colonisation
+    - show cargo
+    - show carriers
+    - show materials
+    - show locker
+    - show engineers
+    - show blueprints
+    - show modules
+    - show ships
+    - show missions
+    - show quests
+    - show community goals
+    </details>
+
+2. **Scroll UI**
+
+    Scrolls the currently displayed tab.
+
+    - `direction`: String (options: "top", "up", "down", "bottom")
+
+    <details>
+    <summary>Examples</summary>
+
+    - scroll down
+    - scroll up
+    - scroll to top
+    - scroll to bottom
     </details>
 
 ## Generative UI (HUD)

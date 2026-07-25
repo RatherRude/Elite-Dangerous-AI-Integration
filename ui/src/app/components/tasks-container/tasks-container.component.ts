@@ -7,6 +7,7 @@ import { ProjectionsService } from "../../services/projections.service";
 import { Subscription } from "rxjs";
 import { EventMessage, EventService, QuestEvent } from "../../services/event.service";
 import { GetQuestsMessage, QuestsMessage, TauriService } from "../../services/tauri.service";
+import { UIService } from "../../services/ui.service";
 
 @Component({
   selector: "app-tasks-container",
@@ -31,11 +32,18 @@ export class TasksContainerComponent implements OnInit, OnDestroy {
     private projectionsService: ProjectionsService,
     private tauriService: TauriService,
     private eventService: EventService,
+    private uiService: UIService,
   ) {}
 
   ngOnInit(): void {
     // Subscribe only to projections referenced in the template
     this.subscriptions.push(
+      this.uiService.changeUI$.subscribe((message) => {
+        if (message?.show !== "tasks" || !message.submenu) return;
+        if (this.getTasksSubtabs().some((tab) => tab.id === message.submenu)) {
+          this.activeTasksSubtab = message.submenu as TasksSubtabId;
+        }
+      }),
       this.projectionsService.missions$.subscribe((missions) => {
         this.missions = missions;
       }),

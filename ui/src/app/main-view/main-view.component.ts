@@ -143,8 +143,14 @@ export class MainViewComponent implements OnInit, OnDestroy {
 
 
         this.uiChangeSubscription = this.uiService.changeUI$.subscribe(
-            (tabName) => {
-                if (tabName === null) return;
+            (uiMessage) => {
+                if (uiMessage === null) return;
+                if (uiMessage.scroll) {
+                    this.scrollActiveTab(uiMessage.scroll);
+                    return;
+                }
+                const tabName = uiMessage.show;
+                if (!tabName) return;
                 
                 let current = 0;
                 if (tabName === 'chat') {
@@ -280,6 +286,30 @@ export class MainViewComponent implements OnInit, OnDestroy {
         }
 
         return "rocket_launch";
+    }
+
+    private scrollActiveTab(direction: "top" | "up" | "down" | "bottom"): void {
+        const activeTab = document.querySelector<HTMLElement>(".mat-mdc-tab-body-active");
+        if (!activeTab) return;
+
+        const scrollContainer = Array.from(activeTab.querySelectorAll<HTMLElement>("*")).find((element) => {
+            const overflowY = getComputedStyle(element).overflowY;
+            return (overflowY === "auto" || overflowY === "scroll") && element.scrollHeight > element.clientHeight;
+        });
+        if (!scrollContainer) return;
+
+        if (direction === "top" || direction === "bottom") {
+            scrollContainer.scrollTo({
+                top: direction === "top" ? 0 : scrollContainer.scrollHeight,
+                behavior: "smooth",
+            });
+            return;
+        }
+
+        scrollContainer.scrollBy({
+            top: (direction === "up" ? -1 : 1) * scrollContainer.clientHeight * 0.75,
+            behavior: "smooth",
+        });
     }
 
     // Called by the floating FAB when the policy is not yet accepted

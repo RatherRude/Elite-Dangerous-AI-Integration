@@ -851,7 +851,7 @@ class Config(TypedDict):
     use_action_cache_var: bool
     allowed_actions: list[str]
     discovery_primary_var: bool
-    discovery_firegroup_var: int
+    discovery_firegroup_var: int  # 0 keeps the current firegroup; 1-8 select one
     weapon_types: list[WeaponType]
     in_system_navigation: bool
     # Chat channel tab settings (whether channel has its own tab in-game)
