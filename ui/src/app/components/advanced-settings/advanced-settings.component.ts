@@ -41,6 +41,7 @@ import { ChatService } from "../../services/chat.service";
 import { MatSliderModule } from "@angular/material/slider";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { ScreenInfo } from "../../models/screen-info";
+import QRCode from "qrcode";
 
 export type AdvancedSettingsFocusTarget =
     | "commander-name"
@@ -48,7 +49,7 @@ export type AdvancedSettingsFocusTarget =
     | "tts-output-device"
     | "overlay-mode";
 
-type AdvancedSettingsPanel = "commander" | "stt" | "tts" | "overlay";
+type AdvancedSettingsPanel = "commander" | "stt" | "tts" | "overlay" | "remote-interface";
 
 @Component({
     selector: "app-advanced-settings",
@@ -112,12 +113,20 @@ export class AdvancedSettingsComponent implements OnDestroy {
     apiKeyType: string | null = null;
     assigningPTTIndex: number | null = null;
     isRefreshingAudioDevices = false;
+    isStartingRemoteInterface = false;
+    remoteInterfaceUrl: string | null = null;
+    remoteInterfacePin: string | null = null;
+    remoteInterfaceQrCode: string | null = null;
+    remoteInterfaceHost = "127.0.0.1";
+    remoteInterfacePort = 4048;
+    remoteInterfaceBindAddresses: string[] = ["127.0.0.1"];
     highlightTarget: AdvancedSettingsFocusTarget | null = null;
     expandedPanels: Record<AdvancedSettingsPanel, boolean> = {
         commander: false,
         stt: false,
         tts: false,
         overlay: false,
+        "remote-interface": false,
     };
 
     // Plugin model providers grouped by kind
@@ -165,6 +174,7 @@ export class AdvancedSettingsComponent implements OnDestroy {
             },
         );
         void this.loadOverlayRuntimeInfo();
+        void this.loadRemoteInterfaceBindAddresses();
     }
     ngOnDestroy() {
         // Unsubscribe from the config observable to prevent memory leaks
@@ -409,6 +419,21 @@ export class AdvancedSettingsComponent implements OnDestroy {
         }
     }
 
+    private async loadRemoteInterfaceBindAddresses(): Promise<void> {
+        if (!window.electronAPI?.invoke) {
+            return;
+        }
+
+        try {
+            const addresses = await window.electronAPI.invoke('get_remote_interface_bind_addresses');
+            if (Array.isArray(addresses) && addresses.every((address) => typeof address === 'string')) {
+                this.remoteInterfaceBindAddresses = addresses;
+            }
+        } catch (error) {
+            console.error('Error loading remote interface bind addresses:', error);
+        }
+    }
+
     parseFloat(value: string): number {
         return parseFloat(value.replaceAll(",", "."));
     }
@@ -505,6 +530,137 @@ export class AdvancedSettingsComponent implements OnDestroy {
             this.snackBar.open('Failed to open Accessibility settings.', 'OK', {
                 duration: 5000,
             });
+        }
+    }
+
+    async startRemoteInterface(): Promise<void> {
+        if (!window.electronAPI?.invoke) {
+            this.snackBar.open('Remote web interface can only be started from the desktop app.', 'OK', {
+                duration: 5000,
+            });
+            return;
+        }
+
+        this.isStartingRemoteInterface = true;
+        try {
+            const result = await window.electronAPI.invoke('start_remote_interface', {
+                host: this.remoteInterfaceHost,
+                port: this.remoteInterfacePort,
+            });
+            if (typeof result?.host === 'string') {
+                this.remoteInterfaceHost = result.host;
+            }
+            if (Number.isInteger(result?.port)) {
+                this.remoteInterfacePort = result.port;
+            }
+            this.remoteInterfaceUrl = typeof result?.url === 'string' ? result.url : `http://${this.remoteInterfaceHost}:${this.remoteInterfacePort}/`;
+            this.remoteInterfacePin = typeof result?.pin === 'string' ? result.pin : null;
+            await this.updateRemoteInterfaceQrCode(this.remoteInterfaceShareUrl);
+            this.snackBar.open(`Remote web interface started at ${this.remoteInterfaceUrl}`, 'OK', {
+                duration: 5000,
+            });
+        } catch (error) {
+            console.error('Error starting remote web interface:', error);
+            this.snackBar.open('Failed to start remote web interface.', 'OK', {
+                duration: 5000,
+            });
+        } finally {
+            this.isStartingRemoteInterface = false;
+        }
+    }
+
+    isValidRemoteInterfacePort(): boolean {
+        return Number.isInteger(this.remoteInterfacePort)
+            && this.remoteInterfacePort >= 1
+            && this.remoteInterfacePort <= 65535;
+    }
+
+    get remoteInterfaceShareUrl(): string | null {
+        if (!this.remoteInterfaceUrl) {
+            return null;
+        }
+        return this.remoteInterfacePin
+            ? `${this.remoteInterfaceUrl}#pin=${encodeURIComponent(this.remoteInterfacePin)}`
+            : this.remoteInterfaceUrl;
+    }
+
+    async copyRemoteInterfaceUrl(): Promise<void> {
+        if (!this.remoteInterfaceShareUrl) {
+            return;
+        }
+        await this.copyRemoteInterfaceValue(this.remoteInterfaceShareUrl, 'Remote interface link copied.');
+    }
+
+    async copyRemoteInterfacePin(): Promise<void> {
+        if (!this.remoteInterfacePin) {
+            return;
+        }
+        await this.copyRemoteInterfaceValue(this.remoteInterfacePin, 'Remote interface PIN copied.');
+    }
+
+    private async copyRemoteInterfaceValue(value: string, successMessage: string): Promise<void> {
+        try {
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(value);
+            } else {
+                const input = document.createElement('textarea');
+                input.value = value;
+                input.style.position = 'fixed';
+                input.style.opacity = '0';
+                document.body.appendChild(input);
+                try {
+                    input.select();
+                    if (!document.execCommand('copy')) {
+                        throw new Error('Clipboard API is unavailable');
+                    }
+                } finally {
+                    input.remove();
+                }
+            }
+            this.snackBar.open(successMessage, 'OK', { duration: 3000 });
+        } catch (error) {
+            console.error('Error copying remote interface value:', error);
+            this.snackBar.open('Failed to copy the remote interface value.', 'OK', { duration: 5000 });
+        }
+    }
+
+    private async updateRemoteInterfaceQrCode(url: string | null): Promise<void> {
+        if (!url) {
+            this.remoteInterfaceQrCode = null;
+            return;
+        }
+
+        try {
+            this.remoteInterfaceQrCode = await QRCode.toDataURL(url, {
+                errorCorrectionLevel: 'M',
+                margin: 1,
+                width: 192,
+            });
+        } catch (error) {
+            console.error('Error generating remote interface QR code:', error);
+            this.remoteInterfaceQrCode = null;
+            this.snackBar.open('Failed to generate the remote interface QR code.', 'OK', { duration: 5000 });
+        }
+    }
+
+    async stopRemoteInterface(): Promise<void> {
+        if (!window.electronAPI?.invoke) {
+            return;
+        }
+
+        this.isStartingRemoteInterface = true;
+        try {
+            await window.electronAPI.invoke('stop_remote_interface');
+            this.remoteInterfaceUrl = null;
+            this.remoteInterfacePin = null;
+            this.remoteInterfaceQrCode = null;
+        } catch (error) {
+            console.error('Error stopping remote web interface:', error);
+            this.snackBar.open('Failed to stop remote web interface.', 'OK', {
+                duration: 5000,
+            });
+        } finally {
+            this.isStartingRemoteInterface = false;
         }
     }
 

@@ -383,6 +383,13 @@ class Chat:
 
         self.previous_states = {}
 
+    def emit_runtime_state(self):
+        _, projected_states = self.event_manager.get_current_state()
+        emit_message("running_config", config=self.config)
+        emit_message("system", system=get_system_info())
+        emit_message("states", states=projected_states)
+        self.previous_states = copy.deepcopy(projected_states)
+
     def on_event(self, event: Event, projected_states: dict[str, Any]):
         for key, value in projected_states.items():
             if self.previous_states.get(key, None) != value:
@@ -1092,7 +1099,7 @@ def read_stdin(chat: Chat):
                     log("error", f"Failed to reset quest progress: {e}")
                     emit_message("quest_progress_reset", success=False, message=str(e))
             if data.get("type") == "init_overlay":
-                emit_message("running_config", config=config)
+                chat.emit_runtime_state()
             if data.get("type") == "web_search":
                 query = data.get("query", "")
                 if query:

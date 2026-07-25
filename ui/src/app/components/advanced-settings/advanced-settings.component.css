@@ -26,6 +26,144 @@ mat-panel-title mat-icon {
   height: 20px;
 }
 
+.remote-interface-controls {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.remote-interface-controls mat-form-field {
+  flex: 1 1 14rem;
+}
+
+.remote-interface-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.remote-interface-running {
+  margin-top: 0.5rem;
+}
+
+.remote-interface-share-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 1.25rem;
+  border: 1px solid rgba(255, 152, 0, 0.45);
+  border-radius: 8px;
+  background: linear-gradient(120deg, rgba(255, 152, 0, 0.08), rgba(255, 255, 255, 0.02));
+}
+
+.remote-interface-share-content {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.remote-interface-status,
+.remote-interface-open,
+.remote-interface-qr-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.remote-interface-status {
+  color: #ff9800;
+  font-weight: 600;
+}
+
+.remote-interface-status mat-icon {
+  color: #66bb6a;
+}
+
+.remote-interface-share-content > p {
+  margin: 0.5rem 0 1rem;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.remote-interface-value {
+  margin: 0.7rem 0;
+}
+
+.remote-interface-value > span,
+.remote-interface-qr-wrap span {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.remote-interface-value > div {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.remote-interface-value code {
+  overflow: hidden;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.remote-interface-pin-value code {
+  letter-spacing: 0.15em;
+}
+
+.remote-interface-open {
+  display: inline-flex;
+  margin-top: 0.5rem;
+}
+
+.remote-interface-qr-wrap {
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.6rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.remote-interface-qr-wrap span {
+  margin: 0;
+  text-align: center;
+}
+
+.remote-interface-qr {
+  background: white;
+  border-radius: 4px;
+  height: 192px;
+  image-rendering: pixelated;
+  width: 192px;
+}
+
+.remote-interface-stop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.85rem;
+}
+
+@media (max-width: 640px) {
+  .remote-interface-share-card,
+  .remote-interface-stop {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
 .ptt-container,
 .overlay-primary-controls,
 .overlay-secondary-controls {
