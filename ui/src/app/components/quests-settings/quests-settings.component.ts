@@ -90,6 +90,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
     private collapsedStageKeys = new Set<string>();
     private collapseInitialized = false;
     private actorAvatarPreviewUrls = new Map<QuestActor, string>();
+    private readonly fontScaleChangeHandler = () => this.updateNetworkScale();
     questsListExpanded = true;
     actorsListExpanded = true;
     readonly defaultActorNameColor = "#2196F3";
@@ -105,6 +106,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
     ) {}
 
     ngOnInit(): void {
+        window.addEventListener("covas-font-scale-change", this.fontScaleChangeHandler);
         this.subscriptions.push(
             this.questsService.catalog$.subscribe((catalog) => {
                 for (const quest of catalog?.quests ?? []) {
@@ -169,6 +171,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
     }
 
     ngOnDestroy(): void {
+        window.removeEventListener("covas-font-scale-change", this.fontScaleChangeHandler);
         this.subscriptions.forEach((subscription) => subscription.unsubscribe());
         this.stageGraphSubscriptions.forEach((subscription) =>
             subscription.unsubscribe(),
@@ -824,6 +827,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
         if (this.network) {
             return;
         }
+        const fontScale = this.getFontScale();
         this.networkContainer = container;
         this.network = new Network(
             container,
@@ -833,9 +837,9 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
                     hierarchical: {
                         direction: "UD",
                         sortMethod: "directed",
-                        levelSeparation: 160,
-                        nodeSpacing: 220,
-                        treeSpacing: 260,
+                        levelSeparation: 160 * fontScale,
+                        nodeSpacing: 220 * fontScale,
+                        treeSpacing: 260 * fontScale,
                         blockShifting: true,
                         edgeMinimization: true,
                         parentCentralization: true,
@@ -844,7 +848,12 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
                 physics: { enabled: false },
                 nodes: {
                     shape: "box",
-                    margin: { top: 8, right: 8, bottom: 8, left: 8 },
+                    margin: {
+                        top: 8 * fontScale,
+                        right: 8 * fontScale,
+                        bottom: 8 * fontScale,
+                        left: 8 * fontScale,
+                    },
                     color: {
                         background: "rgba(32, 32, 32, 0.9)",
                         border: "rgba(70, 70, 70, 0.9)",
@@ -857,7 +866,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
                             border: "#ffa724",
                         },
                     },
-                    font: { color: "#f0f0f0", size: 12 },
+                    font: { color: "#f0f0f0", size: 12 * fontScale },
                     chosen: {
                         node: (
                             _values: any,
@@ -877,7 +886,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
                             values.color = "#000000";
                         },
                     },
-                    widthConstraint: { maximum: 220 },
+                    widthConstraint: { maximum: 220 * fontScale },
                 },
                 edges: {
                     arrows: { to: { enabled: true, scaleFactor: 0.7 } },
@@ -890,8 +899,8 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
                     },
                     font: {
                         color: "rgba(126, 224, 129, 0.9)",
-                        size: 11,
-                        strokeWidth: 3,
+                        size: 11 * fontScale,
+                        strokeWidth: 3 * fontScale,
                         strokeColor: "rgba(20, 35, 24, 0.8)",
                     },
                 },
@@ -926,6 +935,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
             return;
         }
 
+        const fontScale = this.getFontScale();
         const graph = this.buildStageGraph(quest);
         const fallbackStage = this.ensureFallbackStage(quest);
         const maxLevel = Math.max(...Array.from(graph.distances.values()), 0);
@@ -939,7 +949,7 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
                 id: FALLBACK_STAGE_NODE_ID,
                 label: `${fallbackStage.description || "Fallback"}\n(Fallback)`,
                 level: 0,
-                x: (maxLevel + 1) * 280,
+                x: (maxLevel + 1) * 280 * fontScale,
                 fixed: { x: true, y: false },
             },
         ];
@@ -968,8 +978,8 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
                         color: loopback
                             ? "rgba(170, 200, 255, 0.95)"
                             : "rgba(126, 224, 129, 0.9)",
-                        size: 11,
-                        strokeWidth: 3,
+                        size: 11 * fontScale,
+                        strokeWidth: 3 * fontScale,
                         strokeColor: "rgba(20, 35, 24, 0.8)",
                     },
                     smooth: loopback
@@ -993,8 +1003,8 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
                 },
                 font: {
                     color: "rgba(255, 210, 150, 0.95)",
-                    size: 11,
-                    strokeWidth: 3,
+                    size: 11 * fontScale,
+                    strokeWidth: 3 * fontScale,
                     strokeColor: "rgba(35, 22, 8, 0.8)",
                 },
                 smooth: { enabled: true, type: "cubicBezier", roundness: 0.2 },
@@ -1006,6 +1016,40 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
         this.edges.add(edges);
         this.network.setData({ nodes: this.nodes, edges: this.edges });
         this.network.fit({ animation: false });
+    }
+
+    private getFontScale(): number {
+        return Number.parseFloat(getComputedStyle(document.documentElement).fontSize) / 16;
+    }
+
+    private updateNetworkScale(): void {
+        if (!this.network) {
+            return;
+        }
+        const fontScale = this.getFontScale();
+        this.network.setOptions({
+            layout: {
+                hierarchical: {
+                    levelSeparation: 160 * fontScale,
+                    nodeSpacing: 220 * fontScale,
+                    treeSpacing: 260 * fontScale,
+                },
+            },
+            nodes: {
+                margin: {
+                    top: 8 * fontScale,
+                    right: 8 * fontScale,
+                    bottom: 8 * fontScale,
+                    left: 8 * fontScale,
+                },
+                font: { size: 12 * fontScale },
+                widthConstraint: { maximum: 220 * fontScale },
+            },
+            edges: {
+                font: { size: 11 * fontScale, strokeWidth: 3 * fontScale },
+            },
+        });
+        this.refreshNetwork();
     }
 
     private getAdvanceStageLabel(step: QuestPlanStep): string {
@@ -1066,8 +1110,8 @@ export class QuestsSettingsComponent implements OnInit, OnDestroy, AfterViewInit
 
     openActorAvatarCatalog(actor: QuestActor): void {
         const dialogRef = this.dialog.open(AvatarCatalogDialogComponent, {
-            width: "850px",
-            maxWidth: "95vw",
+            width: "53.125rem",
+            maxWidth: "calc(100vw - 2rem)",
             data: { currentAvatarPath: actor.avatar_url },
         });
         dialogRef.afterClosed().subscribe((result: AvatarCatalogResult | undefined) => {

@@ -68,12 +68,14 @@ export class GenUiRenderComponent implements AfterViewInit, OnDestroy {
 
     // Listen for messages from the iframe
     window.addEventListener('message', this.messageHandler);
+    window.addEventListener('covas-font-scale-change', this.fontScaleHandler);
   }
 
   ngOnDestroy() {
     this.codeSub?.unsubscribe();
     this.stateSub?.unsubscribe();
     window.removeEventListener('message', this.messageHandler);
+    window.removeEventListener('covas-font-scale-change', this.fontScaleHandler);
   }
 
   private messageHandler = (event: MessageEvent) => {
@@ -85,6 +87,15 @@ export class GenUiRenderComponent implements AfterViewInit, OnDestroy {
       this.updateSandboxState(this.state);
     } else if (event.data?.type === 'GENUI_ERROR') {
       console.error("GenUI: Iframe reported error", event.data.error);
+    }
+  }
+
+  private fontScaleHandler = () => this.applyFontScale();
+
+  private applyFontScale() {
+    const doc = this.iframeRef?.nativeElement.contentDocument;
+    if (doc?.documentElement) {
+      doc.documentElement.style.fontSize = getComputedStyle(document.documentElement).fontSize;
     }
   }
 
@@ -101,9 +112,10 @@ export class GenUiRenderComponent implements AfterViewInit, OnDestroy {
 
     // The HTML Boilerplate for the Sandbox
     // Note: We use ES Modules (type="module") to load Preact from CDN.
+    const rootFontSize = getComputedStyle(document.documentElement).fontSize;
     const htmlContent = `
       <!DOCTYPE html>
-      <html style="background: transparent; color-scheme: only dark;">
+      <html style="background: transparent; color-scheme: only dark; font-size: ${rootFontSize};">
       <head>
         <meta charset="UTF-8">
         <meta name="color-scheme" content="only dark">

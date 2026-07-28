@@ -99,10 +99,10 @@
     }
 
     mat-icon {
-      font-size: 18px;
+      font-size: 1.125rem;
       width: 18px;
       height: 18px;
-      line-height: 18px;
+      line-height: 1;
     }
   }
   &:hover {
@@ -159,14 +159,14 @@
   }
 
   mat-icon {
-    font-size: 18px;
+    font-size: 1.125rem;
     width: 18px;
     height: 18px;
-    line-height: 18px;
+    line-height: 1;
   }
 
   .category-count {
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: rgba(255, 255, 255, 0.85);
     width: 3ch;
     display: inline-block;

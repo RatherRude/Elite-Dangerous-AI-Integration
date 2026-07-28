@@ -22,7 +22,8 @@ export interface EdgeTtsVoiceData {
   styles: [`
     .voice-selector-container {
       display: flex;
-      height: 350px;
+      min-height: 18rem;
+      height: min(21.875rem, 60vh);
       margin-top: 10px;
       gap: 16px;
       border: 1px solid rgba(0, 0, 0, 0.12);
@@ -74,6 +75,24 @@ export interface EdgeTtsVoiceData {
     
     ::ng-deep .mat-mdc-dialog-content {
       max-height: 80vh;
+    }
+
+    @media (max-width: 42rem) {
+      .voice-selector-container {
+        flex-direction: column;
+        height: min(32rem, 70vh);
+      }
+
+      .language-list,
+      .voice-list {
+        flex: 1 1 50%;
+        min-height: 0;
+      }
+
+      .language-list {
+        border-right: 0;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+      }
     }
   `],
   standalone: true,
@@ -172,4 +191,4 @@ export class EdgeTtsVoicesDialogComponent implements OnInit {
   onSelect(voice: string): void {
     this.dialogRef.close(voice);
   }
-} 
+}

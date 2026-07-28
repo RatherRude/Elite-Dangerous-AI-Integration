@@ -16,7 +16,7 @@
 .browse-heading {
   margin: 8px 0 0;
   color: var(--hud-orange);
-  font-size: 16px;
+  font-size: 1rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   /*text-shadow: var(--hud-glow);*/
@@ -118,7 +118,7 @@
 }
 
 ::ng-deep .mat-form-field {
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 ::ng-deep .mat-mdc-text-field-wrapper {
@@ -180,7 +180,7 @@
   background-color: rgba(8, 4, 0, 0.94);
   color: var(--hud-text);
   font-family: var(--hud-font);
-  font-size: 14px;
+  font-size: 0.875rem;
   height: 42px;
   box-sizing: border-box;
   box-shadow: inset 0 0 18px color-mix(in srgb, var(--hud-orange) 8%, transparent);
@@ -282,7 +282,7 @@
 
 .search-results-header h3 {
   margin: 0;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   color: #e0e0e0;
 }
@@ -330,7 +330,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: #aaa;
   margin-bottom: 6px;
 }
@@ -344,13 +344,13 @@
 }
 
 .result-score {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--hud-cyan);
   font-weight: 600;
 }
 
 .result-timestamp {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: #888;
   font-family: 'Roboto Mono', monospace;
 }
@@ -391,7 +391,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: #aaa;
 }
 
