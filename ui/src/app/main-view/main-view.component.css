@@ -139,7 +139,7 @@
 }
 
 ::ng-deep .mat-mdc-tab {
-  min-width: 104px;
+  min-width: 6.5rem;
   transition: background-color 120ms ease, color 120ms ease, filter 120ms ease;
 }
 
@@ -150,9 +150,9 @@
 
 .tab-label-icon {
   margin-right: 6px;
-  font-size: 19px;
-  width: 19px;
-  height: 19px;
+  font-size: 1.1875rem;
+  width: 1em;
+  height: 1em;
 }
 
 .floating-action-container {

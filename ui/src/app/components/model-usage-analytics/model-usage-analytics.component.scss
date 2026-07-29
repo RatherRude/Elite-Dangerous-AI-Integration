@@ -42,7 +42,7 @@
 .card-kicker,
 .summary-label {
   margin: 0 0 8px;
-  font-size: 11px;
+  font-size: 0.6875rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--usage-muted);
@@ -125,13 +125,13 @@
 
 .summary-value {
   margin: 0;
-  font-size: clamp(22px, 2vw, 30px);
+  font-size: clamp(1.375rem, 2vw, 1.875rem);
   font-weight: 700;
 }
 
 .summary-detail {
   margin: 10px 0 0;
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1.45;
 }
 
@@ -212,7 +212,7 @@
   gap: 6px;
   padding: 6px 10px;
   border-radius: 4px;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
 }
 
@@ -304,12 +304,12 @@
   grid-template-columns: repeat(var(--timeline-bar-count, 1), minmax(0, 1fr));
   gap: clamp(3px, 0.6vw, 8px);
   align-items: start;
-  min-height: 270px;
+  min-height: 16.875rem;
 }
 
 .timeline-slot {
   display: grid;
-  grid-template-rows: 180px auto;
+  grid-template-rows: 11.25rem auto;
   gap: 8px;
   min-width: 0;
   overflow: hidden;
@@ -320,21 +320,21 @@
   justify-items: center;
   align-content: start;
   gap: 8px;
-  min-height: 30px;
+  min-height: 1.875rem;
 }
 
 .token-chart .timeline-footer {
-  grid-template-rows: minmax(13px, auto) 16px;
-  min-height: 37px;
+  grid-template-rows: minmax(0.8125rem, auto) 1rem;
+  min-height: 2.3125rem;
 }
 
 .char-chart .timeline-footer {
-  min-height: 16px;
+  min-height: 1rem;
 }
 
 .timeline-stack {
   width: 100%;
-  height: 180px;
+  height: 11.25rem;
   display: flex;
   flex-direction: column-reverse;
   justify-content: flex-start;
@@ -393,7 +393,7 @@
 
 .timeline-total {
   width: 100%;
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--usage-muted);
   line-height: 1.2;
   text-align: center;
@@ -404,8 +404,8 @@
 
 .timeline-label {
   width: 100%;
-  min-height: 16px;
-  font-size: 11px;
+  min-height: 1rem;
+  font-size: 0.6875rem;
   line-height: 1.2;
   text-align: center;
   color: var(--usage-muted);
@@ -483,7 +483,7 @@
 }
 
 .bar-value {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
 }
 
@@ -520,7 +520,7 @@
 }
 
 .recent-time {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--usage-muted);
   white-space: nowrap;
 }
@@ -540,7 +540,7 @@
 
 .state-title {
   margin: 0;
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 600;
 }
 

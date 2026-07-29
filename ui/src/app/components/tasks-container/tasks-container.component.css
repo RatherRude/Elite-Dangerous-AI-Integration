@@ -42,7 +42,7 @@
 .tasks-panel-header h3 {
   margin: 0;
   color: #e0e0e0;
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 600;
 }
 
@@ -70,7 +70,7 @@
 
 .section-header h3 {
   margin: 0 0 16px 0;
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 600;
 }
 
@@ -112,12 +112,12 @@
 }
 
 .mission-title {
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 600;
 }
 
 .mission-faction {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: #bbb;
 }
 
@@ -130,7 +130,7 @@
 
 .mission-destination mat-icon,
 .mission-commodity mat-icon {
-  font-size: 16px;
+  font-size: 1rem;
   vertical-align: middle;
   margin-right: 6px;
 }
@@ -138,7 +138,7 @@
 .mission-meta {
   display: flex;
   gap: 12px;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 .mission-meta .reward { color: #4caf50; font-weight: 500; }
@@ -164,12 +164,12 @@
 }
 
 .quest-title {
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 600;
 }
 
 .quest-stage {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: #bbb;
 }
 
@@ -181,7 +181,7 @@
 }
 
 .quest-description {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: #cfcfcf;
 }
 
@@ -189,24 +189,24 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: #f5f5f5;
 }
 
 .quest-instructions mat-icon {
-  font-size: 16px;
+  font-size: 1rem;
 }
 
 /* Community Goals */
 .cg-list { display: flex; flex-direction: column; gap: 12px; }
 .cg-item { padding: 16px; background: rgba(255,255,255,0.05); border: 1px solid #444; border-radius: 6px; }
 .cg-header { display: flex; justify-content: space-between; gap: 12px; }
-.cg-title { font-size: 16px; font-weight: 600; }
-.cg-location { font-size: 14px; color: #bbb; }
+.cg-title { font-size: 1rem; font-weight: 600; }
+.cg-location { font-size: 0.875rem; color: #bbb; }
 .cg-details { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
-.cg-stats { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; }
-.cg-stats mat-icon { font-size: 16px; vertical-align: middle; margin-right: 6px; }
-.cg-progress { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; }
+.cg-stats { display: flex; flex-wrap: wrap; gap: 0.75rem; font-size: 0.75rem; }
+.cg-stats mat-icon { font-size: 1rem; vertical-align: middle; margin-right: 0.375rem; }
+.cg-progress { display: flex; flex-wrap: wrap; gap: 0.75rem; font-size: 0.75rem; }
 .cg-expiry { color: #ffb74d; }
 
 .no-data-message {
@@ -219,7 +219,7 @@
   font-style: italic;
 }
 
-.no-data-message mat-icon { color: #888; font-size: 20px; }
+.no-data-message mat-icon { color: #888; font-size: 1.25rem; }
 
 
 

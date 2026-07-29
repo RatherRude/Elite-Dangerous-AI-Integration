@@ -42,6 +42,7 @@ import { MatSliderModule } from "@angular/material/slider";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { ScreenInfo } from "../../models/screen-info";
 import QRCode from "qrcode";
+import { FontScaleService } from "../../services/font-scale.service";
 
 export type AdvancedSettingsFocusTarget =
     | "commander-name"
@@ -120,6 +121,14 @@ export class AdvancedSettingsComponent implements OnDestroy {
     remoteInterfaceHost = "127.0.0.1";
     remoteInterfacePort = 4048;
     remoteInterfaceBindAddresses: string[] = ["127.0.0.1"];
+    readonly fontScaleOptions = [
+        { value: 0.875, label: "Compact" },
+        { value: 1, label: "Default" },
+        { value: 1.125, label: "Large" },
+        { value: 1.25, label: "Extra large" },
+        { value: 1.5, label: "Huge (150%)" },
+    ];
+    fontScale = 1;
     highlightTarget: AdvancedSettingsFocusTarget | null = null;
     expandedPanels: Record<AdvancedSettingsPanel, boolean> = {
         commander: false,
@@ -143,7 +152,9 @@ export class AdvancedSettingsComponent implements OnDestroy {
         private tauriService: TauriService,
         private dialog: MatDialog,
         private chatService: ChatService,
+        private fontScaleService: FontScaleService,
     ) {
+        this.fontScale = this.fontScaleService.scale;
         this.configSubscription = this.configService.config$.subscribe(
             (config) => {
                 this.config = config;
@@ -175,6 +186,16 @@ export class AdvancedSettingsComponent implements OnDestroy {
         );
         void this.loadOverlayRuntimeInfo();
         void this.loadRemoteInterfaceBindAddresses();
+    }
+
+    onFontScaleChange(scale: number): void {
+        this.fontScale = scale;
+        this.fontScaleService.setScale(scale);
+    }
+
+    resetFontScale(): void {
+        this.fontScaleService.reset();
+        this.fontScale = this.fontScaleService.scale;
     }
     ngOnDestroy() {
         // Unsubscribe from the config observable to prevent memory leaks

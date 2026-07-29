@@ -217,13 +217,13 @@ ul {
 
 .character-display {
   span.trait-label {
-    font-size: 18px;
+    font-size: 1.125rem;
     font-weight: 500;
   }
 }
 .character-content {
     white-space: pre-wrap;
-    //font-size: 14px;
+    //font-size: 0.875rem;
     //line-height: 1.5;
     max-height: 330px;
     overflow-y: auto;
@@ -447,7 +447,7 @@ ul {
         }
         
         mat-icon {
-          font-size: 18px;
+          font-size: 1.125rem;
           width: 18px;
           height: 18px;
         }
@@ -568,7 +568,7 @@ ul {
   }
   
   mat-icon {
-    font-size: 18px;
+    font-size: 1.125rem;
     width: 18px;
     height: 18px;
   }
@@ -611,7 +611,7 @@ ul {
     left: 12px;
     background: #424242;
     padding: 0 4px;
-    font-size: 12px;
+    font-size: 0.75rem;
     color: rgba(255, 255, 255, 0.7);
     z-index: 1;
     pointer-events: none;
@@ -620,7 +620,7 @@ ul {
   .character-inspiration-editable {
     padding: 16px 14px;
     font-family: inherit;
-    font-size: 16px;
+    font-size: 1rem;
     line-height: 1.5;
     color: rgba(255, 255, 255, 0.87);
     background: transparent;

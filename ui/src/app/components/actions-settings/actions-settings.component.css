@@ -24,7 +24,7 @@ mat-slide-toggle {
 
 .generative-ui-warning mat-icon {
   flex-shrink: 0;
-  font-size: 20px;
+  font-size: 1.25rem;
   width: 20px;
   height: 20px;
   padding-top: 3px;
@@ -40,10 +40,39 @@ mat-slide-toggle {
 .permission-item {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.bindings-preference-row,
+.discovery-fields,
+.quality-of-life-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.bindings-preference-row > p {
+  flex: 1 1 18rem;
+}
+
+.bindings-field,
+.discovery-fields mat-form-field,
+.quality-of-life-row mat-form-field {
+  flex: 1 1 12.5rem;
+  min-width: min(100%, 11.25rem);
+}
+
+.discovery-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0.5rem 0 0 0.75rem;
 }
 
 .perm-type {
-  width: 100px;
+  flex: 0 1 6.25rem;
   /*color: rgba(0,0,0,0.75);*/
   font-weight: 600;
 }
@@ -52,6 +81,7 @@ mat-slide-toggle {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 /* Weapon Types Styling */
@@ -70,12 +100,13 @@ mat-slide-toggle {
 .weapon-types-label {
   font-weight: 500;
   opacity: 0.8;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .weapon-types-btn {
-  height: 32px;
-  line-height: 32px;
+  min-height: 2rem;
+  height: auto;
+  line-height: 1.25;
 }
 
 .weapon-types-container {
@@ -106,16 +137,18 @@ mat-slide-toggle {
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .weapon-name-field {
   flex: 1;
-  max-width: 190px;
+  min-width: min(100%, 12rem);
+  max-width: 18rem;
 }
 
 .weapon-description {
   flex: 1;
-  font-size: 13px;
+  font-size: 0.8125rem;
   opacity: 0.9;
   margin-left: 8px;
 }
@@ -151,26 +184,26 @@ mat-slide-toggle {
 }
 
 .weapon-icon {
-  font-size: 18px;
-  line-height: 18px;
+  font-size: 1.125rem;
+  line-height: 1;
   overflow: visible;
 }
 
 /* Weapon field widths */
 .field-group {
-  width: 85px;
+  flex: 1 1 5.5rem;
 }
 
 .field-fire {
-  width: 105px;
+  flex: 1 1 6.75rem;
 }
 
 .field-mode {
-  width: 105px;
+  flex: 1 1 6.75rem;
 }
 
 .field-action {
-  width: 95px;
+  flex: 1 1 6rem;
 }
 
 .field-duration {

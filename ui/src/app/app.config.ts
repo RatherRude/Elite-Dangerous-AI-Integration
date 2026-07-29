@@ -9,6 +9,7 @@ import { MatSnackBarModule } from "@angular/material/snack-bar";
 import { importProvidersFrom } from "@angular/core";
 import { MarkdownModule } from 'ngx-markdown';
 import { AvatarMigrationService } from "./services/avatar-migration.service";
+import { FontScaleService } from "./services/font-scale.service";
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -24,6 +25,14 @@ export const appConfig: ApplicationConfig = {
       deps: [AvatarMigrationService],
       useFactory: (avatarMigrationService: AvatarMigrationService) => () => {
         avatarMigrationService.init();
+      },
+    },
+    {
+      provide: APP_INITIALIZER,
+      multi: true,
+      deps: [FontScaleService],
+      useFactory: (fontScaleService: FontScaleService) => () => {
+        fontScaleService.init();
       },
     },
     { provide: MAT_DIALOG_DEFAULT_OPTIONS, useValue: { hasBackdrop: true, autoFocus: true } }

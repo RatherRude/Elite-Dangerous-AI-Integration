@@ -1,8 +1,9 @@
 mat-dialog-content {
-  min-width: 300px;
+  width: min(30rem, calc(100vw - 2rem));
+  max-width: 100%;
   margin-bottom: 16px;
 }
 
 p {
   margin: 8px 0;
-} 
+}

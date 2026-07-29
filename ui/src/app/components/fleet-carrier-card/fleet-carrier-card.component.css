@@ -21,7 +21,7 @@
 
 .section-header h4 {
   margin: 0 0 12px 0;
-  font-size: 16px;
+  font-size: 1rem;
   color: #e0e0e0;
   font-weight: 600;
 }
@@ -49,9 +49,9 @@
 
 .detail-block h5 {
   margin: 0 0 8px 0;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: #bdbdbd;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -65,7 +65,7 @@
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: #e0e0e0;
 }
 
@@ -76,5 +76,5 @@
 .empty-state {
   color: #888;
   font-style: italic;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }

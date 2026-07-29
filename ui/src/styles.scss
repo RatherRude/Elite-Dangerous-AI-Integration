@@ -55,8 +55,22 @@ $secondary-palette: (
 $my-primary: mat.define-palette($primary-palette);
 $my-accent: mat.define-palette($secondary-palette);
 
-// Define typography config once
-$my-typography: mat.define-typography-config();
+// Material typography uses rem so it follows the application text-size setting.
+$my-typography: mat.define-typography-config(
+  $font-family: 'Jura, Eurostile, Rajdhani, "Segoe UI", sans-serif',
+  $headline-1: mat.define-typography-level(6rem, 1, 300),
+  $headline-2: mat.define-typography-level(3.75rem, 1, 300),
+  $headline-3: mat.define-typography-level(3rem, 1.05, 400),
+  $headline-4: mat.define-typography-level(2.125rem, 1.15, 400),
+  $headline-5: mat.define-typography-level(1.5rem, 1.25, 400),
+  $headline-6: mat.define-typography-level(1.25rem, 1.3, 500),
+  $subtitle-1: mat.define-typography-level(1rem, 1.5, 400),
+  $subtitle-2: mat.define-typography-level(0.875rem, 1.4, 500),
+  $body-1: mat.define-typography-level(1rem, 1.5, 400),
+  $body-2: mat.define-typography-level(0.875rem, 1.45, 400),
+  $caption: mat.define-typography-level(0.75rem, 1.4, 400),
+  $button: mat.define-typography-level(0.875rem, 1.25, 500),
+);
 
 // Define density config once
 $my-density: 0;
@@ -77,6 +91,7 @@ $my-dark-theme: mat.define-dark-theme((
 @include mat.all-component-densities($my-density);
 
 :root {
+  --ui-font-scale: 1;
   --hud-orange: #ff7500;
   --hud-orange-soft: color-mix(in srgb, var(--hud-orange) 62%, white);
   --hud-orange-dark: color-mix(in srgb, var(--hud-orange) 22%, black);
@@ -109,6 +124,24 @@ html, body, app-root {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  font-size: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+mat-icon.mat-icon {
+  width: 1em !important;
+  height: 1em !important;
+  line-height: 1 !important;
+  flex: 0 0 auto;
+  overflow: hidden;
 }
 
 body {
@@ -181,9 +214,10 @@ h1, h2, h3, h4, h5, h6,
 .mat-mdc-tab {
   --mat-tab-header-active-ripple-color: transparent;
   --mat-tab-header-inactive-ripple-color: transparent;
-  min-width: 104px !important;
-  height: 40px !important;
-  padding: 0 18px !important;
+  min-width: 6.5rem !important;
+  min-height: 2.5rem !important;
+  height: auto !important;
+  padding: 0.45rem 1.125rem !important;
   background: color-mix(in srgb, var(--hud-orange) 8%, transparent);
   border-right: 1px solid color-mix(in srgb, var(--hud-orange) 18%, transparent);
   transition: background-color 120ms ease, filter 120ms ease, color 120ms ease;
@@ -468,9 +502,9 @@ html.overlay-window app-root {
   padding: 6px 10px;
   border: 1px solid var(--hud-border);
   border-radius: 2px;
-  font-size: 14px;
-  max-width: 400px;
-  min-width: 200px;
+  font-size: 0.875rem;
+  max-width: 25rem;
+  min-width: 12.5rem;
   text-align: justify;
   line-height: 1.4;
   box-shadow: var(--hud-glow), 0 8px 26px rgba(0, 0, 0, 0.55);
@@ -479,4 +513,3 @@ html.overlay-window app-root {
   position: absolute;
   white-space: normal;
  }
-

@@ -1355,7 +1355,8 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
         const currentVoice = this.activeCharacter?.tts_voice ?? "en-US-AvaMultilingualNeural";
 
         const dialogRef = this.dialog.open(EdgeTtsVoicesDialogComponent, {
-            width: "800px",
+            width: "50rem",
+            maxWidth: "calc(100vw - 2rem)",
             data: {
                 voices: this.edgeTtsVoices,
                 selectedVoice: currentVoice,
@@ -1680,8 +1681,8 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
 
     openAvatarCatalog() {
         const dialogRef = this.dialog.open(AvatarCatalogDialogComponent, {
-            width: '850px',
-            maxWidth: '95vw',
+            width: '53.125rem',
+            maxWidth: 'calc(100vw - 2rem)',
             data: { currentAvatarPath: this.activeCharacter?.avatar }
         });
 

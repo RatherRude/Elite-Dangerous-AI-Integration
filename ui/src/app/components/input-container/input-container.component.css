@@ -18,7 +18,7 @@
     background-color: transparent;
     border: none;
     color: var(--hud-text);
-    font-size: 16px;
+    font-size: 1rem;
     font-family: var(--hud-font);
     font-weight: 700;
     letter-spacing: 0.04em;

@@ -722,7 +722,8 @@ export class TauriService {
     ): void {
         this.ngZone.run(() => {
             const dialogRef = this.dialog.open(UpdateDialogComponent, {
-                width: "400px",
+                width: "25rem",
+                maxWidth: "calc(100vw - 2rem)",
                 data: { releaseName, releaseUrl },
             });
 

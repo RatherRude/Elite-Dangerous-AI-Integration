@@ -1,7 +1,7 @@
 .avatar-catalog-dialog {
-  width: 800px;
-  max-width: 95vw;
-  max-height: 80vh;
+  width: min(50rem, calc(100vw - 2rem));
+  max-width: 100%;
+  max-height: calc(100vh - 2rem);
   display: flex;
   flex-direction: column;
 
@@ -13,6 +13,7 @@
     align-items: center;
     gap: 16px;
     flex-shrink: 0;
+    flex-wrap: wrap;
 
     .uploading-text {
       color: var(--mat-text-secondary);
@@ -29,7 +30,7 @@
 
   .avatar-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 10rem), 1fr));
     gap: 20px;
     overflow-y: auto;
     padding: 0 4px;
@@ -42,7 +43,7 @@
       color: var(--mat-text-secondary);
 
       mat-icon {
-        font-size: 48px;
+        font-size: 3rem;
         width: 48px;
         height: 48px;
         margin-bottom: 16px;
@@ -51,7 +52,7 @@
 
       p {
         margin: 0;
-        font-size: 14px;
+        font-size: 0.875rem;
       }
     }
 
@@ -126,14 +127,14 @@
             text-align: center;
             
             mat-icon {
-              font-size: 32px;
+              font-size: 2rem;
               width: 32px;
               height: 32px;
               margin-bottom: 4px;
             }
             
             span {
-              font-size: 12px;
+              font-size: 0.75rem;
               font-weight: 500;
             }
           }
@@ -146,14 +147,14 @@
             text-align: center;
             
             mat-icon {
-              font-size: 24px;
+              font-size: 1.5rem;
               width: 24px;
               height: 24px;
               margin-bottom: 4px;
             }
             
             span {
-              font-size: 11px;
+              font-size: 0.6875rem;
               font-weight: 500;
             }
           }
@@ -181,10 +182,10 @@
             }
             
             mat-icon {
-              font-size: 16px !important;
+              font-size: 1rem !important;
               width: 16px !important;
               height: 16px !important;
-              line-height: 16px !important;
+              line-height: 1 !important;
               margin: 0 !important;
             }
           }
@@ -203,7 +204,7 @@
         text-align: center;
 
         .avatar-filename {
-          font-size: 12px;
+          font-size: 0.75rem;
           font-weight: 500;
           margin-bottom: 4px;
           overflow: hidden;
@@ -212,7 +213,7 @@
         }
 
         .avatar-upload-time {
-          font-size: 10px;
+          font-size: 0.625rem;
           color: var(--mat-text-secondary);
           overflow: hidden;
           text-overflow: ellipsis;
@@ -227,4 +228,5 @@
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-} 
+  flex-wrap: wrap;
+}

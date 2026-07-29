@@ -7,7 +7,7 @@
 .engineers-table tr:hover { background-color: rgba(255, 255, 255, 0.05); }
 .engineer-name { font-weight: 500; margin-bottom: 6px; }
 .engineer-rank { display: flex; flex-direction: column; gap: 4px; }
-.rank-stars { color: #ffc107; letter-spacing: 3px; }
+.rank-stars { color: #ffc107; letter-spacing: 0.18em; }
 .star.filled { color: #ffc107; }
 .star.empty { color: rgba(255, 255, 255, 0.3); }
 .rank-progress { height: 4px; background-color: rgba(255, 255, 255, 0.1); border-radius: 2px; overflow: hidden; }
@@ -24,4 +24,3 @@
   .engineers-table th, .engineers-table td { padding: 6px 4px; font-size: 0.8em; }
   .engineer-mods, .engineer-location, .engineer-find, .engineer-invite, .engineer-unlock, .engineer-rep { max-width: 150px; font-size: 0.75em; }
 }
-

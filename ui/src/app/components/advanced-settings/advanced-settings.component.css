@@ -21,9 +21,37 @@ mat-panel-title {
 }
 
 mat-panel-title mat-icon {
-  font-size: 20px;
-  width: 20px;
-  height: 20px;
+  font-size: 1.25rem;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.font-scale-setting {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1fr) minmax(12rem, 18rem) auto;
+  align-items: center;
+  gap: 1rem;
+}
+
+.font-scale-setting p {
+  margin: 0.25rem 0 0;
+  color: var(--hud-muted);
+  line-height: 1.4;
+}
+
+@media (max-width: 52rem) {
+  .font-scale-setting {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .font-scale-setting mat-form-field {
+    width: 100%;
+  }
+
+  .font-scale-setting button {
+    justify-self: start;
+  }
 }
 
 .remote-interface-controls {
@@ -235,7 +263,7 @@ div.output-device-column .mat-mdc-form-field-subscript-wrapper {
 
 .output-volume-label {
   flex: 0 0 auto;
-  font-size: 12px;
+  font-size: 0.75rem;
   opacity: 0.85;
   line-height: 1;
 }
@@ -316,7 +344,7 @@ div.output-device-column .mat-mdc-form-field-subscript-wrapper {
 }
 
 .overlay-slider-field label {
-  font-size: 12px;
+  font-size: 0.75rem;
   opacity: 0.85;
 }
 
@@ -423,7 +451,7 @@ div.output-device-column .mat-mdc-form-field-subscript-wrapper {
 
 .generative-ui-warning mat-icon {
   flex-shrink: 0;
-  font-size: 20px;
+  font-size: 1.25rem;
   width: 20px;
   height: 20px;
   padding-top: 3px;

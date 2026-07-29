@@ -79,9 +79,9 @@
                         Available Game Actions
                     </mat-panel-title>
                 </mat-expansion-panel-header>
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+                <div class="bindings-preference-row">
                     <p style="margin: 0; flex: 1;">Select which keybinding set (Primary or Secondary) the AI should use by default.</p>
-                    <mat-form-field appearance="fill" style="width: 200px; flex-shrink: 0;">
+                    <mat-form-field appearance="fill" class="bindings-field">
                         <mat-label>Preferred Bindings</mat-label>
                         <mat-select [ngModel]="config.prefer_primary_bindings ? 'primary' : 'secondary'"
                                     (ngModelChange)="onConfigChange({prefer_primary_bindings: $event === 'primary'})">
@@ -98,9 +98,9 @@
                                     <mat-slide-toggle [ngModel]="isPermissionEnabled(perm)"
                                                       (ngModelChange)="onTogglePermission(perm, $event)">{{ perm }}</mat-slide-toggle>
                                     @if (perm === 'fireWeapons') {
-                                        <div style="display:flex; flex-direction: column; gap: 12px; margin-left:12px; margin-top: 8px;">
-                                            <div style="display:flex; gap: 8px; align-items:center;">
-                                                <mat-form-field appearance="fill" style="min-width: 220px;">
+                                        <div class="discovery-settings">
+                                            <div class="discovery-fields">
+                                                <mat-form-field appearance="fill">
                                                     <mat-label>Discovery Scan</mat-label>
                                                     <mat-select [ngModel]="config.discovery_primary_var ? 'primary' : 'secondary'"
                                                                (ngModelChange)="onConfigChange({discovery_primary_var: $event === 'primary'})">
@@ -108,7 +108,7 @@
                                                         <mat-option value="secondary">Secondary</mat-option>
                                                     </mat-select>
                                                 </mat-form-field>
-                                                <mat-form-field appearance="fill" style="min-width: 180px;">
+                                                <mat-form-field appearance="fill">
                                                     <mat-label>Discovery Firegroup</mat-label>
                                                     <mat-select [ngModel]="config.discovery_firegroup_var"
                                                                (ngModelChange)="onConfigChange({discovery_firegroup_var: $event})">
@@ -349,7 +349,7 @@
             Auto Brake
         </mat-slide-toggle>
         <p>Automatically brake when entering a new star system.</p>
-        <div style="display: flex; gap: 8px; align-items: center;">
+        <div class="quality-of-life-row">
 
             <span>
                 <mat-slide-toggle [ngModel]="config.qol_autoscan"
@@ -358,7 +358,7 @@
                 </mat-slide-toggle>
                 <p>Automatically perform a system scan when entering a new star system.</p>
             </span>
-            <mat-form-field appearance="fill" style="width: 200px; margin-left: 8px;">
+            <mat-form-field appearance="fill">
                 <mat-label>Discovery Scan</mat-label>
                 <mat-select [ngModel]="config.discovery_primary_var ? 'primary' : 'secondary'"
                         (ngModelChange)="onConfigChange({discovery_primary_var: $event === 'primary'})">
@@ -366,7 +366,7 @@
                     <mat-option value="secondary">Secondary</mat-option>
                 </mat-select>
             </mat-form-field>
-            <mat-form-field appearance="fill" style="width: 200px; margin-left: 8px;">
+            <mat-form-field appearance="fill">
                 <mat-label>Discovery Firegroup</mat-label>
                 <mat-select [ngModel]="config.discovery_firegroup_var"
                         (ngModelChange)="onConfigChange({discovery_firegroup_var: $event})">
