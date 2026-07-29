@@ -533,32 +533,15 @@ def system_map_open_or_close(args, projected_states, sys_map_key='SystemMapOpen'
 
 
 # Mainship Actions
-
-def _wait_for_mode(modes: set[str]) -> bool:
-    def mode_matches(status) -> bool:
-        flags = status.flags
-        flags2 = status.flags2
-        return (
-            ('mainship' in modes and flags.InMainShip)
-            or ('buggy' in modes and flags.InSRV and flags.Landed)
-            or ('nomad' in modes and flags.InSRV and not flags.Landed)
-            or ('humanoid' in modes and flags2 is not None and flags2.OnFoot)
-        )
-
-    try:
-        event_manager.wait_for_condition('CurrentStatus', mode_matches, 2)
-        return True
-    except TimeoutError:
-        return False
-
-
 def deploy_srv(args, projected_states):
     setGameWindowActive()
     current_status = get_state_dict(projected_states, 'CurrentStatus')
+    if not current_status.get('flags', {}).get('Landed'):
+        return "Impossible because the ship isn't currently landed."
     if current_status.get('GuiFocus') != 'RolePanel':
         keys.send('UIFocus')
         keys.send('FocusRadarPanel')
-        keys.send('CycleNextPanel', repeat=3)
+    keys.send('CycleNextPanel', repeat=3)
     keys.send('CyclePreviousPanel')
     keys.send('UI_Right')
 
@@ -567,7 +550,11 @@ def deploy_srv(args, projected_states):
         keys.send('UI_Down', repeat=vehicle_number - 1)
     keys.send('UI_Select')
 
-    return 'SRV deployed.' if _wait_for_mode({'buggy'}) else 'Failed to deploy SRV.'
+    try:
+        event_manager.wait_for_condition('CurrentStatus', lambda s: s.flags.InSRV and s.flags.Landed, 2)
+    except TimeoutError:
+        return 'Failed to deploy SRV.'
+    return 'SRV deployed.'
 
 
 def dock_srv(args, projected_states):
@@ -576,22 +563,36 @@ def dock_srv(args, projected_states):
     if current_status.get('GuiFocus') != 'RolePanel':
         keys.send('UIFocus')
         keys.send('FocusRadarPanel')
-        keys.send('CyclePreviousPanel', repeat=2)
+    keys.send('CyclePreviousPanel', repeat=2)
     keys.send('CycleNextPanel')
     keys.send('UI_Right')
     keys.send('UI_Select')
 
-    return 'SRV docked.' if _wait_for_mode({'mainship'}) else 'Failed to dock SRV.'
+    try:
+        event_manager.wait_for_condition('CurrentStatus', lambda s: s.flags.InMainShip, 2)
+    except TimeoutError:
+        return 'Failed to dock SRV.'
+    return 'SRV docked.'
 
 
 def disembark(args, projected_states):
     setGameWindowActive()
-    flags = get_state_dict(projected_states, 'CurrentStatus').get('flags', {})
+    current_status = get_state_dict(projected_states, 'CurrentStatus')
+    flags = current_status.get('flags', {})
+    if not flags.get('Landed'):
+        return "Impossible because the ship isn't currently landed."
+    if current_status.get('GuiFocus') != 'RolePanel':
+        keys.send('UIFocus')
+        keys.send('FocusRadarPanel')
     keys.send('CyclePreviousPanel', repeat=2 if flags.get('InSRV') else 3)
     keys.send('UI_Right')
     keys.send('UI_Select')
 
-    return 'Disembarked.' if _wait_for_mode({'humanoid'}) else 'Failed to disembark.'
+    try:
+        event_manager.wait_for_condition('CurrentStatus', lambda s: s.flags2 is not None and s.flags2.OnFoot, 2)
+    except TimeoutError:
+        return 'Failed to disembark.'
+    return 'Disembarked.'
 
 
 def embark(args, projected_states):
@@ -599,7 +600,11 @@ def embark(args, projected_states):
     keys.send('HumanoidPrimaryInteractButton')
     keys.send('UI_Select')
 
-    return 'Embarked.' if _wait_for_mode({'buggy', 'nomad', 'mainship'}) else 'Failed to embark.'
+    try:
+        event_manager.wait_for_condition('CurrentStatus', lambda s: s.flags.InSRV or s.flags.InMainShip, 2)
+    except TimeoutError:
+        return 'Failed to embark.'
+    return 'Embarked.'
 
 def eject_all_cargo(args, projected_states):
     setGameWindowActive()
