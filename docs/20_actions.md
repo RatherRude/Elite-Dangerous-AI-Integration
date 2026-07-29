@@ -728,7 +728,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 
     <details>
     <summary>Examples</summary>
-    
+
     - request docking
     - dock
     - docking request
@@ -741,6 +741,49 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     <summary>Required Keyboard Binds</summary>
 
     - OrderRequestDock
+    </details>
+
+### Nomad Actions
+
+1. **Request docking with main ship**
+
+    <details>
+    <summary>Examples</summary>
+
+    - request docking
+    - dock with ship
+    - return to ship
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - UIFocus
+    - FocusRadarPanel
+    - CyclePreviousPanel
+    - CycleNextPanel
+    - UI_Right
+    - UI_Select
+    </details>
+
+2. **Recall or dismiss ship**
+
+    <details>
+    <summary>Examples</summary>
+
+    - recall ship
+    - dismiss ship
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - UIFocus
+    - FocusRadarPanel
+    - CyclePreviousPanel
+    - CycleNextPanel
+    - UI_Right
+    - UI_Select
     </details>
 
 ### Surface Reconnaissance Vehicle (SRV) Actions

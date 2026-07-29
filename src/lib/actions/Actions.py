@@ -765,6 +765,33 @@ def fighter_request_dock(args, projected_states):
     return f"A request for docking has been sent"
 
 
+# Nomad Actions
+def request_docking_nomad(args, projected_states):
+    setGameWindowActive()
+    current_status = get_state_dict(projected_states, 'CurrentStatus')
+    if current_status.get('GuiFocus') != 'RolePanel':
+        keys.send('UIFocus')
+        keys.send('FocusRadarPanel')
+    keys.send('CyclePreviousPanel', repeat=2)
+    keys.send('CycleNextPanel')
+    keys.send('UI_Right', repeat=2)
+    keys.send('UI_Select')
+    return 'Docking with the main ship requested.'
+
+
+def recall_dismiss_ship_nomad(args, projected_states):
+    setGameWindowActive()
+    current_status = get_state_dict(projected_states, 'CurrentStatus')
+    if current_status.get('GuiFocus') != 'RolePanel':
+        keys.send('UIFocus')
+        keys.send('FocusRadarPanel')
+    keys.send('CyclePreviousPanel', repeat=2)
+    keys.send('CycleNextPanel')
+    keys.send('UI_Right')
+    keys.send('UI_Select')
+    return 'Remote ship recall or dismiss requested.'
+
+
 # NPC Crew Order Actions
 def npc_order(args, projected_states):
     checkStatus(projected_states, {'Docked': True, 'Landed': True, 'Supercruise': True})
@@ -1998,6 +2025,24 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "permission to dock": {},
         "requesting docking": {},
         "docking permission": {},
+    })
+
+    # Register actions - Nomad Actions
+    actionManager.registerAction('requestDockingNomad', "Request docking with ship", {
+        "type": "object",
+        "properties": {},
+    }, request_docking_nomad, 'nomad', permission='requestDockingNomad', cache_prefill={
+        "request docking": {},
+        "dock with ship": {},
+        "return to ship": {},
+    })
+
+    actionManager.registerAction('recallDismissShipNomad', "Recall or dismiss ship", {
+        "type": "object",
+        "properties": {},
+    }, recall_dismiss_ship_nomad, 'nomad', permission='recallDismissShipNomad', cache_prefill={
+        "recall ship": {},
+        "dismiss ship": {},
     })
 
     # Register actions - SRV Actions (Horizons)
