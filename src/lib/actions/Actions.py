@@ -584,7 +584,7 @@ def disembark(args, projected_states):
     if current_status.get('GuiFocus') != 'RolePanel':
         keys.send('UIFocus')
         keys.send('FocusRadarPanel')
-    keys.send('CyclePreviousPanel', repeat=2 if flags.get('InSRV') else 3)
+    keys.send('CyclePreviousPanel', repeat=3)
     keys.send('UI_Right')
     keys.send('UI_Select')
 
@@ -1869,7 +1869,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
     actionManager.registerAction('disembark', "Leave vehicle", {
         "type": "object",
         "properties": {},
-    }, disembark, ['mainship', 'buggy'], permission='disembark', cache_prefill={
+    }, disembark, ['mainship', 'buggy', 'nomad'], permission='disembark', cache_prefill={
         "disembark": {},
         "exit vehicle": {},
         "leave vehicle": {},

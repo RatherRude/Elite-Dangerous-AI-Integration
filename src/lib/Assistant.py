@@ -891,7 +891,9 @@ class Assistant:
             if flags:
                 if flags.get("InMainShip"):
                     active_mode = "mainship"
-                elif (flags.get("InSRV") and not flags.get("Landed")) or flags.get("InFighter"):
+                elif flags.get("InSRV") and not flags.get("Landed"):
+                    active_mode = "nomad"
+                elif flags.get("InFighter"):
                     active_mode = "fighter"
                 elif flags.get("InSRV"):
                     active_mode = "buggy"
