@@ -533,6 +533,44 @@ def system_map_open_or_close(args, projected_states, sys_map_key='SystemMapOpen'
 
 
 # Mainship Actions
+def launch_slf(args, projected_states):
+    checkStatus(projected_states, {'Docked': True, 'Landed': True, 'Supercruise': True})
+    ship_info = get_state_dict(projected_states, 'ShipInfo')
+    fighters = ship_info.get('Fighters', [])
+    vehicle_number = args.get('vehicle_number', 1)
+
+    if vehicle_number not in (1, 2):
+        raise Exception('Fighter bay slot must be 1 or 2.')
+    if not fighters:
+        raise Exception('No fighter bay installed in this ship.')
+    if vehicle_number > len(fighters):
+        raise Exception('No second fighter bay installed in this ship.')
+
+    setGameWindowActive()
+    current_status = get_state_dict(projected_states, 'CurrentStatus')
+    if current_status.get('GuiFocus') != 'RolePanel':
+        keys.send('UIFocus')
+        keys.send('FocusRadarPanel')
+    keys.send('CyclePreviousPanel', repeat=3)
+    keys.send('CycleNextPanel')
+    keys.send('UI_Right')
+    keys.send('UI_Up' if vehicle_number == 1 else 'UI_Down')
+    keys.send('UI_Select')
+    keys.send('UI_Up')
+    keys.send('UI_Select')
+    keys.send('UIFocus')
+
+    try:
+        event_manager.wait_for_condition(
+            'ShipInfo',
+            lambda s: any(fighter.Status == 'Launched' for fighter in s.Fighters),
+            1,
+        )
+    except TimeoutError:
+        return 'Failed to launch SLF.'
+    return f'SLF {vehicle_number} launched.'
+
+
 def deploy_srv(args, projected_states):
     setGameWindowActive()
     current_status = get_state_dict(projected_states, 'CurrentStatus')
@@ -598,6 +636,7 @@ def disembark(args, projected_states):
 def embark(args, projected_states):
     setGameWindowActive()
     keys.send('HumanoidPrimaryInteractButton')
+    keys.send('UI_Up', repeat=2)
     keys.send('UI_Select')
 
     try:
@@ -776,6 +815,7 @@ def request_docking_nomad(args, projected_states):
     keys.send('CycleNextPanel')
     keys.send('UI_Right', repeat=2)
     keys.send('UI_Select')
+    keys.send('UIFocus')
     return 'Docking with the main ship requested.'
 
 
@@ -789,6 +829,7 @@ def recall_dismiss_ship_nomad(args, projected_states):
     keys.send('CycleNextPanel')
     keys.send('UI_Right')
     keys.send('UI_Select')
+    keys.send('UIFocus')
     return 'Remote ship recall or dismiss requested.'
 
 
@@ -806,10 +847,11 @@ def npc_order(args, projected_states):
             if order in ['LaunchFighter1', 'LaunchFighter2']:
                 if len(fighters) == 1 and order == 'LaunchFighter2':
                     raise Exception("No second figher bay installed in this ship.")
-                keys.send('FocusRadarPanel')
-                keys.send('UI_Left', repeat=2)
-                keys.send('UI_Up', repeat=3)
-                keys.send('UI_Down')
+                if current_status.get('GuiFocus') != 'RolePanel':
+                    keys.send('UIFocus')
+                    keys.send('FocusRadarPanel')
+                keys.send('CyclePreviousPanel', repeat=3)
+                keys.send('CycleNextPanel')
                 keys.send('UI_Right')
                 if order == 'LaunchFighter1':
                     keys.send('UI_Up')
@@ -1863,22 +1905,25 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
                     ]
                 }
             }
-        }
+    }
     }, npc_order, 'ship', permission='npcOrder', cache_prefill={
-        "launch fighter": {"orders": ["LaunchFighter1"]},
-        "deploy fighter": {"orders": ["LaunchFighter1"]},
-        "recall fighter": {"orders": ["ReturnToShip"]},
-        "attack my target": {"orders": ["FocusTarget"]},
-        "engage target": {"orders": ["FocusTarget"]},
-        "defend me": {"orders": ["DefensiveBehaviour"]},
-        "be aggressive": {"orders": ["AggressiveBehaviour"]},
-        "hold fire": {"orders": ["HoldFire"]},
-        "cease fire": {"orders": ["HoldFire"]},
-        "hold position": {"orders": ["HoldPosition"]},
-        "follow me": {"orders": ["Follow"]},
+        "launch npc fighter": {"orders": ["LaunchFighter1"]},
+        "deploy npc fighter": {"orders": ["LaunchFighter1"]},
     })
 
     # Register actions - Mainship Actions
+    actionManager.registerAction('launchSLF', "Launch a ship-launched fighter", {
+        "type": "object",
+        "properties": {
+            "vehicle_number": {
+                "type": "integer",
+                "description": "Fighter bay slot to launch; defaults to 1",
+                "enum": [1, 2],
+                "default": 1,
+            },
+        },
+    }, launch_slf, 'mainship', permission='launchSLF', cache_prefill={})
+
     actionManager.registerAction('deploySRV', "Deploy an SRV", {
         "type": "object",
         "properties": {
@@ -1966,7 +2011,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
     actionManager.registerAction('landingGearToggle', "Toggle landing gear", {
         "type": "object",
         "properties": {}
-    }, landing_gear_toggle, 'mainship', permission='landingGearToggle', cache_prefill={
+    }, landing_gear_toggle, ['mainship','nomad'], permission='landingGearToggle', cache_prefill={
         "landing gear": {},
         "gear": {},
         "deploy gear": {},
