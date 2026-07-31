@@ -589,7 +589,7 @@ def deploy_srv(args, projected_states):
     keys.send('UI_Select')
 
     try:
-        event_manager.wait_for_condition('CurrentStatus', lambda s: s.flags.InSRV and s.flags.Landed, 2)
+        event_manager.wait_for_condition('CurrentStatus', lambda s: s.flags.InSRV, 2)
     except TimeoutError:
         return 'Failed to deploy SRV.'
     return 'SRV deployed.'
@@ -637,6 +637,7 @@ def embark(args, projected_states):
     setGameWindowActive()
     keys.send('HumanoidPrimaryInteractButton')
     keys.send('UI_Up', repeat=2)
+    keys.send('UI_Down')
     keys.send('UI_Select')
 
     try:
