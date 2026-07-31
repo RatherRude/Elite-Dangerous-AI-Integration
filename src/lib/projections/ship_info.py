@@ -83,6 +83,7 @@ class ShipInfoStateModel(BaseModel):
     hasLimpets: bool = Field(default=False, description="Whether ship has limpet controllers")
     hasDockingComputer: bool = Field(default=False, description="Whether ship has docking computer")
     Fighters: list[FighterState] = Field(default_factory=list, description="Ship-launched fighters status")
+    fighter_loadout: Optional[str] = Field(default=None, description="Loadout of the launched fighter")
 
 
 class ShipInfo(Projection[ShipInfoStateModel]):
@@ -105,6 +106,7 @@ class ShipInfo(Projection[ShipInfoStateModel]):
 
         if isinstance(event, GameEvent) and event.content.get("event") == "Loadout":
             payload = cast(LoadoutEvent, event.content)
+            self.state.fighter_loadout = None
             if "ShipName" in payload:
                 self.state.Name = payload.get("ShipName") or "Unknown"
             if "Ship" in payload:
@@ -242,11 +244,15 @@ class ShipInfo(Projection[ShipInfoStateModel]):
         if isinstance(event, GameEvent) and event.content.get("event") == "FSDJump":
             self.state.JetConeBoost = 1
             self.state.FSDSynthesis = 0
+            self.state.fighter_loadout = None
             for fighter in self.state.Fighters:
                 fighter.Status = "Ready"
                 fighter.ID = None
                 fighter.Pilot = None
                 fighter.RebuiltAt = None
+
+        if isinstance(event, GameEvent) and event.content.get("event") in ["Died", "SRVDestroyed"]:
+            self.state.fighter_loadout = None
 
         if isinstance(event, GameEvent) and event.content.get("event") == "Cargo":
             payload = cast(CargoEvent, event.content)
@@ -269,8 +275,10 @@ class ShipInfo(Projection[ShipInfoStateModel]):
             payload = cast(LaunchFighterEvent, event.content)
             fighter_id = payload.get("ID")
             player_controlled = payload.get("PlayerControlled", False)
+            fighter_loadout = payload.get("Loadout")
 
             if fighter_id is not None:
+                self.state.fighter_loadout = fighter_loadout
                 # Determine pilot based on PlayerControlled flag
                 pilot = "Commander" if player_controlled else "NPC Crew"
 
@@ -303,6 +311,7 @@ class ShipInfo(Projection[ShipInfoStateModel]):
                     fighter.Status = "Ready"
                     fighter.ID = None
                     fighter.Pilot = None
+                    self.state.fighter_loadout = None
                     break
 
         if isinstance(event, GameEvent) and event.content.get("event") == "FighterDestroyed":
@@ -332,6 +341,7 @@ class ShipInfo(Projection[ShipInfoStateModel]):
                     fighter.Status = "Ready"
                     fighter.ID = None
                     fighter.Pilot = None
+                    self.state.fighter_loadout = None
                     fighter.RebuiltAt = None
                     break
 

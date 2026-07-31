@@ -2031,7 +2031,7 @@ class LaunchFighterEvent(TypedDict):
     event: Literal["LaunchFighter"]
     PlayerControlled: bool
     timestamp: str
-    Loadout: Literal["one"]
+    Loadout: Literal["one", "base"]
 
 
 # SendText: 949 characters, 6 entries

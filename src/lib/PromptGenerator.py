@@ -2829,7 +2829,7 @@ class PromptGenerator:
             
         return normalized
 
-    def generate_vehicle_status(self, current_status:dict, in_combat:dict):
+    def generate_vehicle_status(self, current_status:dict, in_combat:dict, ship_info:dict):
         flags = [key for key, value in current_status["flags"].items() if value]
         if current_status.get("flags2"):
             flags += [key for key, value in current_status["flags2"].items() if value]
@@ -2921,6 +2921,8 @@ class PromptGenerator:
                 active_mode = "Main ship"
             elif flags["InFighter"]:
                 active_mode = "Ship launched fighter"
+            elif flags["InSRV"] and ship_info.get("fighter_loadout") == "base":
+                active_mode = "Ship launched fighter"
             elif flags["InSRV"]:
                 active_mode = "SRV"
         if flags2:
@@ -2994,7 +2996,8 @@ class PromptGenerator:
             status_entries.append(("Gravity", gravity))
 
         in_combat = get_state_dict(projected_states, 'InCombat')
-        active_mode, vehicle_status = self.generate_vehicle_status(current_status, in_combat)
+        ship_info = get_state_dict(projected_states, 'ShipInfo')
+        active_mode, vehicle_status = self.generate_vehicle_status(current_status, in_combat, ship_info)
         status_entries.append((active_mode+" status", vehicle_status))
 
         if not search_agent_context:
@@ -3008,7 +3011,6 @@ class PromptGenerator:
                 status_entries.append(("Current active window: ", guifocus))
 
         # Get ship and cargo info
-        ship_info = get_state_dict(projected_states, 'ShipInfo')
         cargo_info = get_state_dict(projected_states, 'Cargo')
         fighters = ship_info.get('Fighters', [])
         
