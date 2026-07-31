@@ -719,27 +719,30 @@ def next_system_in_route(args, projected_states):
     return "Targeting next system in route"
 
 
-def undock(args, projected_states):
+def liftoff(args, projected_states):
     setGameWindowActive()
-    # Early return if we're not docked
     current_status = get_state_dict(projected_states, 'CurrentStatus')
-    if not current_status.get('flags', {}).get('Docked'):
-        raise Exception("The ship currently isn't docked.")
+    flags = current_status.get('flags', {})
 
-    gui_focus = current_status.get('GuiFocus')
-    if gui_focus in ['InternalPanel', 'CommsPanel', 'RolePanel', 'ExternalPanel']:
-        keys.send('UIFocus')
-        sleep(1)
-    elif gui_focus == 'NoFocus':
-        pass
-    else:
-        raise Exception("The currently focused UI needs to be closed first")
+    if flags.get('Docked'):
+        gui_focus = current_status.get('GuiFocus')
+        if gui_focus in ['InternalPanel', 'CommsPanel', 'RolePanel', 'ExternalPanel']:
+            keys.send('UIFocus')
+            sleep(1)
+        elif gui_focus != 'NoFocus':
+            raise Exception("The currently focused UI needs to be closed first")
 
-    keys.send('UI_Down', None, 3)
-    keys.send('UI_Up')
-    keys.send('UI_Select')
+        keys.send('UI_Down', None, 3)
+        keys.send('UI_Up')
+        keys.send('UI_Select')
+        return 'The ship is now undocking.'
 
-    return 'The ship is now undocking'
+    if flags.get('Landed'):
+        keys.send('UpThrustButton', hold=3)
+        keys.send('LandingGearToggle')
+        return 'Liftoff initiated and landing gear retracted.'
+
+    raise Exception('The ship must be docked or landed to initiate liftoff.')
 
 
 def docking_key_press_sequence(stop_event):
@@ -814,7 +817,7 @@ def request_docking_nomad(args, projected_states):
         keys.send('FocusRadarPanel')
     keys.send('CyclePreviousPanel', repeat=2)
     keys.send('CycleNextPanel')
-    keys.send('UI_Right', repeat=2)
+    keys.send('UI_Right')
     keys.send('UI_Select')
     keys.send('UIFocus')
     return 'Docking with the main ship requested.'
@@ -828,7 +831,7 @@ def recall_dismiss_ship_nomad(args, projected_states):
         keys.send('FocusRadarPanel')
     keys.send('CyclePreviousPanel', repeat=2)
     keys.send('CycleNextPanel')
-    keys.send('UI_Right')
+    keys.send('UI_Right', repeat=2)
     keys.send('UI_Select')
     keys.send('UIFocus')
     return 'Remote ship recall or dismiss requested.'
@@ -2036,7 +2039,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "restore shields": {},
     })
 
-    actionManager.registerAction('requestDocking', "Request docking.", {
+    actionManager.registerAction('requestDocking', "Request docking", {
         "type": "object",
         "properties": {}
     }, request_docking, 'mainship', permission='requestDocking', cache_prefill={
@@ -2048,16 +2051,17 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "docking permission": {},
     })
 
-    actionManager.registerAction('undockShip', "", {
+    actionManager.registerAction('liftoff', "Undock from station or lift off from planet", {
         "type": "object",
         "properties": {}
-    }, undock, 'mainship', permission='undockShip', cache_prefill={
+    }, liftoff, ['mainship', 'nomad'], permission='liftoff', cache_prefill={
         "undock": {},
         "launch": {},
         "depart": {},
         "leave station": {},
         "takeoff": {},
         "disengage": {},
+        "liftoff": {},
     })
 
     # Register actions - Ship Launched Fighter Actions
