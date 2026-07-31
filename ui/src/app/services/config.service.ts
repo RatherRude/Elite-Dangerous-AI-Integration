@@ -138,7 +138,7 @@ export interface Config {
     web_search_actions_var: boolean;
     ui_actions_var: boolean;
     use_action_cache_var: boolean;
-    allowed_actions?: string[];
+    allowed_actions: Record<string, boolean>;
     discovery_primary_var: boolean;
     discovery_firegroup_var: number;
     weapon_types: WeaponType[];

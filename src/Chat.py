@@ -160,13 +160,13 @@ class Chat:
 
         log("debug", "Initializing Action Manager...")
         self.action_manager = ActionManager()
-        # Set allowed actions permissions from config (empty means allow all)
+        # Set enabled action permissions from config. Missing keys are disabled.
         try:
             self.action_manager.set_allowed_actions(
-                self.config.get("allowed_actions", [])
+                self.config.get("allowed_actions", {})
             )
         except Exception:
-            self.action_manager.set_allowed_actions([])
+            self.action_manager.set_allowed_actions({})
 
         log("debug", "Initializing EDJournal...")
         self.jn = EDJournal(get_ed_journals_path(config))
