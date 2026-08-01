@@ -102,3 +102,81 @@ def test_run_action_iterator_exception_returns_error_result() -> None:
     assert result["role"] == "tool"
     assert result["name"] == "testAction"
     assert str(result["content"]).startswith("ERROR: ValueError")
+
+
+@pytest.mark.parametrize(
+    ("allowed_actions", "is_registered"),
+    [
+        ({}, False),
+        ({"testPermission": False}, False),
+        ({"testPermission": True}, True),
+    ],
+)
+def test_registration_requires_explicitly_enabled_permission(
+    allowed_actions: dict[str, bool],
+    is_registered: bool,
+) -> None:
+    manager = ActionManager()
+    manager.set_allowed_actions(allowed_actions)
+
+    manager.registerAction(
+        "testAction",
+        "Test action",
+        {},
+        lambda args, states: "done",
+        permission="testPermission",
+    )
+
+    assert ("testAction" in manager.actions) is is_registered
+
+
+def test_tool_list_requires_explicitly_enabled_permission() -> None:
+    manager = ActionManager()
+    manager.set_allowed_actions({
+        "enabledPermission": True,
+        "disabledPermission": True,
+        "missingPermission": True,
+    })
+
+    for action_name, permission in [
+        ("enabledAction", "enabledPermission"),
+        ("disabledAction", "disabledPermission"),
+        ("missingAction", "missingPermission"),
+    ]:
+        manager.registerAction(
+            action_name,
+            "Test action",
+            {},
+            lambda args, states: "done",
+            permission=permission,
+        )
+
+    tools = manager.getToolsList(
+        "ship",
+        True,
+        False,
+        False,
+        {
+            "enabledPermission": True,
+            "disabledPermission": False,
+        },
+    )
+
+    assert [tool["function"]["name"] for tool in tools] == ["enabledAction"]
+
+
+def test_permissionless_actions_remain_available() -> None:
+    manager = ActionManager()
+    manager.set_allowed_actions({})
+    manager.registerAction(
+        "permissionlessAction",
+        "Test action",
+        {},
+        lambda args, states: "done",
+    )
+
+    tools = manager.getToolsList("ship", True, False, False, {})
+
+    assert [tool["function"]["name"] for tool in tools] == [
+        "permissionlessAction"
+    ]

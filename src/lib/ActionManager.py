@@ -27,23 +27,22 @@ class ActionManager:
 
     def __init__(self):
         self.action_cache = KeyValueStore("action_cache")
-        self.allowed_actions: list[str] | None = None
+        self.allowed_actions: dict[str, bool] = {}
 
-    def set_allowed_actions(self, allowed_actions: list[str] | None):
-        """Set the list of allowed permission keys. Empty list or None means allow all."""
-        self.allowed_actions = allowed_actions or []
+    def set_allowed_actions(self, allowed_actions: dict[str, bool] | None):
+        """Set enabled states by permission key. Missing keys are disabled."""
+        self.allowed_actions = allowed_actions if isinstance(allowed_actions, dict) else {}
 
-    def getToolsList(self, active_mode: str, uses_actions: bool, uses_web_actions: bool, uses_ui_actions: bool, allowed_actions: list[str] | None = None):
+    def getToolsList(self, active_mode: str, uses_actions: bool, uses_web_actions: bool, uses_ui_actions: bool, allowed_actions: dict[str, bool] | None = None):
         """return list of functions as passed to gpt"""
 
         actions = self.actions.values()
         valid_actions = []
+        action_permissions = allowed_actions if isinstance(allowed_actions, dict) else {}
         for action in actions:
-            # Permission filter: if a permission is set and we have an allowed list, skip when not allowed
             permission_key = action.get("permission")
-            if permission_key and allowed_actions is not None and len(allowed_actions) > 0:
-                if permission_key not in allowed_actions:
-                    continue
+            if permission_key and action_permissions.get(permission_key) is not True:
+                continue
             if uses_actions:
                 # enable correct actions for game mode
                 action_type = action.get("type")
@@ -138,11 +137,9 @@ class ActionManager:
             input_template is a function that takes the function arguments and projected states and returns a string
             cache_prefill is a dictionary of user input and arguments to prefill the cache with
         """
-        # Respect permission at registration time if allowed_actions is configured
-        if permission and self.allowed_actions is not None and len(self.allowed_actions) > 0:
-            if permission not in self.allowed_actions:
-                log("debug", f"Action '{name}' skipped registration due to missing permission '{permission}'")
-                return
+        if permission and self.allowed_actions.get(permission) is not True:
+            log("debug", f"Action '{name}' skipped registration due to missing permission '{permission}'")
+            return
 
         self.actions[name] = {
             "method": method,
