@@ -384,6 +384,9 @@ default_allowed_actions: dict[str, bool] = {
     'npcOrder': True,
     # Main ship
     'Change_ship_HUD_mode': True,
+    'launchSLF': True,
+    'deploySRV': True,
+    'disembark': True,
     'FsdJump': True,
     'target_next_system_in_route': True,
     'toggleCargoScoop': True,
@@ -391,10 +394,14 @@ default_allowed_actions: dict[str, bool] = {
     'landingGearToggle': True,
     'useShieldCell': True,
     'requestDocking': True,
-    'undockShip': True,
+    'liftoff': True,
     # Fighter
     'fighterRequestDock': True,
+    # Nomad
+    'requestDockingNomad': True,
+    'recallDismissShipNomad': True,
     # SRV
+    'dockSRV': True,
     'toggleDriveAssist': True,
     'fireWeaponsBuggy': True,
     'autoBreak': True,
@@ -410,6 +417,7 @@ default_allowed_actions: dict[str, bool] = {
     'galaxyMapOpenOrCloseBuggy': True,
     'systemMapOpenOrCloseBuggy': True,
     # On foot
+    'embark': True,
     'primaryInteractHumanoid': True,
     'secondaryInteractHumanoid': True,
     'equipGearHumanoid': True,
