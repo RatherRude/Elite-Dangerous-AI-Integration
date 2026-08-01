@@ -45,24 +45,6 @@ export class ActionsSettingsComponent {
     // Track which weapons are in edit mode (by index)
     weaponEditMode: Set<number> = new Set();
 
-    // Permission keys by category (must match backend registrations)
-    readonly gamePermissions: string[] = [
-        // Ship/mainship/fighter/buggy/humanoid/global
-        'fireWeapons', 'setSpeed', 'deployHeatSink', 'deployHardpointToggle',
-        'managePowerDistribution', 'plotToTarget', 'galaxyMapOpenOrClose', 'systemMapOpenOrClose',
-        'targetShip', 'toggleWingNavLock', 'cycle_fire_group', 'Change_ship_HUD_mode',
-        'shipSpotLightToggle', 'fireChaffLauncher', 'nightVisionToggle', 'targetSubmodule',
-        'chargeECM', 'chargeFieldNeutraliser', 'npcOrder', 'FsdJump', 'target_next_system_in_route',
-        'toggleCargoScoop', 'ejectAllCargo', 'landingGearToggle', 'useShieldCell',
-        'requestDocking', 'undockShip', 'fighterRequestDock',
-        // Buggy
-        'toggleDriveAssist', 'fireWeaponsBuggy', 'autoBreak', 'headlights', 'nightVisionToggleBuggy', 'toggleTurret', 'selectTargetBuggy', 'managePowerDistributionBuggy', 'toggleCargoScoopBuggy', 'ejectAllCargoBuggy', 'recallDismissShipBuggy', 'plotToTargetBuggy', 'galaxyMapOpenOrCloseBuggy', 'systemMapOpenOrCloseBuggy',
-        // Humanoid
-        'primaryInteractHumanoid', 'secondaryInteractHumanoid', 'equipGearHumanoid', 'toggleFlashlightHumanoid', 'toggleNightVisionHumanoid', 'toggleShieldsHumanoid', 'clearAuthorityLevelHumanoid', 'healthPackHumanoid', 'batteryHumanoid', 'galaxyMapOpenOrCloseHumanoid', 'systemMapOpenOrCloseHumanoid', 'recallDismissShipHumanoid',
-        // Global
-        'textMessage', 'getVisuals'
-    ];
-
     readonly gamePermissionsGrouped: { type: string; actions: string[] }[] = [
         {
             type: 'ship',
@@ -153,35 +135,22 @@ export class ActionsSettingsComponent {
     }
 
     isPermissionEnabled(permission: string): boolean {
-        const allowed = this.config?.["allowed_actions" as keyof Config] as unknown as string[] | undefined;
-        if (!allowed || allowed.length === 0) return true; // empty means all allowed
-        return allowed.includes(permission);
+        return this.config?.allowed_actions?.[permission] ?? false;
     }
 
     async onTogglePermission(permission: string, enabled: boolean) {
         if (!this.config) return;
-        const all = new Set<string>([...this.gamePermissions]);
-        const current = (this.config as any).allowed_actions as string[] | undefined;
-        let next: string[];
-
-        if (!current || current.length === 0) {
-            // Empty means all enabled. If disabling, create full list minus this permission. If enabling, keep empty.
-            if (!enabled) {
-                next = Array.from(all).filter((p) => p !== permission);
-            } else {
-                next = []; // still means all
-            }
-        } else {
-            const set = new Set<string>(current);
-            if (enabled) {
-                set.add(permission);
-            } else {
-                set.delete(permission);
-            }
-            next = Array.from(set);
-        }
-
-        await this.onConfigChange({ ...( { allowed_actions: next } as any) });
+        const allowedActions = {
+            ...this.config.allowed_actions,
+            [permission]: enabled,
+        };
+        this.config = {
+            ...this.config,
+            allowed_actions: allowedActions,
+        };
+        await this.onConfigChange({
+            allowed_actions: allowedActions,
+        });
     }
 
     async addWeapon() {
@@ -362,4 +331,3 @@ export class ActionsSettingsComponent {
         return this.weaponEditMode.has(index);
     }
 }
-

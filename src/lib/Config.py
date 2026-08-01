@@ -362,6 +362,98 @@ def to_event_reactions(source: dict[str, bool], hidden: list[str] | None = None)
 default_event_reactions = to_event_reactions(game_events, ["Idle"])
 
 
+default_allowed_actions: dict[str, bool] = {
+    # Ship
+    'fireWeapons': True,
+    'setSpeed': True,
+    'deployHeatSink': True,
+    'deployHardpointToggle': True,
+    'managePowerDistribution': True,
+    'plotToTarget': True,
+    'galaxyMapOpenOrClose': True,
+    'systemMapOpenOrClose': True,
+    'targetShip': True,
+    'toggleWingNavLock': True,
+    'cycle_fire_group': True,
+    'shipSpotLightToggle': True,
+    'fireChaffLauncher': True,
+    'nightVisionToggle': True,
+    'targetSubmodule': True,
+    'chargeECM': True,
+    'chargeFieldNeutraliser': True,
+    'npcOrder': True,
+    # Main ship
+    'Change_ship_HUD_mode': True,
+    'FsdJump': True,
+    'target_next_system_in_route': True,
+    'toggleCargoScoop': True,
+    'ejectAllCargo': True,
+    'landingGearToggle': True,
+    'useShieldCell': True,
+    'requestDocking': True,
+    'undockShip': True,
+    # Fighter
+    'fighterRequestDock': True,
+    # SRV
+    'toggleDriveAssist': True,
+    'fireWeaponsBuggy': True,
+    'autoBreak': True,
+    'headlights': True,
+    'nightVisionToggleBuggy': True,
+    'toggleTurret': True,
+    'selectTargetBuggy': True,
+    'managePowerDistributionBuggy': True,
+    'toggleCargoScoopBuggy': True,
+    'ejectAllCargoBuggy': True,
+    'recallDismissShipBuggy': True,
+    'plotToTargetBuggy': True,
+    'galaxyMapOpenOrCloseBuggy': True,
+    'systemMapOpenOrCloseBuggy': True,
+    # On foot
+    'primaryInteractHumanoid': True,
+    'secondaryInteractHumanoid': True,
+    'equipGearHumanoid': True,
+    'toggleFlashlightHumanoid': True,
+    'toggleNightVisionHumanoid': True,
+    'toggleShieldsHumanoid': True,
+    'clearAuthorityLevelHumanoid': True,
+    'healthPackHumanoid': True,
+    'batteryHumanoid': True,
+    'galaxyMapOpenOrCloseHumanoid': True,
+    'systemMapOpenOrCloseHumanoid': True,
+    'recallDismissShipHumanoid': True,
+    # Global
+    'textMessage': True,
+    'getVisuals': True,
+}
+
+
+def migrate_allowed_actions(value: object) -> dict[str, bool]:
+    if isinstance(value, list):
+        if not value:
+            return {action: True for action in default_allowed_actions}
+
+        enabled_actions = {
+            action for action in value if isinstance(action, str)
+        }
+        return {
+            action: action in enabled_actions
+            for action in default_allowed_actions
+        }
+
+    if isinstance(value, dict):
+        return {
+            action: enabled
+            for action, enabled in value.items()
+            if isinstance(action, str)
+            and action in default_allowed_actions
+            and isinstance(enabled, bool)
+        }
+
+    # Missing and invalid legacy values previously fell back to [] (allow all).
+    return default_allowed_actions.copy()
+
+
 class CharacterTTSDistortionConfig(TypedDict, total=False):
     enabled: bool
     drive: float
@@ -849,7 +941,7 @@ class Config(TypedDict):
     web_search_actions_var: bool
     ui_actions_var: bool
     use_action_cache_var: bool
-    allowed_actions: list[str]
+    allowed_actions: dict[str, bool]
     discovery_primary_var: bool
     discovery_firegroup_var: int  # 0 keeps the current firegroup; 1-8 select one
     weapon_types: list[WeaponType]
@@ -1247,6 +1339,12 @@ def migrate(data: dict) -> dict:
         if isinstance(allowed_actions, list) and allowed_actions and 'plotToTarget' not in allowed_actions:
             allowed_actions.append('plotToTarget')
 
+    if data['config_version'] < 19:
+        data['allowed_actions'] = migrate_allowed_actions(
+            data.get('allowed_actions')
+        )
+        data['config_version'] = 19
+
     return data
 
 
@@ -1349,7 +1447,7 @@ def getDefaultCharacter(config: Config) -> Character:
 
 def load_config() -> Config:
     defaults: Config = {
-        'config_version': 18,
+        'config_version': 19,
         'commander_name': "",
         'characters': [],
         'active_character_index': 0,  # -1 means using the default legacy character
@@ -1363,7 +1461,7 @@ def load_config() -> Config:
         'web_search_actions_var': True,
         'ui_actions_var': True,
         'use_action_cache_var': True,
-        'allowed_actions': [],
+        'allowed_actions': default_allowed_actions.copy(),
         'discovery_primary_var': True,
         'discovery_firegroup_var': 1,
         'weapon_types': [],
@@ -1673,6 +1771,16 @@ def cast_int_float(current: dict, data: dict) -> dict:
     return result
 
 def update_config(config: Config, data: dict) -> Config:
+    incoming_version = data.get('config_version')
+    if (
+        isinstance(incoming_version, int)
+        and incoming_version < config['config_version']
+    ):
+        # Backup imports use the ordinary update path, so migrate old full configs here too.
+        data = migrate(data)
+    elif isinstance(data.get('allowed_actions'), list):
+        data['allowed_actions'] = migrate_allowed_actions(data['allowed_actions'])
+
     data = cast_int_float(config, data)
 
     if "output_volume_multiplier" in data:
