@@ -3034,6 +3034,7 @@ class PromptGenerator:
         ship_display.pop('IsMiningShip', None)
         ship_display.pop('hasLimpets', None)
         ship_display.pop('hasDockingComputer', None)
+        ship_display.pop('fighter_loadout', None)
         if len(fighters) == 0:
             ship_display.pop('Fighters', None)
         else:
