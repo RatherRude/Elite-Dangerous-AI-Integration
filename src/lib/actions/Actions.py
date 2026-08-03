@@ -607,7 +607,7 @@ def dock_srv(args, projected_states):
     keys.send('UI_Select')
 
     try:
-        event_manager.wait_for_condition('CurrentStatus', lambda s: s.flags.InMainShip, 2)
+        event_manager.wait_for_condition('CurrentStatus', lambda s: s.flags.InMainShip, 20)
     except TimeoutError:
         return 'Failed to dock SRV.'
     return 'SRV docked.'
