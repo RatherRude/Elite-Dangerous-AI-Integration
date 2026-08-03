@@ -589,7 +589,7 @@ def deploy_srv(args, projected_states):
     keys.send('UI_Select')
 
     try:
-        event_manager.wait_for_condition('CurrentStatus', lambda s: s.flags.InSRV, 2)
+        event_manager.wait_for_condition('CurrentStatus', lambda s: s.flags.InSRV, 20)
     except TimeoutError:
         return 'Failed to deploy SRV.'
     return 'SRV deployed.'
