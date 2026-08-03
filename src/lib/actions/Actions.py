@@ -641,7 +641,7 @@ def embark(args, projected_states):
     keys.send('UI_Select')
 
     try:
-        event_manager.wait_for_condition('CurrentStatus', lambda s: s.flags.InSRV or s.flags.InMainShip, 2)
+        event_manager.wait_for_condition('CurrentStatus', lambda s: s.flags.InSRV or s.flags.InMainShip, 10)
     except TimeoutError:
         return 'Failed to embark.'
     return 'Embarked.'
