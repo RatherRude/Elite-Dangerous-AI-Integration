@@ -627,7 +627,7 @@ def disembark(args, projected_states):
     keys.send('UI_Select')
 
     try:
-        event_manager.wait_for_condition('CurrentStatus', lambda s: s.flags2 is not None and s.flags2.OnFoot, 2)
+        event_manager.wait_for_condition('CurrentStatus', lambda s: s.flags2 is not None and s.flags2.OnFoot, 20)
     except TimeoutError:
         return 'Failed to disembark.'
     return 'Disembarked.'
