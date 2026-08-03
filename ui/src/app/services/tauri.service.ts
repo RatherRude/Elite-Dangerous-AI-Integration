@@ -501,6 +501,9 @@ export class TauriService {
                 if (message.type === "start") {
                     this.runModeSubject.next("running");
                 }
+                if (message.type === "running_config") {
+                    this.runModeSubject.next("running");
+                }
                 if (message.type === "config") {
                     this.runModeSubject.next("configuring");
                 }
