@@ -564,7 +564,7 @@ def launch_slf(args, projected_states):
         event_manager.wait_for_condition(
             'ShipInfo',
             lambda s: any(fighter.Status == 'Launched' for fighter in s.Fighters),
-            1,
+            10,
         )
     except TimeoutError:
         return 'Failed to launch SLF.'
