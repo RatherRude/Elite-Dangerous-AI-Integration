@@ -82,6 +82,7 @@ export interface Config {
         | "openai"
         | "openrouter"
         | "google-ai-studio"
+        | "mistral"
         | "custom"
         | "local-ai-server";
     llm_model_name: string;
@@ -93,6 +94,7 @@ export interface Config {
         | "openai"
         | "openrouter"
         | "google-ai-studio"
+        | "mistral"
         | "custom"
         | "local-ai-server";
     agent_llm_model_name: string;
@@ -108,6 +110,7 @@ export interface Config {
     vision_api_key: string;
     stt_provider:
         | "openai"
+        | "mistral"
         | "custom"
         | "custom-multi-modal"
         | "google-ai-studio"
@@ -120,7 +123,7 @@ export interface Config {
     stt_language: string;
     stt_custom_prompt: string;
     stt_required_word: string;
-    tts_provider: "openai" | "edge-tts" | "custom" | "none" | "local-ai-server" | string;
+    tts_provider: "openai" | "mistral" | "edge-tts" | "custom" | "none" | "local-ai-server" | string;
     tts_model_name: string;
     tts_api_key: string;
     tts_endpoint: string;

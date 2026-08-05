@@ -112,6 +112,7 @@ export class AdvancedSettingsComponent implements OnDestroy {
     hideVisionApiKey = true;
     hideEmbeddingApiKey = true;
     apiKeyType: string | null = null;
+    apiKeyDetectionFailed = false;
     assigningPTTIndex: number | null = null;
     isRefreshingAudioDevices = false;
     isStartingRemoteInterface = false;
@@ -348,6 +349,7 @@ export class AdvancedSettingsComponent implements OnDestroy {
         let providerChanges: Partial<Config> = {};
 
         if (apiKey.startsWith("AQ") || apiKey.startsWith("AIzaS")) {
+            this.apiKeyDetectionFailed = false;
             this.apiKeyType = "Google AI Studio";
             providerChanges = {
                 llm_provider: "google-ai-studio",
@@ -359,6 +361,7 @@ export class AdvancedSettingsComponent implements OnDestroy {
                 embedding_provider: "google-ai-studio",
             };
         } else if (apiKey.startsWith("sk-or-v1")) {
+            this.apiKeyDetectionFailed = false;
             this.apiKeyType = "OpenRouter";
             providerChanges = {
                 llm_provider: "openrouter",
@@ -370,6 +373,7 @@ export class AdvancedSettingsComponent implements OnDestroy {
                 embedding_provider: "none",
             };
         } else if (apiKey.startsWith("sk-")) {
+            this.apiKeyDetectionFailed = false;
             this.apiKeyType = "OpenAI";
             providerChanges = {
                 llm_provider: "openai",
@@ -382,6 +386,7 @@ export class AdvancedSettingsComponent implements OnDestroy {
             };
         } else {
             this.apiKeyType = null;
+            this.apiKeyDetectionFailed = apiKey.length > 0;
             return;
         }
 
