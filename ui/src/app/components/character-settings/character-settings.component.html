@@ -227,14 +227,16 @@
                                         }
                                     </mat-form-field>
                                 </div>
-                                <div class="voice-settings-toggle">
-                                    <button mat-button
-                                            type="button"
-                                            (click)="showVoiceMoreSettings = !showVoiceMoreSettings">
-                                        Voice settings
-                                        <mat-icon>{{ showVoiceMoreSettings ? 'expand_less' : 'expand_more' }}</mat-icon>
-                                    </button>
-                                </div>
+                                @if (config.tts_provider !== 'mistral') {
+                                    <div class="voice-settings-toggle">
+                                        <button mat-button
+                                                type="button"
+                                                (click)="showVoiceMoreSettings = !showVoiceMoreSettings">
+                                            Voice settings
+                                            <mat-icon>{{ showVoiceMoreSettings ? 'expand_less' : 'expand_more' }}</mat-icon>
+                                        </button>
+                                    </div>
+                                }
                             </div>
                         </div>
 
@@ -270,7 +272,7 @@
                     </div>
                 </div>
 
-                @if (showVoiceMoreSettings) {
+                @if (showVoiceMoreSettings && config.tts_provider !== 'mistral') {
                     <div class="voice-more-settings">
                         @if (!voiceInstructionSupportedModels.includes(config.tts_model_name)) {
                             <div class="trait-container">
