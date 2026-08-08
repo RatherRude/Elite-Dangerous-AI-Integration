@@ -11,6 +11,7 @@ import traceback
 from time import sleep, time
 from uuid import uuid4
 import edge_tts
+import httpx
 import miniaudio
 from openai.types.audio.speech_create_params import SpeechCreateParams
 from openai import OpenAI, APIStatusError
@@ -51,6 +52,65 @@ def _model_dump_compatible(value: Any) -> Any:
     if hasattr(value, "dict"):
         return value.dict()
     return value
+
+
+def _extract_visible_text(content: Any) -> str | None:
+    if content is None:
+        return None
+    if isinstance(content, str):
+        return content or None
+
+    content = _model_dump_compatible(content)
+    if isinstance(content, (list, tuple)):
+        parts = [_extract_visible_text(part) for part in content]
+        text = "".join(part for part in parts if part)
+        return text or None
+
+    if not isinstance(content, dict):
+        return None
+
+    content_type = str(content.get("type", "")).lower()
+    if content_type in {"thinking", "reasoning"}:
+        return None
+
+    text = content.get("text")
+    if isinstance(text, str):
+        return text or None
+
+    return _extract_visible_text(content.get("content"))
+
+
+def _json_compatible(value: Any) -> Any:
+    value = _model_dump_compatible(value)
+    if isinstance(value, dict):
+        return {key: _json_compatible(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_compatible(item) for item in value]
+    return value
+
+
+def _contains_hidden_reasoning(content: Any) -> bool:
+    content = _model_dump_compatible(content)
+    if isinstance(content, (list, tuple)):
+        return any(_contains_hidden_reasoning(part) for part in content)
+    if not isinstance(content, dict):
+        return False
+    return str(content.get("type", "")).lower() in {"thinking", "reasoning"}
+
+
+def _normalize_tool_content(content: Any) -> str:
+    if content is None:
+        return ""
+    if isinstance(content, str):
+        return content
+    if _contains_hidden_reasoning(content):
+        return _extract_visible_text(content) or ""
+
+    content = _json_compatible(content)
+    try:
+        return json.dumps(content)
+    except TypeError:
+        return str(content)
 
 
 def _infer_schema_type(schema: dict[str, Any]) -> str | None:
@@ -214,12 +274,21 @@ class OpenAILLMModel(LLMModel):
     def generate(self, messages: List[dict], tools: Optional[List[dict]] = None, tool_choice: Optional[Any] = None) -> tuple[str | None, List[Any] | None, ModelUsageStats]:
         started_at = time()
         kwargs = {}
+        request_messages = [
+            {
+                **message,
+                "content": _normalize_tool_content(message.get("content")),
+            }
+            if message.get("role") == "tool"
+            else {**message}
+            for message in messages
+        ]
         # Special handling for specific models or providers if needed
         if self.model_name in ['gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-5.1']:
             kwargs["verbosity"] = "low"
                     
         if 'google' in self.base_url or 'google' in self.model_name or 'gemini' in self.model_name:
-            for m in messages:
+            for m in request_messages:
                 if 'tool_calls' in m and m.get('tool_calls', None):
                     calls = m.get('tool_calls', [])
                     if calls:
@@ -239,7 +308,7 @@ class OpenAILLMModel(LLMModel):
         
         params: dict[str, Any] = {
             "model": self.model_name,
-            "messages": messages,
+            "messages": request_messages,
             "temperature": self.temperature,
             **self.extra_body,
             **kwargs
@@ -321,10 +390,9 @@ class OpenAILLMModel(LLMModel):
         
         response_text = None
         if hasattr(completion.choices[0].message, 'content'):
-            response_text = completion.choices[0].message.content
-            if completion.choices[0].message.content is None or completion.choices[0].message.content == "":
+            response_text = _extract_visible_text(completion.choices[0].message.content)
+            if response_text is None:
                 log("debug", "LLM completion no content:", completion)
-                response_text = None
         else:
             log("debug", f'LLM completion without text')
             response_text = None
@@ -462,7 +530,7 @@ class OpenAIResponsesLLMModel(LLMModel):
         return {
             "type": "function_call_output",
             "call_id": str(call_id),
-            "output": self._stringify_content(message.get("content", "")),
+            "output": _normalize_tool_content(message.get("content", "")),
         }
 
     def _convert_messages(self, messages: List[dict]) -> list[dict[str, Any]]:
@@ -857,7 +925,7 @@ class OpenAITTSModel(TTSModel):
                 "voice": voice, # pyright: ignore[reportArgumentType]
                 "input": text,
                 "response_format": "pcm",
-                "speed": self.speed
+                "speed": self.speed,
             }
             if self.voice_instructions:
                 kwargs["instructions"] = self.voice_instructions
@@ -876,6 +944,105 @@ class OpenAITTSModel(TTSModel):
                 message = e.message
             
             raise LLMError(f'TTS {e.response.reason_phrase}: {message}', e)
+
+
+class MistralTTSModel(TTSModel):
+    def __init__(self, base_url: str, api_key: str, model_name: str):
+        super().__init__(model_name, provider_name="mistral")
+        self.client = httpx.Client(
+            base_url=f"{base_url.rstrip('/')}/",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+            },
+            timeout=60.0,
+        )
+
+    def _iter_audio_deltas(self, response: httpx.Response) -> Iterable[bytes]:
+        data_lines: list[str] = []
+        for line in response.iter_lines():
+            if line == "":
+                if not data_lines:
+                    continue
+                data = "\n".join(data_lines)
+                data_lines.clear()
+                if data == "[DONE]":
+                    return
+                event = json.loads(data)
+                event_type = event.get("type") if isinstance(event, dict) else None
+                if event_type == "speech.audio.done":
+                    return
+                if event_type == "speech.audio.delta":
+                    encoded_audio = event.get("audio_data")
+                    if not isinstance(encoded_audio, str) or not encoded_audio:
+                        raise LLMError("TTS Mistral audio event did not contain audio data")
+                    yield base64.b64decode(encoded_audio, validate=True)
+                elif isinstance(event_type, str) and "error" in event_type:
+                    raise LLMError(f"TTS Mistral stream error: {event}")
+                continue
+
+            if line.startswith("data:"):
+                data_lines.append(line[5:].lstrip())
+
+        if data_lines:
+            event = json.loads("\n".join(data_lines))
+            if isinstance(event, dict) and event.get("type") == "speech.audio.delta":
+                encoded_audio = event.get("audio_data")
+                if not isinstance(encoded_audio, str) or not encoded_audio:
+                    raise LLMError("TTS Mistral audio event did not contain audio data")
+                yield base64.b64decode(encoded_audio, validate=True)
+
+    def _to_pcm16(self, audio_deltas: Iterable[bytes]) -> Iterable[bytes]:
+        float32_buffer = bytearray()
+        pcm16_buffer = bytearray()
+
+        for delta in audio_deltas:
+            float32_buffer.extend(delta)
+            complete_bytes = len(float32_buffer) - (len(float32_buffer) % 4)
+            if complete_bytes == 0:
+                continue
+
+            samples = np.frombuffer(bytes(float32_buffer[:complete_bytes]), dtype="<f4")
+            del float32_buffer[:complete_bytes]
+            samples = np.nan_to_num(samples, nan=0.0, posinf=1.0, neginf=-1.0)
+            pcm16_buffer.extend(
+                (np.clip(samples, -1.0, 1.0) * 32767.0).astype("<i2").tobytes()
+            )
+            while len(pcm16_buffer) >= 1024:
+                yield bytes(pcm16_buffer[:1024])
+                del pcm16_buffer[:1024]
+
+        if float32_buffer:
+            raise LLMError("TTS Mistral returned invalid float32 PCM data")
+        if pcm16_buffer:
+            yield bytes(pcm16_buffer)
+
+    def synthesize(self, text: str, voice: str) -> Iterable[bytes]:
+        try:
+            with self.client.stream(
+                "POST",
+                "audio/speech",
+                headers={"Accept": "text/event-stream"},
+                json={
+                    "model": self.model_name,
+                    "voice": voice,
+                    "input": text,
+                    "response_format": "pcm",
+                    "stream": True,
+                },
+            ) as response:
+                response.raise_for_status()
+                yield from self._to_pcm16(self._iter_audio_deltas(response))
+        except LLMError:
+            raise
+        except httpx.HTTPStatusError as e:
+            try:
+                detail = e.response.json()
+            except Exception:
+                detail = e.response.text
+            raise LLMError(f"TTS Mistral HTTP {e.response.status_code}: {detail}", e)
+        except Exception as e:
+            raise LLMError(f"TTS Mistral error: {e}", e)
+
 
 class EdgeTTSModel(TTSModel):
     def __init__(self, model_name: str, speed: float = 1.0, provider_name: str | None = None):
@@ -917,6 +1084,9 @@ def create_llm_model(provider: str, config: dict, prefix: str = "llm") -> LLMMod
     elif provider == "openrouter":
         if not base_url:
             base_url = "https://openrouter.ai/api/v1"
+    elif provider == "mistral":
+        if not base_url:
+            base_url = "https://api.mistral.ai/v1"
             
     extra_body = {}
     extra_headers = {}
@@ -976,9 +1146,11 @@ def create_stt_model(provider: str, config: dict, prefix: str = "stt") -> STTMod
     language = config.get(f"{prefix}_language", None)
     prompt = config.get(f"{prefix}_prompt", "COVAS, give me a status update... and throw in something inspiring, would you?")
 
-    if provider == "openai" or provider == "custom" or provider == "local-ai-server":
+    if provider in {"openai", "mistral", "custom", "local-ai-server"}:
         if provider == "openai" and not base_url:
             base_url = "https://api.openai.com/v1"
+        elif provider == "mistral" and not base_url:
+            base_url = "https://api.mistral.ai/v1"
         return OpenAISTTModel(
             base_url,
             api_key,
@@ -1011,7 +1183,12 @@ def create_tts_model(provider: str, config: dict, prefix: str = "tts") -> TTSMod
     speed = float(config.get(f"{prefix}_speed", 1.0))
     voice_instructions = config.get(f"{prefix}_voice_instructions", "") or None
 
-    if provider == "openai" or provider == "custom" or provider == "local-ai-server":
+    if provider == "mistral":
+        if not base_url:
+            base_url = "https://api.mistral.ai/v1"
+        return MistralTTSModel(base_url, api_key, model_name)
+
+    if provider in {"openai", "custom", "local-ai-server"}:
         if provider == "openai" and not base_url:
             base_url = "https://api.openai.com/v1"
         return OpenAITTSModel(

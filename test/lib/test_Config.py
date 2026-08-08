@@ -110,6 +110,38 @@ def test_legacy_backup_update_runs_full_action_migration(monkeypatch) -> None:
     assert updated["allowed_actions"]["setSpeed"] is False
 
 
+def test_mistral_provider_selection_applies_defaults(monkeypatch) -> None:
+    monkeypatch.setattr("src.lib.Config.emit_message", lambda *args, **kwargs: None)
+    monkeypatch.setattr("src.lib.Config.save_config", lambda config: None)
+    current = {
+        "config_version": 19,
+        "characters": [{"tts_voice": "nova"}],
+    }
+
+    updated = update_config(current, {  # type: ignore[arg-type]
+        "llm_provider": "mistral",
+        "agent_llm_provider": "mistral",
+        "stt_provider": "mistral",
+        "tts_provider": "mistral",
+    })
+
+    assert updated["llm_endpoint"] == "https://api.mistral.ai/v1"
+    assert updated["llm_model_name"] == "mistral-small-latest"
+    assert updated["llm_reasoning_effort"] == "none"
+    assert updated["llm_temperature"] == 1.0
+    assert updated["tools_var"] is True
+    assert updated["agent_llm_endpoint"] == "https://api.mistral.ai/v1"
+    assert updated["agent_llm_model_name"] == "mistral-medium-latest"
+    assert updated["agent_llm_reasoning_effort"] == "none"
+    assert updated["agent_llm_temperature"] == 1.0
+    assert updated["stt_endpoint"] == "https://api.mistral.ai/v1"
+    assert updated["stt_model_name"] == "voxtral-mini-latest"
+    assert updated["stt_language"] == ""
+    assert updated["tts_endpoint"] == "https://api.mistral.ai/v1"
+    assert updated["tts_model_name"] == "voxtral-mini-tts-2603"
+    assert updated["characters"][0]["tts_voice"] == "en_paul_neutral"
+
+
 def test_action_defaults_match_registered_permissions() -> None:
     actions_source = (
         ROOT_DIR / "src" / "lib" / "actions" / "Actions.py"
