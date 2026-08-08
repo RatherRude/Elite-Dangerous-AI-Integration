@@ -167,6 +167,8 @@ class EDKeys:
             "GalaxyMapOpen_Humanoid",
             "SystemMapOpen_Humanoid",
             "HumanoidOpenAccessPanelButton",
+            "UpThrustButton",
+            "UseBoostJuice",
         ]
         self.collision_candidates = ["CamTranslateRight", "CamTranslateForward"]
 

@@ -164,6 +164,7 @@ export interface Config {
     reset_game_events?: boolean; // Flag to request resetting game events to defaults
     qol_autobrake: boolean; // Quality of life: Auto brake when approaching stations
     qol_autoscan: boolean; // Quality of life: Auto scan when entering new systems
+    qol_autoboost: boolean; // Quality of life: Boost when dropping near a station
     
     // Overlay settings
     overlay_show_avatar: boolean;

@@ -404,7 +404,24 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - FireChaffLauncher
     </details>
 
-15. **Toggle night vision**
+15. **Engine boost** (main ship, SLF, or Nomad)
+
+    <details>
+    <summary>Examples</summary>
+
+    - engine boost
+    - boost
+    - boost engines
+    - use boost
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - UseBoostJuice
+    </details>
+
+16. **Toggle night vision**
 
     <details>
     <summary>Examples</summary>
@@ -423,7 +440,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - NightVisionToggle
     </details>
 
-16. **Target subsystem on locked ship**
+17. **Target subsystem on locked ship**
 
     - `subsystem`: String (options: "Drive", "Shield Generator", "Power Distributor", "Life Support", "FSD", "Point Defence Turret", "Power Plant")
 
@@ -460,7 +477,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - CyclePreviousSubsystem
     </details>
 
-17. **Charge ECM**
+18. **Charge ECM**
 
     <details>
     <summary>Examples</summary>
@@ -479,7 +496,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - ChargeECM
     </details>
 
-18. **Charge shutdown field neutraliser**
+19. **Charge shutdown field neutraliser**
 
     <details>
     <summary>Examples</summary>
@@ -506,7 +523,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - TriggerFieldNeutraliser
     </details>
 
-19. **NPC crew orders**
+20. **NPC crew orders**
 
     - `orders`: Array of strings (options: "DefensiveBehaviour", "AggressiveBehaviour", "FocusTarget", "HoldFire", "HoldPosition", "Follow", "ReturnToShip", "LaunchFighter1", "LaunchFighter2")
 
@@ -728,7 +745,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 
     <details>
     <summary>Examples</summary>
-    
+
     - request docking
     - dock
     - docking request
@@ -741,6 +758,130 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     <summary>Required Keyboard Binds</summary>
 
     - OrderRequestDock
+    </details>
+
+### Nomad Actions
+
+1. **Request docking with main ship**
+
+    <details>
+    <summary>Examples</summary>
+
+    - request docking
+    - dock with ship
+    - return to ship
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - UIFocus
+    - FocusRadarPanel
+    - CyclePreviousPanel
+    - CycleNextPanel
+    - UI_Right
+    - UI_Select
+    </details>
+
+2. **Recall or dismiss ship**
+
+    <details>
+    <summary>Examples</summary>
+
+    - recall ship
+    - dismiss ship
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - UIFocus
+    - FocusRadarPanel
+    - CyclePreviousPanel
+    - CycleNextPanel
+    - UI_Right
+    - UI_Select
+    </details>
+
+### Vehicle Transition Actions
+
+1. **Deploy SRV** (main ship)
+
+    - `vehicle_number`: Integer (optional, SRV bay slot)
+
+    <details>
+    <summary>Examples</summary>
+
+    - deploy srv
+    - launch srv
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - UIFocus
+    - FocusRadarPanel
+    - CycleNextPanel
+    - CyclePreviousPanel
+    - UI_Right
+    - UI_Down
+    - UI_Select
+    </details>
+
+2. **Dock SRV** (SRV)
+
+    <details>
+    <summary>Examples</summary>
+
+    - dock srv
+    - return to ship
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - UIFocus
+    - FocusRadarPanel
+    - CyclePreviousPanel
+    - CycleNextPanel
+    - UI_Right
+    - UI_Select
+    </details>
+
+3. **Disembark** (main ship, SRV, or Nomad)
+
+    <details>
+    <summary>Examples</summary>
+
+    - disembark
+    - exit vehicle
+    - leave vehicle
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - UIFocus
+    - FocusRadarPanel
+    - CyclePreviousPanel
+    - UI_Right
+    - UI_Select
+    </details>
+
+4. **Embark** (on foot)
+
+    <details>
+    <summary>Examples</summary>
+
+    - embark
+    - enter vehicle
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - HumanoidPrimaryInteractButton
+    - UI_Select
     </details>
 
 ### Surface Reconnaissance Vehicle (SRV) Actions
@@ -1293,6 +1434,7 @@ These call external services or game APIs (Galnet, Spansh):
     Retrieves current interstellar news from Galnet and answers questions about recent events.
 
     Key option:
+
     - `query`: what you want the news summary to focus on, such as Thargoids, power politics, or recent events in a region.
 
 2. **System Finder (`system_finder`)** (utilizes [Spansh API](https://spansh.co.uk/systems))
@@ -1300,6 +1442,7 @@ These call external services or game APIs (Galnet, Spansh):
     Finds star systems that match political, economic or conflict filters, either near a system or along a specified route.
 
     Key options:
+
     - `reference_system`: search around a single system.
     - `reference_route`: search along a route from `source` to `destination` instead of around one system.
     - `name`: require text in the system name.
@@ -1320,6 +1463,7 @@ These call external services or game APIs (Galnet, Spansh):
     Finds stations for ships, modules, markets, services, and traders, with sensible distance/price-aware sorting.
 
     Key options:
+
     - `reference_system`: search around a single system.
     - `reference_route`: search along a route from `source` to `destination`.
     - `name`: require text in the station name.
@@ -1343,6 +1487,7 @@ These call external services or game APIs (Galnet, Spansh):
     Finds celestial bodies such as mining hotspots or worlds with specific surface signals near you or along a route.
 
     Key options:
+
     - `reference_system`: search around a single system.
     - `reference_route`: search along a route from `source` to `destination`.
     - `name`: require text in the body name.
@@ -1362,6 +1507,7 @@ These are driven primarily by local projections and static data; they never perf
     Uses both static engineer definitions and your current in-game engineer progress to build a filtered overview of ship and suit engineers.
 
     Key options:
+
     - `name`: find a specific engineer by name.
     - `system`: limit by engineer location or system.
     - `modifications`: search by what the engineer can modify, such as FSD range or multi-cannons.
@@ -1374,6 +1520,7 @@ These are driven primarily by local projections and static data; they never perf
     Cross-references static engineering blueprints with your current inventories and engineer progress to answer questions like “who can do this mod, at which grade, and what materials am I missing?”.
 
     Key options:
+
     - `modifications`: one or more modification names, such as Increased FSD Range or Overcharged Power Plant.
     - `engineer`: limit to a specific engineer.
     - `module`: limit to a specific module or weapon.
@@ -1386,6 +1533,7 @@ These are driven primarily by local projections and static data; they never perf
     Searches engineering and suit materials across your live inventories and known sourcing information, so the agent can see both how many you have and where to obtain more.
 
     Key options:
+
     - `name`: one or more material names, with fuzzy matching for partial names.
     - `grade`: limit by ship-material grade from 1 to 5.
     - `type`: narrow by category: `raw`, `manufactured`, `encoded` for ship materials; `items`, `components`, `data`, `consumables` for Odyssey materials; or the broader `ship` and `suit` groups.
@@ -1505,4 +1653,3 @@ The **Generative UI (HUD)** is an overlay that displays AI-generated Preact comp
 In Elite: Dangerous, you can configure certain chat channels to be **tabbed** instead of appearing in the main chat flow. Tabbed channels require different macros to send messages.
 
 ![Tabbed Chat Configuration](screen/tabbed_chat.png)
-

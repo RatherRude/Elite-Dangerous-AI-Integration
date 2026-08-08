@@ -268,7 +268,7 @@
                                             </div>
                                         </div>
                                     }
-                                    <!--@if (perm === 'plotToTarget') {
+                                    @if (perm === 'plotToTarget') {
                                         <div style="display:flex; flex-direction: column; gap: 4px; margin-left:12px; margin-top: 8px;">
                                             <mat-slide-toggle [ngModel]="config.in_system_navigation"
                                                               (ngModelChange)="onConfigChange({in_system_navigation: $event})">
@@ -276,7 +276,7 @@
                                             </mat-slide-toggle>
                                             <p style="margin: 0; opacity: .8;">Allows plotToTarget to use the system map to select stations and bodies.</p>
                                         </div>
-                                    }-->
+                                    }
                                     @if (perm === 'textMessage') {
                                         <div style="display:flex; gap: 8px; align-items:center; margin-left:12px; flex-wrap: wrap;">
                                             <span style="font-weight: 500; opacity: .8;">Tabbed:</span>
@@ -382,6 +382,11 @@
                 </mat-select>
             </mat-form-field>
         </div>
-        
+        <mat-slide-toggle [ngModel]="config.qol_autoboost"
+                          (ngModelChange)="onConfigChange({qol_autoboost: $event})">
+            Auto Boost
+        </mat-slide-toggle>
+        <p>Automatically boost when dropping from supercruise near a station.</p>
+
     }
 </div>

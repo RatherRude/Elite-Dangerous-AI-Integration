@@ -58,23 +58,32 @@ export class ActionsSettingsComponent {
         {
             type: 'mainship',
             actions: [
-                'Change_ship_HUD_mode', 'FsdJump', 'target_next_system_in_route', 'toggleCargoScoop',
-                'ejectAllCargo', 'landingGearToggle', 'useShieldCell', 'requestDocking', 'undockShip'
+                'Change_ship_HUD_mode', 'launchSLF', 'deploySRV', 'disembark', 'FsdJump',
+                'target_next_system_in_route', 'toggleCargoScoop', 'ejectAllCargo', 'landingGearToggle',
+                'useShieldCell', 'requestDocking', 'liftoff', 'engineBoost'
             ],
         },
-        { type: 'fighter', actions: ['fighterRequestDock'] },
+        { type: 'fighter', actions: ['fighterRequestDock', 'engineBoost'] },
+        {
+            type: 'nomad',
+            actions: [
+                'disembark', 'landingGearToggle', 'liftoff', 'requestDockingNomad',
+                'recallDismissShipNomad', 'engineBoost'
+            ],
+        },
         {
             type: 'buggy',
             actions: [
-                'toggleDriveAssist', 'fireWeaponsBuggy', 'autoBreak', 'headlights', 'nightVisionToggleBuggy',
-                'toggleTurret', 'selectTargetBuggy', 'managePowerDistributionBuggy', 'toggleCargoScoopBuggy',
-                'ejectAllCargoBuggy', 'recallDismissShipBuggy', 'plotToTargetBuggy', 'galaxyMapOpenOrCloseBuggy', 'systemMapOpenOrCloseBuggy'
+                'disembark', 'dockSRV', 'toggleDriveAssist', 'fireWeaponsBuggy', 'autoBreak', 'headlights',
+                'nightVisionToggleBuggy', 'toggleTurret', 'selectTargetBuggy', 'managePowerDistributionBuggy',
+                'toggleCargoScoopBuggy', 'ejectAllCargoBuggy', 'recallDismissShipBuggy', 'plotToTargetBuggy',
+                'galaxyMapOpenOrCloseBuggy', 'systemMapOpenOrCloseBuggy'
             ],
         },
         {
             type: 'humanoid',
             actions: [
-                'primaryInteractHumanoid', 'secondaryInteractHumanoid', 'equipGearHumanoid',
+                'embark', 'primaryInteractHumanoid', 'secondaryInteractHumanoid', 'equipGearHumanoid',
                 'toggleFlashlightHumanoid', 'toggleNightVisionHumanoid', 'toggleShieldsHumanoid',
                 'clearAuthorityLevelHumanoid', 'healthPackHumanoid', 'batteryHumanoid',
                 'galaxyMapOpenOrCloseHumanoid', 'systemMapOpenOrCloseHumanoid', 'recallDismissShipHumanoid'
@@ -86,7 +95,8 @@ export class ActionsSettingsComponent {
     readonly groupTypeLabels: Record<string, string> = {
         ship: 'Ship',
         mainship: 'Main ship',
-        fighter: 'Flighter',
+        fighter: 'Fighter',
+        nomad: 'Nomad',
         buggy: 'SRV',
         humanoid: 'Suit',
         global: 'Global',
