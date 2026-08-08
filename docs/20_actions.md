@@ -1453,7 +1453,6 @@ These call external services or game APIs (Galnet, Spansh):
     - `power`: limit by Powerplay power.
     - `primary_economy`: limit by economy type, such as Industrial, High Tech, or Extraction.
     - `security`: limit by security level.
-    - `thargoid_war_state`: limit by Thargoid war status.
     - `population`: filter for systems above or below a given population.
     - `sort_by`: order results by distance or population.
     - `size`: number of results to return.
