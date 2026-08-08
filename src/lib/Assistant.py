@@ -105,7 +105,7 @@ class Assistant:
         try:
             if (isinstance(event, GameEvent) and event.content.get('event') == 'SupercruiseDestinationDrop' and
                     'MarketID' in event.content and self.config.get('qol_autoboost', False)):
-                engine_boost({}, projected_states)
+                Thread(target=engine_boost, args=({}, projected_states, True), daemon=True).start()
         except Exception as e:
             log('error', 'Auto boost on SupercruiseDestinationDrop failed', e, traceback.format_exc())
 

@@ -378,7 +378,17 @@ def fire_chaff_launcher(args, projected_states):
     return f"Chaff launcher fired"
 
 
-def engine_boost(args, projected_states):
+def engine_boost(args, projected_states, qol: bool = False):
+    if qol:
+        try:
+            event_manager.wait_for_condition(
+                'CurrentStatus',
+                lambda status: not status.flags.Supercruise,
+                3,
+            )
+        except TimeoutError:
+            return "Engine boost skipped because supercruise did not end within 3 seconds."
+
     checkStatus(projected_states, {'Docked': True, 'Landed': True, 'Supercruise': True})
     setGameWindowActive()
     keys.send('UseBoostJuice')
