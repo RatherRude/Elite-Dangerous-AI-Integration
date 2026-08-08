@@ -439,32 +439,6 @@ default_allowed_actions: dict[str, bool] = {
 }
 
 
-def migrate_allowed_actions(value: object) -> dict[str, bool]:
-    if isinstance(value, list):
-        if not value:
-            return {action: True for action in default_allowed_actions}
-
-        enabled_actions = {
-            action for action in value if isinstance(action, str)
-        }
-        return {
-            action: action in enabled_actions
-            for action in default_allowed_actions
-        }
-
-    if isinstance(value, dict):
-        return {
-            action: enabled
-            for action, enabled in value.items()
-            if isinstance(action, str)
-            and action in default_allowed_actions
-            and isinstance(enabled, bool)
-        }
-
-    # Missing and invalid legacy values previously fell back to [] (allow all).
-    return default_allowed_actions.copy()
-
-
 class CharacterTTSDistortionConfig(TypedDict, total=False):
     enabled: bool
     drive: float
@@ -1345,17 +1319,9 @@ def migrate(data: dict) -> dict:
             data['overlay_mode'] = 'both'
         data.pop('overlay_vr_streamer_mode', None)
 
-    if data['config_version'] < 18:
-        data['config_version'] = 18
-        allowed_actions = data.get('allowed_actions')
-        if isinstance(allowed_actions, list) and allowed_actions and 'plotToTarget' not in allowed_actions:
-            allowed_actions.append('plotToTarget')
-
-    if data['config_version'] < 19:
-        data['allowed_actions'] = migrate_allowed_actions(
-            data.get('allowed_actions')
-        )
-        data['config_version'] = 19
+    if data['config_version'] < 20:
+        data['config_version'] = 20
+        data['allowed_actions'] = default_allowed_actions.copy()
 
     return data
 
@@ -1791,8 +1757,6 @@ def update_config(config: Config, data: dict) -> Config:
     ):
         # Backup imports use the ordinary update path, so migrate old full configs here too.
         data = migrate(data)
-    elif isinstance(data.get('allowed_actions'), list):
-        data['allowed_actions'] = migrate_allowed_actions(data['allowed_actions'])
 
     data = cast_int_float(config, data)
 
