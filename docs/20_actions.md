@@ -728,7 +728,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 
     <details>
     <summary>Examples</summary>
-    
+
     - request docking
     - dock
     - docking request
@@ -741,6 +741,130 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     <summary>Required Keyboard Binds</summary>
 
     - OrderRequestDock
+    </details>
+
+### Nomad Actions
+
+1. **Request docking with main ship**
+
+    <details>
+    <summary>Examples</summary>
+
+    - request docking
+    - dock with ship
+    - return to ship
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - UIFocus
+    - FocusRadarPanel
+    - CyclePreviousPanel
+    - CycleNextPanel
+    - UI_Right
+    - UI_Select
+    </details>
+
+2. **Recall or dismiss ship**
+
+    <details>
+    <summary>Examples</summary>
+
+    - recall ship
+    - dismiss ship
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - UIFocus
+    - FocusRadarPanel
+    - CyclePreviousPanel
+    - CycleNextPanel
+    - UI_Right
+    - UI_Select
+    </details>
+
+### Vehicle Transition Actions
+
+1. **Deploy SRV** (main ship)
+
+    - `vehicle_number`: Integer (optional, SRV bay slot)
+
+    <details>
+    <summary>Examples</summary>
+
+    - deploy srv
+    - launch srv
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - UIFocus
+    - FocusRadarPanel
+    - CycleNextPanel
+    - CyclePreviousPanel
+    - UI_Right
+    - UI_Down
+    - UI_Select
+    </details>
+
+2. **Dock SRV** (SRV)
+
+    <details>
+    <summary>Examples</summary>
+
+    - dock srv
+    - return to ship
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - UIFocus
+    - FocusRadarPanel
+    - CyclePreviousPanel
+    - CycleNextPanel
+    - UI_Right
+    - UI_Select
+    </details>
+
+3. **Disembark** (main ship, SRV, or Nomad)
+
+    <details>
+    <summary>Examples</summary>
+
+    - disembark
+    - exit vehicle
+    - leave vehicle
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - UIFocus
+    - FocusRadarPanel
+    - CyclePreviousPanel
+    - UI_Right
+    - UI_Select
+    </details>
+
+4. **Embark** (on foot)
+
+    <details>
+    <summary>Examples</summary>
+
+    - embark
+    - enter vehicle
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - HumanoidPrimaryInteractButton
+    - UI_Select
     </details>
 
 ### Surface Reconnaissance Vehicle (SRV) Actions

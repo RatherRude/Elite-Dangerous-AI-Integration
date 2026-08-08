@@ -884,6 +884,7 @@ class Assistant:
             use_tools = self.config["tools_var"] and ('user' in reasons or 'tool' in reasons)
 
             current_status = get_state_dict(projected_states, "CurrentStatus")
+            ship_info = get_state_dict(projected_states, "ShipInfo")
             flags = current_status.get("flags", {})
             flags2 = current_status.get("flags2", {})
 
@@ -891,7 +892,9 @@ class Assistant:
             if flags:
                 if flags.get("InMainShip"):
                     active_mode = "mainship"
-                elif (flags.get("InSRV") and not flags.get("Landed")) or flags.get("InFighter"):
+                elif flags.get("InSRV") and ship_info.get("fighter_loadout") == "base":
+                    active_mode = "nomad"
+                elif flags.get("InFighter"):
                     active_mode = "fighter"
                 elif flags.get("InSRV"):
                     active_mode = "buggy"

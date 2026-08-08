@@ -45,10 +45,13 @@ class ActionManager:
                 continue
             if uses_actions:
                 # enable correct actions for game mode
-                if action.get("type") == active_mode:
+                action_type = action.get("type")
+                if action_type == active_mode or (
+                    isinstance(action_type, list) and active_mode in action_type
+                ):
                     valid_actions.append(action.get("tool"))
                 # enable correct actions for extended game mode
-                elif active_mode == 'mainship' or active_mode == 'fighter':
+                elif active_mode in ('mainship', 'fighter', 'nomad'):
                     if action.get("type") == 'ship':
                         valid_actions.append(action.get("tool"))
                 # enable vision capabilities

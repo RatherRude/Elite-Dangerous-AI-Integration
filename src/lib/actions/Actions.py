@@ -533,6 +533,118 @@ def system_map_open_or_close(args, projected_states, sys_map_key='SystemMapOpen'
 
 
 # Mainship Actions
+def launch_slf(args, projected_states):
+    checkStatus(projected_states, {'Docked': True, 'Landed': True, 'Supercruise': True})
+    ship_info = get_state_dict(projected_states, 'ShipInfo')
+    fighters = ship_info.get('Fighters', [])
+    vehicle_number = args.get('vehicle_number', 1)
+
+    if vehicle_number not in (1, 2):
+        raise Exception('Fighter bay slot must be 1 or 2.')
+    if not fighters:
+        raise Exception('No fighter bay installed in this ship.')
+    if vehicle_number > len(fighters):
+        raise Exception('No second fighter bay installed in this ship.')
+
+    setGameWindowActive()
+    current_status = get_state_dict(projected_states, 'CurrentStatus')
+    if current_status.get('GuiFocus') != 'RolePanel':
+        keys.send('UIFocus')
+        keys.send('FocusRadarPanel')
+    keys.send('CyclePreviousPanel', repeat=3)
+    keys.send('CycleNextPanel')
+    keys.send('UI_Right')
+    keys.send('UI_Up' if vehicle_number == 1 else 'UI_Down')
+    keys.send('UI_Select')
+    keys.send('UI_Up')
+    keys.send('UI_Select')
+    keys.send('UIFocus')
+
+    try:
+        event_manager.wait_for_condition(
+            'ShipInfo',
+            lambda s: any(fighter.Status == 'Launched' for fighter in s.Fighters),
+            10,
+        )
+    except TimeoutError:
+        return 'Failed to launch SLF.'
+    return f'SLF {vehicle_number} launched.'
+
+
+def deploy_srv(args, projected_states):
+    setGameWindowActive()
+    current_status = get_state_dict(projected_states, 'CurrentStatus')
+    if not current_status.get('flags', {}).get('Landed'):
+        return "Impossible because the ship isn't currently landed."
+    if current_status.get('GuiFocus') != 'RolePanel':
+        keys.send('UIFocus')
+        keys.send('FocusRadarPanel')
+    keys.send('CycleNextPanel', repeat=3)
+    keys.send('CyclePreviousPanel')
+    keys.send('UI_Right')
+
+    vehicle_number = args.get('vehicle_number')
+    if vehicle_number is not None and vehicle_number > 1:
+        keys.send('UI_Down', repeat=vehicle_number - 1)
+    keys.send('UI_Select')
+
+    try:
+        event_manager.wait_for_condition('CurrentStatus', lambda s: s.flags.InSRV, 20)
+    except TimeoutError:
+        return 'Failed to deploy SRV.'
+    return 'SRV deployed.'
+
+
+def dock_srv(args, projected_states):
+    setGameWindowActive()
+    current_status = get_state_dict(projected_states, 'CurrentStatus')
+    if current_status.get('GuiFocus') != 'RolePanel':
+        keys.send('UIFocus')
+        keys.send('FocusRadarPanel')
+    keys.send('CyclePreviousPanel', repeat=2)
+    keys.send('CycleNextPanel')
+    keys.send('UI_Right')
+    keys.send('UI_Select')
+
+    try:
+        event_manager.wait_for_condition('CurrentStatus', lambda s: s.flags.InMainShip, 20)
+    except TimeoutError:
+        return 'Failed to dock SRV.'
+    return 'SRV docked.'
+
+
+def disembark(args, projected_states):
+    setGameWindowActive()
+    current_status = get_state_dict(projected_states, 'CurrentStatus')
+    flags = current_status.get('flags', {})
+    if not flags.get('Landed'):
+        return "Impossible because the ship isn't currently landed."
+    if current_status.get('GuiFocus') != 'RolePanel':
+        keys.send('UIFocus')
+        keys.send('FocusRadarPanel')
+    keys.send('CyclePreviousPanel', repeat=3)
+    keys.send('UI_Right')
+    keys.send('UI_Select')
+
+    try:
+        event_manager.wait_for_condition('CurrentStatus', lambda s: s.flags2 is not None and s.flags2.OnFoot, 20)
+    except TimeoutError:
+        return 'Failed to disembark.'
+    return 'Disembarked.'
+
+
+def embark(args, projected_states):
+    setGameWindowActive()
+    keys.send('HumanoidPrimaryInteractButton')
+    keys.send('UI_Up', repeat=2)
+    keys.send('UI_Down')
+    keys.send('UI_Select')
+
+    try:
+        event_manager.wait_for_condition('CurrentStatus', lambda s: s.flags.InSRV or s.flags.InMainShip, 10)
+    except TimeoutError:
+        return 'Failed to embark.'
+    return 'Embarked.'
 
 def eject_all_cargo(args, projected_states):
     setGameWindowActive()
@@ -607,27 +719,30 @@ def next_system_in_route(args, projected_states):
     return "Targeting next system in route"
 
 
-def undock(args, projected_states):
+def liftoff(args, projected_states):
     setGameWindowActive()
-    # Early return if we're not docked
     current_status = get_state_dict(projected_states, 'CurrentStatus')
-    if not current_status.get('flags', {}).get('Docked'):
-        raise Exception("The ship currently isn't docked.")
+    flags = current_status.get('flags', {})
 
-    gui_focus = current_status.get('GuiFocus')
-    if gui_focus in ['InternalPanel', 'CommsPanel', 'RolePanel', 'ExternalPanel']:
-        keys.send('UIFocus')
-        sleep(1)
-    elif gui_focus == 'NoFocus':
-        pass
-    else:
-        raise Exception("The currently focused UI needs to be closed first")
+    if flags.get('Docked'):
+        gui_focus = current_status.get('GuiFocus')
+        if gui_focus in ['InternalPanel', 'CommsPanel', 'RolePanel', 'ExternalPanel']:
+            keys.send('UIFocus')
+            sleep(1)
+        elif gui_focus != 'NoFocus':
+            raise Exception("The currently focused UI needs to be closed first")
 
-    keys.send('UI_Down', None, 3)
-    keys.send('UI_Up')
-    keys.send('UI_Select')
+        keys.send('UI_Down', None, 3)
+        keys.send('UI_Up')
+        keys.send('UI_Select')
+        return 'The ship is now undocking.'
 
-    return 'The ship is now undocking'
+    if flags.get('Landed'):
+        keys.send('UpThrustButton', hold=3)
+        keys.send('LandingGearToggle')
+        return 'Liftoff initiated and landing gear retracted.'
+
+    raise Exception('The ship must be docked or landed to initiate liftoff.')
 
 
 def docking_key_press_sequence(stop_event):
@@ -693,6 +808,35 @@ def fighter_request_dock(args, projected_states):
     return f"A request for docking has been sent"
 
 
+# Nomad Actions
+def request_docking_nomad(args, projected_states):
+    setGameWindowActive()
+    current_status = get_state_dict(projected_states, 'CurrentStatus')
+    if current_status.get('GuiFocus') != 'RolePanel':
+        keys.send('UIFocus')
+        keys.send('FocusRadarPanel')
+    keys.send('CyclePreviousPanel', repeat=2)
+    keys.send('CycleNextPanel')
+    keys.send('UI_Right')
+    keys.send('UI_Select')
+    keys.send('UIFocus')
+    return 'Docking with the main ship requested.'
+
+
+def recall_dismiss_ship_nomad(args, projected_states):
+    setGameWindowActive()
+    current_status = get_state_dict(projected_states, 'CurrentStatus')
+    if current_status.get('GuiFocus') != 'RolePanel':
+        keys.send('UIFocus')
+        keys.send('FocusRadarPanel')
+    keys.send('CyclePreviousPanel', repeat=2)
+    keys.send('CycleNextPanel')
+    keys.send('UI_Right', repeat=2)
+    keys.send('UI_Select')
+    keys.send('UIFocus')
+    return 'Remote ship recall or dismiss requested.'
+
+
 # NPC Crew Order Actions
 def npc_order(args, projected_states):
     checkStatus(projected_states, {'Docked': True, 'Landed': True, 'Supercruise': True})
@@ -707,10 +851,11 @@ def npc_order(args, projected_states):
             if order in ['LaunchFighter1', 'LaunchFighter2']:
                 if len(fighters) == 1 and order == 'LaunchFighter2':
                     raise Exception("No second figher bay installed in this ship.")
-                keys.send('FocusRadarPanel')
-                keys.send('UI_Left', repeat=2)
-                keys.send('UI_Up', repeat=3)
-                keys.send('UI_Down')
+                if current_status.get('GuiFocus') != 'RolePanel':
+                    keys.send('UIFocus')
+                    keys.send('FocusRadarPanel')
+                keys.send('CyclePreviousPanel', repeat=3)
+                keys.send('CycleNextPanel')
                 keys.send('UI_Right')
                 if order == 'LaunchFighter1':
                     keys.send('UI_Up')
@@ -1764,22 +1909,48 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
                     ]
                 }
             }
-        }
+    }
     }, npc_order, 'ship', permission='npcOrder', cache_prefill={
-        "launch fighter": {"orders": ["LaunchFighter1"]},
-        "deploy fighter": {"orders": ["LaunchFighter1"]},
-        "recall fighter": {"orders": ["ReturnToShip"]},
-        "attack my target": {"orders": ["FocusTarget"]},
-        "engage target": {"orders": ["FocusTarget"]},
-        "defend me": {"orders": ["DefensiveBehaviour"]},
-        "be aggressive": {"orders": ["AggressiveBehaviour"]},
-        "hold fire": {"orders": ["HoldFire"]},
-        "cease fire": {"orders": ["HoldFire"]},
-        "hold position": {"orders": ["HoldPosition"]},
-        "follow me": {"orders": ["Follow"]},
+        "launch npc fighter": {"orders": ["LaunchFighter1"]},
+        "deploy npc fighter": {"orders": ["LaunchFighter1"]},
     })
 
     # Register actions - Mainship Actions
+    actionManager.registerAction('launchSLF', "Launch a ship-launched fighter", {
+        "type": "object",
+        "properties": {
+            "vehicle_number": {
+                "type": "integer",
+                "description": "Fighter bay slot to launch; defaults to 1",
+                "enum": [1, 2],
+                "default": 1,
+            },
+        },
+    }, launch_slf, 'mainship', permission='launchSLF', cache_prefill={})
+
+    actionManager.registerAction('deploySRV', "Deploy an SRV", {
+        "type": "object",
+        "properties": {
+            "vehicle_number": {
+                "type": "integer",
+                "description": "SRV bay slot to deploy",
+                "minimum": 1,
+            },
+        },
+    }, deploy_srv, 'mainship', permission='deploySRV', cache_prefill={
+        "deploy srv": {},
+        "launch srv": {},
+    })
+
+    actionManager.registerAction('disembark', "Leave vehicle", {
+        "type": "object",
+        "properties": {},
+    }, disembark, ['mainship', 'buggy', 'nomad'], permission='disembark', cache_prefill={
+        "disembark": {},
+        "exit vehicle": {},
+        "leave vehicle": {},
+    })
+
     actionManager.registerAction('FsdJump',
                                  "initiate FSD jump (jump to the next system or enter supercruise)", {
                                      "type": "object",
@@ -1844,7 +2015,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
     actionManager.registerAction('landingGearToggle', "Toggle landing gear", {
         "type": "object",
         "properties": {}
-    }, landing_gear_toggle, 'mainship', permission='landingGearToggle', cache_prefill={
+    }, landing_gear_toggle, ['mainship','nomad'], permission='landingGearToggle', cache_prefill={
         "landing gear": {},
         "gear": {},
         "deploy gear": {},
@@ -1868,7 +2039,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "restore shields": {},
     })
 
-    actionManager.registerAction('requestDocking', "Request docking.", {
+    actionManager.registerAction('requestDocking', "Request docking", {
         "type": "object",
         "properties": {}
     }, request_docking, 'mainship', permission='requestDocking', cache_prefill={
@@ -1880,16 +2051,17 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "docking permission": {},
     })
 
-    actionManager.registerAction('undockShip', "", {
+    actionManager.registerAction('liftoff', "Undock from station or lift off from planet", {
         "type": "object",
         "properties": {}
-    }, undock, 'mainship', permission='undockShip', cache_prefill={
+    }, liftoff, ['mainship', 'nomad'], permission='liftoff', cache_prefill={
         "undock": {},
         "launch": {},
         "depart": {},
         "leave station": {},
         "takeoff": {},
         "disengage": {},
+        "liftoff": {},
     })
 
     # Register actions - Ship Launched Fighter Actions
@@ -1905,7 +2077,33 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "docking permission": {},
     })
 
+    # Register actions - Nomad Actions
+    actionManager.registerAction('requestDockingNomad', "Request docking with ship", {
+        "type": "object",
+        "properties": {},
+    }, request_docking_nomad, 'nomad', permission='requestDockingNomad', cache_prefill={
+        "request docking": {},
+        "dock with ship": {},
+        "return to ship": {},
+    })
+
+    actionManager.registerAction('recallDismissShipNomad', "Recall or dismiss ship", {
+        "type": "object",
+        "properties": {},
+    }, recall_dismiss_ship_nomad, 'nomad', permission='recallDismissShipNomad', cache_prefill={
+        "recall ship": {},
+        "dismiss ship": {},
+    })
+
     # Register actions - SRV Actions (Horizons)
+    actionManager.registerAction('dockSRV', "Dock the SRV", {
+        "type": "object",
+        "properties": {},
+    }, dock_srv, 'buggy', permission='dockSRV', cache_prefill={
+        "dock srv": {},
+        "return to ship": {},
+    })
+
     actionManager.registerAction('toggleDriveAssist', "Toggle drive assist", {
         "type": "object",
         "properties": {}
@@ -2179,6 +2377,14 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
     })
 
     # Register actions - On-Foot Actions
+    actionManager.registerAction('embark', "Enter a vehicle", {
+        "type": "object",
+        "properties": {},
+    }, embark, 'humanoid', permission='embark', cache_prefill={
+        "embark": {},
+        "enter vehicle": {},
+    })
+
     actionManager.registerAction('primaryInteractHumanoid', "Primary interact action", {
         "type": "object",
         "properties": {}

@@ -437,8 +437,9 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
   // Active mode detection
   getActiveMode(): string {
     if (this.currentStatus?.flags2?.OnFoot) return 'humanoid';
-    if (this.currentStatus?.flags?.InSRV) return 'buggy';
     if (this.currentStatus?.flags?.InFighter) return 'fighter';
+    if (this.currentStatus?.flags?.InSRV && this.shipInfo?.fighter_loadout === 'base') return 'fighter';
+    if (this.currentStatus?.flags?.InSRV) return 'buggy';
     return 'mainship';
   }
 

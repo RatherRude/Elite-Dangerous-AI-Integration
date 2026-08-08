@@ -61,6 +61,8 @@ export class MainViewComponent implements OnInit, OnDestroy {
     isInCombat = false;
     isDockedAtStation = false;
     isShipIdentUnknown = false;
+    private currentStatusData: any = null;
+    private shipInfo: any = null;
     currentGameModeLabel = "Status";
     currentGameModeIcon = "info";
     selectedTabIndex: number = 0;
@@ -214,6 +216,7 @@ export class MainViewComponent implements OnInit, OnDestroy {
         // Subscribe to CurrentStatus projection to track station docking
         this.currentStatusSubscription = this.projectionsService.currentStatus$
             .subscribe((currentStatusData) => {
+                this.currentStatusData = currentStatusData;
                 this.isDockedAtStation = Boolean(currentStatusData?.flags?.Docked === true);
                 this.currentGameModeLabel = this.getCurrentGameModeLabel(currentStatusData);
                 this.currentGameModeIcon = this.getCurrentGameModeIcon(currentStatusData);
@@ -222,8 +225,11 @@ export class MainViewComponent implements OnInit, OnDestroy {
         // Subscribe to ShipInfo projection to track unknown ship ident
         this.shipInfoSubscription = this.projectionsService.shipInfo$
             .subscribe((shipInfo) => {
+                this.shipInfo = shipInfo;
                 const shipIdent = shipInfo?.ShipIdent ?? 'Unknown';
                 this.isShipIdentUnknown = shipIdent === 'Unknown';
+                this.currentGameModeLabel = this.getCurrentGameModeLabel(this.currentStatusData);
+                this.currentGameModeIcon = this.getCurrentGameModeIcon(this.currentStatusData);
             });
 
         // Initialize the main view
@@ -260,7 +266,7 @@ export class MainViewComponent implements OnInit, OnDestroy {
         if (currentStatusData.flags2?.OnFoot) {
             return "Suit";
         }
-        if (currentStatusData.flags?.InFighter || (currentStatusData.flags?.InSRV && !currentStatusData.flags?.Landed)) {
+        if (currentStatusData.flags?.InFighter || (currentStatusData.flags?.InSRV && this.shipInfo?.fighter_loadout === "base")) {
             return "SLF";
         }
         if (currentStatusData.flags?.InSRV) {
@@ -278,7 +284,7 @@ export class MainViewComponent implements OnInit, OnDestroy {
         if (currentStatusData.flags2?.OnFoot) {
             return "directions_walk";
         }
-        if (currentStatusData.flags?.InFighter || (currentStatusData.flags?.InSRV && !currentStatusData.flags?.Landed)) {
+        if (currentStatusData.flags?.InFighter || (currentStatusData.flags?.InSRV && this.shipInfo?.fighter_loadout === "base")) {
             return "flight";
         }
         if (currentStatusData.flags?.InSRV) {
