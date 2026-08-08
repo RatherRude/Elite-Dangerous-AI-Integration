@@ -378,6 +378,13 @@ def fire_chaff_launcher(args, projected_states):
     return f"Chaff launcher fired"
 
 
+def engine_boost(args, projected_states):
+    checkStatus(projected_states, {'Docked': True, 'Landed': True, 'Supercruise': True})
+    setGameWindowActive()
+    keys.send('UseBoostJuice')
+    return "Engine boost activated"
+
+
 def night_vision_toggle(args, projected_states):
     setGameWindowActive()
     keys.send('NightVisionToggle')
@@ -1804,6 +1811,16 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "deploy chaff": {},
         "countermeasures": {},
         "evade": {},
+    })
+
+    actionManager.registerAction('engineBoost', "Use engine boost", {
+        "type": "object",
+        "properties": {}
+    }, engine_boost, ['mainship', 'fighter', 'nomad'], permission='engineBoost', cache_prefill={
+        "engine boost": {},
+        "boost": {},
+        "boost engines": {},
+        "use boost": {},
     })
 
     actionManager.registerAction('nightVisionToggle', "Toggle night vision", {

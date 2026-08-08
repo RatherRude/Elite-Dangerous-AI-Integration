@@ -382,6 +382,11 @@
                 </mat-select>
             </mat-form-field>
         </div>
-        
+        <mat-slide-toggle [ngModel]="config.qol_autoboost"
+                          (ngModelChange)="onConfigChange({qol_autoboost: $event})">
+            Auto Boost
+        </mat-slide-toggle>
+        <p>Automatically boost when dropping from supercruise near a station.</p>
+
     }
 </div>

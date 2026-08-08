@@ -404,7 +404,24 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - FireChaffLauncher
     </details>
 
-15. **Toggle night vision**
+15. **Engine boost** (main ship, SLF, or Nomad)
+
+    <details>
+    <summary>Examples</summary>
+
+    - engine boost
+    - boost
+    - boost engines
+    - use boost
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - UseBoostJuice
+    </details>
+
+16. **Toggle night vision**
 
     <details>
     <summary>Examples</summary>
@@ -423,7 +440,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - NightVisionToggle
     </details>
 
-16. **Target subsystem on locked ship**
+17. **Target subsystem on locked ship**
 
     - `subsystem`: String (options: "Drive", "Shield Generator", "Power Distributor", "Life Support", "FSD", "Point Defence Turret", "Power Plant")
 
@@ -460,7 +477,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - CyclePreviousSubsystem
     </details>
 
-17. **Charge ECM**
+18. **Charge ECM**
 
     <details>
     <summary>Examples</summary>
@@ -479,7 +496,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - ChargeECM
     </details>
 
-18. **Charge shutdown field neutraliser**
+19. **Charge shutdown field neutraliser**
 
     <details>
     <summary>Examples</summary>
@@ -506,7 +523,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - TriggerFieldNeutraliser
     </details>
 
-19. **NPC crew orders**
+20. **NPC crew orders**
 
     - `orders`: Array of strings (options: "DefensiveBehaviour", "AggressiveBehaviour", "FocusTarget", "HoldFire", "HoldPosition", "Follow", "ReturnToShip", "LaunchFighter1", "LaunchFighter2")
 
@@ -1629,4 +1646,3 @@ The **Generative UI (HUD)** is an overlay that displays AI-generated Preact comp
 In Elite: Dangerous, you can configure certain chat channels to be **tabbed** instead of appearing in the main chat flow. Tabbed channels require different macros to send messages.
 
 ![Tabbed Chat Configuration](screen/tabbed_chat.png)
-

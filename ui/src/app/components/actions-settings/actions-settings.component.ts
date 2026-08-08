@@ -60,15 +60,15 @@ export class ActionsSettingsComponent {
             actions: [
                 'Change_ship_HUD_mode', 'launchSLF', 'deploySRV', 'disembark', 'FsdJump',
                 'target_next_system_in_route', 'toggleCargoScoop', 'ejectAllCargo', 'landingGearToggle',
-                'useShieldCell', 'requestDocking', 'liftoff'
+                'useShieldCell', 'requestDocking', 'liftoff', 'engineBoost'
             ],
         },
-        { type: 'fighter', actions: ['fighterRequestDock'] },
+        { type: 'fighter', actions: ['fighterRequestDock', 'engineBoost'] },
         {
             type: 'nomad',
             actions: [
                 'disembark', 'landingGearToggle', 'liftoff', 'requestDockingNomad',
-                'recallDismissShipNomad'
+                'recallDismissShipNomad', 'engineBoost'
             ],
         },
         {

@@ -20,7 +20,7 @@ from src.lib.Config import (
 def test_migrate_empty_allowed_actions_enables_all_current_actions() -> None:
     migrated = migrate({"config_version": 18, "allowed_actions": []})
 
-    assert migrated["config_version"] == 19
+    assert migrated["config_version"] == 20
     assert migrated["allowed_actions"] == default_allowed_actions
     assert all(migrated["allowed_actions"].values())
 
@@ -35,6 +35,16 @@ def test_migrate_restrictive_allowed_actions_preserves_selection() -> None:
     assert migrated["allowed_actions"]["setSpeed"] is True
     assert migrated["allowed_actions"]["textMessage"] is False
     assert set(migrated["allowed_actions"]) == set(default_allowed_actions)
+
+
+def test_migrate_adds_engine_boost_permission() -> None:
+    migrated = migrate({
+        "config_version": 19,
+        "allowed_actions": {"fireWeapons": True},
+    })
+
+    assert migrated["config_version"] == 20
+    assert migrated["allowed_actions"]["engineBoost"] is True
 
 
 def test_migrate_version_17_enables_plot_to_target_before_map_conversion() -> None:

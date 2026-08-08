@@ -377,6 +377,7 @@ default_allowed_actions: dict[str, bool] = {
     'cycle_fire_group': True,
     'shipSpotLightToggle': True,
     'fireChaffLauncher': True,
+    'engineBoost': True,
     'nightVisionToggle': True,
     'targetSubmodule': True,
     'chargeECM': True,
@@ -971,6 +972,7 @@ class Config(TypedDict):
     linux_edcp: bool
     qol_autobrake: bool  # Quality of life: Auto brake when approaching stations
     qol_autoscan: bool  # Quality of life: Auto scan when entering new systems
+    qol_autoboost: bool  # Quality of life: Boost when dropping near a station
     prefer_primary_bindings: bool  # Prefer primary keybinds over secondary entries
     
     # Overlay settings
@@ -1353,6 +1355,12 @@ def migrate(data: dict) -> dict:
         )
         data['config_version'] = 19
 
+    if data['config_version'] < 20:
+        data['config_version'] = 20
+        allowed_actions = data.get('allowed_actions')
+        if isinstance(allowed_actions, dict):
+            allowed_actions.setdefault('engineBoost', True)
+
     return data
 
 
@@ -1455,7 +1463,7 @@ def getDefaultCharacter(config: Config) -> Character:
 
 def load_config() -> Config:
     defaults: Config = {
-        'config_version': 19,
+        'config_version': 20,
         'commander_name': "",
         'characters': [],
         'active_character_index': 0,  # -1 means using the default legacy character
@@ -1526,6 +1534,7 @@ def load_config() -> Config:
         "linux_edcp": False,
         "qol_autobrake": False,  # Quality of life: Auto brake when approaching stations
         "qol_autoscan": False,  # Quality of life: Auto scan when entering new systems
+        "qol_autoboost": False,  # Quality of life: Boost when dropping near a station
 
         # Overlay settings - defaults
         "overlay_show_avatar": True,

@@ -34,7 +34,7 @@ from .TTS import TTS
 from typing import Any,  Callable, final
 import yaml
 from threading import Thread
-from .actions.Actions import set_speed, fire_weapons, get_visuals
+from .actions.Actions import engine_boost, set_speed, fire_weapons, get_visuals
 from .Projections import get_state_dict, ProjectedStates
 from .QuestCatalogManager import remove_orphaned_quest_states
 
@@ -100,6 +100,14 @@ class Assistant:
 
         except Exception as e:
             log('error', 'Auto actions on FSDJump failed', e, traceback.format_exc())
+
+        # Auto boost after dropping from supercruise at a station.
+        try:
+            if (isinstance(event, GameEvent) and event.content.get('event') == 'SupercruiseDestinationDrop' and
+                    'MarketID' in event.content and self.config.get('qol_autoboost', False)):
+                engine_boost({}, projected_states)
+        except Exception as e:
+            log('error', 'Auto boost on SupercruiseDestinationDrop failed', e, traceback.format_exc())
 
         # Auto action on Screenshot: get visual description
         try:
