@@ -2129,7 +2129,11 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
             },
         },
         "required": ["service"],
-    }, station_services, 'in_station', permission='stationServices')
+    }, station_services, 'in_station', permission='stationServices', cache_prefill={
+        "rearm": {"service": ["rearm"]},
+        "refuel": {"service": ["refuel"]},
+        "repair": {"service": ["repair"]},
+    })
 
     # Register actions - Ship Launched Fighter Actions
     actionManager.registerAction('fighterRequestDock', "Request docking for Ship Launched Fighter", {

@@ -739,6 +739,28 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - UI_Select
     </details>
 
+9. **Station services** (docked main ship only)
+
+    - `service`: Array of strings (one or more of "refuel", "repair", "rearm")
+
+    <details>
+    <summary>Examples</summary>
+
+    - rearm
+    - refuel
+    - repair
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - UIFocus
+    - UI_Up
+    - UI_Left
+    - UI_Right
+    - UI_Select
+    </details>
+
 ### Ship Launched Fighter (SLF) Actions
 
 1. **Request docking with main ship**
