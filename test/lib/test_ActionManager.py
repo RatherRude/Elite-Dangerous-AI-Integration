@@ -180,3 +180,22 @@ def test_permissionless_actions_remain_available() -> None:
     assert [tool["function"]["name"] for tool in tools] == [
         "permissionlessAction"
     ]
+
+
+def test_station_actions_require_docked_status() -> None:
+    manager = ActionManager()
+    manager.registerAction(
+        "stationAction",
+        "Test station action",
+        {},
+        lambda args, states: "done",
+        action_type="in_station",
+    )
+
+    undocked_tools = manager.getToolsList("mainship", True, False, False)
+    docked_tools = manager.getToolsList("mainship", True, False, False, in_station=True)
+    fighter_tools = manager.getToolsList("fighter", True, False, False, in_station=True)
+
+    assert undocked_tools == []
+    assert [tool["function"]["name"] for tool in docked_tools] == ["stationAction"]
+    assert fighter_tools == []

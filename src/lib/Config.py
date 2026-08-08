@@ -396,6 +396,8 @@ default_allowed_actions: dict[str, bool] = {
     'useShieldCell': True,
     'requestDocking': True,
     'liftoff': True,
+    # Station
+    'stationServices': True,
     # Fighter
     'fighterRequestDock': True,
     # Nomad
@@ -1354,12 +1356,6 @@ def migrate(data: dict) -> dict:
             data.get('allowed_actions')
         )
         data['config_version'] = 19
-
-    if data['config_version'] < 20:
-        data['config_version'] = 20
-        allowed_actions = data.get('allowed_actions')
-        if isinstance(allowed_actions, dict):
-            allowed_actions.setdefault('engineBoost', True)
 
     return data
 

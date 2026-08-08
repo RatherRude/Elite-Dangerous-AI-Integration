@@ -33,7 +33,7 @@ class ActionManager:
         """Set enabled states by permission key. Missing keys are disabled."""
         self.allowed_actions = allowed_actions if isinstance(allowed_actions, dict) else {}
 
-    def getToolsList(self, active_mode: str, uses_actions: bool, uses_web_actions: bool, uses_ui_actions: bool, allowed_actions: dict[str, bool] | None = None):
+    def getToolsList(self, active_mode: str, uses_actions: bool, uses_web_actions: bool, uses_ui_actions: bool, allowed_actions: dict[str, bool] | None = None, in_station: bool = False):
         """return list of functions as passed to gpt"""
 
         actions = self.actions.values()
@@ -54,6 +54,9 @@ class ActionManager:
                 elif active_mode in ('mainship', 'fighter', 'nomad'):
                     if action.get("type") == 'ship':
                         valid_actions.append(action.get("tool"))
+                # enable actions that require the commander to be docked
+                if active_mode == 'mainship' and in_station and action.get("type") == 'in_station':
+                    valid_actions.append(action.get("tool"))
                 # enable vision capabilities
                 if action.get("type") == 'global':
                     valid_actions.append(action.get("tool"))

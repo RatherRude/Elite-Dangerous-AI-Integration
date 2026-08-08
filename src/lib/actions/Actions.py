@@ -735,11 +735,11 @@ def liftoff(args, projected_states):
         gui_focus = current_status.get('GuiFocus')
         if gui_focus in ['InternalPanel', 'CommsPanel', 'RolePanel', 'ExternalPanel']:
             keys.send('UIFocus')
-            sleep(1)
+            sleep(0.2)
         elif gui_focus != 'NoFocus':
             raise Exception("The currently focused UI needs to be closed first")
 
-        keys.send('UI_Down', None, 3)
+        keys.send('UI_Down', repeat=3)
         keys.send('UI_Up')
         keys.send('UI_Select')
         return 'The ship is now undocking.'
@@ -750,6 +750,39 @@ def liftoff(args, projected_states):
         return 'Liftoff initiated and landing gear retracted.'
 
     raise Exception('The ship must be docked or landed to initiate liftoff.')
+
+
+def station_services(args, projected_states):
+    current_status = get_state_dict(projected_states, 'CurrentStatus')
+    if not current_status.get('flags', {}).get('Docked'):
+        raise Exception('The ship must be docked to access station services.')
+
+    setGameWindowActive()
+    gui_focus = current_status.get('GuiFocus')
+    if gui_focus in ['InternalPanel', 'CommsPanel', 'RolePanel', 'ExternalPanel']:
+        keys.send('UIFocus')
+        sleep(0.2)
+    elif gui_focus != 'NoFocus':
+        raise Exception("The currently focused UI needs to be closed first")
+
+    services = args.get('service', [])
+    keys.send('UI_Up', repeat=3)
+    if 'refuel' in services:
+        keys.send('UI_Select')
+        if 'repair' not in services and 'rearm' not in services:
+            return f"Station services requested: {', '.join(services)}."
+    keys.send('UI_Right')
+    if 'repair' in services:
+        keys.send('UI_Select')
+        if 'rearm' not in services:
+            keys.send('UI_Left')
+            return f"Station services requested: {', '.join(services)}."
+    keys.send('UI_Right')
+    if 'rearm' in services:
+        keys.send('UI_Select')
+    keys.send('UI_Left', repeat=2)
+
+    return f"Station services requested: {', '.join(services)}."
 
 
 def docking_key_press_sequence(stop_event):
@@ -847,6 +880,7 @@ def recall_dismiss_ship_nomad(args, projected_states):
 # NPC Crew Order Actions
 def npc_order(args, projected_states):
     checkStatus(projected_states, {'Docked': True, 'Landed': True, 'Supercruise': True})
+    current_status = get_state_dict(projected_states, 'CurrentStatus')
     ship_info = get_state_dict(projected_states, 'ShipInfo')
     fighters = ship_info.get('Fighters', [])
     if len(fighters) == 0:
@@ -2080,6 +2114,22 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "disengage": {},
         "liftoff": {},
     })
+
+    actionManager.registerAction('stationServices', "Access a station service", {
+        "type": "object",
+        "properties": {
+            "service": {
+                "type": "array",
+                "description": "Station services to access",
+                "items": {
+                    "type": "string",
+                    "enum": ["refuel", "repair", "rearm"],
+                },
+                "uniqueItems": True,
+            },
+        },
+        "required": ["service"],
+    }, station_services, 'in_station', permission='stationServices')
 
     # Register actions - Ship Launched Fighter Actions
     actionManager.registerAction('fighterRequestDock', "Request docking for Ship Launched Fighter", {

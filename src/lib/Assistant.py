@@ -914,7 +914,8 @@ class Assistant:
             uses_web_actions = self.config["web_search_actions_var"]
             uses_ui_actions = self.config["ui_actions_var"]
             allowed_actions = self.config.get("allowed_actions", {})
-            tool_list = self.action_manager.getToolsList(active_mode, uses_actions, uses_web_actions, uses_ui_actions, allowed_actions) if use_tools else None
+            in_station = bool(flags.get("Docked"))
+            tool_list = self.action_manager.getToolsList(active_mode, uses_actions, uses_web_actions, uses_ui_actions, allowed_actions, in_station) if use_tools else None
             predicted_actions = None
             if tool_list and user_input and not tool_uses and self.config["use_action_cache_var"]:
                 predicted_actions = self.action_manager.predict_action(user_input[-1], tool_list)
