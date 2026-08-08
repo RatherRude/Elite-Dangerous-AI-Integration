@@ -1434,6 +1434,7 @@ These call external services or game APIs (Galnet, Spansh):
     Retrieves current interstellar news from Galnet and answers questions about recent events.
 
     Key option:
+
     - `query`: what you want the news summary to focus on, such as Thargoids, power politics, or recent events in a region.
 
 2. **System Finder (`system_finder`)** (utilizes [Spansh API](https://spansh.co.uk/systems))
@@ -1441,6 +1442,7 @@ These call external services or game APIs (Galnet, Spansh):
     Finds star systems that match political, economic or conflict filters, either near a system or along a specified route.
 
     Key options:
+
     - `reference_system`: search around a single system.
     - `reference_route`: search along a route from `source` to `destination` instead of around one system.
     - `name`: require text in the system name.
@@ -1461,6 +1463,7 @@ These call external services or game APIs (Galnet, Spansh):
     Finds stations for ships, modules, markets, services, and traders, with sensible distance/price-aware sorting.
 
     Key options:
+
     - `reference_system`: search around a single system.
     - `reference_route`: search along a route from `source` to `destination`.
     - `name`: require text in the station name.
@@ -1484,6 +1487,7 @@ These call external services or game APIs (Galnet, Spansh):
     Finds celestial bodies such as mining hotspots or worlds with specific surface signals near you or along a route.
 
     Key options:
+
     - `reference_system`: search around a single system.
     - `reference_route`: search along a route from `source` to `destination`.
     - `name`: require text in the body name.
@@ -1503,6 +1507,7 @@ These are driven primarily by local projections and static data; they never perf
     Uses both static engineer definitions and your current in-game engineer progress to build a filtered overview of ship and suit engineers.
 
     Key options:
+
     - `name`: find a specific engineer by name.
     - `system`: limit by engineer location or system.
     - `modifications`: search by what the engineer can modify, such as FSD range or multi-cannons.
@@ -1515,6 +1520,7 @@ These are driven primarily by local projections and static data; they never perf
     Cross-references static engineering blueprints with your current inventories and engineer progress to answer questions like “who can do this mod, at which grade, and what materials am I missing?”.
 
     Key options:
+
     - `modifications`: one or more modification names, such as Increased FSD Range or Overcharged Power Plant.
     - `engineer`: limit to a specific engineer.
     - `module`: limit to a specific module or weapon.
@@ -1527,6 +1533,7 @@ These are driven primarily by local projections and static data; they never perf
     Searches engineering and suit materials across your live inventories and known sourcing information, so the agent can see both how many you have and where to obtain more.
 
     Key options:
+
     - `name`: one or more material names, with fuzzy matching for partial names.
     - `grade`: limit by ship-material grade from 1 to 5.
     - `type`: narrow by category: `raw`, `manufactured`, `encoded` for ship materials; `items`, `components`, `data`, `consumables` for Odyssey materials; or the broader `ship` and `suit` groups.
