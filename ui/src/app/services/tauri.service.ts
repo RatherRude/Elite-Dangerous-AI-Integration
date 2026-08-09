@@ -213,6 +213,20 @@ export interface OverlayRuntimeInfo {
     packageInstalled: boolean;
     available: boolean;
     hasRealVRRuntime: boolean;
+    desktopOverlay: {
+        backend: "win32" | "macos" | "x11" | "wayland-electron" | "unknown";
+        source: "explicit" | "native-handle" | "ozone-argument" | "environment" | "platform-default";
+        confidence: "certain" | "inferred";
+        evidence: string;
+        capabilities: {
+            clickThrough: boolean;
+            aboveFullscreen: boolean;
+            externalParent: boolean;
+            parentDiscovery: boolean;
+            globalPositioning: boolean;
+        } | null;
+        error?: string;
+    };
     error?: string;
 }
 

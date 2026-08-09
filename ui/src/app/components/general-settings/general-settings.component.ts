@@ -598,6 +598,33 @@ export class GeneralSettingsComponent implements OnDestroy {
         return !!info?.packageInstalled && info.available;
     }
 
+    get desktopOverlayBackendLabel(): string {
+        switch (this.overlayRuntimeInfo?.desktopOverlay?.backend) {
+            case "x11":
+                return "X11 / XWayland";
+            case "wayland-electron":
+                return "Native Wayland (Electron)";
+            default:
+                return this.overlayRuntimeInfo?.desktopOverlay?.backend ?? "Unavailable";
+        }
+    }
+
+    get desktopOverlayFeatureSummary(): string {
+        const desktop = this.overlayRuntimeInfo?.desktopOverlay;
+        if (!desktop?.capabilities) {
+            return desktop?.error ?? "Desktop overlay capabilities are unavailable.";
+        }
+        const features = [
+            [desktop.capabilities.clickThrough, "click-through"],
+            [desktop.capabilities.aboveFullscreen, "above fullscreen"],
+            [desktop.capabilities.parentDiscovery, "game-window tracking"],
+            [desktop.capabilities.globalPositioning, "monitor positioning"],
+        ] as const;
+        const supported = features.filter(([enabled]) => enabled).map(([, label]) => label);
+        const unsupported = features.filter(([enabled]) => !enabled).map(([, label]) => label);
+        return `Supported: ${supported.join(", ") || "none"}. ${unsupported.length ? `Unavailable: ${unsupported.join(", ")}.` : ""}`.trim();
+    }
+
     private async loadOverlayRuntimeInfo(): Promise<void> {
         try {
             this.overlayRuntimeInfo = await this.tauriService.getOverlayRuntimeInfo();

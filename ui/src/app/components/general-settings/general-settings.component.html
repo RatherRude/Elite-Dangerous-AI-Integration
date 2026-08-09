@@ -347,6 +347,7 @@
                                                     <mat-label>Desktop Screen</mat-label>
                                                     <mat-select [(ngModel)]="config.overlay_screen_id"
                                                                 (ngModelChange)="onConfigChange({overlay_screen_id: $event})">
+                                                        <mat-option [value]="-2">Follow Game Position</mat-option>
                                                         <mat-option [value]="-1">Primary Screen</mat-option>
                                                         @for (screen of screens; track screen.id) {
                                                             <mat-option [value]="screen.id">{{ screen.label }}</mat-option>
@@ -426,6 +427,15 @@
                                 </div>
                                 @if (config.overlay_mode === 'vr') {
                                     <p class="preflight-helper-text">{{ overlayRuntimeSummary }}</p>
+                                }
+                                @if (overlayRuntimeInfo?.platform === 'linux') {
+                                    <div class="overlay-backend-info">
+                                        <mat-icon>info</mat-icon>
+                                        <div>
+                                            <strong>Desktop backend: {{ desktopOverlayBackendLabel }}</strong>
+                                            <span>{{ desktopOverlayFeatureSummary }}</span>
+                                        </div>
+                                    </div>
                                 }
                             }
 

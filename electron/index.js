@@ -11,6 +11,17 @@ import contextMenu from 'electron-context-menu';
 import pino from 'pino';
 import { WebSocketServer } from 'ws';
 import {VROverlay} from '@covas-labs/electron-vr';
+import {
+  configure as configureNativeOverlay,
+  displayToOverlayRect,
+  getBackendSelection as getOverlayBackendSelection,
+  getCapabilities as getOverlayCapabilities,
+} from '@covas-labs/electron-overlay';
+import {
+  createDesktopOverlayLifecycle,
+  normalizeDesktopOverlayScreen,
+  selectOverlayDisplay,
+} from './desktop-overlay-lifecycle.js';
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 const isLinux = process.platform === 'linux';
@@ -147,6 +158,7 @@ function clamp(value, min, max) {
 }
 
 function normalizeOverlayOptions(opts = {}) {
+  const desktopPlacement = normalizeDesktopOverlayScreen(opts.screenId);
   const mode = opts.mode === 'screen'
     ? 'desktop'
     : ['disabled', 'desktop', 'vr', 'both'].includes(opts.mode)
@@ -170,7 +182,8 @@ function normalizeOverlayOptions(opts = {}) {
 
   return {
     alwaysOnTop: Boolean(opts.alwaysOnTop),
-    screenId: Number.isInteger(opts.screenId) ? opts.screenId : -1,
+    ...desktopPlacement,
+    parentWindowName: 'Elite - Dangerous',
     mode,
     vrSizeMeters: Number.isFinite(opts.vrSizeMeters) && opts.vrSizeMeters > 0
       ? opts.vrSizeMeters
@@ -185,6 +198,24 @@ function normalizeOverlayOptions(opts = {}) {
 }
 
 async function getOverlayRuntimeInfo() {
+  let desktopOverlay;
+  try {
+    const selection = getOverlayBackendSelection(undefined, 'auto');
+    desktopOverlay = {
+      ...selection,
+      capabilities: getOverlayCapabilities(undefined, 'auto'),
+    };
+  } catch (error) {
+    desktopOverlay = {
+      backend: 'unknown',
+      source: 'platform-default',
+      confidence: 'inferred',
+      evidence: '',
+      capabilities: null,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+
   try {
     console.log("VROverlay:", VROverlay);
 
@@ -195,6 +226,7 @@ async function getOverlayRuntimeInfo() {
       packageInstalled: true,
       available: VROverlay.isAvailable(runtimeInfo),
       hasRealVRRuntime: VROverlay.hasRealVRRuntime(runtimeInfo),
+      desktopOverlay,
     };
   } catch (error) {
     return {
@@ -209,6 +241,7 @@ async function getOverlayRuntimeInfo() {
       packageInstalled: false,
       available: false,
       hasRealVRRuntime: false,
+      desktopOverlay,
       error: error instanceof Error ? error.message : String(error),
     };
   }
@@ -696,52 +729,75 @@ function createMainWindow() {
  * @param {Object} opts - Options for the overlay window
  * @param {boolean} opts.alwaysOnTop - Whether the overlay should always be on top
  * @param {number} opts.screenId - ID of the screen to display on (-1 for primary)
+ * @param {'monitor'|'elite-window'} opts.desktopTarget - Normalized desktop placement policy
  */
-function createFloatingOverlayWindow(opts) {
-  // Find the target display first
-  let targetDisplay;
-  const displays = screen.getAllDisplays();
-  
-  if (opts.screenId && opts.screenId !== -1) {
-    targetDisplay = displays.find(display => display.id === opts.screenId);
-    if (!targetDisplay) {
-      targetDisplay = screen.getPrimaryDisplay();
-    }
-  } else {
-    targetDisplay = screen.getPrimaryDisplay();
-  }
-  
-  // Start with work area to position on correct screen
-  const { x, y } = targetDisplay.workArea;
-  
-  // Create window positioned on the target screen
+async function createFloatingOverlayWindow(opts) {
+  const getTargetDisplay = () => {
+    const displays = screen.getAllDisplays();
+    return selectOverlayDisplay(displays, screen.getPrimaryDisplay(), opts.screenId);
+  };
+  const targetDisplay = getTargetDisplay();
   const overlayWindow = new BrowserWindow({
-    x: x,
-    y: y,
-    width: 800,
-    height: 600,
+    x: targetDisplay.bounds.x,
+    y: targetDisplay.bounds.y,
+    width: 1,
+    height: 1,
     title: overlayWindowTitle,
     frame: false,
     transparent: true,
-    show: false, // Don't show until positioned and maximized
+    backgroundColor: '#00000000',
+    focusable: false,
+    show: false,
     webPreferences: {
       preload: overlayPreloadPath,
     }
   });
-  
-  // Now maximize it - should maximize on the screen it's positioned on
-  overlayWindow.maximize();
-  overlayWindow.show();
-  
-  overlayWindow.loadURL(config.overlay);
-  overlayWindow.setIgnoreMouseEvents(true);
-  // overlayWindow.webContents.openDevTools({ mode: 'detach' });
-  
-  if (opts.alwaysOnTop) {
-    overlayWindow.setAlwaysOnTop(true, 'screen-saver', 2);
+
+  const backend = 'auto';
+  let nativeController;
+  let lifecycle;
+  try {
+    nativeController = configureNativeOverlay(overlayWindow, {
+      backend,
+      bounds: displayToOverlayRect(targetDisplay, overlayWindow, backend),
+      position: 'bounds',
+      clickThrough: true,
+      alwaysOnTop: opts.alwaysOnTop,
+      preserveCompositing: true,
+    });
+  } catch (error) {
+    logger.warn('Native desktop overlay initialization failed; using Electron fallback:', error);
   }
 
-  return overlayWindow;
+  lifecycle = createDesktopOverlayLifecycle({
+    overlayWindow,
+    nativeController,
+    options: opts,
+    getTargetDisplay,
+    getOverlayBounds: display => displayToOverlayRect(display, overlayWindow, backend),
+    logger,
+  });
+
+  try {
+    lifecycle.refresh();
+
+    await overlayWindow.loadURL(config.overlay);
+    lifecycle.reapply();
+    overlayWindow.showInactive();
+    lifecycle.reapply();
+    lifecycle.start();
+  } catch (error) {
+    lifecycle.close();
+    if (!overlayWindow.isDestroyed()) {
+      overlayWindow.destroy();
+    }
+    throw error;
+  }
+
+  return {
+    window: overlayWindow,
+    nativeController: lifecycle,
+  };
 }
 
 async function createVrOverlayWindow(opts) {
@@ -814,22 +870,37 @@ async function createManagedOverlay(opts) {
   }
   if (normalized.mode === 'both') {
     const vrOverlay = await createVrOverlayWindow(normalized);
-    const desktopWindow = createFloatingOverlayWindow(normalized);
+    let desktopOverlay;
+    try {
+      desktopOverlay = await createFloatingOverlayWindow(normalized);
+    } catch (error) {
+      try {
+        vrOverlay.controller.destroy();
+      } catch (cleanupError) {
+        logger.warn('Failed to clean up VR overlay after desktop overlay initialization failed:', cleanupError);
+      }
+      if (!vrOverlay.window.isDestroyed()) {
+        vrOverlay.window.destroy();
+      }
+      throw error;
+    }
     return {
       kind: 'both',
-      window: desktopWindow,
-      windows: [desktopWindow, vrOverlay.window],
+      window: desktopOverlay.window,
+      windows: [desktopOverlay.window, vrOverlay.window],
       controller: vrOverlay.controller,
+      nativeControllers: [desktopOverlay.nativeController],
       runtimeInfo: vrOverlay.runtimeInfo,
       cleanedUp: false,
     };
   }
-  const overlayWindow = createFloatingOverlayWindow(normalized);
+  const desktopOverlay = await createFloatingOverlayWindow(normalized);
   return {
     kind: 'screen',
-    window: overlayWindow,
-    windows: [overlayWindow],
+    window: desktopOverlay.window,
+    windows: [desktopOverlay.window],
     controller: null,
+    nativeControllers: [desktopOverlay.nativeController],
     runtimeInfo: null,
     cleanedUp: false,
   };
@@ -840,6 +911,13 @@ function disposeOverlay(overlay, backend, closeWindow = true) {
     return;
   }
   overlay.cleanedUp = true;
+  for (const controller of overlay.nativeControllers ?? []) {
+    try {
+      controller.close();
+    } catch (error) {
+      logger.warn('Failed to close native overlay controller:', error);
+    }
+  }
   for (const window of overlay.windows ?? [overlay.window]) {
     backend.detachWindow(window);
   }

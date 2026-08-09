@@ -33,7 +33,8 @@
     "package:flatpak": "flatpak-builder --force-clean --install-deps-from=flathub --repo=.flatpak-repo --force-clean .flatpak-build  com.covasnext.ui.yml && flatpak build-bundle .flatpak-repo covas-next-ui-development.flatpak com.covasnext.ui --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo",
     "package:run": "run-script-os",
     "package:run:win32": "cd dist/win-unpacked/ && start covas-next-ui.exe",
-    "package:run:linux": "cd dist/linux-unpacked/ && ./covas-next"
+    "package:run:linux": "cd dist/linux-unpacked/ && ./covas-next",
+    "test:overlay": "node --test test/electron/desktop-overlay-lifecycle.test.js"
   },
   "devDependencies": {
     "concurrently": "^9.2.0",
@@ -64,6 +65,7 @@
     ]
   },
   "dependencies": {
+    "@covas-labs/electron-overlay": "^0.4.1",
     "@covas-labs/electron-vr": "^0.4.3",
     "cross-env": "^7.0.3",
     "electron-context-menu": "^4.1.0",

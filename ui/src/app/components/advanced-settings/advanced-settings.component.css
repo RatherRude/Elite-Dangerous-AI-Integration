@@ -352,6 +352,34 @@ div.output-device-column .mat-mdc-form-field-subscript-wrapper {
   width: 100%;
 }
 
+.overlay-backend-info {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid rgba(117, 180, 255, 0.3);
+  border-radius: 0.5rem;
+  background: rgba(36, 94, 150, 0.14);
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.overlay-backend-info mat-icon {
+  flex: 0 0 auto;
+  color: #75b4ff;
+}
+
+.overlay-backend-info div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.overlay-backend-info strong {
+  color: rgba(255, 255, 255, 0.95);
+}
+
 .logbook-actions {
   display: flex;
   justify-content: flex-start;
