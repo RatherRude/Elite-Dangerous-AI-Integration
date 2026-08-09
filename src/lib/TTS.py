@@ -198,15 +198,20 @@ class TTS:
         np.clip(arr, -32768.0, 32767.0, out=arr)
         return arr.astype(np.int16).tobytes()
 
-    def _get_output_device_index(self) -> Optional[int]: #Rewert from String to Index 
+    def _get_output_device_index(self) -> Optional[int]: #Rewert from String to Index
         if not isinstance(self.output_device, str) or not self.output_device:
             return None
+        substring_match: Optional[int] = None
         for i in range(self.p.get_device_count()):
             dev_info = self.p.get_device_info_by_index(i)
             device_name = dev_info.get('name', '')
-            if isinstance(device_name, str) and self.output_device in device_name:
+            if not isinstance(device_name, str):
+                continue
+            if device_name == self.output_device:
                 return i
-        return None
+            if substring_match is None and self.output_device in device_name:
+                substring_match = i
+        return substring_match
 
     def _playback_thread(self):
         backoff = 1
