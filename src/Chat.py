@@ -244,7 +244,7 @@ class Chat:
             vision_plugin = parse_plugin_provider(vision_provider)
             if vision_plugin:
                 model = self.plugin_manager.create_plugin_model(
-                    vision_plugin[0], vision_plugin[1], "llm"
+                    vision_plugin[0], vision_plugin[1], "vlm"
                 )
                 if model is None:
                     show_chat_message(

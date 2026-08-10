@@ -31,7 +31,7 @@ def create_plugin() -> MistralPlugin:
 def test_mistral_plugin_declares_all_model_providers() -> None:
     plugin = create_plugin()
 
-    assert plugin.settings_config is not None
+    assert plugin.settings_config is None
     assert plugin.model_providers is not None
     assert {
         (provider["kind"], provider["id"])
@@ -41,6 +41,7 @@ def test_mistral_plugin_declares_all_model_providers() -> None:
         ("embedding", "embedding"),
         ("stt", "stt"),
         ("tts", "tts"),
+        ("vlm", "vlm"),
     }
 
 
@@ -56,6 +57,7 @@ def test_mistral_plugin_has_stable_provider_ids() -> None:
         f"plugin:{MISTRAL_PLUGIN_GUID}:embedding",
         f"plugin:{MISTRAL_PLUGIN_GUID}:stt",
         f"plugin:{MISTRAL_PLUGIN_GUID}:tts",
+        f"plugin:{MISTRAL_PLUGIN_GUID}:vlm",
     }
 
 
@@ -69,6 +71,10 @@ def test_plugin_manager_marks_builtin_model_providers(monkeypatch) -> None:
 
     assert manager.plugin_model_providers
     assert all(provider["is_builtin"] for provider in manager.plugin_model_providers)
+    assert isinstance(
+        manager.create_plugin_model(MISTRAL_PLUGIN_GUID, "vlm", "vlm"),
+        MistralLLMModel,
+    )
 
     manager.builtin_plugin_guids.clear()
     manager.register_settings()
@@ -83,6 +89,7 @@ def test_mistral_plugin_creates_models_with_defaults() -> None:
     embedding = plugin.create_model("embedding", {"api_key": "test-key"})
     stt = plugin.create_model("stt", {"api_key": "test-key"})
     tts = plugin.create_model("tts", {"api_key": "test-key"})
+    vlm = plugin.create_model("vlm", {"api_key": "test-key"})
 
     assert isinstance(llm, MistralLLMModel)
     assert isinstance(llm, OpenAILLMModel)
@@ -101,3 +108,7 @@ def test_mistral_plugin_creates_models_with_defaults() -> None:
     assert tts.model_name == "voxtral-mini-tts-2603"
     assert tts.default_voice == "en_paul_neutral"
     assert str(tts.client.base_url) == "https://api.mistral.ai/v1/"
+    assert isinstance(vlm, MistralLLMModel)
+    assert vlm.provider_name == "mistral"
+    assert vlm.model_name == "mistral-small-latest"
+    assert str(vlm.client.base_url) == "https://api.mistral.ai/v1/"

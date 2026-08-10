@@ -13,12 +13,13 @@ from lib.Models import (
     TTSModel,
 )
 from lib.PluginBase import PluginBase, PluginManifest
-from lib.PluginSettingDefinitions import ModelProviderDefinition, PluginSettings
+from lib.PluginSettingDefinitions import ModelProviderDefinition
 
 
 MISTRAL_API_URL = "https://api.mistral.ai/v1"
 MISTRAL_PLUGIN_GUID = "d17f20f6-2514-4a1f-9e54-2a3c089f5c2b"
 MISTRAL_LLM_MODEL = "mistral-small-latest"
+MISTRAL_VLM_MODEL = MISTRAL_LLM_MODEL
 MISTRAL_EMBEDDING_MODEL = "mistral-embed"
 MISTRAL_STT_MODEL = "voxtral-mini-latest"
 MISTRAL_TTS_MODEL = "voxtral-mini-tts-2603"
@@ -263,16 +264,6 @@ class MistralPlugin(PluginBase):
     def __init__(self, plugin_manifest: PluginManifest):
         super().__init__(plugin_manifest)
 
-        self.settings_config: PluginSettings = {
-            "key": plugin_manifest.guid,
-            "label": "Mistral",
-            "icon": "neurology",
-            "grids": [{
-                "key": "account",
-                "label": "Mistral API",
-                "fields": _account_fields(),  # type: ignore[typeddict-item]
-            }],
-        }
         self.model_providers: list[ModelProviderDefinition] = [
             {
                 "kind": "llm",
@@ -300,6 +291,20 @@ class MistralPlugin(PluginBase):
                         _text_field("stt_model", "Model", MISTRAL_STT_MODEL),
                         _text_field("stt_language", "Language", ""),
                         _text_field("stt_prompt", "Prompt", ""),
+                    ],  # type: ignore[typeddict-item]
+                }],
+            },
+            {
+                "kind": "vlm",
+                "id": "vlm",
+                "label": "Mistral",
+                "settings_config": [{
+                    "key": "vlm",
+                    "label": "Mistral Vision",
+                    "fields": [
+                        *_account_fields(),
+                        _text_field("vlm_model", "Model", MISTRAL_VLM_MODEL),
+                        _number_field("vlm_temperature", "Temperature", 1.0, 0.0, 2.0, 0.01),
                     ],  # type: ignore[typeddict-item]
                 }],
             },
@@ -357,6 +362,15 @@ class MistralPlugin(PluginBase):
                 model_name=str(settings.get("stt_model") or MISTRAL_STT_MODEL),
                 language=str(settings.get("stt_language") or "") or None,
                 prompt=str(settings.get("stt_prompt") or "") or None,
+                provider_name="mistral",
+            )
+        if provider_id == "vlm":
+            return MistralLLMModel(
+                base_url=endpoint,
+                api_key=api_key,
+                model_name=str(settings.get("vlm_model") or MISTRAL_VLM_MODEL),
+                temperature=float(settings.get("vlm_temperature", 1.0)),
+                reasoning_effort="none",
                 provider_name="mistral",
             )
         if provider_id == "embedding":

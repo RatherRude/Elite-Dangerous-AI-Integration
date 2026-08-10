@@ -75,10 +75,10 @@ class ModelProviderDefinition(TypedDict):
     """
     Defines a model provider that a plugin can contribute.
     
-    Plugins can provide LLM, STT, TTS, or Embedding model implementations
+    Plugins can provide LLM, VLM, STT, TTS, or Embedding model implementations
     that appear in the Advanced Settings provider dropdowns.
     """
-    kind: Literal['llm', 'stt', 'tts', 'embedding']
+    kind: Literal['llm', 'vlm', 'stt', 'tts', 'embedding']
     """The type of model this provider creates."""
     
     id: str

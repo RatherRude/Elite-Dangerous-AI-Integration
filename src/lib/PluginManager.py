@@ -287,7 +287,7 @@ class PluginManager:
         Args:
             plugin_guid: The GUID of the plugin providing the model
             provider_id: The provider's id within the plugin
-            expected_kind: The expected model type ('llm', 'stt', 'tts', 'embedding')
+            expected_kind: The expected model type ('llm', 'vlm', 'stt', 'tts', 'embedding')
             
         Returns:
             The model instance, or None if creation failed
@@ -316,6 +316,7 @@ class PluginManager:
         # Validate the returned model type
         expected_types = {
             'llm': LLMModel,
+            'vlm': LLMModel,
             'stt': STTModel,
             'tts': TTSModel,
             'embedding': EmbeddingModel

@@ -976,8 +976,22 @@
                         (ngModelChange)="onConfigChange({vision_provider: $event, vision_var: $event !== 'none'})">
                 <mat-option value="openai">OpenAI</mat-option>
                 <mat-option value="google-ai-studio">Google AI Studio</mat-option>
+                @for (provider of pluginVLMProviders; track provider.id) {
+                    @if (provider.is_builtin) {
+                        <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                    }
+                }
                 <mat-option value="custom">Custom</mat-option>
                 <mat-option value="none">None</mat-option>
+                @if (hasInstalledPluginProviders(pluginVLMProviders)) {
+                    <mat-optgroup label="Plugins">
+                        @for (provider of pluginVLMProviders; track provider.id) {
+                            @if (!provider.is_builtin) {
+                                <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                            }
+                        }
+                    </mat-optgroup>
+                }
             </mat-select>
         </mat-form-field>
 
@@ -1040,6 +1054,19 @@
         }
         @if (config.vision_provider === "none") {
             <p>Vision is disabled</p>
+        }
+        @if (isPluginProvider(config.vision_provider)) {
+            @if (getSelectedPluginProvider(config.vision_provider, 'vlm'); as provider) {
+                @for (grid of provider.settings_config; track grid.key) {
+                    <app-settings-grid
+                        [grid]="grid"
+                        [getValue]="createGetValueFn(provider.plugin_guid)"
+                        [setValue]="createSetValueFn(provider.plugin_guid)"
+                        [headerLevel]="'h3'"
+                        [gridClass]="'plugin-provider-settings'">
+                    </app-settings-grid>
+                }
+            }
         }
         </mat-expansion-panel>
 

@@ -897,7 +897,7 @@ class Config(TypedDict):
     agent_llm_temperature: float
     agent_llm_max_tries: int
     mute_search: bool
-    vision_provider: Literal['openai', 'google-ai-studio', 'custom', 'none', 'local-ai-server']
+    vision_provider: str
     vision_model_name: str
     vision_endpoint: str
     vision_api_key: str

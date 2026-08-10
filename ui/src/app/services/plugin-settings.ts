@@ -87,7 +87,7 @@ export interface PluginSettingsMessage extends BaseMessage {
 }
 
 export interface ModelProviderDefinition {
-    kind: 'llm' | 'stt' | 'tts' | 'embedding';
+    kind: 'llm' | 'vlm' | 'stt' | 'tts' | 'embedding';
     id: string;
     label: string;
     settings_config: SettingsGrid[];

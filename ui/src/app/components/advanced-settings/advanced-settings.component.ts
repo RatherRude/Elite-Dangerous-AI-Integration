@@ -140,6 +140,7 @@ export class AdvancedSettingsComponent implements OnDestroy {
 
     // Plugin model providers grouped by kind
     pluginLLMProviders: ModelProviderDefinition[] = [];
+    pluginVLMProviders: ModelProviderDefinition[] = [];
     pluginSTTProviders: ModelProviderDefinition[] = [];
     pluginTTSProviders: ModelProviderDefinition[] = [];
     pluginEmbeddingProviders: ModelProviderDefinition[] = [];
@@ -174,6 +175,7 @@ export class AdvancedSettingsComponent implements OnDestroy {
         this.pluginProvidersSubscription = this.configService.plugin_model_providers$.subscribe(
             (providers) => {
                 this.pluginLLMProviders = providers.filter(p => p.kind === 'llm');
+                this.pluginVLMProviders = providers.filter(p => p.kind === 'vlm');
                 this.pluginSTTProviders = providers.filter(p => p.kind === 'stt');
                 this.pluginTTSProviders = providers.filter(p => p.kind === 'tts');
                 this.pluginEmbeddingProviders = providers.filter(p => p.kind === 'embedding');
@@ -280,12 +282,13 @@ export class AdvancedSettingsComponent implements OnDestroy {
     }
 
     // Get the selected plugin provider definition for a given provider string
-    getSelectedPluginProvider(provider: string, kind: 'llm' | 'stt' | 'tts' | 'embedding'): ModelProviderDefinition | null {
+    getSelectedPluginProvider(provider: string, kind: 'llm' | 'vlm' | 'stt' | 'tts' | 'embedding'): ModelProviderDefinition | null {
         const parsed = this.parsePluginProvider(provider);
         if (!parsed) return null;
         
         const providers = {
             'llm': this.pluginLLMProviders,
+            'vlm': this.pluginVLMProviders,
             'stt': this.pluginSTTProviders,
             'tts': this.pluginTTSProviders,
             'embedding': this.pluginEmbeddingProviders

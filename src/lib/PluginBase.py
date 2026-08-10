@@ -48,7 +48,7 @@ class PluginBase(ABC):
     model_providers: list[ModelProviderDefinition] | None = None
     """
     Define model providers this plugin contributes. These appear in Advanced Settings
-    provider dropdowns (LLM, STT, TTS, Embedding). Override create_model() to instantiate them.
+    provider dropdowns (LLM, VLM, STT, TTS, Embedding). Override create_model() to instantiate them.
     """
     
     @abstractmethod
@@ -91,7 +91,8 @@ class PluginBase(ABC):
             settings: The plugin's full settings dict (from plugin_settings[guid])
             
         Returns:
-            An instance of LLMModel, STTModel, TTSModel, or EmbeddingModel
+            An instance of LLMModel, STTModel, TTSModel, or EmbeddingModel. VLM
+            providers use the LLMModel interface.
             
         Raises:
             ValueError: If provider_id is not recognized
