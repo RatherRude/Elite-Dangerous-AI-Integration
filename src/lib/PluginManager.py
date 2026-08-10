@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 class PluginModelProvider(ModelProviderDefinition):
     """Extended provider definition that includes the plugin's guid for routing."""
     plugin_guid: str
+    is_builtin: bool
 
 
 class PluginManager:
@@ -31,6 +32,7 @@ class PluginManager:
         self.plugin_list: dict[str, 'PluginBase'] = {}
         self.plugin_settings_configs: dict[str, PluginSettings] = {}
         self.plugin_model_providers: list[PluginModelProvider] = []
+        self.builtin_plugin_guids: set[str] = set()
         self.failed_plugins: list[dict] = []
         self.PLUGIN_FOLDER: str = "plugins"
         self.PLUGIN_DEPENDENCIES_FOLDER: str = "deps"
@@ -133,9 +135,20 @@ class PluginManager:
         # EDCoPilot Plugin
         from plugins.EDCoPilotPlugin import EDCoPilotPlugin
         edcopilot_guid = 'ec3eee66-8c4c-4ede-be36-b8612b14a5c0'
+        self.builtin_plugin_guids.add(edcopilot_guid)
         self.plugin_list[edcopilot_guid] = EDCoPilotPlugin(PluginManifest(json.dumps({
             "guid": edcopilot_guid,
             "name": "EDCoPilot Plugin",
+            "author": "Elite Dangerous AI Integration",
+            "version": "1.0.0",
+            "repository": ""
+        })))
+
+        from plugins.MistralPlugin import MISTRAL_PLUGIN_GUID, MistralPlugin
+        self.builtin_plugin_guids.add(MISTRAL_PLUGIN_GUID)
+        self.plugin_list[MISTRAL_PLUGIN_GUID] = MistralPlugin(PluginManifest(json.dumps({
+            "guid": MISTRAL_PLUGIN_GUID,
+            "name": "Mistral Plugin",
             "author": "Elite Dangerous AI Integration",
             "version": "1.0.0",
             "repository": ""
@@ -161,7 +174,8 @@ class PluginManager:
                     for provider in module.model_providers:
                         plugin_provider: PluginModelProvider = {
                             **provider,
-                            'plugin_guid': module.plugin_manifest.guid
+                            'plugin_guid': module.plugin_manifest.guid,
+                            'is_builtin': module.plugin_manifest.guid in self.builtin_plugin_guids,
                         }
                         self.plugin_model_providers.append(plugin_provider)
                         log('debug', f"Registered {provider['kind']} provider '{provider['id']}' from {module.plugin_manifest.name}")

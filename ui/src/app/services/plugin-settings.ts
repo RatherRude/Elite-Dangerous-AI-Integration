@@ -92,6 +92,7 @@ export interface ModelProviderDefinition {
     label: string;
     settings_config: SettingsGrid[];
     plugin_guid: string;
+    is_builtin: boolean;
 }
 
 export interface PluginModelProvidersMessage extends BaseMessage {

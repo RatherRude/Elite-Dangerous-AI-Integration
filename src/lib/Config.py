@@ -885,11 +885,11 @@ class Config(TypedDict):
     commander_name: str
     characters: List[Character]
     active_character_index: int
-    llm_provider: Literal['openai', 'openrouter', 'google-ai-studio', 'mistral', 'custom', 'local-ai-server']
+    llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom', 'local-ai-server']
     llm_model_name: str
     llm_reasoning_effort: Literal['default', 'none', 'minimal', 'low', 'medium', 'high'] | None
     llm_temperature: float
-    agent_llm_provider: Literal['openai', 'openrouter', 'google-ai-studio', 'mistral', 'custom', 'local-ai-server']
+    agent_llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom', 'local-ai-server']
     agent_llm_model_name: str
     agent_llm_reasoning_effort: Literal['default', 'none', 'minimal', 'low', 'medium', 'high'] | None
     agent_llm_endpoint: str
@@ -901,14 +901,14 @@ class Config(TypedDict):
     vision_model_name: str
     vision_endpoint: str
     vision_api_key: str
-    stt_provider: Literal['openai', 'mistral', 'custom', 'custom-multi-modal', 'google-ai-studio', 'none', 'local-ai-server']
+    stt_provider: Literal['openai', 'custom', 'custom-multi-modal', 'google-ai-studio', 'none', 'local-ai-server']
     stt_model_name: str
     stt_api_key: str
     stt_endpoint: str
     stt_language: str
     stt_custom_prompt: str
     stt_required_word: str
-    tts_provider: Literal['openai', 'mistral', 'edge-tts', 'custom', 'none', 'local-ai-server']
+    tts_provider: Literal['openai', 'edge-tts', 'custom', 'none', 'local-ai-server']
     tts_model_name: str
     tts_api_key: str
     tts_endpoint: str
@@ -1790,14 +1790,6 @@ def update_config(config: Config, data: dict) -> Config:
             data["tools_var"] = True
             data["llm_reasoning_effort"] = "none"
 
-        elif data["llm_provider"] == "mistral":
-            data["llm_endpoint"] = "https://api.mistral.ai/v1"
-            data["llm_model_name"] = "mistral-small-latest"
-            data["llm_api_key"] = ""
-            data["llm_temperature"] = 1.0
-            data["tools_var"] = True
-            data["llm_reasoning_effort"] = "none"
-
         elif data["llm_provider"] == "local-ai-server":
             data["llm_endpoint"] = "http://127.0.0.1:8080"
             data["llm_model_name"] = "gpt-4.1-mini"
@@ -1830,13 +1822,6 @@ def update_config(config: Config, data: dict) -> Config:
             data["agent_llm_model_name"] = "gemini-3.1-flash-lite-preview"
             data["agent_llm_api_key"] = ""
             data["agent_llm_reasoning_effort"] = "low"
-
-        elif data["agent_llm_provider"] == "mistral":
-            data["agent_llm_endpoint"] = "https://api.mistral.ai/v1"
-            data["agent_llm_model_name"] = "mistral-medium-latest"
-            data["agent_llm_api_key"] = ""
-            data["agent_llm_temperature"] = 1.0
-            data["agent_llm_reasoning_effort"] = "none"
 
         elif data["agent_llm_provider"] == "local-ai-server":
             data["agent_llm_endpoint"] = "http://127.0.0.1:8080"
@@ -1897,12 +1882,6 @@ def update_config(config: Config, data: dict) -> Config:
             data["stt_model_name"] = "whisper-1"
             data["stt_api_key"] = ""
 
-        if data["stt_provider"] == "mistral":
-            data["stt_endpoint"] = "https://api.mistral.ai/v1"
-            data["stt_model_name"] = "voxtral-mini-latest"
-            data["stt_api_key"] = ""
-            data["stt_language"] = ""
-
         if data["stt_provider"] == "local-ai-server":
             data["stt_endpoint"] = "http://127.0.0.1:8080"
             data["stt_model_name"] = "whisper-1"
@@ -1934,13 +1913,6 @@ def update_config(config: Config, data: dict) -> Config:
             data["tts_model_name"] = "gpt-4o-mini-tts"
             for character in config["characters"]:
                 character["tts_voice"] = "nova"
-            data["tts_api_key"] = ""
-
-        if data["tts_provider"] == "mistral":
-            data["tts_endpoint"] = "https://api.mistral.ai/v1"
-            data["tts_model_name"] = "voxtral-mini-tts-2603"
-            for character in config["characters"]:
-                character["tts_voice"] = "en_paul_neutral"
             data["tts_api_key"] = ""
 
         if data["tts_provider"] == "local-ai-server":

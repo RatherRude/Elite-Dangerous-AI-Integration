@@ -109,12 +109,11 @@
 
                                 <p class="preflight-helper-text">Enter your API key from
                                     <a target="_blank" rel="noopener noreferrer" href="https://platform.openai.com/api-keys">OpenAI</a>,
-                                    <a target="_blank" rel="noopener noreferrer" href="https://aistudio.google.com/app/apikey">Google AI Studio</a>,
-                                    <a target="_blank" rel="noopener noreferrer" href="https://openrouter.ai/settings/keys">OpenRouter</a>, or
-                                    <a target="_blank" rel="noopener noreferrer" href="https://console.mistral.ai/api-keys">Mistral</a>.
+                                    <a target="_blank" rel="noopener noreferrer" href="https://aistudio.google.com/app/apikey">Google AI Studio</a>, or
+                                    <a target="_blank" rel="noopener noreferrer" href="https://openrouter.ai/settings/keys">OpenRouter</a>.
                                     The system will automatically detect the key type and configure settings.</p>
                                 <mat-form-field>
-                                    <mat-label>Main API Key</mat-label>
+                                    <mat-label>Main API Key (OpenAI/Openrouter/Google AI Studio)</mat-label>
                                     <input required matInput [type]="hideApiKey ? 'password' : 'text'" [(ngModel)]="config.api_key"
                                            (ngModelChange)="onApiKeyChange($event)"
                                            pattern="^[A-Za-z0-9_.-]+$"
@@ -124,7 +123,6 @@
                                         <mat-icon>{{ hideApiKey ? 'visibility_off' : 'visibility' }}</mat-icon>
                                     </button>
                                     <mat-hint *ngIf="apiKeyType">Detected: {{ apiKeyType }} - Advanced settings have been configured automatically</mat-hint>
-                                    <mat-hint *ngIf="apiKeyDetectionFailed">Key detection failed. Check the API provider in Advanced Settings.</mat-hint>
                                     <mat-error *ngIf="preflightApiKeyInput.errors?.['pattern']">
                                         API key can only contain letters, numbers, underscores, dots, and hyphens
                                     </mat-error>
@@ -138,15 +136,21 @@
                                                 (ngModelChange)="onConfigChange({stt_provider: $event})">
                                         <mat-option value="openai">OpenAI</mat-option>
                                         <mat-option value="google-ai-studio">Google AI Studio (Multi-Modal)</mat-option>
-                                        <mat-option value="mistral">Mistral</mat-option>
                                         <mat-option value="local-ai-server">Local AIServer</mat-option>
+                                        @for (provider of pluginSTTProviders; track provider.id) {
+                                            @if (provider.is_builtin) {
+                                                <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                                            }
+                                        }
                                         <mat-option value="custom">Custom</mat-option>
                                         <mat-option value="custom-multi-modal">Custom Multi-Modal</mat-option>
                                         <mat-option value="none">None</mat-option>
-                                        @if (pluginSTTProviders.length > 0) {
+                                        @if (hasInstalledPluginProviders(pluginSTTProviders)) {
                                             <mat-optgroup label="Plugins">
                                                 @for (provider of pluginSTTProviders; track provider.id) {
-                                                    <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                                                    @if (!provider.is_builtin) {
+                                                        <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                                                    }
                                                 }
                                             </mat-optgroup>
                                         }
@@ -234,15 +238,21 @@
                                     <mat-select [(ngModel)]="config.tts_provider"
                                                 (ngModelChange)="onConfigChange({tts_provider: $event})">
                                         <mat-option value="openai">OpenAI</mat-option>
-                                        <mat-option value="mistral">Mistral</mat-option>
                                         <mat-option value="edge-tts">Edge TTS</mat-option>
                                         <mat-option value="local-ai-server">Local AIServer</mat-option>
+                                        @for (provider of pluginTTSProviders; track provider.id) {
+                                            @if (provider.is_builtin) {
+                                                <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                                            }
+                                        }
                                         <mat-option value="custom">Custom</mat-option>
                                         <mat-option value="none">None</mat-option>
-                                        @if (pluginTTSProviders.length > 0) {
+                                        @if (hasInstalledPluginProviders(pluginTTSProviders)) {
                                             <mat-optgroup label="Plugins">
                                                 @for (provider of pluginTTSProviders; track provider.id) {
-                                                    <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                                                    @if (!provider.is_builtin) {
+                                                        <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                                                    }
                                                 }
                                             </mat-optgroup>
                                         }

@@ -29,12 +29,11 @@
 
             <p>Enter your API key from
                 <a target="_blank" rel="noopener noreferrer" href="https://platform.openai.com/api-keys">OpenAI</a>,
-                <a target="_blank" rel="noopener noreferrer" href="https://aistudio.google.com/app/apikey">Google AI Studio</a>,
-                <a target="_blank" rel="noopener noreferrer" href="https://openrouter.ai/settings/keys">OpenRouter</a>, or
-                <a target="_blank" rel="noopener noreferrer" href="https://console.mistral.ai/api-keys">Mistral</a>.
+                <a target="_blank" rel="noopener noreferrer" href="https://aistudio.google.com/app/apikey">Google AI Studio</a>, or
+                <a target="_blank" rel="noopener noreferrer" href="https://openrouter.ai/settings/keys">OpenRouter</a>.
                 The system will automatically detect the key type and configure settings.</p>
             <mat-form-field>
-                <mat-label>Main API Key</mat-label>
+                <mat-label>Main API Key (OpenAI/Openrouter/Google AI Studio)</mat-label>
                 <input required matInput [type]="hideApiKey ? 'password' : 'text'" [(ngModel)]="config.api_key"
                         (ngModelChange)="onApiKeyChange($event)"
                         pattern="^[A-Za-z0-9_.-]+$"
@@ -44,7 +43,6 @@
                     <mat-icon>{{ hideApiKey ? 'visibility_off' : 'visibility' }}</mat-icon>
                 </button>
                 <mat-hint *ngIf="apiKeyType">Detected: {{ apiKeyType }} - Advanced settings have been configured automatically</mat-hint>
-                <mat-hint *ngIf="apiKeyDetectionFailed">Key detection failed. Check the API provider in Advanced Settings.</mat-hint>
                 <mat-error *ngIf="apiKeyInput.errors?.['pattern']">
                     API key can only contain letters, numbers, underscores, dots, and hyphens
                 </mat-error>
@@ -65,13 +63,19 @@
                 <mat-option value="openai">OpenAI</mat-option>
                 <mat-option value="openrouter">OpenRouter</mat-option>
                 <mat-option value="google-ai-studio">Google AI Studio</mat-option>
-                <mat-option value="mistral">Mistral</mat-option>
                 <mat-option value="local-ai-server">Local AIServer</mat-option>
+                @for (provider of pluginLLMProviders; track provider.id) {
+                    @if (provider.is_builtin) {
+                        <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                    }
+                }
                 <mat-option value="custom">Custom</mat-option>
-                @if (pluginLLMProviders.length > 0) {
+                @if (hasInstalledPluginProviders(pluginLLMProviders)) {
                     <mat-optgroup label="Plugins">
                         @for (provider of pluginLLMProviders; track provider.id) {
-                            <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                            @if (!provider.is_builtin) {
+                                <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                            }
                         }
                     </mat-optgroup>
                 }
@@ -216,7 +220,7 @@
                 </mat-slide-toggle>
             </label>
         }
-        @if (config.llm_provider === "custom" || config.llm_provider === "mistral")
+        @if (config.llm_provider === "custom")
         {
 
             <mat-form-field>
@@ -296,13 +300,19 @@
                 <mat-option value="openai">OpenAI</mat-option>
                 <mat-option value="openrouter">OpenRouter</mat-option>
                 <mat-option value="google-ai-studio">Google AI Studio</mat-option>
-                <mat-option value="mistral">Mistral</mat-option>
                 <mat-option value="local-ai-server">Local AIServer</mat-option>
+                @for (provider of pluginLLMProviders; track provider.id) {
+                    @if (provider.is_builtin) {
+                        <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                    }
+                }
                 <mat-option value="custom">Custom</mat-option>
-                @if (pluginLLMProviders.length > 0) {
+                @if (hasInstalledPluginProviders(pluginLLMProviders)) {
                     <mat-optgroup label="Plugins">
                         @for (provider of pluginLLMProviders; track provider.id) {
-                            <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                            @if (!provider.is_builtin) {
+                                <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                            }
                         }
                     </mat-optgroup>
                 }
@@ -439,7 +449,7 @@
                         (ngModelChange)="onConfigChange({agent_llm_temperature: $event})" min="0" max="2" step="0.01">
             </mat-form-field>
         }
-        @if (config.agent_llm_provider === "custom" || config.agent_llm_provider === "mistral")
+        @if (config.agent_llm_provider === "custom")
         {
 
             <mat-form-field>
@@ -530,15 +540,21 @@
                         (ngModelChange)="onConfigChange({stt_provider: $event})">
                 <mat-option value="openai">OpenAI</mat-option>
                 <mat-option value="google-ai-studio">Google AI Studio (Multi-Modal)</mat-option>
-                <mat-option value="mistral">Mistral</mat-option>
                 <mat-option value="local-ai-server">Local AIServer</mat-option>
+                @for (provider of pluginSTTProviders; track provider.id) {
+                    @if (provider.is_builtin) {
+                        <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                    }
+                }
                 <mat-option value="custom">Custom</mat-option>
                 <mat-option value="custom-multi-modal">Custom Multi-Modal</mat-option>
                 <mat-option value="none">None</mat-option>
-                @if (pluginSTTProviders.length > 0) {
+                @if (hasInstalledPluginProviders(pluginSTTProviders)) {
                     <mat-optgroup label="Plugins">
                         @for (provider of pluginSTTProviders; track provider.id) {
-                            <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                            @if (!provider.is_builtin) {
+                                <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                            }
                         }
                     </mat-optgroup>
                 }
@@ -593,7 +609,7 @@
                         (ngModelChange)="onConfigChange({stt_language: $event})">
             </mat-form-field>
         }
-        @if (config.stt_provider === "custom" || config.stt_provider === "mistral") {
+        @if (config.stt_provider === "custom") {
             <mat-form-field>
                 <mat-label>STT Endpoint</mat-label>
                 <input matInput [(ngModel)]="config.stt_endpoint"
@@ -746,15 +762,21 @@
             <mat-select [(ngModel)]="config.tts_provider"
                         (ngModelChange)="onConfigChange({tts_provider: $event})">
                 <mat-option value="openai">OpenAI</mat-option>
-                <mat-option value="mistral">Mistral</mat-option>
                 <mat-option value="edge-tts">Edge TTS</mat-option>
                 <mat-option value="local-ai-server">Local AIServer</mat-option>
+                @for (provider of pluginTTSProviders; track provider.id) {
+                    @if (provider.is_builtin) {
+                        <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                    }
+                }
                 <mat-option value="custom">Custom</mat-option>
                 <mat-option value="none">None</mat-option>
-                @if (pluginTTSProviders.length > 0) {
+                @if (hasInstalledPluginProviders(pluginTTSProviders)) {
                     <mat-optgroup label="Plugins">
                         @for (provider of pluginTTSProviders; track provider.id) {
-                            <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                            @if (!provider.is_builtin) {
+                                <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                            }
                         }
                     </mat-optgroup>
                 }
@@ -846,7 +868,7 @@
                         (ngModelChange)="updateTTSSpeed($event)">
             </mat-form-field>
         }
-        @if (config.tts_provider === "custom" || config.tts_provider === "mistral") {
+        @if (config.tts_provider === "custom") {
             <mat-form-field>
                 <mat-label>TTS Endpoint</mat-label>
                 <input matInput [(ngModel)]="config.tts_endpoint"
@@ -862,13 +884,11 @@
                 <input matInput [ngModel]="character?.tts_voice || 'nova'"
                         (ngModelChange)="updateTTSVoice($event)">
             </mat-form-field>
-            @if (config.tts_provider !== "mistral") {
-                <mat-form-field>
-                    <mat-label>TTS Speed</mat-label>
-                    <input matInput [ngModel]="character?.tts_speed || '1,2'"
-                            (ngModelChange)="updateTTSSpeed($event)">
-                </mat-form-field>
-            }
+            <mat-form-field>
+                <mat-label>TTS Speed</mat-label>
+                <input matInput [ngModel]="character?.tts_speed || '1,2'"
+                        (ngModelChange)="updateTTSSpeed($event)">
+            </mat-form-field>
             <mat-form-field>
                 <mat-label>Override TTS API Key</mat-label>
                 <input matInput [type]="hideTtsApiKey ? 'password' : 'text'" [(ngModel)]="config.tts_api_key"
@@ -1037,12 +1057,19 @@
                 <mat-option value="openai">OpenAI</mat-option>
                 <mat-option value="google-ai-studio">Google AI Studio</mat-option>
                 <mat-option value="local-ai-server">Local AIServer</mat-option>
+                @for (provider of pluginEmbeddingProviders; track provider.id) {
+                    @if (provider.is_builtin) {
+                        <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                    }
+                }
                 <mat-option value="custom">Custom</mat-option>
                 <mat-option value="none">None</mat-option>
-                @if (pluginEmbeddingProviders.length > 0) {
+                @if (hasInstalledPluginProviders(pluginEmbeddingProviders)) {
                     <mat-optgroup label="Plugins">
                         @for (provider of pluginEmbeddingProviders; track provider.id) {
-                            <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                            @if (!provider.is_builtin) {
+                                <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                            }
                         }
                     </mat-optgroup>
                 }

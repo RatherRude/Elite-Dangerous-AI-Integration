@@ -9,15 +9,7 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from src.lib.Models import (
-    OpenAILLMModel,
-    OpenAIResponsesLLMModel,
-    OpenAISTTModel,
-    OpenAITTSModel,
-    MistralTTSModel,
-    create_stt_model,
-    create_tts_model,
-)
+from src.plugins.MistralPlugin import MistralLLMModel
 
 
 class ContentChunk:
@@ -29,7 +21,7 @@ class ContentChunk:
 
 
 def test_chat_completion_extracts_visible_text_from_structured_content() -> None:
-    model = OpenAILLMModel(
+    model = MistralLLMModel(
         base_url="https://api.mistral.ai/v1",
         api_key="test-key",
         model_name="mistral-medium-latest",
@@ -62,7 +54,7 @@ def test_chat_completion_extracts_visible_text_from_structured_content() -> None
 
 
 def test_chat_completion_returns_none_for_thinking_only_content() -> None:
-    model = OpenAILLMModel(
+    model = MistralLLMModel(
         base_url="https://api.mistral.ai/v1",
         api_key="test-key",
         model_name="mistral-medium-latest",
@@ -90,7 +82,7 @@ def test_chat_completion_returns_none_for_thinking_only_content() -> None:
 
 
 def test_chat_completion_strips_thinking_chunks_from_tool_prompt() -> None:
-    model = OpenAILLMModel(
+    model = MistralLLMModel(
         base_url="https://api.mistral.ai/v1",
         api_key="test-key",
         model_name="mistral-small-latest",
@@ -125,7 +117,7 @@ def test_chat_completion_strips_thinking_chunks_from_tool_prompt() -> None:
 
 
 def test_chat_completion_json_encodes_structured_tool_prompt() -> None:
-    model = OpenAILLMModel(
+    model = MistralLLMModel(
         base_url="https://api.mistral.ai/v1",
         api_key="test-key",
         model_name="mistral-small-latest",
@@ -149,47 +141,3 @@ def test_chat_completion_json_encodes_structured_tool_prompt() -> None:
 
     request_messages = model.client.chat.completions.create.call_args.kwargs["messages"]
     assert request_messages[0]["content"] == '{"systems": ["Sol"]}'
-
-
-def test_responses_api_strips_thinking_chunks_from_tool_prompt() -> None:
-    model = OpenAIResponsesLLMModel(
-        base_url="https://api.openai.com/v1",
-        api_key="test-key",
-        model_name="gpt-5.4-nano",
-        temperature=1.0,
-        provider_name="openai",
-    )
-    converted = model._convert_messages([{
-        "role": "tool",
-        "tool_call_id": "call-1",
-        "content": [
-            ContentChunk({"type": "reasoning", "text": "secret"}),
-            ContentChunk({"type": "text", "text": "Visible result"}),
-        ],
-    }])
-
-    assert converted == [{
-        "type": "function_call_output",
-        "call_id": "call-1",
-        "output": "Visible result",
-    }]
-
-
-def test_mistral_audio_factories_use_openai_compatible_models() -> None:
-    config = {
-        "api_key": "test-key",
-        "stt_endpoint": "",
-        "stt_model_name": "voxtral-mini-latest",
-        "tts_endpoint": "",
-        "tts_model_name": "voxtral-mini-tts-2603",
-    }
-
-    stt = create_stt_model("mistral", config)
-    tts = create_tts_model("mistral", config)
-
-    assert isinstance(stt, OpenAISTTModel)
-    assert stt.provider_name == "mistral"
-    assert str(stt.client.base_url) == "https://api.mistral.ai/v1/"
-    assert isinstance(tts, MistralTTSModel)
-    assert tts.provider_name == "mistral"
-    assert str(tts.client.base_url) == "https://api.mistral.ai/v1/"

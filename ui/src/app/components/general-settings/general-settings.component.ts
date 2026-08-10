@@ -121,7 +121,6 @@ export class GeneralSettingsComponent implements OnDestroy {
     private readonly avatarPreviewInterval = setInterval(() => this.advanceAvatarPreviewState(), 3000);
     hideApiKey = true;
     apiKeyType: string | null = null;
-    apiKeyDetectionFailed = false;
     assigningPTTIndex: number | null = null;
     isRefreshingAudioDevices = false;
     activePreflightItem: PreflightChecklistItem = "commander";
@@ -182,6 +181,10 @@ export class GeneralSettingsComponent implements OnDestroy {
             },
         );
         void this.loadOverlayRuntimeInfo();
+    }
+
+    hasInstalledPluginProviders(providers: ModelProviderDefinition[]): boolean {
+        return providers.some(provider => !provider.is_builtin);
     }
 
     ngOnDestroy() {
@@ -470,7 +473,6 @@ export class GeneralSettingsComponent implements OnDestroy {
         let providerChanges: Partial<Config> = {};
 
         if (apiKey.startsWith("AQ") || apiKey.startsWith("AIzaS")) {
-            this.apiKeyDetectionFailed = false;
             this.apiKeyType = "Google AI Studio";
             providerChanges = {
                 llm_provider: "google-ai-studio",
@@ -482,7 +484,6 @@ export class GeneralSettingsComponent implements OnDestroy {
                 embedding_provider: "google-ai-studio",
             };
         } else if (apiKey.startsWith("sk-or-v1")) {
-            this.apiKeyDetectionFailed = false;
             this.apiKeyType = "OpenRouter";
             providerChanges = {
                 llm_provider: "openrouter",
@@ -494,7 +495,6 @@ export class GeneralSettingsComponent implements OnDestroy {
                 embedding_provider: "none",
             };
         } else if (apiKey.startsWith("sk-")) {
-            this.apiKeyDetectionFailed = false;
             this.apiKeyType = "OpenAI";
             providerChanges = {
                 llm_provider: "openai",
@@ -507,7 +507,6 @@ export class GeneralSettingsComponent implements OnDestroy {
             };
         } else {
             this.apiKeyType = null;
-            this.apiKeyDetectionFailed = apiKey.length > 0;
             return;
         }
 

@@ -6,7 +6,8 @@ from unittest.mock import MagicMock
 from time import sleep
 from src.lib.Config import map_character_tts_postprocessing
 from src.lib.TTS import TTS
-from src.lib.Models import OpenAITTSModel, MistralTTSModel, EdgeTTSModel
+from src.lib.Models import OpenAITTSModel, EdgeTTSModel
+from src.plugins.MistralPlugin import MistralTTSModel
 import numpy as np
 
 
@@ -158,6 +159,7 @@ def test_mistral_tts_streams_base64_float32_pcm():
         base_url="https://api.mistral.ai/v1",
         api_key="test-key",
         model_name="voxtral-mini-tts-2603",
+        default_voice="en_paul_neutral",
     )
     model.client = MagicMock()
     model.client.stream.return_value = stream_context
