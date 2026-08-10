@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import json
-from typing import Any, cast
+from typing import Any, ClassVar, cast
 
 
 from .PluginSettingDefinitions import PluginSettings, ModelProviderDefinition
@@ -34,6 +34,9 @@ class PluginBase(ABC):
     """
     The manifest of the plugin.
     """
+
+    settings_schema_version: ClassVar[int] = 0
+    """Target version for this plugin's persisted settings schema."""
     
     settings_config: PluginSettings | None = None
     """
@@ -77,6 +80,10 @@ class PluginBase(ABC):
 
     def on_settings_button(self, key: str):
         """Handle a click on a button declared in this plugin's settings UI."""
+        pass
+
+    def migrate_settings(self, settings: dict[str, Any], from_version: int) -> None:
+        """Migrate settings from one schema version to the next."""
         pass
 
     def create_model(self, provider_id: str, settings: dict[str, Any]) -> 'LLMModel | STTModel | TTSModel | EmbeddingModel':
