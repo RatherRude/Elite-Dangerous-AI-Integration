@@ -34,6 +34,7 @@ class PluginManager:
         self.plugin_model_providers: list[PluginModelProvider] = []
         self.builtin_plugin_guids: set[str] = set()
         self.failed_plugins: list[dict] = []
+        self.settings_migrated = False
         self.PLUGIN_FOLDER: str = "plugins"
         self.PLUGIN_DEPENDENCIES_FOLDER: str = "deps"
         self.config = config
@@ -69,6 +70,19 @@ class PluginManager:
             if isinstance(obj, type) and issubclass(obj, PluginBase) and obj is not PluginBase:
                 plugin = obj(manifest) # Instantiate and return
                 plugin.settings = self.config.get('plugin_settings', {}).get(manifest.guid, {})
+                previous_settings = dict(plugin.settings)
+                try:
+                    settings_version = max(0, int(plugin.settings.get('settings_version', 0)))
+                except (TypeError, ValueError):
+                    settings_version = 0
+                target_version = max(0, int(plugin.settings_schema_version))
+                while settings_version < target_version:
+                    plugin.migrate_settings(plugin.settings, settings_version)
+                    settings_version += 1
+                    plugin.settings['settings_version'] = settings_version
+                if plugin.settings != previous_settings:
+                    self.config.setdefault('plugin_settings', {})[manifest.guid] = plugin.settings
+                    self.settings_migrated = True
                 return plugin
 
         raise TypeError("No valid PluginBase subclass found.")
@@ -219,6 +233,10 @@ class PluginManager:
                 ]
             }
             self.plugin_settings_configs[guid] = error_settings
+
+        if self.settings_migrated:
+            emit_message("config", config=self.config)
+            self.settings_migrated = False
 
         # Broadcast settings configs to UI
         emit_message(
