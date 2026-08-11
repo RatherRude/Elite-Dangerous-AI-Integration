@@ -65,7 +65,7 @@
     ]
   },
   "dependencies": {
-    "@covas-labs/electron-overlay": "^0.4.1",
+    "@covas-labs/electron-overlay": "^0.5.2",
     "@covas-labs/electron-vr": "^0.4.3",
     "cross-env": "^7.0.3",
     "electron-context-menu": "^4.1.0",
