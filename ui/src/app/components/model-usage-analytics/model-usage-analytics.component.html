@@ -366,6 +366,9 @@
               @if (row.latencyUsage.timeToFirstByteMs !== null) {
                 <span class="metric-pill metric-thinking-output">{{ row.latencyUsage.timeToFirstByteMs | number:'1.0-0' }} ms first byte</span>
               }
+              @if (row.retryAttempts > 0) {
+                <span class="metric-pill metric-thinking-output">{{ row.retryAttempts | number }} retries</span>
+              }
               @if (row.audioUsage.inputAudioDurationMs !== null) {
                 <span class="metric-pill metric-live-input">{{ row.audioUsage.inputAudioDurationMs | number:'1.0-0' }} ms input audio</span>
               }

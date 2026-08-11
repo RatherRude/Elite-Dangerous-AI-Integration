@@ -1,3 +1,4 @@
+import base64
 from math import ceil
 from httpx import Response
 import pytest
@@ -6,6 +7,7 @@ from time import sleep
 from src.lib.Config import map_character_tts_postprocessing
 from src.lib.TTS import TTS
 from src.lib.Models import OpenAITTSModel, EdgeTTSModel
+from src.plugins.MistralPlugin import MistralTTSModel
 import numpy as np
 
 
@@ -65,6 +67,9 @@ class AudioResponse(object):
 
     def __exit__(self, *args):
         pass
+
+    def iter_bytes(self, chunk_size):
+        yield self.data
 
 @pytest.fixture
 def mock_openai():
@@ -126,6 +131,78 @@ def test_openai_tts_playback_with_voice_instructions(mock_pyaudio, mock_openai):
         sleep(0.1)
 
     assert mock_pyaudio['stream'].write.call_count == ceil(2 * 24_000 / 1024)
+
+
+def test_mistral_tts_streams_base64_float32_pcm():
+    source_samples = np.array(
+        [-1.0, -0.5, 0.0, 0.5, 1.0, np.nan, np.inf, -np.inf],
+        dtype="<f4",
+    ).tobytes()
+
+    first_delta = base64.b64encode(source_samples[:3]).decode("ascii")
+    second_delta = base64.b64encode(source_samples[3:]).decode("ascii")
+    response = MagicMock()
+    response.iter_lines.return_value = iter([
+        "event: speech.audio.delta",
+        f'data: {{"type":"speech.audio.delta","audio_data":"{first_delta}"}}',
+        "",
+        "event: speech.audio.delta",
+        f'data: {{"type":"speech.audio.delta","audio_data":"{second_delta}"}}',
+        "",
+        "event: speech.audio.done",
+        'data: {"type":"speech.audio.done","usage":{}}',
+        "",
+    ])
+    stream_context = MagicMock()
+    stream_context.__enter__.return_value = response
+    model = MistralTTSModel(
+        base_url="https://api.mistral.ai/v1",
+        api_key="test-key",
+        model_name="voxtral-mini-tts-2603",
+        default_voice="en_paul_neutral",
+    )
+    model.client = MagicMock()
+    model.client.stream.return_value = stream_context
+
+    output = b"".join(model.synthesize("Hello world", "en_paul_neutral"))
+
+    call = model.client.stream.call_args
+    assert call.args == ("POST", "audio/speech")
+    assert call.kwargs["headers"] == {"Accept": "text/event-stream"}
+    request = call.kwargs["json"]
+    assert request == {
+        "model": "voxtral-mini-tts-2603",
+        "voice": "en_paul_neutral",
+        "input": "Hello world",
+        "response_format": "pcm",
+        "stream": True,
+    }
+    assert np.frombuffer(output, dtype="<i2").tolist() == [
+        -32767,
+        -16383,
+        0,
+        16383,
+        32767,
+        0,
+        32767,
+        -32767,
+    ]
+
+
+def test_openai_tts_request_includes_speed(mock_openai):
+    model = OpenAITTSModel(
+        base_url="https://api.openai.com/v1",
+        api_key="test-key",
+        model_name="tts-1",
+        speed=1.5,
+        provider_name="openai",
+    )
+    model.client = mock_openai
+
+    assert list(model.synthesize("Hello world", "nova"))
+
+    request = mock_openai.audio.speech.with_streaming_response.create.call_args.kwargs
+    assert request["speed"] == 1.5
 
 def test_edge_tts_playback(mock_pyaudio, mock_miniaudio, mock_openai):
     """Test Edge-TTS playback"""

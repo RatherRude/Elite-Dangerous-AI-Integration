@@ -137,13 +137,20 @@
                                         <mat-option value="openai">OpenAI</mat-option>
                                         <mat-option value="google-ai-studio">Google AI Studio (Multi-Modal)</mat-option>
                                         <mat-option value="local-ai-server">Local AIServer</mat-option>
+                                        @for (provider of pluginSTTProviders; track provider.id) {
+                                            @if (provider.is_builtin) {
+                                                <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                                            }
+                                        }
                                         <mat-option value="custom">Custom</mat-option>
                                         <mat-option value="custom-multi-modal">Custom Multi-Modal</mat-option>
                                         <mat-option value="none">None</mat-option>
-                                        @if (pluginSTTProviders.length > 0) {
+                                        @if (hasInstalledPluginProviders(pluginSTTProviders)) {
                                             <mat-optgroup label="Plugins">
                                                 @for (provider of pluginSTTProviders; track provider.id) {
-                                                    <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                                                    @if (!provider.is_builtin) {
+                                                        <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                                                    }
                                                 }
                                             </mat-optgroup>
                                         }
@@ -233,12 +240,19 @@
                                         <mat-option value="openai">OpenAI</mat-option>
                                         <mat-option value="edge-tts">Edge TTS</mat-option>
                                         <mat-option value="local-ai-server">Local AIServer</mat-option>
+                                        @for (provider of pluginTTSProviders; track provider.id) {
+                                            @if (provider.is_builtin) {
+                                                <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                                            }
+                                        }
                                         <mat-option value="custom">Custom</mat-option>
                                         <mat-option value="none">None</mat-option>
-                                        @if (pluginTTSProviders.length > 0) {
+                                        @if (hasInstalledPluginProviders(pluginTTSProviders)) {
                                             <mat-optgroup label="Plugins">
                                                 @for (provider of pluginTTSProviders; track provider.id) {
-                                                    <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                                                    @if (!provider.is_builtin) {
+                                                        <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                                                    }
                                                 }
                                             </mat-optgroup>
                                         }
