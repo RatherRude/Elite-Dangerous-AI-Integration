@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 class PluginModelProvider(ModelProviderDefinition):
     """Extended provider definition that includes the plugin's guid for routing."""
     plugin_guid: str
+    is_builtin: bool
 
 
 class PluginManager:
@@ -31,7 +32,9 @@ class PluginManager:
         self.plugin_list: dict[str, 'PluginBase'] = {}
         self.plugin_settings_configs: dict[str, PluginSettings] = {}
         self.plugin_model_providers: list[PluginModelProvider] = []
+        self.builtin_plugin_guids: set[str] = set()
         self.failed_plugins: list[dict] = []
+        self.settings_migrated = False
         self.PLUGIN_FOLDER: str = "plugins"
         self.PLUGIN_DEPENDENCIES_FOLDER: str = "deps"
         self.config = config
@@ -67,6 +70,19 @@ class PluginManager:
             if isinstance(obj, type) and issubclass(obj, PluginBase) and obj is not PluginBase:
                 plugin = obj(manifest) # Instantiate and return
                 plugin.settings = self.config.get('plugin_settings', {}).get(manifest.guid, {})
+                previous_settings = dict(plugin.settings)
+                try:
+                    settings_version = max(0, int(plugin.settings.get('settings_version', 0)))
+                except (TypeError, ValueError):
+                    settings_version = 0
+                target_version = max(0, int(plugin.settings_schema_version))
+                while settings_version < target_version:
+                    plugin.migrate_settings(plugin.settings, settings_version)
+                    settings_version += 1
+                    plugin.settings['settings_version'] = settings_version
+                if plugin.settings != previous_settings:
+                    self.config.setdefault('plugin_settings', {})[manifest.guid] = plugin.settings
+                    self.settings_migrated = True
                 return plugin
 
         raise TypeError("No valid PluginBase subclass found.")
@@ -133,9 +149,20 @@ class PluginManager:
         # EDCoPilot Plugin
         from plugins.EDCoPilotPlugin import EDCoPilotPlugin
         edcopilot_guid = 'ec3eee66-8c4c-4ede-be36-b8612b14a5c0'
+        self.builtin_plugin_guids.add(edcopilot_guid)
         self.plugin_list[edcopilot_guid] = EDCoPilotPlugin(PluginManifest(json.dumps({
             "guid": edcopilot_guid,
             "name": "EDCoPilot Plugin",
+            "author": "Elite Dangerous AI Integration",
+            "version": "1.0.0",
+            "repository": ""
+        })))
+
+        from plugins.MistralPlugin import MISTRAL_PLUGIN_GUID, MistralPlugin
+        self.builtin_plugin_guids.add(MISTRAL_PLUGIN_GUID)
+        self.plugin_list[MISTRAL_PLUGIN_GUID] = MistralPlugin(PluginManifest(json.dumps({
+            "guid": MISTRAL_PLUGIN_GUID,
+            "name": "Mistral Plugin",
             "author": "Elite Dangerous AI Integration",
             "version": "1.0.0",
             "repository": ""
@@ -161,7 +188,8 @@ class PluginManager:
                     for provider in module.model_providers:
                         plugin_provider: PluginModelProvider = {
                             **provider,
-                            'plugin_guid': module.plugin_manifest.guid
+                            'plugin_guid': module.plugin_manifest.guid,
+                            'is_builtin': module.plugin_manifest.guid in self.builtin_plugin_guids,
                         }
                         self.plugin_model_providers.append(plugin_provider)
                         log('debug', f"Registered {provider['kind']} provider '{provider['id']}' from {module.plugin_manifest.name}")
@@ -205,6 +233,10 @@ class PluginManager:
                 ]
             }
             self.plugin_settings_configs[guid] = error_settings
+
+        if self.settings_migrated:
+            emit_message("config", config=self.config)
+            self.settings_migrated = False
 
         # Broadcast settings configs to UI
         emit_message(
@@ -273,7 +305,7 @@ class PluginManager:
         Args:
             plugin_guid: The GUID of the plugin providing the model
             provider_id: The provider's id within the plugin
-            expected_kind: The expected model type ('llm', 'stt', 'tts', 'embedding')
+            expected_kind: The expected model type ('llm', 'vlm', 'stt', 'tts', 'embedding')
             
         Returns:
             The model instance, or None if creation failed
@@ -302,6 +334,7 @@ class PluginManager:
         # Validate the returned model type
         expected_types = {
             'llm': LLMModel,
+            'vlm': LLMModel,
             'stt': STTModel,
             'tts': TTSModel,
             'embedding': EmbeddingModel

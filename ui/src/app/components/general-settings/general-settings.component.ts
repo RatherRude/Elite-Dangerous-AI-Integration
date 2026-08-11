@@ -183,6 +183,10 @@ export class GeneralSettingsComponent implements OnDestroy {
         void this.loadOverlayRuntimeInfo();
     }
 
+    hasInstalledPluginProviders(providers: ModelProviderDefinition[]): boolean {
+        return providers.some(provider => !provider.is_builtin);
+    }
+
     ngOnDestroy() {
         this.configSubscription.unsubscribe();
         this.systemSubscription.unsubscribe();

@@ -102,7 +102,7 @@ export interface Config {
     agent_llm_temperature: number;
     agent_llm_max_tries: number;
     mute_search: boolean;
-    vision_provider: "openai" | "google-ai-studio" | "custom" | "none" | "local-ai-server";
+    vision_provider: "openai" | "google-ai-studio" | "custom" | "none" | "local-ai-server" | string;
     vision_model_name: string;
     vision_endpoint: string;
     vision_api_key: string;

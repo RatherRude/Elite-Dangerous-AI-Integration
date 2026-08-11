@@ -204,22 +204,29 @@ def _get_reasoning_tokens(usage: Any) -> int | None:
 class OpenAILLMModel(LLMModel):
     def __init__(self, base_url: str, api_key: str, model_name: str, temperature: float, reasoning_effort: Optional[str] = None, extra_body: Optional[dict] = None, extra_headers: Optional[dict] = None, provider_name: str | None = None):
         super().__init__(model_name, provider_name=provider_name)
-        self.client = OpenAI(base_url=base_url, api_key=api_key)
+        self.client = OpenAI(base_url=base_url, api_key=api_key, max_retries=4)
         self.base_url = base_url
         self.temperature = temperature
         self.reasoning_effort = reasoning_effort
         self.extra_body = extra_body or {}
         self.extra_headers = extra_headers or {}
 
+    def _prepare_messages(self, messages: List[dict]) -> List[dict]:
+        return messages
+
+    def _extract_response_text(self, content: Any) -> str | None:
+        return content if isinstance(content, str) and content else None
+
     def generate(self, messages: List[dict], tools: Optional[List[dict]] = None, tool_choice: Optional[Any] = None) -> tuple[str | None, List[Any] | None, ModelUsageStats]:
         started_at = time()
         kwargs = {}
+        request_messages = self._prepare_messages(messages)
         # Special handling for specific models or providers if needed
         if self.model_name in ['gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-5.1']:
             kwargs["verbosity"] = "low"
                     
         if 'google' in self.base_url or 'google' in self.model_name or 'gemini' in self.model_name:
-            for m in messages:
+            for m in request_messages:
                 if 'tool_calls' in m and m.get('tool_calls', None):
                     calls = m.get('tool_calls', [])
                     if calls:
@@ -239,7 +246,7 @@ class OpenAILLMModel(LLMModel):
         
         params: dict[str, Any] = {
             "model": self.model_name,
-            "messages": messages,
+            "messages": request_messages,
             "temperature": self.temperature,
             **self.extra_body,
             **kwargs
@@ -262,10 +269,13 @@ class OpenAILLMModel(LLMModel):
             params["extra_headers"] = self.extra_headers
 
         try:
-            completion = self.client.chat.completions.create(**params) # pyright: ignore[reportCallIssue]
+            raw_response = self.client.chat.completions.with_raw_response.create(**params)  # pyright: ignore[reportCallIssue]
+            completion = raw_response.parse()
+            retry_attempts = raw_response.retries_taken
         except APIStatusError as e:
             log("debug", "LLM error request:", e.request.method, e.request.url, e.request.headers, e.request.read().decode('utf-8', errors='replace'))
             log("debug", "LLM error response:", e.response.status_code, e.response.headers, e.response.read().decode('utf-8', errors='replace'))
+            log("error", f"LLM request failed for {self.provider_name or 'unknown'}/{self.model_name}: HTTP {e.status_code}: {e.body}")
             
             try:
                 error: dict = e.body[0] if hasattr(e, 'body') and e.body and isinstance(e.body, list) else e.body # pyright: ignore[reportAssignmentType]
@@ -290,6 +300,7 @@ class OpenAILLMModel(LLMModel):
                     provider=self.provider_name,
                     model_name=self.model_name,
                     response_ms=(time() - started_at) * 1000,
+                    retry_attempts=retry_attempts,
                 ),
             ) # Treated as "..."
 
@@ -302,6 +313,7 @@ class OpenAILLMModel(LLMModel):
                     provider=self.provider_name,
                     model_name=self.model_name,
                     response_ms=(time() - started_at) * 1000,
+                    retry_attempts=retry_attempts,
                 ),
             ) # Treated as "..."
 
@@ -309,6 +321,7 @@ class OpenAILLMModel(LLMModel):
             provider=self.provider_name,
             model_name=self.model_name,
             response_ms=(time() - started_at) * 1000,
+            retry_attempts=retry_attempts,
         )
         if hasattr(completion, 'usage') and completion.usage:
             log("debug", f'LLM completion usage', completion.usage)
@@ -321,10 +334,9 @@ class OpenAILLMModel(LLMModel):
         
         response_text = None
         if hasattr(completion.choices[0].message, 'content'):
-            response_text = completion.choices[0].message.content
-            if completion.choices[0].message.content is None or completion.choices[0].message.content == "":
+            response_text = self._extract_response_text(completion.choices[0].message.content)
+            if response_text is None:
                 log("debug", "LLM completion no content:", completion)
-                response_text = None
         else:
             log("debug", f'LLM completion without text')
             response_text = None
@@ -351,7 +363,7 @@ class OpenAILLMModel(LLMModel):
 class OpenAIResponsesLLMModel(LLMModel):
     def __init__(self, base_url: str, api_key: str, model_name: str, temperature: float, reasoning_effort: Optional[str] = None, extra_body: Optional[dict] = None, extra_headers: Optional[dict] = None, provider_name: str | None = None):
         super().__init__(model_name, provider_name=provider_name)
-        self.client = OpenAI(base_url=base_url, api_key=api_key)
+        self.client = OpenAI(base_url=base_url, api_key=api_key, max_retries=4)
         self.base_url = base_url
         self.temperature = temperature
         self.reasoning_effort = reasoning_effort
@@ -582,10 +594,13 @@ class OpenAIResponsesLLMModel(LLMModel):
             params["extra_headers"] = self.extra_headers
 
         try:
-            response = self.client.responses.create(**params)
+            raw_response = self.client.responses.with_raw_response.create(**params)
+            response = raw_response.parse()
+            retry_attempts = raw_response.retries_taken
         except APIStatusError as e:
             log("debug", "LLM error request:", e.request.method, e.request.url, e.request.headers, e.request.read().decode('utf-8', errors='replace'))
             log("debug", "LLM error response:", e.response.status_code, e.response.headers, e.response.read().decode('utf-8', errors='replace'))
+            log("error", f"LLM request failed for {self.provider_name or 'unknown'}/{self.model_name}: HTTP {e.status_code}: {e.body}")
 
             try:
                 error: dict = e.body[0] if hasattr(e, 'body') and e.body and isinstance(e.body, list) else e.body # pyright: ignore[reportAssignmentType]
@@ -605,6 +620,7 @@ class OpenAIResponsesLLMModel(LLMModel):
             provider=self.provider_name,
             model_name=self.model_name,
             response_ms=(time() - started_at) * 1000,
+            retry_attempts=retry_attempts,
         )
         if hasattr(response, 'usage') and response.usage:
             log("debug", "LLM response usage", response.usage)

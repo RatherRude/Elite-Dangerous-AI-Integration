@@ -90,6 +90,7 @@ export interface ModelUsageRecord {
     audioUsage: AudioUsageBreakdown;
     textUsage: TextUsageBreakdown;
     cacheUsage: CacheUsageBreakdown;
+    retryAttempts: number;
     raw: Record<string, unknown>;
 }
 
@@ -341,6 +342,7 @@ export class ModelUsageService implements OnDestroy {
             audioUsage: this.buildAudioUsage(audioUsage),
             textUsage: this.buildTextUsage(textUsage),
             cacheUsage: this.buildCacheUsage(cacheUsage),
+            retryAttempts: this.toNumber(modelUsage["retry_attempts"]),
             raw: payload,
         };
     }

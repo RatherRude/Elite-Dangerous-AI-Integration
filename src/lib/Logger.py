@@ -334,6 +334,7 @@ class ModelUsageStats:
     response_ms: float | None = None
     time_to_first_token_ms: float | None = None
     output_chars: int | None = None
+    retry_attempts: int = 0
 
 
 def _to_usage_payload_dict(value: Any) -> dict[str, Any] | None:
@@ -426,6 +427,7 @@ def log_llm_usage(
         "total_tokens": model_usage.total_tokens,
         "cached_tokens": model_usage.cached_tokens,
         "reasoning_tokens": model_usage.reasoning_tokens,
+        "retry_attempts": model_usage.retry_attempts,
     }
     if provider is not None:
         model_usage_data["provider"] = provider
