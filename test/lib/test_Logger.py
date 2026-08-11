@@ -51,6 +51,7 @@ def test_log_llm_usage_includes_provider_model_and_reasoning_tokens(
         model_name="gpt-5",
         response_ms=842,
         output_chars=17,
+        retry_attempts=2,
     )
 
     log_llm_usage("assistant", usage, PromptUsageStats(system_chars=20))
@@ -70,6 +71,7 @@ def test_log_llm_usage_includes_provider_model_and_reasoning_tokens(
     assert message["model_usage"]["reasoning_tokens"] == 7
     assert message["model_usage"]["provider"] == "openai"
     assert message["model_usage"]["model_name"] == "gpt-5"
+    assert message["model_usage"]["retry_attempts"] == 2
     assert message["prompt_usage"]["total_prompt_chars"] == 20
     assert message["latency_usage"]["response_ms"] == 842
     assert message["text_usage"]["output_chars"] == 17
@@ -80,6 +82,7 @@ def test_log_llm_usage_includes_provider_model_and_reasoning_tokens(
     assert rows[0]["payload"]["context"] == "assistant"
     assert rows[0]["payload"]["provider"] == "openai"
     assert rows[0]["payload"]["model_usage"]["reasoning_tokens"] == 7
+    assert rows[0]["payload"]["model_usage"]["retry_attempts"] == 2
     assert rows[0]["payload"]["prompt_usage"]["total_prompt_chars"] == 20
     assert rows[0]["payload"]["latency_usage"]["response_ms"] == 842
     assert rows[0]["payload"]["text_usage"]["output_chars"] == 17
@@ -177,8 +180,16 @@ def test_openai_responses_model_usage_captures_reasoning_tokens(
         output=[],
         error=None,
     )
+    raw_response = SimpleNamespace(
+        parse=MagicMock(return_value=response),
+        retries_taken=2,
+    )
     client = SimpleNamespace(
-        responses=SimpleNamespace(create=MagicMock(return_value=response)),
+        responses=SimpleNamespace(
+            with_raw_response=SimpleNamespace(
+                create=MagicMock(return_value=raw_response),
+            ),
+        ),
         models=SimpleNamespace(list=MagicMock(return_value=[])),
     )
 
@@ -209,6 +220,7 @@ def test_openai_responses_model_usage_captures_reasoning_tokens(
     assert usage.model_name == "gpt-5"
     assert usage.response_ms is not None
     assert usage.output_chars == 2
+    assert usage.retry_attempts == 2
 
 
 def test_get_reasoning_tokens_falls_back_to_usage_totals() -> None:

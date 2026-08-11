@@ -204,7 +204,7 @@ def _get_reasoning_tokens(usage: Any) -> int | None:
 class OpenAILLMModel(LLMModel):
     def __init__(self, base_url: str, api_key: str, model_name: str, temperature: float, reasoning_effort: Optional[str] = None, extra_body: Optional[dict] = None, extra_headers: Optional[dict] = None, provider_name: str | None = None):
         super().__init__(model_name, provider_name=provider_name)
-        self.client = OpenAI(base_url=base_url, api_key=api_key)
+        self.client = OpenAI(base_url=base_url, api_key=api_key, max_retries=4)
         self.base_url = base_url
         self.temperature = temperature
         self.reasoning_effort = reasoning_effort
@@ -269,10 +269,13 @@ class OpenAILLMModel(LLMModel):
             params["extra_headers"] = self.extra_headers
 
         try:
-            completion = self.client.chat.completions.create(**params) # pyright: ignore[reportCallIssue]
+            raw_response = self.client.chat.completions.with_raw_response.create(**params)  # pyright: ignore[reportCallIssue]
+            completion = raw_response.parse()
+            retry_attempts = raw_response.retries_taken
         except APIStatusError as e:
             log("debug", "LLM error request:", e.request.method, e.request.url, e.request.headers, e.request.read().decode('utf-8', errors='replace'))
             log("debug", "LLM error response:", e.response.status_code, e.response.headers, e.response.read().decode('utf-8', errors='replace'))
+            log("error", f"LLM request failed for {self.provider_name or 'unknown'}/{self.model_name}: HTTP {e.status_code}: {e.body}")
             
             try:
                 error: dict = e.body[0] if hasattr(e, 'body') and e.body and isinstance(e.body, list) else e.body # pyright: ignore[reportAssignmentType]
@@ -297,6 +300,7 @@ class OpenAILLMModel(LLMModel):
                     provider=self.provider_name,
                     model_name=self.model_name,
                     response_ms=(time() - started_at) * 1000,
+                    retry_attempts=retry_attempts,
                 ),
             ) # Treated as "..."
 
@@ -309,6 +313,7 @@ class OpenAILLMModel(LLMModel):
                     provider=self.provider_name,
                     model_name=self.model_name,
                     response_ms=(time() - started_at) * 1000,
+                    retry_attempts=retry_attempts,
                 ),
             ) # Treated as "..."
 
@@ -316,6 +321,7 @@ class OpenAILLMModel(LLMModel):
             provider=self.provider_name,
             model_name=self.model_name,
             response_ms=(time() - started_at) * 1000,
+            retry_attempts=retry_attempts,
         )
         if hasattr(completion, 'usage') and completion.usage:
             log("debug", f'LLM completion usage', completion.usage)
@@ -357,7 +363,7 @@ class OpenAILLMModel(LLMModel):
 class OpenAIResponsesLLMModel(LLMModel):
     def __init__(self, base_url: str, api_key: str, model_name: str, temperature: float, reasoning_effort: Optional[str] = None, extra_body: Optional[dict] = None, extra_headers: Optional[dict] = None, provider_name: str | None = None):
         super().__init__(model_name, provider_name=provider_name)
-        self.client = OpenAI(base_url=base_url, api_key=api_key)
+        self.client = OpenAI(base_url=base_url, api_key=api_key, max_retries=4)
         self.base_url = base_url
         self.temperature = temperature
         self.reasoning_effort = reasoning_effort
@@ -588,10 +594,13 @@ class OpenAIResponsesLLMModel(LLMModel):
             params["extra_headers"] = self.extra_headers
 
         try:
-            response = self.client.responses.create(**params)
+            raw_response = self.client.responses.with_raw_response.create(**params)
+            response = raw_response.parse()
+            retry_attempts = raw_response.retries_taken
         except APIStatusError as e:
             log("debug", "LLM error request:", e.request.method, e.request.url, e.request.headers, e.request.read().decode('utf-8', errors='replace'))
             log("debug", "LLM error response:", e.response.status_code, e.response.headers, e.response.read().decode('utf-8', errors='replace'))
+            log("error", f"LLM request failed for {self.provider_name or 'unknown'}/{self.model_name}: HTTP {e.status_code}: {e.body}")
 
             try:
                 error: dict = e.body[0] if hasattr(e, 'body') and e.body and isinstance(e.body, list) else e.body # pyright: ignore[reportAssignmentType]
@@ -611,6 +620,7 @@ class OpenAIResponsesLLMModel(LLMModel):
             provider=self.provider_name,
             model_name=self.model_name,
             response_ms=(time() - started_at) * 1000,
+            retry_attempts=retry_attempts,
         )
         if hasattr(response, 'usage') and response.usage:
             log("debug", "LLM response usage", response.usage)
