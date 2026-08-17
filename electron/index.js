@@ -161,7 +161,7 @@ function normalizeOverlayOptions(opts = {}) {
   const desktopPlacement = normalizeDesktopOverlayScreen(opts.screenId);
   const mode = opts.mode === 'screen'
     ? 'desktop'
-    : ['disabled', 'desktop', 'vr', 'both'].includes(opts.mode)
+    : ['disabled', 'desktop', 'standalone', 'vr', 'both'].includes(opts.mode)
       ? opts.mode
       : 'desktop';
   const vrHorizontalOffset = Number.isFinite(opts.vrHorizontalOffset)
@@ -194,6 +194,11 @@ function normalizeOverlayOptions(opts = {}) {
     vrDistanceOffset,
     vrTiltDegrees,
     vrCurvature,
+    standaloneTransparent: opts.standaloneTransparent !== false,
+    standaloneBackgroundColor: typeof opts.standaloneBackgroundColor === 'string' &&
+      /^#[0-9a-fA-F]{6}$/.test(opts.standaloneBackgroundColor)
+      ? opts.standaloneBackgroundColor
+      : '#000000',
   };
 }
 
@@ -922,6 +927,37 @@ async function createVrOverlayWindow(opts) {
   };
 }
 
+async function createStandaloneOverlayWindow(opts) {
+  const overlayWindow = new BrowserWindow({
+    width: 1280,
+    height: 720,
+    title: overlayWindowTitle,
+    transparent: opts.standaloneTransparent,
+    backgroundColor: opts.standaloneTransparent ? '#00000000' : opts.standaloneBackgroundColor,
+    webPreferences: {
+      preload: overlayPreloadPath,
+    },
+  });
+
+  try {
+    await overlayWindow.loadURL(config.overlay);
+  } catch (error) {
+    if (!overlayWindow.isDestroyed()) {
+      overlayWindow.destroy();
+    }
+    throw error;
+  }
+
+  return {
+    kind: 'standalone',
+    window: overlayWindow,
+    windows: [overlayWindow],
+    controller: null,
+    runtimeInfo: null,
+    cleanedUp: false,
+  };
+}
+
 async function createManagedOverlay(opts) {
   const normalized = normalizeOverlayOptions(opts);
   if (normalized.mode === 'disabled') {
@@ -936,6 +972,9 @@ async function createManagedOverlay(opts) {
   }
   if (normalized.mode === 'vr') {
     return await createVrOverlayWindow(normalized);
+  }
+  if (normalized.mode === 'standalone') {
+    return await createStandaloneOverlayWindow(normalized);
   }
   if (normalized.mode === 'both') {
     const vrOverlay = await createVrOverlayWindow(normalized);

@@ -227,6 +227,8 @@ export class GeneralSettingsComponent implements OnDestroy {
         switch (this.config?.overlay_mode) {
             case "desktop":
                 return "Desktop Overlay";
+            case "standalone":
+                return "Standalone Window";
             case "vr":
                 return "VR Overlay";
             case "both":

@@ -336,6 +336,36 @@ div.output-device-column .mat-mdc-form-field-subscript-wrapper {
   margin: 0;
 }
 
+.standalone-overlay-options {
+  display: flex;
+  flex: 1 1 14rem;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.standalone-background-color {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.85rem;
+}
+
+.standalone-background-color input {
+  width: 2.5rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.standalone-overlay-hint {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
 .overlay-slider-field {
   display: flex;
   flex: 1 1 14rem;

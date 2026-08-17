@@ -373,6 +373,8 @@ export class MainViewComponent implements OnInit, OnDestroy {
                 alwaysOnTop: true,
                 screenId: screenId,
                 mode: this.config?.overlay_mode ?? "desktop",
+                standaloneTransparent: this.config?.overlay_standalone_transparent ?? true,
+                standaloneBackgroundColor: this.config?.overlay_standalone_background_color ?? "#000000",
                 vrSizeMeters: this.config?.overlay_vr_size_meters ?? 0.9,
                 vrAnchor: this.config?.overlay_vr_anchor ?? "head",
                 vrHorizontalOffset: this.config?.overlay_vr_horizontal_offset ?? 0,

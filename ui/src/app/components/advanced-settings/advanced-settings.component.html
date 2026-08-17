@@ -1214,6 +1214,7 @@
                             (ngModelChange)="onConfigChange({overlay_mode: $event})">
                             <mat-option value="disabled">Disabled</mat-option>
                             <mat-option value="desktop">Desktop Overlay</mat-option>
+                            <mat-option value="standalone">Standalone Window</mat-option>
                             @if (overlayRuntimeReady) {
                                 <mat-option value="vr">VR Overlay</mat-option>
                                 <mat-option value="both">Both</mat-option>
@@ -1271,6 +1272,24 @@
                                     }
                                 </mat-select>
                             </mat-form-field>
+                        }
+                        @if (config.overlay_mode === 'standalone') {
+                            <div class="standalone-overlay-options">
+                                <mat-slide-toggle
+                                    [(ngModel)]="config.overlay_standalone_transparent"
+                                    (ngModelChange)="onConfigChange({overlay_standalone_transparent: $event})">
+                                    Transparent window
+                                </mat-slide-toggle>
+                                @if (!config.overlay_standalone_transparent) {
+                                    <label class="standalone-background-color">
+                                        Background color
+                                        <input type="color"
+                                               [ngModel]="config.overlay_standalone_background_color"
+                                               (ngModelChange)="onConfigChange({overlay_standalone_background_color: $event})">
+                                    </label>
+                                }
+                                <p class="standalone-overlay-hint">A regular resizable window for window capture and external keying. It does not follow the game window or use native overlay features.</p>
+                            </div>
                         }
                     }
                 </div>
