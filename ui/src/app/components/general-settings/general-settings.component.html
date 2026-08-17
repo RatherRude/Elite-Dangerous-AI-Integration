@@ -428,6 +428,7 @@
                                                 </mat-slider>
                                             </div>
 
+                                            @if (overlaySupportsCurvature) {
                                             <div class="overlay-slider-field">
                                                 <label>Curvature: {{ config.overlay_vr_curvature * 360 }} degrees</label>
                                                 <mat-slider min="0" max="180" step="1" discrete>
@@ -436,11 +437,38 @@
                                                            (ngModelChange)="onConfigChange({overlay_vr_curvature: $event / 360})">
                                                 </mat-slider>
                                             </div>
+                                            }
                                         }
                                     </div>
                                 </div>
-                                @if (config.overlay_mode === 'vr') {
-                                    <p class="preflight-helper-text">{{ overlayRuntimeSummary }}</p>
+                                @if (overlayRuntimeInfo) {
+                                    <div class="vr-compatibility-card" [class.vr-compatibility-ready]="overlayCompatibility?.launch?.wouldWorkNow">
+                                        <div>
+                                            <strong>{{ overlayCompatibility?.backendLabel || 'VR overlay' }}</strong>
+                                            <p>{{ overlayRuntimeSummary }}</p>
+                                            @if (overlayCompatibility?.connectedApplication) {
+                                                <p>Connected to {{ overlayCompatibility?.connectedApplication }}.</p>
+                                            }
+                                            @if (overlayCompatibility?.requiresOpenXRAppRestart) {
+                                                <p>Restart any running VR applications for this change to take effect.</p>
+                                            }
+                                        </div>
+                                        <div class="vr-compatibility-actions">
+                                            <button mat-stroked-button type="button" [disabled]="isVrIntegrationBusy" (click)="refreshOverlayRuntimeInfo()">Check again</button>
+                                            @if (overlayCompatibility?.recommendedAction === 'install-openxr-api-layer') {
+                                                <button mat-raised-button color="primary" type="button" [disabled]="isVrIntegrationBusy" (click)="installVrIntegration()">Enable integration</button>
+                                            }
+                                            @if (overlayCompatibility?.recommendedAction === 'enable-openxr-api-layer') {
+                                                <button mat-raised-button color="primary" type="button" [disabled]="isVrIntegrationBusy" (click)="runVrIntegrationAction('enable')">Enable integration</button>
+                                            }
+                                            @if (overlayCompatibility?.integrationEnabled) {
+                                                <button mat-stroked-button type="button" [disabled]="isVrIntegrationBusy" (click)="runVrIntegrationAction('disable')">Disable integration</button>
+                                            }
+                                            @if (overlayCompatibility?.integrationInstalled) {
+                                                <button mat-stroked-button type="button" [disabled]="isVrIntegrationBusy" (click)="uninstallVrIntegration()">Uninstall integration</button>
+                                            }
+                                        </div>
+                                    </div>
                                 }
                                 @if (overlayRuntimeInfo?.platform === 'linux') {
                                     <div class="overlay-backend-info">

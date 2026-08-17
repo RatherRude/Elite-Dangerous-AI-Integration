@@ -4,6 +4,8 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { MatProgressBarModule } from "@angular/material/progress-bar";
 import { MatDialogModule } from "@angular/material/dialog";
+import { MatSnackBar } from "@angular/material/snack-bar";
+import { MatSnackBarModule } from "@angular/material/snack-bar";
 import { TauriService } from "../services/tauri.service";
 import { LoggingService } from "../services/logging.service";
 import { LogContainerComponent } from "../components/log-container/log-container.component";
@@ -35,6 +37,7 @@ import {UIService} from "../services/ui.service";
         MatIconModule,
         MatProgressBarModule,
         MatDialogModule,
+        MatSnackBarModule,
         LogContainerComponent,
         SettingsMenuComponent,
         InputContainerComponent,
@@ -86,7 +89,8 @@ export class MainViewComponent implements OnInit, OnDestroy {
         private projectionsService: ProjectionsService,
         private metricsService: MetricsService,
         private policyService: PolicyService,
-        private uiService: UIService
+        private uiService: UIService,
+        private snackBar: MatSnackBar,
     ) {
         this.policyService.usageDisclaimerAccepted$.subscribe(
             (accepted) => {
@@ -379,6 +383,11 @@ export class MainViewComponent implements OnInit, OnDestroy {
             });
         } catch (error) {
             console.error("Failed to create overlay:", error);
+            this.snackBar.open(
+                error instanceof Error ? error.message : "The overlay could not be created.",
+                "OK",
+                { duration: 7000 },
+            );
         }
     }
 

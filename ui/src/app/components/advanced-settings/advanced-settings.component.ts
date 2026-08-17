@@ -25,6 +25,8 @@ import { MatIcon } from "@angular/material/icon";
 import {
     OverlayRuntimeInfo,
     TauriService,
+    VRCompatibilityState,
+    VRIntegrationAction,
 } from "../../services/tauri.service";
 import {
     MatAccordion,
@@ -98,6 +100,7 @@ export class AdvancedSettingsComponent implements OnDestroy {
     character: Character | null = null;
     screens: ScreenInfo[] = [];
     overlayRuntimeInfo: OverlayRuntimeInfo | null = null;
+    isVrIntegrationBusy = false;
     configSubscription: Subscription;
     systemSubscription: Subscription;
     characterSubscription: Subscription;
@@ -130,6 +133,7 @@ export class AdvancedSettingsComponent implements OnDestroy {
     ];
     fontScale = 1;
     highlightTarget: AdvancedSettingsFocusTarget | null = null;
+    private vrCompatibilityRefreshTimer?: ReturnType<typeof setTimeout>;
     expandedPanels: Record<AdvancedSettingsPanel, boolean> = {
         commander: false,
         stt: false,
@@ -186,7 +190,7 @@ export class AdvancedSettingsComponent implements OnDestroy {
                 this.screens = screens ?? [];
             },
         );
-        void this.loadOverlayRuntimeInfo();
+        void this.refreshOverlayRuntimeInfo();
         void this.loadRemoteInterfaceBindAddresses();
     }
 
@@ -216,6 +220,7 @@ export class AdvancedSettingsComponent implements OnDestroy {
         if (this.screensSubscription) {
             this.screensSubscription.unsubscribe();
         }
+        clearTimeout(this.vrCompatibilityRefreshTimer);
     }
 
     public focusSetting(target: AdvancedSettingsFocusTarget): void {
@@ -426,16 +431,22 @@ export class AdvancedSettingsComponent implements OnDestroy {
         if (!info.packageInstalled) {
             return "The optional electron-vr package is not installed yet.";
         }
-        if (!info.available) {
-            return `VR bridge loaded, but no runtime is ready. Backend: ${info.selectedBackend}.`;
+        if (info.compatibility) {
+            return info.compatibility.summary;
         }
-        const runtimePath = info.openvrRuntimePath ? ` (${info.openvrRuntimePath})` : "";
-        return `VR ready via ${info.selectedBackend}${runtimePath}.`;
+        return info.error ?? "VR support could not be checked.";
     }
 
     get overlayRuntimeReady(): boolean {
-        const info = this.overlayRuntimeInfo;
-        return !!info?.packageInstalled && info.available;
+        return this.overlayRuntimeInfo?.compatibility?.launch.wouldWorkNow ?? false;
+    }
+
+    get overlayCompatibility(): VRCompatibilityState | null {
+        return this.overlayRuntimeInfo?.compatibility ?? null;
+    }
+
+    get overlaySupportsCurvature(): boolean {
+        return this.overlayCompatibility?.features.curvature !== "unsupported";
     }
 
     get desktopOverlayBackendLabel(): string {
@@ -465,12 +476,70 @@ export class AdvancedSettingsComponent implements OnDestroy {
         return `Supported: ${supported.join(", ") || "none"}. ${unsupported.length ? `Unavailable: ${unsupported.join(", ")}.` : ""}`.trim();
     }
 
-    private async loadOverlayRuntimeInfo(): Promise<void> {
+    async refreshOverlayRuntimeInfo(): Promise<void> {
+        clearTimeout(this.vrCompatibilityRefreshTimer);
         try {
             this.overlayRuntimeInfo = await this.tauriService.getOverlayRuntimeInfo();
+            if (this.overlayCompatibility?.readiness === "waiting-for-host") {
+                this.vrCompatibilityRefreshTimer = setTimeout(() => void this.refreshOverlayRuntimeInfo(), 1500);
+            }
         } catch (error) {
             console.error("Error loading overlay runtime info:", error);
             this.overlayRuntimeInfo = null;
+        }
+    }
+
+    installVrIntegration(): void {
+        const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+            data: {
+                title: "Enable overlays in OpenXR applications?",
+                message: "COVAS:NEXT will install a per-user OpenXR integration component. It does not require administrator access, but compatible OpenXR applications must be restarted afterward.",
+                confirmButtonText: "Enable integration",
+                cancelButtonText: "Not now",
+            },
+        });
+        dialogRef.afterClosed().subscribe((confirmed) => {
+            if (confirmed) void this.runVrIntegrationAction("install");
+        });
+    }
+
+    uninstallVrIntegration(): void {
+        const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+            data: {
+                title: "Remove OpenXR integration?",
+                message: "This removes COVAS:NEXT's per-user OpenXR integration. Restart any running VR applications afterward.",
+                confirmButtonText: "Remove integration",
+                cancelButtonText: "Keep integration",
+            },
+        });
+        dialogRef.afterClosed().subscribe((confirmed) => {
+            if (confirmed) void this.runVrIntegrationAction("uninstall");
+        });
+    }
+
+    async runVrIntegrationAction(action: VRIntegrationAction): Promise<void> {
+        this.isVrIntegrationBusy = true;
+        try {
+            const compatibility = await this.tauriService.runVrIntegrationAction(action);
+            this.overlayRuntimeInfo = {
+                ...this.overlayRuntimeInfo,
+                compatibility,
+            } as OverlayRuntimeInfo;
+            this.snackBar.open(
+                action === "install" || action === "enable"
+                    ? "OpenXR integration updated. Restart any running VR applications."
+                    : "OpenXR integration updated.",
+                "OK",
+                { duration: 5000 },
+            );
+        } catch (error) {
+            console.error("VR integration action failed:", error);
+            this.snackBar.open(error instanceof Error ? error.message : "OpenXR integration could not be updated.", "OK", {
+                duration: 7000,
+            });
+        } finally {
+            this.isVrIntegrationBusy = false;
+            await this.refreshOverlayRuntimeInfo();
         }
     }
 

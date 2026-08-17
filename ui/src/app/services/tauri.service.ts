@@ -213,6 +213,7 @@ export interface OverlayRuntimeInfo {
     packageInstalled: boolean;
     available: boolean;
     hasRealVRRuntime: boolean;
+    compatibility?: VRCompatibilityState;
     desktopOverlay: {
         backend: "win32" | "macos" | "x11" | "wayland-electron" | "unknown";
         source: "explicit" | "native-handle" | "ozone-argument" | "environment" | "platform-default";
@@ -229,6 +230,48 @@ export interface OverlayRuntimeInfo {
     };
     error?: string;
 }
+
+export type VRSetupAction =
+    | "install-openxr-api-layer"
+    | "enable-openxr-api-layer"
+    | "restart-openxr-apps"
+    | "start-openxr-app"
+    | "install-xr-runtime"
+    | "use-supported-openxr-host"
+    | "none";
+
+export interface VRCompatibilityState {
+    launch: {
+        verdict: "works-now" | "action-required" | "incompatible";
+        wouldWorkNow: boolean;
+        fundamentalIncompatibility: boolean;
+        message: string;
+        requiredActions: VRSetupAction[];
+    };
+    readiness: "ready" | "setup-required" | "waiting-for-host" | "fallback-only" | "unavailable" | "development-only";
+    backendLabel: string;
+    summary: string;
+    canRenderOverlay: boolean;
+    isRealVrBackend: boolean;
+    requiresOpenXRAppRestart: boolean;
+    compatibleHostGraphicsApis: string[];
+    features: {
+        curvature: "supported" | "unsupported" | "runtime-dependent";
+    };
+    recommendedAction: VRSetupAction;
+    integrationInstalled: boolean;
+    integrationEnabled: boolean;
+    connectedApplication: string;
+    issues: Array<{
+        code: string;
+        severity: "info" | "warning" | "error";
+        title: string;
+        message: string;
+        action: VRSetupAction;
+    }>;
+}
+
+export type VRIntegrationAction = "install" | "enable" | "disable" | "uninstall";
 
 export interface AccessibilityPermissionResult {
     supported: boolean;
@@ -377,6 +420,22 @@ export class TauriService {
         }
         const result = await window.electronAPI.invoke('get_overlay_runtime_info');
         return result as OverlayRuntimeInfo;
+    }
+
+    public async getVrCompatibilityState(): Promise<VRCompatibilityState> {
+        if (!window.electronAPI) {
+            throw new Error('electronAPI not available');
+        }
+        const result = await window.electronAPI.invoke('get_vr_compatibility_state');
+        return result as VRCompatibilityState;
+    }
+
+    public async runVrIntegrationAction(action: VRIntegrationAction): Promise<VRCompatibilityState> {
+        if (!window.electronAPI) {
+            throw new Error('electronAPI not available');
+        }
+        const result = await window.electronAPI.invoke('vr_integration_action', action);
+        return result as VRCompatibilityState;
     }
 
     public async requestAccessibilityPermission(): Promise<AccessibilityPermissionResult> {

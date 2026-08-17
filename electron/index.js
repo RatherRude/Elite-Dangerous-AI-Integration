@@ -217,34 +217,101 @@ async function getOverlayRuntimeInfo() {
   }
 
   try {
-    console.log("VROverlay:", VROverlay);
-
-    const runtimeInfo = VROverlay.getRuntimeInfo();
-    console.log("runtimeInfo:", runtimeInfo);
+    const compatibility = await VROverlay.getCompatibilityReport();
+    const runtimeInfo = compatibility.diagnostics;
     return {
       ...runtimeInfo,
       packageInstalled: true,
-      available: VROverlay.isAvailable(runtimeInfo),
-      hasRealVRRuntime: VROverlay.hasRealVRRuntime(runtimeInfo),
+      available: compatibility.launch.wouldWorkNow,
+      hasRealVRRuntime: compatibility.isRealVrBackend,
+      compatibility: toProductVRState(compatibility),
       desktopOverlay,
     };
   } catch (error) {
+    logger.warn({ err: error }, 'VR compatibility probe failed');
     return {
       platform: process.platform,
-      probeMode: 'module_unavailable',
+      probeMode: 'probe_failed',
       openxrAvailable: false,
       openxrOverlayExtensionAvailable: false,
       openvrAvailable: false,
       openvrRuntimeInstalled: false,
       openvrRuntimePath: '',
       selectedBackend: 'none',
-      packageInstalled: false,
+      // This module was imported when Electron started; only the native probe failed.
+      packageInstalled: true,
       available: false,
       hasRealVRRuntime: false,
       desktopOverlay,
       error: error instanceof Error ? error.message : String(error),
     };
   }
+}
+
+function toProductVRState(report) {
+  return {
+    launch: report.launch,
+    readiness: report.readiness,
+    backendLabel: report.backendLabel,
+    summary: report.summary,
+    canRenderOverlay: report.canRenderOverlay,
+    isRealVrBackend: report.isRealVrBackend,
+    requiresOpenXRAppRestart: report.requiresOpenXRAppRestart,
+    compatibleHostGraphicsApis: report.compatibleHostGraphicsApis,
+    features: report.features,
+    recommendedAction: report.recommendedAction,
+    integrationInstalled: report.apiLayer?.installed ?? false,
+    integrationEnabled: report.apiLayer?.enabled ?? false,
+    connectedApplication: report.diagnostics.openxrHostApplicationName || '',
+    issues: report.issues.map(({ code, severity, title, message, action }) => ({
+      code,
+      severity,
+      title,
+      message,
+      action,
+    })),
+  };
+}
+
+function toVrIntegrationError(action, error) {
+  const details = error instanceof Error ? error.message : String(error);
+  const lowerDetails = details.toLowerCase();
+  if (lowerDetails.includes('not supported')) {
+    return new Error('OpenXR application integration is not available on this device.');
+  }
+  if (lowerDetails.includes('utility is unavailable')) {
+    return new Error('The VR integration component is missing from this installation. Repair or reinstall COVAS:NEXT.');
+  }
+  const message = action === 'install'
+    ? 'OpenXR integration could not be installed for this user.'
+    : action === 'enable'
+      ? 'OpenXR integration could not be enabled.'
+      : action === 'disable'
+        ? 'OpenXR integration could not be disabled.'
+        : 'OpenXR integration could not be removed.';
+  logger.warn({ err: error, action }, 'OpenXR integration action failed');
+  return new Error(message);
+}
+
+async function getVrCompatibilityState() {
+  try {
+    return toProductVRState(await VROverlay.getCompatibilityReport());
+  } catch (error) {
+    logger.warn({ err: error }, 'VR compatibility probe failed');
+    throw new Error('VR support could not be checked. Try again or repair the COVAS:NEXT installation.');
+  }
+}
+
+async function runVrIntegrationAction(action) {
+  try {
+    if (action === 'install') await VROverlay.installOpenXRApiLayer();
+    if (action === 'enable') await VROverlay.enableOpenXRApiLayer();
+    if (action === 'disable') await VROverlay.disableOpenXRApiLayer();
+    if (action === 'uninstall') await VROverlay.uninstallOpenXRApiLayer();
+  } catch (error) {
+    throw toVrIntegrationError(action, error);
+  }
+  return await getVrCompatibilityState();
 }
 
 // list files in the backend directory
@@ -801,12 +868,11 @@ async function createFloatingOverlayWindow(opts) {
 }
 
 async function createVrOverlayWindow(opts) {
-  const runtimeInfo = VROverlay.getRuntimeInfo();
-  if (!VROverlay.isAvailable(runtimeInfo)) {
-    throw new Error(
-      `No compatible VR runtime was detected. Selected backend: ${runtimeInfo.selectedBackend}. OpenVR installed: ${runtimeInfo.openvrRuntimeInstalled}.`,
-    );
+  const compatibility = await VROverlay.getCompatibilityReport();
+  if (!compatibility.launch.wouldWorkNow) {
+    throw new Error(compatibility.launch.message);
   }
+  const runtimeInfo = compatibility.diagnostics;
 
   const overlayWindow = new BrowserWindow({
     width: 1280,
@@ -840,7 +906,10 @@ async function createVrOverlayWindow(opts) {
     if (!overlayWindow.isDestroyed()) {
       overlayWindow.close();
     }
-    throw new Error('Failed to attach the overlay window to the VR bridge.');
+    const refreshedCompatibility = await VROverlay.getCompatibilityReport();
+    throw new Error(refreshedCompatibility.launch.wouldWorkNow
+      ? 'The VR overlay could not be initialized. Check the VR application and try again.'
+      : refreshedCompatibility.launch.message);
   }
 
   return {
@@ -1268,6 +1337,13 @@ app.whenReady().then(async ()=>{
   ipcMain.handle('get_remote_interface_state', async () => getRemoteInterfaceState());
   ipcMain.handle('get_remote_interface_bind_addresses', async () => getRemoteInterfaceBindAddresses());
   ipcMain.handle('get_overlay_runtime_info', async () => getOverlayRuntimeInfo());
+  ipcMain.handle('get_vr_compatibility_state', async () => getVrCompatibilityState());
+  ipcMain.handle('vr_integration_action', async (_event, action) => {
+    if (!['install', 'enable', 'disable', 'uninstall'].includes(action)) {
+      throw new TypeError('Invalid VR integration action.');
+    }
+    return await runVrIntegrationAction(action);
+  });
   ipcMain.handle('get_available_screens', async (event) => {
     const displays = screen.getAllDisplays();
     const result = displays.map((display, index) => ({

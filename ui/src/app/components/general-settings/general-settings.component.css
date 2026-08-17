@@ -201,6 +201,37 @@ mat-slide-toggle {
   line-height: 1.4;
 }
 
+.vr-compatibility-card {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(255, 183, 77, 0.45);
+  border-radius: 8px;
+  background: rgba(255, 183, 77, 0.08);
+}
+
+.vr-compatibility-card p {
+  margin: 0.25rem 0 0;
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.vr-compatibility-card.vr-compatibility-ready {
+  border-color: rgba(102, 187, 106, 0.55);
+  background: rgba(102, 187, 106, 0.08);
+}
+
+.vr-compatibility-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .preflight-keybind-summary {
   display: flex;
   flex-wrap: wrap;
