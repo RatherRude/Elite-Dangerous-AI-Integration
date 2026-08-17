@@ -132,7 +132,8 @@
                             @case ('input') {
                                 <mat-form-field>
                                     <mat-label>STT Provider</mat-label>
-                                    <mat-select [(ngModel)]="config.stt_provider"
+                                    <mat-select panelClass="provider-panel"
+                                                [(ngModel)]="config.stt_provider"
                                                 (ngModelChange)="onConfigChange({stt_provider: $event})">
                                         <mat-option value="openai">OpenAI</mat-option>
                                         <mat-option value="google-ai-studio">Google AI Studio (Multi-Modal)</mat-option>
@@ -235,7 +236,8 @@
                             @case ('output') {
                                 <mat-form-field>
                                     <mat-label>TTS Provider</mat-label>
-                                    <mat-select [(ngModel)]="config.tts_provider"
+                                    <mat-select panelClass="provider-panel"
+                                                [(ngModel)]="config.tts_provider"
                                                 (ngModelChange)="onConfigChange({tts_provider: $event})">
                                         <mat-option value="openai">OpenAI</mat-option>
                                         <mat-option value="edge-tts">Edge TTS</mat-option>

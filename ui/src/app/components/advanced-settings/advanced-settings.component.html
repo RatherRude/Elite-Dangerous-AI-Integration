@@ -58,7 +58,8 @@
             </mat-expansion-panel-header>
         <mat-form-field>
             <mat-label>LLM Provider</mat-label>
-            <mat-select [(ngModel)]="config.llm_provider"
+            <mat-select panelClass="provider-panel"
+                        [(ngModel)]="config.llm_provider"
                         (ngModelChange)="onConfigChange({llm_provider: $event})">
                 <mat-option value="openai">OpenAI</mat-option>
                 <mat-option value="openrouter">OpenRouter</mat-option>
@@ -295,7 +296,8 @@
             </mat-expansion-panel-header>
         <mat-form-field>
             <mat-label>Agent LLM Provider</mat-label>
-            <mat-select [(ngModel)]="config.agent_llm_provider"
+            <mat-select panelClass="provider-panel"
+                        [(ngModel)]="config.agent_llm_provider"
                         (ngModelChange)="onConfigChange({agent_llm_provider: $event})">
                 <mat-option value="openai">OpenAI</mat-option>
                 <mat-option value="openrouter">OpenRouter</mat-option>
@@ -536,7 +538,8 @@
             </mat-expansion-panel-header>
         <mat-form-field>
             <mat-label>STT Provider</mat-label>
-            <mat-select [(ngModel)]="config.stt_provider"
+            <mat-select panelClass="provider-panel"
+                        [(ngModel)]="config.stt_provider"
                         (ngModelChange)="onConfigChange({stt_provider: $event})">
                 <mat-option value="openai">OpenAI</mat-option>
                 <mat-option value="google-ai-studio">Google AI Studio (Multi-Modal)</mat-option>
@@ -759,7 +762,8 @@
             </mat-expansion-panel-header>
         <mat-form-field>
             <mat-label>TTS Provider</mat-label>
-            <mat-select [(ngModel)]="config.tts_provider"
+            <mat-select panelClass="provider-panel"
+                        [(ngModel)]="config.tts_provider"
                         (ngModelChange)="onConfigChange({tts_provider: $event})">
                 <mat-option value="openai">OpenAI</mat-option>
                 <mat-option value="edge-tts">Edge TTS</mat-option>
@@ -972,7 +976,8 @@
             </mat-expansion-panel-header>
         <mat-form-field>
             <mat-label>Vision Provider</mat-label>
-            <mat-select [(ngModel)]="config.vision_provider"
+            <mat-select panelClass="provider-panel"
+                        [(ngModel)]="config.vision_provider"
                         (ngModelChange)="onConfigChange({vision_provider: $event, vision_var: $event !== 'none'})">
                 <mat-option value="openai">OpenAI</mat-option>
                 <mat-option value="google-ai-studio">Google AI Studio</mat-option>
@@ -1079,7 +1084,8 @@
             </mat-expansion-panel-header>
         <mat-form-field>
             <mat-label>Embedding Provider</mat-label>
-            <mat-select [(ngModel)]="config.embedding_provider"
+            <mat-select panelClass="provider-panel"
+                        [(ngModel)]="config.embedding_provider"
                         (ngModelChange)="onConfigChange({embedding_provider: $event})">
                 <mat-option value="openai">OpenAI</mat-option>
                 <mat-option value="google-ai-studio">Google AI Studio</mat-option>
