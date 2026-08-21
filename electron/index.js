@@ -227,7 +227,7 @@ async function getOverlayRuntimeInfo() {
     return {
       ...runtimeInfo,
       packageInstalled: true,
-      available: compatibility.launch.wouldWorkNow,
+      available: compatibility.launch.canStartNow,
       hasRealVRRuntime: compatibility.isRealVrBackend,
       compatibility: toProductVRState(compatibility),
       desktopOverlay,
@@ -874,7 +874,7 @@ async function createFloatingOverlayWindow(opts) {
 
 async function createVrOverlayWindow(opts) {
   const compatibility = await VROverlay.getCompatibilityReport();
-  if (!compatibility.launch.wouldWorkNow) {
+  if (!compatibility.launch.canStartNow) {
     throw new Error(compatibility.launch.message);
   }
   const runtimeInfo = compatibility.diagnostics;

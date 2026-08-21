@@ -190,7 +190,7 @@ export class AdvancedSettingsComponent implements OnDestroy {
                 this.screens = screens ?? [];
             },
         );
-        void this.refreshOverlayRuntimeInfo();
+        void this.refreshOverlayRuntimeInfo(false);
         void this.loadRemoteInterfaceBindAddresses();
     }
 
@@ -437,16 +437,23 @@ export class AdvancedSettingsComponent implements OnDestroy {
         return info.error ?? "VR support could not be checked.";
     }
 
-    get overlayRuntimeReady(): boolean {
-        return this.overlayRuntimeInfo?.compatibility?.launch.wouldWorkNow ?? false;
+    get overlayRuntimeInstalled(): boolean {
+        const info = this.overlayRuntimeInfo;
+        return this.config?.overlay_mode === "vr" || this.config?.overlay_mode === "both" || Boolean(info?.packageInstalled && (
+            info.openxrAvailable ||
+            Boolean(info.openxrRuntimeManifestPath) ||
+            info.openvrRuntimeInstalled ||
+            Boolean(info.openvrRuntimePath) ||
+            info.compatibility?.integrationInstalled
+        ));
     }
 
     get overlayCompatibility(): VRCompatibilityState | null {
         return this.overlayRuntimeInfo?.compatibility ?? null;
     }
 
-    get overlaySupportsCurvature(): boolean {
-        return this.overlayCompatibility?.features.curvature !== "unsupported";
+    get vrOverlaySelected(): boolean {
+        return this.config?.overlay_mode === "vr" || this.config?.overlay_mode === "both";
     }
 
     get desktopOverlayBackendLabel(): string {
@@ -476,11 +483,11 @@ export class AdvancedSettingsComponent implements OnDestroy {
         return `Supported: ${supported.join(", ") || "none"}. ${unsupported.length ? `Unavailable: ${unsupported.join(", ")}.` : ""}`.trim();
     }
 
-    async refreshOverlayRuntimeInfo(): Promise<void> {
+    async refreshOverlayRuntimeInfo(schedulePolling = this.vrOverlaySelected): Promise<void> {
         clearTimeout(this.vrCompatibilityRefreshTimer);
         try {
             this.overlayRuntimeInfo = await this.tauriService.getOverlayRuntimeInfo();
-            if (this.overlayCompatibility?.readiness === "waiting-for-host") {
+            if (schedulePolling && this.vrOverlaySelected && this.overlayCompatibility?.readiness === "waiting-for-host") {
                 this.vrCompatibilityRefreshTimer = setTimeout(() => void this.refreshOverlayRuntimeInfo(), 1500);
             }
         } catch (error) {
@@ -495,6 +502,20 @@ export class AdvancedSettingsComponent implements OnDestroy {
                 title: "Enable overlays in OpenXR applications?",
                 message: "COVAS:NEXT will install a per-user OpenXR integration component. It does not require administrator access, but compatible OpenXR applications must be restarted afterward.",
                 confirmButtonText: "Enable integration",
+                cancelButtonText: "Not now",
+            },
+        });
+        dialogRef.afterClosed().subscribe((confirmed) => {
+            if (confirmed) void this.runVrIntegrationAction("install");
+        });
+    }
+
+    updateVrIntegration(): void {
+        const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+            data: {
+                title: "Update OpenXR integration?",
+                message: "COVAS:NEXT will replace its per-user OpenXR integration component. Restart any running VR applications afterward.",
+                confirmButtonText: "Update integration",
                 cancelButtonText: "Not now",
             },
         });
@@ -796,6 +817,12 @@ export class AdvancedSettingsComponent implements OnDestroy {
     }
 
     async onConfigChange(partialConfig: Partial<Config>) {
+        if (partialConfig.overlay_mode !== undefined) {
+            clearTimeout(this.vrCompatibilityRefreshTimer);
+            if (partialConfig.overlay_mode === "vr" || partialConfig.overlay_mode === "both") {
+                void this.refreshOverlayRuntimeInfo();
+            }
+        }
         if (this.config) {
             console.log("Sending config update to backend:", partialConfig);
 

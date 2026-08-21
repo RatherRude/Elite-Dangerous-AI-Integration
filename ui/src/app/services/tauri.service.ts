@@ -207,6 +207,7 @@ export interface OverlayRuntimeInfo {
     platform: string;
     probeMode: string;
     openxrAvailable: boolean;
+    openxrRuntimeManifestPath?: string;
     openxrOverlayExtensionAvailable: boolean;
     openvrAvailable: boolean;
     openvrRuntimeInstalled: boolean;
@@ -235,6 +236,7 @@ export interface OverlayRuntimeInfo {
 
 export type VRSetupAction =
     | "install-openxr-api-layer"
+    | "reinstall-openxr-api-layer"
     | "enable-openxr-api-layer"
     | "restart-openxr-apps"
     | "start-openxr-app"
@@ -246,6 +248,7 @@ export interface VRCompatibilityState {
     launch: {
         verdict: "works-now" | "action-required" | "incompatible";
         wouldWorkNow: boolean;
+        canStartNow: boolean;
         fundamentalIncompatibility: boolean;
         message: string;
         requiredActions: VRSetupAction[];

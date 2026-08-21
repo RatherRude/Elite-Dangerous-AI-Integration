@@ -1221,7 +1221,7 @@
                             <mat-option value="disabled">Disabled</mat-option>
                             <mat-option value="desktop">Desktop Overlay</mat-option>
                             <mat-option value="standalone">Standalone Window</mat-option>
-                            @if (overlayRuntimeReady) {
+                            @if (overlayRuntimeInstalled) {
                                 <mat-option value="vr">VR Overlay</mat-option>
                                 <mat-option value="both">Both</mat-option>
                             }
@@ -1301,7 +1301,38 @@
                 </div>
 
                 <div class="overlay-secondary-controls">
-                    @if (overlayRuntimeReady && (config.overlay_mode === 'vr' || config.overlay_mode === 'both')) {
+                    @if (config.overlay_mode === 'vr' || config.overlay_mode === 'both') {
+                        <div class="vr-compatibility-card" [class.vr-compatibility-ready]="overlayCompatibility?.launch?.wouldWorkNow">
+                            <div>
+                                <strong>{{ overlayCompatibility?.backendLabel || 'VR overlay' }}</strong>
+                                <p>{{ overlayRuntimeSummary }}</p>
+                                @if (overlayCompatibility?.connectedApplication) {
+                                    <p>Connected to {{ overlayCompatibility?.connectedApplication }}.</p>
+                                }
+                                @if (overlayCompatibility?.requiresOpenXRAppRestart) {
+                                    <p>Restart any running VR applications for this change to take effect.</p>
+                                }
+                            </div>
+                            <div class="vr-compatibility-actions">
+                                <button mat-stroked-button type="button" [disabled]="isVrIntegrationBusy" (click)="refreshOverlayRuntimeInfo()">Check again</button>
+                                @if (overlayCompatibility?.recommendedAction === 'install-openxr-api-layer') {
+                                    <button mat-raised-button color="primary" type="button" [disabled]="isVrIntegrationBusy" (click)="installVrIntegration()">Enable integration</button>
+                                }
+                                @if (overlayCompatibility?.recommendedAction === 'reinstall-openxr-api-layer') {
+                                    <button mat-raised-button color="primary" type="button" [disabled]="isVrIntegrationBusy" (click)="updateVrIntegration()">Update integration</button>
+                                }
+                                @if (overlayCompatibility?.recommendedAction === 'enable-openxr-api-layer') {
+                                    <button mat-raised-button color="primary" type="button" [disabled]="isVrIntegrationBusy" (click)="runVrIntegrationAction('enable')">Enable integration</button>
+                                }
+                                @if (overlayCompatibility?.integrationEnabled) {
+                                    <button mat-stroked-button type="button" [disabled]="isVrIntegrationBusy" (click)="runVrIntegrationAction('disable')">Disable integration</button>
+                                }
+                                @if (overlayCompatibility?.integrationInstalled) {
+                                    <button mat-stroked-button type="button" [disabled]="isVrIntegrationBusy" (click)="uninstallVrIntegration()">Uninstall integration</button>
+                                }
+                            </div>
+                        </div>
+
                         <mat-form-field>
                             <mat-label>VR Anchor</mat-label>
                             <mat-select [(ngModel)]="config.overlay_vr_anchor"
@@ -1356,7 +1387,6 @@
                             </mat-slider>
                         </div>
 
-                        @if (overlaySupportsCurvature) {
                         <div class="overlay-slider-field">
                             <label>Curvature: {{ config.overlay_vr_curvature * 360 }} degrees</label>
                             <mat-slider min="0" max="180" step="1" discrete>
@@ -1365,39 +1395,9 @@
                                        (ngModelChange)="onConfigChange({overlay_vr_curvature: $event / 360})">
                             </mat-slider>
                         </div>
-                        }
                     }
                 </div>
             </div>
-            @if (overlayRuntimeInfo) {
-                <div class="vr-compatibility-card" [class.vr-compatibility-ready]="overlayCompatibility?.launch?.wouldWorkNow">
-                    <div>
-                        <strong>{{ overlayCompatibility?.backendLabel || 'VR overlay' }}</strong>
-                        <p>{{ overlayRuntimeSummary }}</p>
-                        @if (overlayCompatibility?.connectedApplication) {
-                            <p>Connected to {{ overlayCompatibility?.connectedApplication }}.</p>
-                        }
-                        @if (overlayCompatibility?.requiresOpenXRAppRestart) {
-                            <p>Restart any running VR applications for this change to take effect.</p>
-                        }
-                    </div>
-                    <div class="vr-compatibility-actions">
-                        <button mat-stroked-button type="button" [disabled]="isVrIntegrationBusy" (click)="refreshOverlayRuntimeInfo()">Check again</button>
-                        @if (overlayCompatibility?.recommendedAction === 'install-openxr-api-layer') {
-                            <button mat-raised-button color="primary" type="button" [disabled]="isVrIntegrationBusy" (click)="installVrIntegration()">Enable integration</button>
-                        }
-                        @if (overlayCompatibility?.recommendedAction === 'enable-openxr-api-layer') {
-                            <button mat-raised-button color="primary" type="button" [disabled]="isVrIntegrationBusy" (click)="runVrIntegrationAction('enable')">Enable integration</button>
-                        }
-                        @if (overlayCompatibility?.integrationEnabled) {
-                            <button mat-stroked-button type="button" [disabled]="isVrIntegrationBusy" (click)="runVrIntegrationAction('disable')">Disable integration</button>
-                        }
-                        @if (overlayCompatibility?.integrationInstalled) {
-                            <button mat-stroked-button type="button" [disabled]="isVrIntegrationBusy" (click)="uninstallVrIntegration()">Uninstall integration</button>
-                        }
-                    </div>
-                </div>
-            }
             @if (overlayRuntimeInfo?.platform === 'linux') {
                 <div class="overlay-backend-info">
                     <mat-icon>info</mat-icon>
