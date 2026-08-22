@@ -132,7 +132,8 @@
                             @case ('input') {
                                 <mat-form-field>
                                     <mat-label>STT Provider</mat-label>
-                                    <mat-select [(ngModel)]="config.stt_provider"
+                                    <mat-select panelClass="provider-panel"
+                                                [(ngModel)]="config.stt_provider"
                                                 (ngModelChange)="onConfigChange({stt_provider: $event})">
                                         <mat-option value="openai">OpenAI</mat-option>
                                         <mat-option value="google-ai-studio">Google AI Studio (Multi-Modal)</mat-option>
@@ -235,7 +236,8 @@
                             @case ('output') {
                                 <mat-form-field>
                                     <mat-label>TTS Provider</mat-label>
-                                    <mat-select [(ngModel)]="config.tts_provider"
+                                    <mat-select panelClass="provider-panel"
+                                                [(ngModel)]="config.tts_provider"
                                                 (ngModelChange)="onConfigChange({tts_provider: $event})">
                                         <mat-option value="openai">OpenAI</mat-option>
                                         <mat-option value="edge-tts">Edge TTS</mat-option>
@@ -321,7 +323,8 @@
                                                         (ngModelChange)="onConfigChange({overlay_mode: $event})">
                                                 <mat-option value="disabled">Disabled</mat-option>
                                                 <mat-option value="desktop">Desktop Overlay</mat-option>
-                                                @if (overlayRuntimeReady) {
+                                                <mat-option value="standalone">Standalone Window</mat-option>
+                                                @if (overlayRuntimeInstalled) {
                                                     <mat-option value="vr">VR Overlay</mat-option>
                                                     <mat-option value="both">Both</mat-option>
                                                 }
@@ -361,6 +364,7 @@
                                                     <mat-label>Desktop Screen</mat-label>
                                                     <mat-select [(ngModel)]="config.overlay_screen_id"
                                                                 (ngModelChange)="onConfigChange({overlay_screen_id: $event})">
+                                                        <mat-option [value]="-2">Follow Game Position</mat-option>
                                                         <mat-option [value]="-1">Primary Screen</mat-option>
                                                         @for (screen of screens; track screen.id) {
                                                             <mat-option [value]="screen.id">{{ screen.label }}</mat-option>
@@ -368,11 +372,60 @@
                                                     </mat-select>
                                                 </mat-form-field>
                                             }
+                                            @if (config.overlay_mode === 'standalone') {
+                                                <div class="standalone-overlay-options">
+                                                    <mat-slide-toggle
+                                                        [(ngModel)]="config.overlay_standalone_transparent"
+                                                        (ngModelChange)="onConfigChange({overlay_standalone_transparent: $event})">
+                                                        Transparent window
+                                                    </mat-slide-toggle>
+                                                    @if (!config.overlay_standalone_transparent) {
+                                                        <label class="standalone-background-color">
+                                                            Background color
+                                                            <input type="color"
+                                                                   [ngModel]="config.overlay_standalone_background_color"
+                                                                   (ngModelChange)="onConfigChange({overlay_standalone_background_color: $event})">
+                                                        </label>
+                                                    }
+                                                    <p class="standalone-overlay-hint">A regular resizable window for window capture and external keying. It does not follow the game window or use native overlay features.</p>
+                                                </div>
+                                            }
                                         }
                                     </div>
 
                                     <div class="overlay-secondary-controls">
-                                        @if (overlayRuntimeReady && (config.overlay_mode === 'vr' || config.overlay_mode === 'both')) {
+                                        @if (config.overlay_mode === 'vr' || config.overlay_mode === 'both') {
+                                            <div class="vr-compatibility-card" [class.vr-compatibility-ready]="overlayCompatibility?.launch?.wouldWorkNow">
+                                                <div>
+                                                    <strong>{{ overlayCompatibility?.backendLabel || 'VR overlay' }}</strong>
+                                                    <p>{{ overlayRuntimeSummary }}</p>
+                                                    @if (overlayCompatibility?.connectedApplication) {
+                                                        <p>Connected to {{ overlayCompatibility?.connectedApplication }}.</p>
+                                                    }
+                                                    @if (overlayCompatibility?.requiresOpenXRAppRestart) {
+                                                        <p>Restart any running VR applications for this change to take effect.</p>
+                                                    }
+                                                </div>
+                                                <div class="vr-compatibility-actions">
+                                                    <button mat-stroked-button type="button" [disabled]="isVrIntegrationBusy" (click)="refreshOverlayRuntimeInfo()">Check again</button>
+                                                    @if (overlayCompatibility?.recommendedAction === 'install-openxr-api-layer') {
+                                                        <button mat-raised-button color="primary" type="button" [disabled]="isVrIntegrationBusy" (click)="installVrIntegration()">Enable integration</button>
+                                                    }
+                                                    @if (overlayCompatibility?.recommendedAction === 'reinstall-openxr-api-layer') {
+                                                        <button mat-raised-button color="primary" type="button" [disabled]="isVrIntegrationBusy" (click)="updateVrIntegration()">Update integration</button>
+                                                    }
+                                                    @if (overlayCompatibility?.recommendedAction === 'enable-openxr-api-layer') {
+                                                        <button mat-raised-button color="primary" type="button" [disabled]="isVrIntegrationBusy" (click)="runVrIntegrationAction('enable')">Enable integration</button>
+                                                    }
+                                                    @if (overlayCompatibility?.integrationEnabled) {
+                                                        <button mat-stroked-button type="button" [disabled]="isVrIntegrationBusy" (click)="runVrIntegrationAction('disable')">Disable integration</button>
+                                                    }
+                                                    @if (overlayCompatibility?.integrationInstalled) {
+                                                        <button mat-stroked-button type="button" [disabled]="isVrIntegrationBusy" (click)="uninstallVrIntegration()">Uninstall integration</button>
+                                                    }
+                                                </div>
+                                            </div>
+
                                             <mat-form-field>
                                                 <mat-label>VR Anchor</mat-label>
                                                 <mat-select [(ngModel)]="config.overlay_vr_anchor"
@@ -438,8 +491,14 @@
                                         }
                                     </div>
                                 </div>
-                                @if (config.overlay_mode === 'vr') {
-                                    <p class="preflight-helper-text">{{ overlayRuntimeSummary }}</p>
+                                @if (overlayRuntimeInfo?.platform === 'linux') {
+                                    <div class="overlay-backend-info">
+                                        <mat-icon>info</mat-icon>
+                                        <div>
+                                            <strong>Desktop backend: {{ desktopOverlayBackendLabel }}</strong>
+                                            <span>{{ desktopOverlayFeatureSummary }}</span>
+                                        </div>
+                                    </div>
                                 }
                             }
 

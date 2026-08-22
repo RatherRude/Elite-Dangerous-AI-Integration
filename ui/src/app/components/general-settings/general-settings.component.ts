@@ -19,7 +19,7 @@ import {
 } from "@angular/material/form-field";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatOptgroup, MatOption, MatSelect } from "@angular/material/select";
-import { OverlayRuntimeInfo, TauriService } from "../../services/tauri.service";
+import { OverlayRuntimeInfo, TauriService, VRCompatibilityState, VRIntegrationAction } from "../../services/tauri.service";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { FormsModule } from "@angular/forms";
 import { MatInputModule } from "@angular/material/input";
@@ -95,6 +95,7 @@ export class GeneralSettingsComponent implements OnDestroy {
     system: SystemInfo | null = null;
     screens: ScreenInfo[] = [];
     overlayRuntimeInfo: OverlayRuntimeInfo | null = null;
+    isVrIntegrationBusy = false;
     activeCharacter: Character | null = null;
     characterList: Character[] = [];
     keybindsData: KeybindsMessages | null = null;
@@ -115,6 +116,7 @@ export class GeneralSettingsComponent implements OnDestroy {
     private avatarSvgText: string | null = null;
     private avatarSvgFetchSeq = 0;
     private preflightListResizeObserver?: ResizeObserver;
+    private vrCompatibilityRefreshTimer?: ReturnType<typeof setTimeout>;
     private readonly svgStateClasses = ["listening", "speaking", "thinking", "acting"];
     private readonly avatarPreviewStateClasses: readonly AvatarPreviewStateClass[] = ["listening", "thinking", "acting", "speaking"];
     private avatarPreviewStateIndex = 0;
@@ -180,7 +182,7 @@ export class GeneralSettingsComponent implements OnDestroy {
                 this.refreshAvatarPreviewSvg();
             },
         );
-        void this.loadOverlayRuntimeInfo();
+        void this.refreshOverlayRuntimeInfo(false);
     }
 
     hasInstalledPluginProviders(providers: ModelProviderDefinition[]): boolean {
@@ -197,6 +199,7 @@ export class GeneralSettingsComponent implements OnDestroy {
         this.pluginProvidersSubscription.unsubscribe();
         this.avatarMimeSubscription.unsubscribe();
         this.preflightListResizeObserver?.disconnect();
+        clearTimeout(this.vrCompatibilityRefreshTimer);
         clearInterval(this.avatarPreviewInterval);
     }
 
@@ -224,6 +227,8 @@ export class GeneralSettingsComponent implements OnDestroy {
         switch (this.config?.overlay_mode) {
             case "desktop":
                 return "Desktop Overlay";
+            case "standalone":
+                return "Standalone Window";
             case "vr":
                 return "VR Overlay";
             case "both":
@@ -553,6 +558,12 @@ export class GeneralSettingsComponent implements OnDestroy {
     formatOutputVolumeLabel = (value: number): string => value.toFixed(2);
 
     async onConfigChange(partialConfig: Partial<Config>) {
+        if (partialConfig.overlay_mode !== undefined) {
+            clearTimeout(this.vrCompatibilityRefreshTimer);
+            if (partialConfig.overlay_mode === "vr" || partialConfig.overlay_mode === "both") {
+                void this.refreshOverlayRuntimeInfo();
+            }
+        }
         if (this.config) {
             console.log("Sending config update to backend:", partialConfig);
 
@@ -590,24 +601,136 @@ export class GeneralSettingsComponent implements OnDestroy {
         if (!info.packageInstalled) {
             return "The optional electron-vr package is not installed yet.";
         }
-        if (!info.available) {
-            return `VR bridge loaded, but no runtime is ready. Backend: ${info.selectedBackend}.`;
+        if (info.compatibility) {
+            return info.compatibility.summary;
         }
-        const runtimePath = info.openvrRuntimePath ? ` (${info.openvrRuntimePath})` : "";
-        return `VR ready via ${info.selectedBackend}${runtimePath}.`;
+        return info.error ?? "VR support could not be checked.";
     }
 
-    get overlayRuntimeReady(): boolean {
+    get overlayRuntimeInstalled(): boolean {
         const info = this.overlayRuntimeInfo;
-        return !!info?.packageInstalled && info.available;
+        return this.config?.overlay_mode === "vr" || this.config?.overlay_mode === "both" || Boolean(info?.packageInstalled && (
+            info.openxrAvailable ||
+            Boolean(info.openxrRuntimeManifestPath) ||
+            info.openvrRuntimeInstalled ||
+            Boolean(info.openvrRuntimePath) ||
+            info.compatibility?.integrationInstalled
+        ));
     }
 
-    private async loadOverlayRuntimeInfo(): Promise<void> {
+    get overlayCompatibility(): VRCompatibilityState | null {
+        return this.overlayRuntimeInfo?.compatibility ?? null;
+    }
+
+    get vrOverlaySelected(): boolean {
+        return this.config?.overlay_mode === "vr" || this.config?.overlay_mode === "both";
+    }
+
+    get desktopOverlayBackendLabel(): string {
+        switch (this.overlayRuntimeInfo?.desktopOverlay?.backend) {
+            case "x11":
+                return "X11 / XWayland";
+            case "wayland-electron":
+                return "Native Wayland (Electron)";
+            default:
+                return this.overlayRuntimeInfo?.desktopOverlay?.backend ?? "Unavailable";
+        }
+    }
+
+    get desktopOverlayFeatureSummary(): string {
+        const desktop = this.overlayRuntimeInfo?.desktopOverlay;
+        if (!desktop?.capabilities) {
+            return desktop?.error ?? "Desktop overlay capabilities are unavailable.";
+        }
+        const features = [
+            [desktop.capabilities.clickThrough, "click-through"],
+            [desktop.capabilities.aboveFullscreen, "above fullscreen"],
+            [desktop.capabilities.parentDiscovery, "game-window tracking"],
+            [desktop.capabilities.globalPositioning, "monitor positioning"],
+        ] as const;
+        const supported = features.filter(([enabled]) => enabled).map(([, label]) => label);
+        const unsupported = features.filter(([enabled]) => !enabled).map(([, label]) => label);
+        return `Supported: ${supported.join(", ") || "none"}. ${unsupported.length ? `Unavailable: ${unsupported.join(", ")}.` : ""}`.trim();
+    }
+
+    async refreshOverlayRuntimeInfo(schedulePolling = this.vrOverlaySelected): Promise<void> {
+        clearTimeout(this.vrCompatibilityRefreshTimer);
         try {
             this.overlayRuntimeInfo = await this.tauriService.getOverlayRuntimeInfo();
+            if (schedulePolling && this.vrOverlaySelected && this.overlayCompatibility?.readiness === "waiting-for-host") {
+                this.vrCompatibilityRefreshTimer = setTimeout(() => void this.refreshOverlayRuntimeInfo(), 1500);
+            }
         } catch (error) {
             console.error("Error loading overlay runtime info:", error);
             this.overlayRuntimeInfo = null;
+        }
+    }
+
+    installVrIntegration(): void {
+        const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+            data: {
+                title: "Enable overlays in OpenXR applications?",
+                message: "COVAS:NEXT will install a per-user OpenXR integration component. It does not require administrator access, but compatible OpenXR applications must be restarted afterward.",
+                confirmButtonText: "Enable integration",
+                cancelButtonText: "Not now",
+            },
+        });
+        dialogRef.afterClosed().subscribe((confirmed) => {
+            if (confirmed) void this.runVrIntegrationAction("install");
+        });
+    }
+
+    updateVrIntegration(): void {
+        const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+            data: {
+                title: "Update OpenXR integration?",
+                message: "COVAS:NEXT will replace its per-user OpenXR integration component. Restart any running VR applications afterward.",
+                confirmButtonText: "Update integration",
+                cancelButtonText: "Not now",
+            },
+        });
+        dialogRef.afterClosed().subscribe((confirmed) => {
+            if (confirmed) void this.runVrIntegrationAction("install");
+        });
+    }
+
+    uninstallVrIntegration(): void {
+        const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+            data: {
+                title: "Remove OpenXR integration?",
+                message: "This removes COVAS:NEXT's per-user OpenXR integration. Restart any running VR applications afterward.",
+                confirmButtonText: "Remove integration",
+                cancelButtonText: "Keep integration",
+            },
+        });
+        dialogRef.afterClosed().subscribe((confirmed) => {
+            if (confirmed) void this.runVrIntegrationAction("uninstall");
+        });
+    }
+
+    async runVrIntegrationAction(action: VRIntegrationAction): Promise<void> {
+        this.isVrIntegrationBusy = true;
+        try {
+            const compatibility = await this.tauriService.runVrIntegrationAction(action);
+            this.overlayRuntimeInfo = {
+                ...this.overlayRuntimeInfo,
+                compatibility,
+            } as OverlayRuntimeInfo;
+            this.snackBar.open(
+                action === "install" || action === "enable"
+                    ? "OpenXR integration updated. Restart any running VR applications."
+                    : "OpenXR integration updated.",
+                "OK",
+                { duration: 5000 },
+            );
+        } catch (error) {
+            console.error("VR integration action failed:", error);
+            this.snackBar.open(error instanceof Error ? error.message : "OpenXR integration could not be updated.", "OK", {
+                duration: 7000,
+            });
+        } finally {
+            this.isVrIntegrationBusy = false;
+            await this.refreshOverlayRuntimeInfo();
         }
     }
 }

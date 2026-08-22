@@ -955,9 +955,11 @@ class Config(TypedDict):
     overlay_show_avatar: bool
     overlay_show_hud: bool
     overlay_show_chat: bool
-    overlay_mode: Literal['disabled', 'desktop', 'vr', 'both']
+    overlay_mode: Literal['disabled', 'desktop', 'standalone', 'vr', 'both']
     overlay_position: Literal['left', 'right', 'left-medium', 'left-small', 'right-medium', 'right-small']
     overlay_screen_id: int
+    overlay_standalone_transparent: bool
+    overlay_standalone_background_color: str
     overlay_vr_size_meters: float
     overlay_vr_anchor: Literal['head', 'world']
     overlay_vr_horizontal_offset: float
@@ -1323,6 +1325,9 @@ def migrate(data: dict) -> dict:
         data['config_version'] = 20
         data['allowed_actions'] = default_allowed_actions.copy()
 
+    data.setdefault('overlay_standalone_transparent', True)
+    data.setdefault('overlay_standalone_background_color', '#000000')
+
     return data
 
 
@@ -1505,6 +1510,8 @@ def load_config() -> Config:
         "overlay_mode": "desktop",
         "overlay_position": "right",
         "overlay_screen_id": -1,  # -1 means primary screen
+        "overlay_standalone_transparent": True,
+        "overlay_standalone_background_color": "#000000",
         "overlay_vr_size_meters": 0.9,
         "overlay_vr_anchor": "head",
         "overlay_vr_horizontal_offset": 0.0,
