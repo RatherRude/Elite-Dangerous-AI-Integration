@@ -112,6 +112,16 @@
                     <app-chat-container class="small" [limit]="2"></app-chat-container>
                 </mat-tab>
 
+                <mat-tab>
+                    <ng-template mat-tab-label>
+                        <mat-icon class="tab-label-icon">smart_button</mat-icon>
+                        Actions
+                    </ng-template>
+                    <div class="tab-content-container actions-container">
+                        <app-actions-container></app-actions-container>
+                    </div>
+                </mat-tab>
+
                 @if (false) {
                     <mat-tab label="Logs">
                         <div class="tab-content-container">

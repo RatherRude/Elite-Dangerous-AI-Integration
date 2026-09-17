@@ -15,7 +15,7 @@ from .Projections import get_state_dict, ProjectedStates
 from .Database import QuestDatabase
 
 from .EventModels import (
-    ApproachBodyEvent, ApproachSettlementEvent, BookTaxiEvent, BountyEvent, BuyExplorationDataEvent, CodexEntryEvent, CommanderEvent, CommitCrimeEvent,
+    ApproachBodyEvent, ApproachSettlementEvent, BookTaxiEvent, BountyEvent, BuyExplorationDataEvent, CommanderEvent, CommitCrimeEvent,
     CrewAssignEvent, CrewLaunchFighterEvent, CrewMemberJoinsEvent, CrewMemberQuitsEvent, CrewMemberRoleChangeEvent,
     DataScannedEvent, DatalinkScanEvent, DiedEvent, DisembarkEvent, DiscoveryScanEvent, DockedEvent, DockFighterEvent,
     DockingCancelledEvent, DockingDeniedEvent, DockingGrantedEvent, DockingRequestedEvent, DockingTimeoutEvent, DockSRVEvent, EjectCargoEvent, EmbarkEvent,
@@ -828,12 +828,27 @@ class PromptGenerator:
 
         # Exploration events
         if event_name == 'CodexEntry':
-            codex_entry_event = cast(CodexEntryEvent, content)
-            codex_name = codex_entry_event.get('Name_Localised', codex_entry_event.get('Name', 'Unknown Discovery'))
-            category = codex_entry_event.get('Category_Localised', codex_entry_event.get('Category', ''))
-            system = codex_entry_event.get('System', '')
-            is_new = ' - New discovery!' if codex_entry_event.get('IsNewEntry') else ''
-            return f"{self.commander_name} has discovered a new codex entry: {codex_name} ({category}) in {system}{is_new}"
+            codex_entry_event = cast(Dict[str, Any], content)
+            codex_details = [
+                f"name: {codex_entry_event.get('Name_Localised') or codex_entry_event.get('Name') or 'Unknown discovery'}"
+            ]
+            optional_details = [
+                ('subcategory', codex_entry_event.get('SubCategory_Localised') or codex_entry_event.get('SubCategory')),
+                ('category', codex_entry_event.get('Category_Localised') or codex_entry_event.get('Category')),
+                ('region', codex_entry_event.get('Region_Localised') or codex_entry_event.get('Region')),
+                ('nearest destination', codex_entry_event.get('NearestDestination_Localised') or codex_entry_event.get('NearestDestination')),
+            ]
+            codex_details.extend(f"{label}: {value}" for label, value in optional_details if value)
+
+            is_new_entry = 'yes' if codex_entry_event.get('IsNewEntry', False) else 'no'
+            new_traits_discovered = bool(codex_entry_event.get('NewTraitsDiscovered', False))
+            if new_traits_discovered:
+                traits = codex_entry_event.get('Traits', [])
+                trait_details = f" New traits discovered: {', '.join(str(trait) for trait in traits) if traits else 'traits not provided'}."
+            else:
+                trait_details = ''
+
+            return f"{self.commander_name} has discovered a codex entry: {'; '.join(codex_details)}. New entry: {is_new_entry}.{trait_details}"
             
         if event_name == 'DiscoveryScan':
             discovery_scan_event = cast(DiscoveryScanEvent, content)
@@ -2426,6 +2441,14 @@ class PromptGenerator:
             return 'Glide mode disengaged, returned to normal flight'
         if event_name == 'GlideModeEntered':
             return 'Entered atmospheric glide mode, maintaining controlled descent'
+        if event_name == 'SCOActivated':
+            return 'Supercruise Overdrive activated, accelerating beyond normal supercruise speeds'
+        if event_name == 'SCODeactivated':
+            return 'Supercruise Overdrive deactivated, returning to normal supercruise flight'
+        if event_name == 'SCAActivated':
+            return 'Supercruise Assist activated and controlling the ship toward its destination'
+        if event_name == 'SCADeactivated':
+            return 'Supercruise Assist deactivated and no longer controlling the ship'
         if event_name == 'LowFuelWarningCleared':
             return 'Fuel levels restored to acceptable levels'
         if event_name == 'LowFuelWarning':

@@ -53,6 +53,10 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
     this.subscriptions.push(
       this.uiService.changeUI$.subscribe((message) => {
         if (message?.show !== "storage" || !message.submenu) return;
+        if (["raw material", "manufactured material", "encoded material"].includes(message.submenu)) {
+          this.activeStorageSubtab = "materials";
+          return;
+        }
         if (this.getStorageSubtabs().some((tab) => tab.id === message.submenu)) {
           this.activeStorageSubtab = message.submenu as StorageSubtabId;
         }

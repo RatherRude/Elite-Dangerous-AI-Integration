@@ -27,10 +27,17 @@ def show_ui(obj, projected_states):
     """Show a specific UI tab, optionally selecting one of its supported submenus."""
     tab: str = (obj or {}).get('tab', 'chat')
     submenu: str | None = (obj or {}).get('submenu')
+    material_submenu_aliases = {
+        "raw_material": "raw material",
+        "manufactured_material": "manufactured material",
+        "encoded_material": "encoded material",
+    }
+    if submenu:
+        submenu = material_submenu_aliases.get(submenu, submenu)
     valid_tabs = {"chat", "status", "navigation", "storage", "station", "tasks", "logbook", "search"}
     valid_submenus = {
         "navigation": {"location", "list", "route"},
-        "storage": {"colonisation", "cargo", "carriers", "materials", "locker", "engineers", "blueprints", "modules", "ships"},
+        "storage": {"colonisation", "cargo", "carriers", "materials", "raw material", "manufactured material", "encoded material", "locker", "engineers", "blueprints", "modules", "ships"},
         "tasks": {"missions", "quests", "community-goals"},
     }
 
@@ -86,8 +93,8 @@ def register_ui_actions(actionManager: ActionManager, eventManager: EventManager
                 },
                 "submenu": {
                     "type": "string",
-                    "description": "Optional submenu. Navigation: location, list, route. Storage: colonisation, cargo, carriers, materials, locker, engineers, blueprints, modules, ships. Tasks: missions, quests, community-goals.",
-                    "enum": ["location", "list", "route", "colonisation", "cargo", "carriers", "materials", "locker", "engineers", "blueprints", "modules", "ships", "missions", "quests", "community-goals"],
+                    "description": "Optional submenu. Navigation: location, list, route. Storage: colonisation, cargo, carriers, materials (all material types), raw material, manufactured material, encoded material, locker, engineers, blueprints, modules, ships. Tasks: missions, quests, community-goals.",
+                    "enum": ["location", "list", "route", "colonisation", "cargo", "carriers", "materials", "raw material", "manufactured material", "encoded material", "locker", "engineers", "blueprints", "modules", "ships", "missions", "quests", "community-goals"],
                 },
             },
             "required": ["tab"]
@@ -109,6 +116,9 @@ def register_ui_actions(actionManager: ActionManager, eventManager: EventManager
             "show cargo": {"tab": "storage", "submenu": "cargo"},
             "show carriers": {"tab": "storage", "submenu": "carriers"},
             "show materials": {"tab": "storage", "submenu": "materials"},
+            "show raw material": {"tab": "storage", "submenu": "raw material"},
+            "show manufactured material": {"tab": "storage", "submenu": "manufactured material"},
+            "show encoded material": {"tab": "storage", "submenu": "encoded material"},
             "show locker": {"tab": "storage", "submenu": "locker"},
             "show engineers": {"tab": "storage", "submenu": "engineers"},
             "show blueprints": {"tab": "storage", "submenu": "blueprints"},
@@ -142,4 +152,3 @@ def register_ui_actions(actionManager: ActionManager, eventManager: EventManager
             "scroll to bottom": {"direction": "bottom"},
         },
     )
-

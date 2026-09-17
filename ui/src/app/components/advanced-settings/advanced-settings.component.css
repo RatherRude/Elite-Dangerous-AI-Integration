@@ -325,6 +325,12 @@ div.output-device-column .mat-mdc-form-field-subscript-wrapper {
   margin: 0;
 }
 
+.overlay-secondary-controls > .vr-compatibility-card {
+  flex: 1 0 100%;
+  width: 100%;
+  margin-top: 0;
+}
+
 .overlay-toggle-column {
   display: flex;
   flex: 1 1 10rem;
@@ -334,6 +340,36 @@ div.output-device-column .mat-mdc-form-field-subscript-wrapper {
 
 .overlay-toggle-column mat-slide-toggle {
   margin: 0;
+}
+
+.standalone-overlay-options {
+  display: flex;
+  flex: 1 1 14rem;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.standalone-background-color {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.85rem;
+}
+
+.standalone-background-color input {
+  width: 2.5rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.standalone-overlay-hint {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.78rem;
+  line-height: 1.4;
 }
 
 .overlay-slider-field {
@@ -350,6 +386,65 @@ div.output-device-column .mat-mdc-form-field-subscript-wrapper {
 
 .overlay-slider-field mat-slider {
   width: 100%;
+}
+
+.overlay-backend-info {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid rgba(117, 180, 255, 0.3);
+  border-radius: 0.5rem;
+  background: rgba(36, 94, 150, 0.14);
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.overlay-backend-info mat-icon {
+  flex: 0 0 auto;
+  color: #75b4ff;
+}
+
+.overlay-backend-info div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.overlay-backend-info strong {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.vr-compatibility-card {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(255, 183, 77, 0.45);
+  border-radius: 8px;
+  background: rgba(255, 183, 77, 0.08);
+}
+
+.vr-compatibility-card p {
+  margin: 0.25rem 0 0;
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.vr-compatibility-card.vr-compatibility-ready {
+  border-color: rgba(102, 187, 106, 0.55);
+  background: rgba(102, 187, 106, 0.08);
+}
+
+.vr-compatibility-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .logbook-actions {

@@ -123,6 +123,11 @@
   gap: 10px;
 }
 
+.actions-container {
+  align-items: flex-start;
+  padding: clamp(12px, 1.6vw, 20px);
+}
+
 .toolbar-progress {
   position: fixed;
   top: 0;

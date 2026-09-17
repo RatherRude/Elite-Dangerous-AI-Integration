@@ -1,11 +1,11 @@
 import { CommonModule } from "@angular/common";
-import { Component, OnDestroy, OnInit } from "@angular/core";
+import { Component, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
 import { MatChipsModule } from "@angular/material/chips";
 import { MatIconModule } from "@angular/material/icon";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
-import { MatExpansionModule } from "@angular/material/expansion";
+import { MatAccordion, MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
 import { FormsModule } from "@angular/forms";
@@ -87,6 +87,8 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
     private subs: Subscription[] = [];
     private lastEventIndex = -1;
     private refreshScheduled = false;
+    private navigationListAccordion?: MatAccordion;
+    private expandNavigationListOnRender = false;
     private readonly refreshEvents = new Set([
         "FSSDiscoveryScan",
         "FSSSignalDiscovered",
@@ -103,12 +105,22 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
         private uiService: UIService,
     ) {}
 
+    @ViewChild(MatAccordion)
+    set listAccordion(accordion: MatAccordion | undefined) {
+        this.navigationListAccordion = accordion;
+        this.expandNavigationListPanels();
+    }
+
     ngOnInit(): void {
         this.subs.push(
             this.uiService.changeUI$.subscribe((message) => {
                 if (message?.show !== "navigation" || !message.submenu) return;
                 if (["location", "list", "route"].includes(message.submenu)) {
                     this.activeNavigationSubtab = message.submenu as NavigationSubtabId;
+                    if (message.submenu === "list") {
+                        this.expandNavigationListOnRender = true;
+                        this.expandNavigationListPanels();
+                    }
                 }
             }),
             this.projectionsService.location$.subscribe((location) => {
@@ -172,6 +184,16 @@ export class NavigationContainerComponent implements OnInit, OnDestroy {
 
     toggleSystemInfoLegend(): void {
         this.isSystemInfoLegendCollapsed = !this.isSystemInfoLegendCollapsed;
+    }
+
+    private expandNavigationListPanels(): void {
+        if (!this.expandNavigationListOnRender || !this.navigationListAccordion) return;
+        setTimeout(() => {
+            if (this.activeNavigationSubtab === "list") {
+                this.navigationListAccordion?.openAll();
+            }
+            this.expandNavigationListOnRender = false;
+        });
     }
 
     getNavigationOptions(): NavigationOption[] {

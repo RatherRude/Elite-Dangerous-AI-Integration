@@ -5,6 +5,7 @@ import { MatProgressBarModule } from "@angular/material/progress-bar";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { Subscription } from "rxjs";
 import { ProjectionsService } from "../../services/projections.service";
+import { UIService } from "../../services/ui.service";
 
 type GradeMapWithSource = {
   [grade: number]: string[];
@@ -217,6 +218,7 @@ const isNonTradeableEncoded = (section: string) =>
 })
 export class MaterialsPanelComponent implements OnInit, OnDestroy {
   materials: any = null;
+  activeMaterialTabIndex = 0;
 
   private subscriptions: Subscription[] = [];
   hoveredKey: string | null = null;
@@ -228,10 +230,25 @@ export class MaterialsPanelComponent implements OnInit, OnDestroy {
     Encoded: new Map(),
   };
 
-  constructor(private projectionsService: ProjectionsService) {}
+  constructor(
+    private projectionsService: ProjectionsService,
+    private uiService: UIService,
+  ) {}
 
   ngOnInit(): void {
     this.subscriptions.push(
+      this.uiService.changeUI$.subscribe(message => {
+        if (message?.show !== "storage" || !message.submenu) return;
+        const materialTabs: Record<string, number> = {
+          "raw material": 0,
+          "manufactured material": 1,
+          "encoded material": 2,
+        };
+        const tabIndex = materialTabs[message.submenu];
+        if (tabIndex !== undefined) {
+          this.activeMaterialTabIndex = tabIndex;
+        }
+      }),
       this.projectionsService.materials$.subscribe(materials => {
         this.materials = materials;
         this.clearMaterialCaches();

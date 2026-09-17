@@ -7,9 +7,11 @@ import threading
 import json
 import io
 import traceback
+import uuid
 from datetime import datetime
 from pathlib import Path
 import yaml
+from openai.types.chat import ChatCompletionMessageFunctionToolCall
 
 from EDMesg.CovasNext import (
     ExternalChatNotification,
@@ -913,6 +915,19 @@ class Chat:
         _, projected_states = self.event_manager.get_current_state()
         self.assistant.web_search(query, projected_states)
 
+    def run_action(self, action: str, arguments: dict[str, Any] | None = None):
+        """Run a registered action requested directly by the UI."""
+        _, projected_states = self.event_manager.get_current_state()
+        tool_call = ChatCompletionMessageFunctionToolCall(
+            type="function",
+            id=f"ui_{uuid.uuid4().hex}",
+            function={
+                "name": action,
+                "arguments": json.dumps(arguments or {}),
+            },
+        )
+        self.assistant.execute_actions([tool_call], projected_states)
+
     def _resolve_quest_audio_file_path(self, file_name: str) -> Path | None:
         normalized_name = file_name.replace("\\", "/")
         if "/" in normalized_name:
@@ -1013,6 +1028,8 @@ def read_stdin(chat: Chat):
                         )
             if data.get("type") == "submit_input":
                 chat.submit_input(data["input"])
+            if data.get("type") == "run_action":
+                chat.run_action(data["action"], data.get("arguments"))
             if data.get("type") == "plugin_settings_button":
                 plugin_guid = data.get("plugin_guid")
                 key = data.get("key")

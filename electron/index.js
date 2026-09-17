@@ -11,6 +11,17 @@ import contextMenu from 'electron-context-menu';
 import pino from 'pino';
 import { WebSocketServer } from 'ws';
 import {VROverlay} from '@covas-labs/electron-vr';
+import {
+  configure as configureNativeOverlay,
+  displayToOverlayRect,
+  getBackendSelection as getOverlayBackendSelection,
+  getCapabilities as getOverlayCapabilities,
+} from '@covas-labs/electron-overlay';
+import {
+  createDesktopOverlayLifecycle,
+  normalizeDesktopOverlayScreen,
+  selectOverlayDisplay,
+} from './desktop-overlay-lifecycle.js';
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 const isLinux = process.platform === 'linux';
@@ -147,9 +158,10 @@ function clamp(value, min, max) {
 }
 
 function normalizeOverlayOptions(opts = {}) {
+  const desktopPlacement = normalizeDesktopOverlayScreen(opts.screenId);
   const mode = opts.mode === 'screen'
     ? 'desktop'
-    : ['disabled', 'desktop', 'vr', 'both'].includes(opts.mode)
+    : ['disabled', 'desktop', 'standalone', 'vr', 'both'].includes(opts.mode)
       ? opts.mode
       : 'desktop';
   const vrHorizontalOffset = Number.isFinite(opts.vrHorizontalOffset)
@@ -170,7 +182,8 @@ function normalizeOverlayOptions(opts = {}) {
 
   return {
     alwaysOnTop: Boolean(opts.alwaysOnTop),
-    screenId: Number.isInteger(opts.screenId) ? opts.screenId : -1,
+    ...desktopPlacement,
+    parentWindowName: 'Elite - Dangerous',
     mode,
     vrSizeMeters: Number.isFinite(opts.vrSizeMeters) && opts.vrSizeMeters > 0
       ? opts.vrSizeMeters
@@ -181,37 +194,129 @@ function normalizeOverlayOptions(opts = {}) {
     vrDistanceOffset,
     vrTiltDegrees,
     vrCurvature,
+    standaloneTransparent: opts.standaloneTransparent !== false,
+    standaloneBackgroundColor: typeof opts.standaloneBackgroundColor === 'string' &&
+      /^#[0-9a-fA-F]{6}$/.test(opts.standaloneBackgroundColor)
+      ? opts.standaloneBackgroundColor
+      : '#000000',
   };
 }
 
 async function getOverlayRuntimeInfo() {
+  let desktopOverlay;
   try {
-    console.log("VROverlay:", VROverlay);
+    const selection = getOverlayBackendSelection(undefined, 'auto');
+    desktopOverlay = {
+      ...selection,
+      capabilities: getOverlayCapabilities(undefined, 'auto'),
+    };
+  } catch (error) {
+    desktopOverlay = {
+      backend: 'unknown',
+      source: 'platform-default',
+      confidence: 'inferred',
+      evidence: '',
+      capabilities: null,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
 
-    const runtimeInfo = VROverlay.getRuntimeInfo();
-    console.log("runtimeInfo:", runtimeInfo);
+  try {
+    const compatibility = await VROverlay.getCompatibilityReport();
+    const runtimeInfo = compatibility.diagnostics;
     return {
       ...runtimeInfo,
       packageInstalled: true,
-      available: VROverlay.isAvailable(runtimeInfo),
-      hasRealVRRuntime: VROverlay.hasRealVRRuntime(runtimeInfo),
+      available: compatibility.launch.canStartNow,
+      hasRealVRRuntime: compatibility.isRealVrBackend,
+      compatibility: toProductVRState(compatibility),
+      desktopOverlay,
     };
   } catch (error) {
+    logger.warn({ err: error }, 'VR compatibility probe failed');
     return {
       platform: process.platform,
-      probeMode: 'module_unavailable',
+      probeMode: 'probe_failed',
       openxrAvailable: false,
       openxrOverlayExtensionAvailable: false,
       openvrAvailable: false,
       openvrRuntimeInstalled: false,
       openvrRuntimePath: '',
       selectedBackend: 'none',
-      packageInstalled: false,
+      // This module was imported when Electron started; only the native probe failed.
+      packageInstalled: true,
       available: false,
       hasRealVRRuntime: false,
+      desktopOverlay,
       error: error instanceof Error ? error.message : String(error),
     };
   }
+}
+
+function toProductVRState(report) {
+  return {
+    launch: report.launch,
+    readiness: report.readiness,
+    backendLabel: report.backendLabel,
+    summary: report.summary,
+    canRenderOverlay: report.canRenderOverlay,
+    isRealVrBackend: report.isRealVrBackend,
+    requiresOpenXRAppRestart: report.requiresOpenXRAppRestart,
+    compatibleHostGraphicsApis: report.compatibleHostGraphicsApis,
+    features: report.features,
+    recommendedAction: report.recommendedAction,
+    integrationInstalled: report.apiLayer?.installed ?? false,
+    integrationEnabled: report.apiLayer?.enabled ?? false,
+    connectedApplication: report.diagnostics.openxrHostApplicationName || '',
+    issues: report.issues.map(({ code, severity, title, message, action }) => ({
+      code,
+      severity,
+      title,
+      message,
+      action,
+    })),
+  };
+}
+
+function toVrIntegrationError(action, error) {
+  const details = error instanceof Error ? error.message : String(error);
+  const lowerDetails = details.toLowerCase();
+  if (lowerDetails.includes('not supported')) {
+    return new Error('OpenXR application integration is not available on this device.');
+  }
+  if (lowerDetails.includes('utility is unavailable')) {
+    return new Error('The VR integration component is missing from this installation. Repair or reinstall COVAS:NEXT.');
+  }
+  const message = action === 'install'
+    ? 'OpenXR integration could not be installed for this user.'
+    : action === 'enable'
+      ? 'OpenXR integration could not be enabled.'
+      : action === 'disable'
+        ? 'OpenXR integration could not be disabled.'
+        : 'OpenXR integration could not be removed.';
+  logger.warn({ err: error, action }, 'OpenXR integration action failed');
+  return new Error(message);
+}
+
+async function getVrCompatibilityState() {
+  try {
+    return toProductVRState(await VROverlay.getCompatibilityReport());
+  } catch (error) {
+    logger.warn({ err: error }, 'VR compatibility probe failed');
+    throw new Error('VR support could not be checked. Try again or repair the COVAS:NEXT installation.');
+  }
+}
+
+async function runVrIntegrationAction(action) {
+  try {
+    if (action === 'install') await VROverlay.installOpenXRApiLayer();
+    if (action === 'enable') await VROverlay.enableOpenXRApiLayer();
+    if (action === 'disable') await VROverlay.disableOpenXRApiLayer();
+    if (action === 'uninstall') await VROverlay.uninstallOpenXRApiLayer();
+  } catch (error) {
+    throw toVrIntegrationError(action, error);
+  }
+  return await getVrCompatibilityState();
 }
 
 // list files in the backend directory
@@ -696,61 +801,83 @@ function createMainWindow() {
  * @param {Object} opts - Options for the overlay window
  * @param {boolean} opts.alwaysOnTop - Whether the overlay should always be on top
  * @param {number} opts.screenId - ID of the screen to display on (-1 for primary)
+ * @param {'monitor'|'elite-window'} opts.desktopTarget - Normalized desktop placement policy
  */
-function createFloatingOverlayWindow(opts) {
-  // Find the target display first
-  let targetDisplay;
-  const displays = screen.getAllDisplays();
-  
-  if (opts.screenId && opts.screenId !== -1) {
-    targetDisplay = displays.find(display => display.id === opts.screenId);
-    if (!targetDisplay) {
-      targetDisplay = screen.getPrimaryDisplay();
-    }
-  } else {
-    targetDisplay = screen.getPrimaryDisplay();
-  }
-  
-  // Start with work area to position on correct screen
-  const { x, y } = targetDisplay.workArea;
-  
-  // Create window positioned on the target screen
+async function createFloatingOverlayWindow(opts) {
+  const getTargetDisplay = () => {
+    const displays = screen.getAllDisplays();
+    return selectOverlayDisplay(displays, screen.getPrimaryDisplay(), opts.screenId);
+  };
+  const targetDisplay = getTargetDisplay();
   const overlayWindow = new BrowserWindow({
-    x: x,
-    y: y,
-    width: 800,
-    height: 600,
+    x: targetDisplay.bounds.x,
+    y: targetDisplay.bounds.y,
+    width: 1,
+    height: 1,
     title: overlayWindowTitle,
     frame: false,
     transparent: true,
-    show: false, // Don't show until positioned and maximized
+    backgroundColor: '#00000000',
+    focusable: false,
+    show: false,
     webPreferences: {
       preload: overlayPreloadPath,
     }
   });
-  
-  // Now maximize it - should maximize on the screen it's positioned on
-  overlayWindow.maximize();
-  overlayWindow.show();
-  
-  overlayWindow.loadURL(config.overlay);
-  overlayWindow.setIgnoreMouseEvents(true);
-  // overlayWindow.webContents.openDevTools({ mode: 'detach' });
-  
-  if (opts.alwaysOnTop) {
-    overlayWindow.setAlwaysOnTop(true, 'screen-saver', 2);
+
+  const backend = 'auto';
+  let nativeController;
+  let lifecycle;
+  try {
+    nativeController = configureNativeOverlay(overlayWindow, {
+      backend,
+      bounds: displayToOverlayRect(targetDisplay, overlayWindow, backend),
+      position: 'bounds',
+      clickThrough: true,
+      alwaysOnTop: opts.alwaysOnTop,
+      preserveCompositing: true,
+    });
+  } catch (error) {
+    logger.warn('Native desktop overlay initialization failed; using Electron fallback:', error);
   }
 
-  return overlayWindow;
+  lifecycle = createDesktopOverlayLifecycle({
+    overlayWindow,
+    nativeController,
+    options: opts,
+    getTargetDisplay,
+    getOverlayBounds: display => displayToOverlayRect(display, overlayWindow, backend),
+    logger,
+  });
+
+  try {
+    lifecycle.refresh();
+
+    await overlayWindow.loadURL(config.overlay);
+    lifecycle.reapply();
+    overlayWindow.showInactive();
+    lifecycle.reapply();
+    lifecycle.start();
+  } catch (error) {
+    lifecycle.close();
+    if (!overlayWindow.isDestroyed()) {
+      overlayWindow.destroy();
+    }
+    throw error;
+  }
+
+  return {
+    window: overlayWindow,
+    nativeController: lifecycle,
+  };
 }
 
 async function createVrOverlayWindow(opts) {
-  const runtimeInfo = VROverlay.getRuntimeInfo();
-  if (!VROverlay.isAvailable(runtimeInfo)) {
-    throw new Error(
-      `No compatible VR runtime was detected. Selected backend: ${runtimeInfo.selectedBackend}. OpenVR installed: ${runtimeInfo.openvrRuntimeInstalled}.`,
-    );
+  const compatibility = await VROverlay.getCompatibilityReport();
+  if (!compatibility.launch.canStartNow) {
+    throw new Error(compatibility.launch.message);
   }
+  const runtimeInfo = compatibility.diagnostics;
 
   const overlayWindow = new BrowserWindow({
     width: 1280,
@@ -784,7 +911,10 @@ async function createVrOverlayWindow(opts) {
     if (!overlayWindow.isDestroyed()) {
       overlayWindow.close();
     }
-    throw new Error('Failed to attach the overlay window to the VR bridge.');
+    const refreshedCompatibility = await VROverlay.getCompatibilityReport();
+    throw new Error(refreshedCompatibility.launch.wouldWorkNow
+      ? 'The VR overlay could not be initialized. Check the VR application and try again.'
+      : refreshedCompatibility.launch.message);
   }
 
   return {
@@ -793,6 +923,37 @@ async function createVrOverlayWindow(opts) {
     windows: [overlayWindow],
     controller: vrOverlay,
     runtimeInfo,
+    cleanedUp: false,
+  };
+}
+
+async function createStandaloneOverlayWindow(opts) {
+  const overlayWindow = new BrowserWindow({
+    width: 1280,
+    height: 720,
+    title: overlayWindowTitle,
+    transparent: opts.standaloneTransparent,
+    backgroundColor: opts.standaloneTransparent ? '#00000000' : opts.standaloneBackgroundColor,
+    webPreferences: {
+      preload: overlayPreloadPath,
+    },
+  });
+
+  try {
+    await overlayWindow.loadURL(config.overlay);
+  } catch (error) {
+    if (!overlayWindow.isDestroyed()) {
+      overlayWindow.destroy();
+    }
+    throw error;
+  }
+
+  return {
+    kind: 'standalone',
+    window: overlayWindow,
+    windows: [overlayWindow],
+    controller: null,
+    runtimeInfo: null,
     cleanedUp: false,
   };
 }
@@ -812,24 +973,42 @@ async function createManagedOverlay(opts) {
   if (normalized.mode === 'vr') {
     return await createVrOverlayWindow(normalized);
   }
+  if (normalized.mode === 'standalone') {
+    return await createStandaloneOverlayWindow(normalized);
+  }
   if (normalized.mode === 'both') {
     const vrOverlay = await createVrOverlayWindow(normalized);
-    const desktopWindow = createFloatingOverlayWindow(normalized);
+    let desktopOverlay;
+    try {
+      desktopOverlay = await createFloatingOverlayWindow(normalized);
+    } catch (error) {
+      try {
+        vrOverlay.controller.destroy();
+      } catch (cleanupError) {
+        logger.warn('Failed to clean up VR overlay after desktop overlay initialization failed:', cleanupError);
+      }
+      if (!vrOverlay.window.isDestroyed()) {
+        vrOverlay.window.destroy();
+      }
+      throw error;
+    }
     return {
       kind: 'both',
-      window: desktopWindow,
-      windows: [desktopWindow, vrOverlay.window],
+      window: desktopOverlay.window,
+      windows: [desktopOverlay.window, vrOverlay.window],
       controller: vrOverlay.controller,
+      nativeControllers: [desktopOverlay.nativeController],
       runtimeInfo: vrOverlay.runtimeInfo,
       cleanedUp: false,
     };
   }
-  const overlayWindow = createFloatingOverlayWindow(normalized);
+  const desktopOverlay = await createFloatingOverlayWindow(normalized);
   return {
     kind: 'screen',
-    window: overlayWindow,
-    windows: [overlayWindow],
+    window: desktopOverlay.window,
+    windows: [desktopOverlay.window],
     controller: null,
+    nativeControllers: [desktopOverlay.nativeController],
     runtimeInfo: null,
     cleanedUp: false,
   };
@@ -840,6 +1019,13 @@ function disposeOverlay(overlay, backend, closeWindow = true) {
     return;
   }
   overlay.cleanedUp = true;
+  for (const controller of overlay.nativeControllers ?? []) {
+    try {
+      controller.close();
+    } catch (error) {
+      logger.warn('Failed to close native overlay controller:', error);
+    }
+  }
   for (const window of overlay.windows ?? [overlay.window]) {
     backend.detachWindow(window);
   }
@@ -1190,6 +1376,13 @@ app.whenReady().then(async ()=>{
   ipcMain.handle('get_remote_interface_state', async () => getRemoteInterfaceState());
   ipcMain.handle('get_remote_interface_bind_addresses', async () => getRemoteInterfaceBindAddresses());
   ipcMain.handle('get_overlay_runtime_info', async () => getOverlayRuntimeInfo());
+  ipcMain.handle('get_vr_compatibility_state', async () => getVrCompatibilityState());
+  ipcMain.handle('vr_integration_action', async (_event, action) => {
+    if (!['install', 'enable', 'disable', 'uninstall'].includes(action)) {
+      throw new TypeError('Invalid VR integration action.');
+    }
+    return await runVrIntegrationAction(action);
+  });
   ipcMain.handle('get_available_screens', async (event) => {
     const displays = screen.getAllDisplays();
     const result = displays.map((display, index) => ({

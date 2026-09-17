@@ -103,6 +103,8 @@ class OdysseyFlags(TypedDict):
     TelepresenceMulticrew: bool
     PhysicalMulticrew: bool
     FsdHyperdriveCharging: bool
+    ActiveSCO: bool
+    ActiveSCA: bool
 
 def parse_odyssey_flags(value: int) -> OdysseyFlags:
     return OdysseyFlags(
@@ -126,6 +128,8 @@ def parse_odyssey_flags(value: int) -> OdysseyFlags:
         TelepresenceMulticrew=bool(value & 131072),
         PhysicalMulticrew=bool(value & 262144),
         FsdHyperdriveCharging=bool(value & 524288),
+        ActiveSCO=bool(value & 1048576),
+        ActiveSCA=bool(value & 2097152),
     )
 
 
@@ -371,6 +375,16 @@ class StatusParser:
                     events.append({"event": "GlideModeExited"})
                 if old_status["flags2"]["GlideMode"] == False and new_status["flags2"]["GlideMode"]:
                     events.append({"event": "GlideModeEntered"})
+
+                if old_status["flags2"]["ActiveSCO"] and new_status["flags2"]["ActiveSCO"] == False:
+                    events.append({"event": "SCODeactivated"})
+                if old_status["flags2"]["ActiveSCO"] == False and new_status["flags2"]["ActiveSCO"]:
+                    events.append({"event": "SCOActivated"})
+
+                if old_status["flags2"]["ActiveSCA"] and new_status["flags2"]["ActiveSCA"] == False:
+                    events.append({"event": "SCADeactivated"})
+                if old_status["flags2"]["ActiveSCA"] == False and new_status["flags2"]["ActiveSCA"]:
+                    events.append({"event": "SCAActivated"})
 
             if old_status["flags"]["LowFuel"] and new_status["flags"]["LowFuel"] == False:
                 events.append({"event": "LowFuelWarningCleared"})

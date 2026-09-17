@@ -66,6 +66,8 @@ class StatusOdysseyFlags(BaseModel):
     TelepresenceMulticrew: bool = False
     PhysicalMulticrew: bool = False
     FsdHyperdriveCharging: bool = False
+    ActiveSCO: bool = False
+    ActiveSCA: bool = False
 
 
 class StatusPips(BaseModel):

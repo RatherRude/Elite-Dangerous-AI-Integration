@@ -209,6 +209,11 @@ def manage_power_distribution(args, projected_states):
     pips = args.get("pips", [])
     message = ""
 
+    if not balance_power and len(power_categories) != len(pips):
+        return "ERROR: Number of pips does not match number of power categories."
+
+    setGameWindowActive()
+
     if balance_power:
         # Balance power across all systems
         if power_categories == [] or len(power_categories) == 3:
@@ -223,9 +228,6 @@ def manage_power_distribution(args, projected_states):
 
     else:
         # Apply specific pips per system
-        if len(power_categories) != len(pips):
-            return "ERROR: Number of pips does not match number of power categories."
-
         assignments = []
         for pwr_system, pip_count in zip(power_categories, pips):
             assignments.append(f"{pip_count} pips to {pwr_system}")
@@ -314,12 +316,14 @@ def change_hud_mode(args, projected_states):
         current_hud_mode = "combat"
 
     if mode == "toggle":
+        setGameWindowActive()
         keys.send('PlayerHUDModeToggle')
         return "combat mode activated" if current_hud_mode == "analysis" else "analysis mode activated"
 
     if mode == current_hud_mode:
         return f"hud already in {current_hud_mode}"
     else:
+        setGameWindowActive()
         keys.send('PlayerHUDModeToggle')
         return f"{mode} mode activated"
 
@@ -732,6 +736,7 @@ def next_system_in_route(args, projected_states):
     if not nav_info.get('NextJumpTarget'):
         return "cannot target next system in route as no navigation route is currently set"
 
+    setGameWindowActive()
     keys.send('TargetNextRouteSystem')
     return "Targeting next system in route"
 
@@ -1094,6 +1099,11 @@ def manage_power_distribution_buggy(args, projected_states):
     pips = args.get("pips", [])
     message = ""
 
+    if not balance_power and len(power_categories) != len(pips):
+        return "ERROR: Number of pips does not match number of power categories."
+
+    setGameWindowActive()
+
     if balance_power:
         # Balance power across all systems
         if power_categories == [] or len(power_categories) == 3:
@@ -1108,9 +1118,6 @@ def manage_power_distribution_buggy(args, projected_states):
 
     else:
         # Apply specific pips per system
-        if len(power_categories) != len(pips):
-            return "ERROR: Number of pips does not match number of power categories."
-
         assignments = []
         for pwr_system, pip_count in zip(power_categories, pips):
             assignments.append(f"{pip_count} pips to {pwr_system}")
@@ -1180,6 +1187,7 @@ def secondary_interact_humanoid(args, projected_states):
 def equip_humanoid(args, projected_states):
     checkStatus(projected_states, {'OnFootInStation': True, 'OnFootInHangar': True, 'OnFootSocialSpace': True})
     if 'equipment' in args:
+        setGameWindowActive()
         keys.send(args['equipment'])
     return f"{args['equipment']} has been triggered."
 
@@ -1439,6 +1447,7 @@ def target_subsystem(args, projected_states):
     if 'subsystem' not in args:
         raise Exception('Something went wrong!')
 
+    setGameWindowActive()
     threading.Thread(target=target_subsystem_thread, args=(current_target.get('Subsystem'), current_target.get('EventID'), args['subsystem'],), daemon=True).start()
 
     return f"The submodule {args['subsystem']} is being targeted."

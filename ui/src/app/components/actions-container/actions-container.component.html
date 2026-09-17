@@ -1,0 +1,86 @@
+<section class="actions-panel">
+    <header class="actions-header">
+        <div>
+            <span class="eyebrow">DIRECT CONTROL</span>
+            <h2>Available Actions</h2>
+        </div>
+        @if (currentMode) {
+            <span class="mode-indicator">
+                <mat-icon>radio_button_checked</mat-icon>
+                {{ currentMode }}
+            </span>
+        }
+    </header>
+
+    @if (!config?.tools_var || !config?.game_actions_var) {
+        <div class="empty-state">
+            <mat-icon>toggle_off</mat-icon>
+            <h3>Game actions disabled</h3>
+            <p>Enable tools and game actions in settings to use direct controls.</p>
+        </div>
+    } @else {
+        <div class="action-groups">
+            @if (!currentMode) {
+                <div class="empty-state wide-control">
+                    <mat-icon>sensors_off</mat-icon>
+                    <h3>Waiting for vehicle status</h3>
+                    <p>Vehicle actions appear when the status projection identifies your ship, fighter, SRV, or suit.</p>
+                </div>
+            }
+
+            @for (group of actionGroups; track group.label) {
+                @if (hasVisibleActions(group)) {
+                    <section class="action-group">
+                        <h3><mat-icon>{{ group.icon }}</mat-icon>{{ group.label }}</h3>
+                        <div class="action-grid">
+                            @for (action of visibleActions(group); track trackAction($index, action)) {
+                                <button
+                                    mat-stroked-button
+                                    class="action-button"
+                                    type="button"
+                                    [disabled]="isSending"
+                                    (click)="runAction(action)"
+                                >
+                                    <mat-icon>{{ action.icon }}</mat-icon>
+                                    <span>{{ action.label }}</span>
+                                </button>
+                            }
+                        </div>
+                    </section>
+                }
+            }
+
+            @if (isNamedActionAvailable('textMessage', 'global')) {
+                <section class="action-group wide-control">
+                    <h3><mat-icon>chat</mat-icon>Local Message</h3>
+                    <div class="inline-action">
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                            <mat-label>Message</mat-label>
+                            <input matInput [(ngModel)]="messageText" (keyup.enter)="sendTextMessage()" maxlength="500">
+                        </mat-form-field>
+                        <button mat-flat-button type="button" (click)="sendTextMessage()" [disabled]="isSending || !messageText.trim()">
+                            <mat-icon>send</mat-icon>
+                            Send
+                        </button>
+                    </div>
+                </section>
+            }
+
+            @if (isNamedActionAvailable('getVisuals', 'global')) {
+                <section class="action-group wide-control">
+                    <h3><mat-icon>visibility</mat-icon>Visual Analysis</h3>
+                    <div class="inline-action">
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                            <mat-label>What should COVAS inspect?</mat-label>
+                            <input matInput [(ngModel)]="visualQuery" (keyup.enter)="inspectVisuals()" maxlength="500">
+                        </mat-form-field>
+                        <button mat-flat-button type="button" (click)="inspectVisuals()" [disabled]="isSending || !visualQuery.trim()">
+                            <mat-icon>center_focus_strong</mat-icon>
+                            Inspect
+                        </button>
+                    </div>
+                </section>
+            }
+        </div>
+    }
+</section>
