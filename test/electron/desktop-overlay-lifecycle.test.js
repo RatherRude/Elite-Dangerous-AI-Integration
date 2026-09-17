@@ -181,3 +181,20 @@ test('falls back to Electron policy when the native controller fails', () => {
   assert.deepEqual(calls.find(call => call[0] === 'clickThrough'), ['clickThrough', true]);
   assert.deepEqual(calls.find(call => call[0] === 'alwaysOnTop'), ['alwaysOnTop', true, 'screen-saver', 2]);
 });
+
+test('applies Electron policy once during polling and again when explicitly reapplied', () => {
+  const { calls, lifecycle } = createHarness({ nativeController: null });
+
+  lifecycle.refresh();
+  lifecycle.refresh();
+
+  assert.equal(calls.filter(call => call[0] === 'electronBounds').length, 1);
+  assert.equal(calls.filter(call => call[0] === 'clickThrough').length, 1);
+  assert.equal(calls.filter(call => call[0] === 'alwaysOnTop').length, 1);
+
+  lifecycle.reapply();
+
+  assert.equal(calls.filter(call => call[0] === 'electronBounds').length, 1);
+  assert.equal(calls.filter(call => call[0] === 'clickThrough').length, 2);
+  assert.equal(calls.filter(call => call[0] === 'alwaysOnTop').length, 2);
+});

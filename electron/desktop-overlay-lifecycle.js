@@ -46,8 +46,9 @@ export function createDesktopOverlayLifecycle({
   let parentErrorLogged = false;
   let capabilityWarningLogged = false;
   let lastFallbackBounds = null;
+  let electronPolicyApplied = false;
 
-  const applyElectronPolicy = (display) => {
+  const applyElectronPolicy = (display, forcePolicy = false) => {
     const bounds = {
       x: Math.round(display.bounds.x),
       y: Math.round(display.bounds.y),
@@ -58,11 +59,14 @@ export function createDesktopOverlayLifecycle({
       overlayWindow.setBounds(bounds);
       lastFallbackBounds = bounds;
     }
-    overlayWindow.setIgnoreMouseEvents(true);
-    if (options.alwaysOnTop) {
-      overlayWindow.setAlwaysOnTop(true, 'screen-saver', 2);
-    } else {
-      overlayWindow.setAlwaysOnTop(false);
+    if (!electronPolicyApplied || forcePolicy) {
+      overlayWindow.setIgnoreMouseEvents(true);
+      if (options.alwaysOnTop) {
+        overlayWindow.setAlwaysOnTop(true, 'screen-saver', 2);
+      } else {
+        overlayWindow.setAlwaysOnTop(false);
+      }
+      electronPolicyApplied = true;
     }
   };
 
@@ -79,6 +83,7 @@ export function createDesktopOverlayLifecycle({
     nativeController = null;
     trackingParent = false;
     lastFallbackBounds = null;
+    electronPolicyApplied = false;
   };
 
   const applyMonitorBounds = () => {
@@ -177,6 +182,7 @@ export function createDesktopOverlayLifecycle({
     refresh,
     reapply() {
       if (!nativeController) {
+        applyElectronPolicy(getTargetDisplay(), true);
         return;
       }
       try {
