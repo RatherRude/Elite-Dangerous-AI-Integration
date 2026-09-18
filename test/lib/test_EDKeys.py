@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 import os
+from xml.etree.ElementTree import fromstring
 from src.lib.EDKeys import EDKeys
 from src.lib import directinput
 
@@ -21,7 +22,21 @@ def mock_directinput(monkeypatch):
     monkeypatch.setattr('src.lib.EDKeys.ScrollMouseWheel', mock_scroll_mouse)
     
     monkeypatch.setattr('platform.system', lambda: 'Windows')
-    
+    fixed_scancodes = {
+        "Key_A": 30,
+        "Key_E": 18,
+        "Key_G": 34,
+        "Key_Q": 16,
+    }
+    monkeypatch.setattr(
+        "src.lib.EDKeys.resolve_layout_key_name",
+        lambda key_name: directinput.LayoutResolvedKey(
+            virtual_key=0,
+            scan_code=fixed_scancodes[key_name],
+            shift_state=0,
+        ),
+    )
+
     return {
         'PressKey': mock_press,
         'ReleaseKey': mock_release,
@@ -211,3 +226,156 @@ def test_macos_keymap_uses_pynput_special_keys(monkeypatch, binds_file):
 
     assert keys.keymap['Key_Enter'] == 'Key.enter'
     assert keys.keymap['Key_LeftShift'] == 'Key.shift_l'
+
+
+def test_layout_dependent_key_names_cover_map_punctuation():
+    assert directinput.LAYOUT_DEPENDENT_KEY_CHARACTERS == {
+        **{f"Key_{digit}": digit for digit in "1234567890"},
+        **{f"Key_{letter.upper()}": letter.lower() for letter in "abcdefghijklmnopqrstuvwxyz"},
+        "Key_Comma": ",",
+        "Key_Period": ".",
+        "Key_SemiColon": ";",
+        "Key_Apostrophe": "'",
+        "Key_Slash": "/",
+        "Key_LeftBracket": "[",
+        "Key_RightBracket": "]",
+        "Key_BackSlash": "\\",
+        "Key_Equals": "=",
+        "Key_Minus": "-",
+    }
+
+
+def test_resolve_layout_character_uses_windows_layout(monkeypatch):
+    class Win32Function:
+        def __init__(self, callback):
+            self.callback = callback
+
+        def __call__(self, *args):
+            return self.callback(*args)
+
+    def get_keyboard_layout(thread_id):
+        assert thread_id == 0
+        return 0x040C
+
+    def vk_key_scan(character, layout):
+        assert (character, layout) == (",", 0x040C)
+        return (0 << 8) | 0xBC
+
+    def map_virtual_key(virtual_key, mode, layout):
+        assert (virtual_key, mode, layout) == (0xBC, 0, 0x040C)
+        return 0x33
+
+    class User32:
+        GetKeyboardLayout = Win32Function(get_keyboard_layout)
+        VkKeyScanExW = Win32Function(vk_key_scan)
+        MapVirtualKeyExW = Win32Function(map_virtual_key)
+
+    class Windll:
+        user32 = User32()
+
+    monkeypatch.setattr(directinput.platform, "system", lambda: "Windows")
+    monkeypatch.setattr(directinput.ctypes, "windll", Windll(), raising=False)
+
+    assert directinput.resolve_layout_character(",") == directinput.LayoutResolvedKey(
+        virtual_key=0xBC,
+        scan_code=0x33,
+        shift_state=0,
+    )
+
+
+def test_windows_layout_resolves_keyboard_punctuation(mock_directinput, binds_file, monkeypatch):
+    monkeypatch.setattr(
+        "src.lib.EDKeys.resolve_layout_key_name",
+        lambda key_name: directinput.LayoutResolvedKey(
+            virtual_key=0xBC,
+            scan_code=0x33,
+            shift_state=0,
+        ),
+    )
+
+    keys = EDKeys(binds_file)
+    binding = keys._prepare_binding(
+        fromstring(
+            '<Primary Device="Keyboard" Key="Key_Comma">'
+            "</Primary>"
+        )
+    )
+
+    assert binding == {"key": 0x33, "mods": []}
+
+
+@pytest.mark.parametrize(
+    ("key_name", "character"),
+    [
+        ("Key_A", "a"),
+        ("Key_Q", "q"),
+        ("Key_W", "w"),
+        ("Key_Z", "z"),
+    ],
+)
+def test_windows_layout_resolves_alphabetic_keys(
+    mock_directinput, binds_file, monkeypatch, key_name, character
+):
+    fixed_scancodes = {
+        "Key_A": 30,
+        "Key_E": 18,
+        "Key_G": 34,
+        "Key_Q": 16,
+    }
+
+    def resolve_key(resolved_key_name):
+        if resolved_key_name == key_name:
+            return directinput.LayoutResolvedKey(
+                virtual_key=ord(character.upper()),
+                scan_code=0x1E,
+                shift_state=0,
+            )
+        return directinput.LayoutResolvedKey(
+            virtual_key=0,
+            scan_code=fixed_scancodes[resolved_key_name],
+            shift_state=0,
+        )
+
+    monkeypatch.setattr(
+        "src.lib.EDKeys.resolve_layout_key_name",
+        resolve_key,
+    )
+
+    keys = EDKeys(binds_file)
+    binding = keys._prepare_binding(
+        fromstring(f'<Primary Device="Keyboard" Key="{key_name}"></Primary>')
+    )
+
+    assert binding == {"key": 0x1E, "mods": []}
+
+
+def test_windows_layout_adds_implicit_shift_modifier(mock_directinput, binds_file, monkeypatch):
+    monkeypatch.setattr(
+        "src.lib.EDKeys.resolve_layout_key_name",
+        lambda key_name: directinput.LayoutResolvedKey(
+            virtual_key=0xBA,
+            scan_code=0x27,
+            shift_state=1,
+        ),
+    )
+
+    keys = EDKeys(binds_file)
+    binding = keys._prepare_binding(
+        fromstring(
+            '<Primary Device="Keyboard" Key="Key_SemiColon">'
+            "</Primary>"
+        )
+    )
+
+    assert binding == {"key": 0x27, "mods": [42]}
+
+
+def test_linux_bindings_use_pynput_characters_for_active_layout(
+    mock_directinput, binds_file, monkeypatch
+):
+    monkeypatch.setattr("platform.system", lambda: "Linux")
+
+    keys = EDKeys(binds_file)
+
+    assert keys.keys["PrimaryFire"] == {"key": " ", "mods": []}
+    assert keys.keys["CycleNextTarget"] == {"key": "e", "mods": []}
