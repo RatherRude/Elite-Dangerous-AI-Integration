@@ -3,7 +3,7 @@ from typing import Literal, TypedDict
 class SettingBase(TypedDict):
     key: str
     label: str | None
-    type: Literal['paragraph', 'text', 'textarea', 'toggle', 'number', 'select', 'error']
+    type: Literal['paragraph', 'text', 'textarea', 'toggle', 'number', 'select', 'button', 'avatar', 'error']
     readonly: bool
     placeholder: str | None
 
@@ -49,6 +49,12 @@ class ButtonSetting(SettingBase):
     """Used to display a button that invokes the plugin's settings-button hook."""
     pass
 
+class AvatarSetting(SettingBase):
+    """Used to select an image from the shared avatar catalogue."""
+    default_value: str | None
+    default_avatar_url: str
+    default_avatar_label: str
+
 class ParagraphSetting(SettingBase):
     """Used to display a paragraph of text. The label is used as the title."""
     content: str
@@ -61,7 +67,7 @@ class SettingsGrid(TypedDict):
     """Defines a grid of settings for a plugin."""
     key: str
     label: str
-    fields: list[TextSetting | TextAreaSetting | SelectSetting | NumericalSetting | ToggleSetting | ButtonSetting | ParagraphSetting | ErrorSetting]
+    fields: list[TextSetting | TextAreaSetting | SelectSetting | NumericalSetting | ToggleSetting | ButtonSetting | AvatarSetting | ParagraphSetting | ErrorSetting]
 
 class PluginSettings(TypedDict):
     """Used to define the settings for a plugin."""

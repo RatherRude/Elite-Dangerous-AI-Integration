@@ -11,6 +11,42 @@ mat-slide-toggle {
     margin: 10px 0;
 }
 
+.avatar-field {
+    margin: 12px 0;
+}
+
+.avatar-field h4 {
+    margin: 0 0 8px;
+    font-weight: 500;
+}
+
+.avatar-control {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.avatar-preview-button {
+    min-width: 136px;
+    min-height: 136px;
+    padding: 8px;
+}
+
+.avatar-preview-button img {
+    width: 120px;
+    height: 120px;
+    border-radius: 4px;
+    object-fit: contain;
+}
+
+.avatar-preview-button mat-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0;
+    font-size: 48px;
+}
+
 .paragraph-field {
     margin: 8px 0;
 }

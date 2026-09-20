@@ -13,7 +13,7 @@ from lib.PluginSettingDefinitions import (
     SettingsGrid, 
     ToggleSetting, 
     ParagraphSetting,
-    ModelProviderDefinition,TextSetting
+    ModelProviderDefinition, TextSetting, AvatarSetting
 )
 from lib.Logger import log, show_chat_message
 from lib.PluginBase import PluginBase, PluginManifest
@@ -370,11 +370,6 @@ class EDCoPilotPlugin(PluginBase):
                                 placeholder=None,
                                 default_value=False
                             ),
-                            TextSetting(
-                                key="voice",
-                                label="EDCoPilot Voice",
-                                type="text",
-                            ),
                             ToggleSetting(
                                 key="react_to_commentary",
                                 label="React to EDCoPilot commentary",
@@ -382,6 +377,21 @@ class EDCoPilotPlugin(PluginBase):
                                 readonly=False,
                                 placeholder=None,
                                 default_value=False
+                            ),
+                            TextSetting(
+                                key="voice",
+                                label="EDCoPilot Voice",
+                                type="text",
+                            ),
+                            AvatarSetting(
+                                key="avatar",
+                                label="Change EDCoPilot avatar",
+                                type="avatar",
+                                readonly=False,
+                                placeholder=None,
+                                default_value="",
+                                default_avatar_url=EDCOPILOT_AVATAR_URL,
+                                default_avatar_label="Default EDCoPilot Avatar",
                             )
                         ]
                     ),
@@ -544,7 +554,12 @@ class EDCoPilotPlugin(PluginBase):
                     def dispatch_edcopilot_event(include_avatar: bool = False):
                         content = {"text": text}
                         if include_avatar:
-                            content["avatar_url"] = EDCOPILOT_AVATAR_URL
+                            selected_avatar = self.settings.get("avatar")
+                            content["avatar_url"] = (
+                                selected_avatar
+                                if isinstance(selected_avatar, str) and selected_avatar
+                                else EDCOPILOT_AVATAR_URL
+                            )
                         self._helper.dispatch_event(PluginEvent(
                             kind="plugin",
                             plugin_event_name="EdCoPilotEvent",
