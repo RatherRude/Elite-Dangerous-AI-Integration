@@ -18,6 +18,8 @@ from .directinput import (
     ReleaseKey,
     ReleaseMouseButton,
     ScrollMouseWheel,
+    resolve_layout_key_name,
+    LAYOUT_DEPENDENT_KEY_CHARACTERS,
 )
 
 """
@@ -317,14 +319,34 @@ class EDKeys:
             elif modifier.tag == "Hold":
                 hold = True
 
-        binding: dict[str, Any] = {"mods": [self.keymap[mod] for mod in mods]}
+        resolved_mods = [self.keymap[mod] for mod in mods]
 
         if device == "Keyboard":
-            binding["key"] = self.keymap[key]
+            if platform.system() == "Windows" and key in LAYOUT_DEPENDENT_KEY_CHARACTERS:
+                resolved_key = resolve_layout_key_name(key)
+                binding = {
+                    "key": resolved_key.scan_code,
+                    "mods": resolved_mods,
+                }
+                implicit_modifiers = {
+                    1: "Key_LeftShift",
+                    2: "Key_LeftControl",
+                    4: "Key_LeftAlt",
+                }
+                for modifier_mask, modifier_name in implicit_modifiers.items():
+                    if (
+                        resolved_key.shift_state & modifier_mask
+                        and modifier_name not in mods
+                    ):
+                        binding["mods"].append(self.keymap[modifier_name])
+            else:
+                binding = {"key": self.keymap[key], "mods": resolved_mods}
         elif key in self.mouse_button_map:
+            binding = {"mods": resolved_mods}
             binding["type"] = "mouse_button"
             binding["button"] = self.mouse_button_map[key]
         elif key in self.mouse_wheel_map:
+            binding = {"mods": resolved_mods}
             binding["type"] = "mouse_wheel"
             binding["clicks"] = self.mouse_wheel_map[key]
         else:
