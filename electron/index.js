@@ -27,6 +27,14 @@ const isDevelopment = process.env.NODE_ENV === 'development';
 const isLinux = process.platform === 'linux';
 const overlayPreloadPath = path.join(import.meta.dirname, 'preload.js');
 const overlayWindowTitle = 'COVAS:NEXT Overlay';
+const redactedConfigLineMarkers = [
+  '"type": "config"',
+  '"type": "running_config"',
+  '"type": "change_config"',
+  '"type":"config"',
+  '"type":"running_config"',
+  '"type":"change_config"',
+];
 let loggerShuttingDown = false;
 let remoteInterface = null;
 
@@ -47,6 +55,10 @@ function logMethod (args, method) {
 
 function disableLoggerForShutdown() {
   loggerShuttingDown = true;
+}
+
+function shouldRedactConfigLine(line) {
+  return redactedConfigLineMarkers.some((marker) => line.includes(marker));
 }
 
 const transport = {
@@ -563,7 +575,13 @@ class BackendService {
     if (!this.#hasActiveProcess() || !childProcess?.stdin?.writable) {
       throw new Error('No active process to send JSON line to');
     }
-    logger.info('[stdin]', jsonLine);
+
+    if (!shouldRedactConfigLine(jsonLine)) {
+      logger.info('[stdin]', jsonLine);
+    } else {
+      logger.info('[stdin]', "[config redacted]");
+    }
+
     try {
       const written = childProcess.stdin.write(jsonLine + '\n');
       if (!written && childProcess.stdin.destroyed) {
@@ -683,7 +701,7 @@ class BackendService {
       for (const line of lines) {
         if (line.trim()) {
           //logger.info('Sending stdout to', this.#windows.length, 'windows');
-          if (!line.includes('"type": "config"') && !line.includes('"type": "running_config"')) {
+          if (!shouldRedactConfigLine(line)) {
             logger.info('[stdout]', line);
           } else {
             logger.info('[stdout]', "[config redacted]");
@@ -707,7 +725,7 @@ class BackendService {
       for (const line of lines) {
         if (line.trim()) {
           //logger.error('Sending stderr to', this.#windows.length, 'windows');
-          if (!line.includes('"type": "config"') && !line.includes('"type": "running_config"')) {
+          if (!shouldRedactConfigLine(line)) {
             logger.info('[stderr]', line);
           } else {
             logger.info('[stderr]', "[config redacted]");
