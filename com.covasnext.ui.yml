@@ -16,6 +16,7 @@ finish-args:
   # File access
   - --filesystem=home:rw
   - --filesystem=/tmp:rw
+  - --filesystem=xdg-run/electron-vr:create
   # Devices access
   - --device=dri # OpenGL
   #- --device=input # Not supported in flatpak-builder 1.4 (default on ubuntu 24.04) 
@@ -58,12 +59,30 @@ modules:
       
       # Create wrapper script to ensure X11 environment
       - |
-        cat > /app/bin/covas-next-ui-wrapper << EOF
+        cat > /app/bin/covas-next-ui-wrapper << 'EOF'
         #!/bin/bash
+        set -e
         unset WAYLAND_DISPLAY
         export ELECTRON_OZONE_PLATFORM_HINT="${ELECTRON_OZONE_PLATFORM_HINT:-x11}"
         export OZONE_PLATFORM="${OZONE_PLATFORM:-x11}"
         export GDK_BACKEND="${GDK_BACKEND:-x11}"
+
+        # The host OpenXR loader cannot discover layers in Flatpak's private XDG_DATA_HOME.
+        host_layer_dir="$HOME/.local/share/openxr/1/api_layers/implicit.d"
+        sandbox_layer_dir="$XDG_DATA_HOME/openxr/1/api_layers/implicit.d"
+        mkdir -p "$host_layer_dir" "$(dirname "$sandbox_layer_dir")"
+        if [ -d "$sandbox_layer_dir" ] && [ ! -L "$sandbox_layer_dir" ]; then
+          for asset in electron_vr_openxr_layer.json electron_vr_openxr_layer.json.disabled libelectron_vr_openxr_layer.so; do
+            if [ -f "$sandbox_layer_dir/$asset" ] && [ ! -e "$host_layer_dir/$asset" ]; then
+              cp -p "$sandbox_layer_dir/$asset" "$host_layer_dir/$asset"
+            fi
+          done
+          mv "$sandbox_layer_dir" "$sandbox_layer_dir.flatpak-backup"
+        fi
+        if [ ! -e "$sandbox_layer_dir" ]; then
+          ln -s "$host_layer_dir" "$sandbox_layer_dir"
+        fi
+
         exec zypak-wrapper /app/bin/covas-next --ozone-platform=x11 "$@"
         EOF
       - chmod +x /app/bin/covas-next-ui-wrapper
