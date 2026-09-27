@@ -10,13 +10,13 @@ export interface PluginSettings {
 export interface SettingsGrid {
     key: string;
     label: string;
-    fields: (TextSetting | TextAreaSetting | NumericalSetting | ToggleSetting | SelectSetting | ButtonSetting | ParagraphSetting | ErrorSetting)[];
+    fields: (TextSetting | TextAreaSetting | NumericalSetting | ToggleSetting | SelectSetting | ButtonSetting | AvatarSetting | ParagraphSetting | ErrorSetting)[];
 }
 
 export interface SettingBase {
     key: string;
     label: string;
-    type: "paragraph" | "number" | "toggle" | "text" | "textarea" | "select" | "button" | "error";
+    type: "paragraph" | "number" | "toggle" | "text" | "textarea" | "select" | "button" | "avatar" | "error";
     readonly: boolean | null;
     placeholder: string | null;
     default_value?: any;
@@ -41,6 +41,10 @@ export interface SettingBase {
     // Select
     select_options: SelectOption[];
     multi_select: boolean;
+
+    // Avatar
+    default_avatar_url?: string;
+    default_avatar_label?: string;
 }
 
 export interface TextSetting extends SettingBase {
@@ -60,6 +64,12 @@ export interface ToggleSetting extends SettingBase {
 }
 
 export interface ButtonSetting extends SettingBase {}
+
+export interface AvatarSetting extends SettingBase {
+    default_value: string | null;
+    default_avatar_url: string;
+    default_avatar_label: string;
+}
 
 export interface ParagraphSetting extends SettingBase {}
 

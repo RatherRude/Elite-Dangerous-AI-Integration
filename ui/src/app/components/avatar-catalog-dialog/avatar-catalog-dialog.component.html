@@ -32,8 +32,8 @@
         <mat-card-content>
           <div class="avatar-image-container" (click)="setToDefault()">
             <img 
-              src="assets/cn_avatar_default.svg" 
-              alt="Default Avatar"
+              [src]="getDefaultAvatarUrl()"
+              [alt]="getDefaultAvatarLabel()"
               class="avatar-image">
             
             <div class="avatar-overlay">
@@ -52,7 +52,7 @@
           </div>
           
           <div class="avatar-info">
-            <div class="avatar-filename">Default Avatar</div>
+            <div class="avatar-filename">{{ getDefaultAvatarLabel() }}</div>
             <div class="avatar-upload-time">Built-in</div>
           </div>
         </mat-card-content>

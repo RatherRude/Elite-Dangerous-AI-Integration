@@ -10,6 +10,28 @@
             {{ field.label }}
         </button>
     }
+    @case ('avatar') {
+        <div class="avatar-field">
+            @if (field.label) {
+                <h4>{{ field.label }}</h4>
+            }
+            <div class="avatar-control">
+                <button
+                    mat-stroked-button
+                    type="button"
+                    class="avatar-preview-button"
+                    [disabled]="field.readonly"
+                    [attr.aria-label]="field.label || 'Change avatar'"
+                    (click)="openAvatarCatalog()">
+                    @if (avatarPreviewUrl) {
+                        <img [src]="avatarPreviewUrl" [alt]="field.label || 'Selected avatar'">
+                    } @else {
+                        <mat-icon>image</mat-icon>
+                    }
+                </button>
+            </div>
+        </div>
+    }
     @case ('paragraph') {
         <div class="paragraph-field">
             @if (field.label) {
