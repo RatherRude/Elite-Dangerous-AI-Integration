@@ -3,8 +3,10 @@ from __future__ import annotations
 import argparse
 import math
 from dataclasses import dataclass
+from datetime import UTC, datetime
+from pathlib import Path
 from time import sleep
-from typing import final
+from typing import Any, final
 
 import cv2
 import numpy as np
@@ -66,168 +68,144 @@ class Profile:
 EXIT_ICON_TEMPLATE = tuple(
     row.replace(" ", "")
     for row in (
-        "###################..",
-        "####################.",
-        "##................##.",
-        "##................##.",
-        "##................##.",
-        "##...................",
-        "##...................",
-        "##...................",
-        "##..........#........",
-        "##......#####........",
-        "##.....##############",
-        "##.....#############.",
-        "##.......####........",
-        "##..........#........",
-        "##...................",
-        "##...................",
-        "##...................",
-        "##................##.",
-        "##................##.",
-        "##................##.",
-        "####################.",
+        ".......................",
+        ".......................",
+        ".................#.....",
+        ".....############......",
+        ".....############......",
+        "....####.......###.....",
+        "....###........##......",
+        "....###........##......",
+        "....###.........#......",
+        "....###....###.........",
+        "....###..####..........",
+        "....###..#########.....",
+        "....###.##########.....",
+        "....###...###..........",
+        "....###....####........",
+        "....###................",
+        "....###........##......",
+        "....###.....#..##......",
+        "....####......###......",
+        ".....############......",
+        ".....#############.....",
+        ".......................",
+        ".......................",
+        ".......................",
     )
 )
 
 COPY_ICON_TEMPLATE = tuple(
     row.replace(" ", "")
     for row in (
-        "...............................",
-        "...............................",
-        "...............................",
-        "...............................",
-        "...............................",
-        ".......############............",
-        "......#........................",
-        "......#........................",
-        "......#........................",
-        "......#........................",
-        "......#........................",
-        "......#.....#.#.#########......",
-        "......#..#..#...........#......",
-        "......#..###............#......",
-        "......#...##.....#......#......",
-        "......#...###....#......#......",
-        "......#....########.....#......",
-        "......#....#########....#......",
-        "......#..#...#######....#......",
-        "................###.....#......",
-        "............#....#......#......",
-        "............#...........#......",
-        "............#...........#......",
-        "............#...........#......",
-        "................#..##..##......",
-        "...............................",
-        "...............................",
-        "...............................",
-        "...............................",
-        "...............................",
+        ".......................",
+        ".......................",
+        ".......................",
+        ".......................",
+        ".....#########.........",
+        "....############.......",
+        "....##.......##........",
+        "....##.......###.......",
+        "....##...##########....",
+        "....##############.....",
+        "....#######..#.#.#.....",
+        "....######.###..##.....",
+        "....##.########.##.....",
+        "....##############.....",
+        ".....##########.##.....",
+        "........######..##.....",
+        "........###.#...##.....",
+        "........##########.....",
+        ".........#########.....",
+        ".................#.....",
+        ".......................",
+        ".......................",
+        ".......................",
     )
 )
 TARGET_ICON_TEMPLATE = tuple(
     row.replace(" ", "")
     for row in (
-        "...............................",
-        "...............................",
-        "...............................",
-        "...............................",
-        ".....####.............####.....",
-        ".....#####...........#####.....",
-        ".....######.........######.....",
-        "....######...........#####.....",
-        ".....####.............####.....",
-        "......##...............##......",
-        ".............#####.............",
-        "............########...........",
-        "...........##.....##...........",
-        "..........###......##..........",
-        "..........##.......##..........",
-        "..........##........#..........",
-        "..........##.......##..........",
-        "...........##......##..........",
-        "...........###....##...........",
-        "............#######............",
-        "......##.....#####.....##......",
-        ".....####.............####.....",
-        ".....#####...........#####.....",
-        ".....######.........######.....",
-        ".....#####...........#####.....",
-        ".....####.............###......",
-        "...............................",
-        "...............................",
-        "...............................",
-        "...............................",
+        ".......................",
+        ".......................",
+        "................#.#....",
+        "...#####......#####....",
+        "...#####......#####....",
+        "...######.....#####....",
+        "...#####.#.##.#####....",
+        "....###..#####.####....",
+        "......#.#######..#.....",
+        ".......#########.......",
+        ".......###.#.###.#.....",
+        ".......##....###.......",
+        ".......###...###.......",
+        ".....#.########.#......",
+        "...####.###########....",
+        "...#####..##.######....",
+        "...#######.#..#####....",
+        "...######.....#####....",
+        "..######.......###.....",
+        ".......................",
+        ".......................",
+        ".......................",
+        ".......................",
     )
 )
 ORRERY_ICON_TEMPLATE = tuple(
     row.replace(" ", "")
     for row in (
-        "...............................",
-        "...............................",
-        "...............................",
-        "...........####.####...........",
-        ".........##..........#.........",
-        "........#.............#........",
-        ".......#...............####....",
-        "......#.........###....####....",
-        ".....#......#######.....###....",
-        ".....#.....#....####....###....",
-        "....#.....#.........#.....#....",
-        "....#................#.........",
-        ".........#...........#.........",
-        "...#.....#....###..........#...",
-        "...#.....#....####.........#...",
-        "...#.....#....####.........#...",
-        ".........#....###..........#...",
-        "....#....#.................#...",
-        "....#..........................",
-        "....##....#.........#.....#....",
-        "....###....#....####......#....",
-        "....####.......####......#.....",
-        "....####........###............",
-        "......#........................",
-        "........#.............#........",
-        ".........##.........##.........",
-        "...........#########...........",
-        "...............................",
-        "...............................",
-        "...............................",
+        ".......................",
+        ".......................",
+        ".......................",
+        "......#.#######.#......",
+        "......##########..#....",
+        ".....####.....#####....",
+        "....###....#########...",
+        "..####..#######.####...",
+        "...##..########.####...",
+        "...##..##.#.####..##...",
+        "..###.##..###.###.###..",
+        "..###.##.####..##.###..",
+        "..###.##.####..##.##...",
+        "..#######.###.###.##...",
+        "...##.###...####..##...",
+        "...#############.###...",
+        "...####.#######.###....",
+        "..#####....###.###.....",
+        "..##.######.#####......",
+        ".......#########.......",
+        "........######.........",
+        ".......................",
+        ".......................",
+        ".......................",
     )
 )
 INFO_ICON_TEMPLATE = tuple(
     row.replace(" ", "")
     for row in (
-        "..............................",
-        "..............................",
-        "..............................",
-        "..............................",
-        "..........#########...........",
-        "........##.........#####......",
-        ".......#.............####.....",
-        "......#..............####.....",
-        ".....#...............####.....",
-        "....#.........##......###.....",
-        "....#.........#.........#.....",
-        "...#.....................#....",
-        "...#.....................#....",
-        "...#.........##..........#....",
-        ".............##...............",
-        "..............#...............",
-        "...#..........#...............",
-        "...#..........#..........#....",
-        "...#..........#..........#....",
-        "...#.........###.........#....",
-        "....#.......#####.............",
-        "....###.................#.....",
-        "....#####..............#......",
-        "....#####.....................",
-        "....#####............#........",
-        ".....#####..........#.........",
-        "..........#########...........",
-        "..............................",
-        "..............................",
-        "..............................",
+        ".......................",
+        ".......................",
+        "..........##...........",
+        ".......########.##.....",
+        "....#.####...######....",
+        "....####.......####....",
+        "....##....##...####....",
+        "...###....###..####....",
+        "...##......#.....####..",
+        "...##....###......##...",
+        "..###....###......##...",
+        "...##.....##......##...",
+        ".#.##....###......##...",
+        "...##....#####...###...",
+        "...#####.#####...##....",
+        "...#####......#.###....",
+        "....####....#..###.....",
+        "....#####....####......",
+        ".....##########........",
+        "....#.#...###..#.......",
+        "............#..........",
+        ".......................",
+        ".......................",
     )
 )
 ICON_TEMPLATES: dict[str, tuple[tuple[str, ...], float]] = {
@@ -533,19 +511,22 @@ def find_detection(
     hue_tolerance_deg: float,
     min_width: int,
     min_height: int,
+    diagnostics_out: list[dict[str, Any]] | None = None,
 ) -> Detection | None:
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     sat = hsv[:, :, 1]
     val = hsv[:, :, 2]
 
     best: Detection | None = None
+    diagnostics: list[dict[str, Any]] = []
     for profile in profiles:
         content_sat_min = round(profile.content_saturation_min * 255.0)
         content_sat_max = round(profile.content_saturation_max * 255.0)
+        candidate_value_min = round(profile.candidate_value_min * 255.0)
         candidate_mask = np.uint8(
             (sat >= content_sat_min)
             & (sat <= content_sat_max)
-            & (val >= round(profile.candidate_value_min * 255.0))
+            & (val >= candidate_value_min)
         ) * 255
 
         # Bridge small text/icon holes without inventing large new regions.
@@ -553,12 +534,76 @@ def find_detection(
         candidate_mask = cv2.morphologyEx(candidate_mask, cv2.MORPH_CLOSE, kernel, iterations=1)
 
         contours, _ = cv2.findContours(candidate_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        profile_diagnostics: dict[str, Any] = {
+            "profile": profile.name,
+            "sample_hex": profile.sample_hex,
+            "saturation_range": [content_sat_min, content_sat_max],
+            "candidate_value_min": candidate_value_min,
+            "candidate_pixels": int(cv2.countNonZero(candidate_mask)),
+            "contours": len(contours),
+            "size_candidates": 0,
+            "rejected_by_size": 0,
+            "rejected_by_border": 0,
+            "rejected_by_content": 0,
+            "accepted": 0,
+            "candidates": [],
+        }
+        candidate_diagnostics: list[dict[str, Any]] = []
         for contour in contours:
             x, y, w, h = cv2.boundingRect(contour)
             if w < min_width or h < min_height:
+                profile_diagnostics["rejected_by_size"] += 1
                 continue
             if w <= border_px * 2 or h <= border_px * 2:
+                profile_diagnostics["rejected_by_size"] += 1
                 continue
+            profile_diagnostics["size_candidates"] += 1
+            # The closed colour contour can include neighbouring UI pixels.
+            # Find the actual rectangular border within a few pixels of its
+            # bounding box, rather than assuming the contour is the border.
+            best_box = (x, y, w, h)
+            best_rank = (-1, -1, -1.0)
+            required_border = border_required if border_required is not None else profile.border_required
+            for left in range(3):
+                for top in range(3):
+                    for right in range(3):
+                        for bottom in range(4):
+                            bx, by = x + left, y + top
+                            bw, bh = w - left - right, h - top - bottom
+                            if bw < min_width or bh < min_height:
+                                continue
+                            patch = hsv[by : by + bh, bx : bx + bw]
+                            edge = apply_top_right_border_exclusion(
+                                border_mask(bh, bw, border_px),
+                                profile.exclude_top_right_border_height_fraction,
+                            )
+                            saturated = (
+                                (patch[:, :, 1] >= round(profile.border_saturation_min * 255.0))
+                                & (patch[:, :, 1] <= round(profile.border_saturation_max * 255.0))
+                            )
+                            edge_hues = patch[:, :, 0][edge & saturated]
+                            if not edge_hues.size:
+                                continue
+                            edge_hue = circular_mean_hue_deg(edge_hues)
+                            matching_border = saturated & (
+                                hue_distance_deg(patch[:, :, 0], edge_hue) <= hue_tolerance_deg
+                            )
+                            score = float(matching_border[edge].mean())
+                            bottom_score = float(matching_border[-1].mean())
+                            # Prefer the largest box that clears the original
+                            # border threshold, preserving the icon interior.
+                            rank = (int(score >= required_border and bottom_score >= 0.7), bw * bh, score)
+                            if rank > best_rank:
+                                best_rank = rank
+                                best_box = (bx, by, bw, bh)
+            x, y, w, h = best_box
+            candidate_diagnostic: dict[str, Any] = {
+                "x": x,
+                "y": y,
+                "w": w,
+                "h": h,
+                "area": w * h,
+            }
 
             roi_hsv = hsv[y : y + h, x : x + w]
             roi_hue = roi_hsv[:, :, 0]
@@ -575,18 +620,30 @@ def find_detection(
                 & (ring_sat <= round(profile.border_saturation_max * 255.0))
             )
             if saturated_ring.size == 0:
+                candidate_diagnostic["rejected"] = "empty-border-ring"
+                candidate_diagnostics.append(candidate_diagnostic)
                 continue
 
+            candidate_diagnostic["ring_saturation_match"] = round(float(saturated_ring.mean()), 4)
             ring_hue = roi_hue[ring][saturated_ring]
             if ring_hue.size == 0:
+                profile_diagnostics["rejected_by_border"] += 1
+                candidate_diagnostic["rejected"] = "border-saturation"
+                candidate_diagnostics.append(candidate_diagnostic)
                 continue
             hue_deg = circular_mean_hue_deg(ring_hue)
+            candidate_diagnostic["hue_deg"] = round(hue_deg, 2)
 
             ring_hue_ok = hue_distance_deg(roi_hue[ring], hue_deg) <= hue_tolerance_deg
             border_ok = saturated_ring & ring_hue_ok
             border_match = float(border_ok.mean())
             required_border = border_required if border_required is not None else profile.border_required
+            candidate_diagnostic["border_match"] = round(border_match, 4)
+            candidate_diagnostic["border_required"] = required_border
             if border_match < required_border:
+                profile_diagnostics["rejected_by_border"] += 1
+                candidate_diagnostic["rejected"] = "border-match"
+                candidate_diagnostics.append(candidate_diagnostic)
                 continue
 
             content = ~full_ring
@@ -598,7 +655,12 @@ def find_detection(
             content_hue_ok = hue_distance_deg(roi_hue[content], hue_deg) <= hue_tolerance_deg
             content_match = float((content_sat_ok & content_hue_ok).mean())
             required_content = content_required if content_required is not None else profile.content_required
+            candidate_diagnostic["content_match"] = round(content_match, 4)
+            candidate_diagnostic["content_required"] = required_content
             if content_match < required_content:
+                profile_diagnostics["rejected_by_content"] += 1
+                candidate_diagnostic["rejected"] = "content-match"
+                candidate_diagnostics.append(candidate_diagnostic)
                 continue
 
             icon_template, icon_match = identify_icon_template(
@@ -624,8 +686,34 @@ def find_detection(
                 icon_template=icon_template,
                 icon_match=icon_match,
             )
+            profile_diagnostics["accepted"] += 1
+            candidate_diagnostic["accepted"] = True
+            candidate_diagnostics.append(candidate_diagnostic)
             if best is None or detection.area > best.area:
                 best = detection
+        profile_diagnostics["candidates"] = sorted(
+            candidate_diagnostics,
+            key=lambda candidate: candidate["area"],
+            reverse=True,
+        )
+        diagnostics.append(profile_diagnostics)
+
+    if diagnostics_out is not None:
+        diagnostics_out.extend(diagnostics)
+
+    if best is None:
+        log(
+            "warn",
+            "ScreenReader selection detection failed",
+            {
+                "image_shape": list(image.shape),
+                "border_px": border_px,
+                "hue_tolerance_deg": hue_tolerance_deg,
+                "min_width": min_width,
+                "min_height": min_height,
+                "profiles": diagnostics,
+            },
+        )
 
     return best
 
@@ -735,6 +823,22 @@ class ScreenReader:
         if image is None:
             return None
 
+        return self._detect_selected_area(image)
+
+    def detect_selected_area_with_diagnostics(
+        self,
+        image: np.ndarray,
+    ) -> tuple[Detection | None, list[dict[str, Any]]]:
+        diagnostics: list[dict[str, Any]] = []
+        detection = self._detect_selected_area(image, diagnostics_out=diagnostics)
+        return detection, diagnostics
+
+    def _detect_selected_area(
+        self,
+        image: np.ndarray,
+        *,
+        diagnostics_out: list[dict[str, Any]] | None = None,
+    ) -> Detection | None:
         return find_detection(
             image,
             profiles=self.profiles,
@@ -744,6 +848,7 @@ class ScreenReader:
             hue_tolerance_deg=self.hue_tolerance_deg,
             min_width=self.min_width,
             min_height=self.min_height,
+            diagnostics_out=diagnostics_out,
         )
 
     def read_selected_area(self, image: np.ndarray | None = None) -> ScreenReadResult:
@@ -754,9 +859,25 @@ class ScreenReader:
 
         detection = self.detect_selected_area(image)
         if detection is None:
+            self.save_debug_image(image, "no-selected-area")
             raise Exception("No selected area detected")
 
         return ScreenReadResult(detection=detection, ocr_lines=self.read_detection_text(image, detection))
+
+    @staticmethod
+    def save_debug_image(image: np.ndarray, reason: str) -> Path | None:
+        try:
+            output_dir = Path.cwd() / "logs" / "screen-reader"
+            output_dir.mkdir(parents=True, exist_ok=True)
+            timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S.%fZ")
+            output_path = output_dir / f"{reason}-{timestamp}.png"
+            if not cv2.imwrite(str(output_path), image):
+                raise OSError(f"OpenCV could not write {output_path}")
+            log("warn", "Saved ScreenReader debug image", str(output_path))
+            return output_path
+        except Exception as error:
+            log("error", "Failed to save ScreenReader debug image", error)
+            return None
 
     def read_detection_text(self, image: np.ndarray, detection: Detection) -> list[OcrLine]:
         ocr = self.get_ocr()
@@ -795,7 +916,7 @@ class ScreenReader:
         self._ocr = RapidOCR()
         return self._ocr
 
-    def get_screen(self, new_height: int = 1080) -> np.ndarray | None:
+    def get_screen(self, new_height: int = 720) -> np.ndarray | None:
         pil_img = self.screenshot(new_height=new_height)
         if pil_img is None:
             return None
@@ -809,7 +930,7 @@ class ScreenReader:
     def setGameWindowActive(self):
         set_game_window_active()
 
-    def screenshot(self, new_height: int = 1080):
+    def screenshot(self, new_height: int = 720):
         return screenshot_game_window(new_height)
 
 

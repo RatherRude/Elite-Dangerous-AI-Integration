@@ -189,9 +189,43 @@ def test_select_best_plot_target_uses_match_score_then_distance() -> None:
     assert best_match.name == "Jameson Memorial"
 
 
+def test_select_best_plot_target_ignores_unrelated_fuzzy_results() -> None:
+    candidate = actions_web.ResolvedPlotTarget(
+        target_type="body", name="Siris 5 b", system_name="Siris",
+        system_map_category="LANDFALL PLANETS", distance=147.0,
+        match_score=0.0, details={},
+    )
+
+    assert actions_web._select_best_plot_target([candidate], "Unknown planet") is None
+
+
+def test_body_lookup_prefers_exact_result_later_in_spansh_list(monkeypatch) -> None:
+    def fake_post(url: str, request_body: dict) -> dict:
+        assert request_body["size"] == actions_web.PLOT_TARGET_SEARCH_SIZE
+        if url != actions_web.SPANSH_BODIES_URL:
+            return {"results": []}
+        return {"results": [
+            {"name": name, "system_name": "Siris", "type": "Planet", "distance": 147.0, "is_landable": True}
+            for name in ("Siris 5 b", "Siris 5 c", "Siris 5 d", "Siris 5 a")
+        ]}
+
+    monkeypatch.setattr(actions_web, "_spansh_post", fake_post)
+    result = actions_web.lookup_plot_target(body="Siris 5 A", projected_states={"Location": {"StarSystem": "Sol"}})
+
+    assert result is not None
+    assert result.name == "Siris 5 a"
+    assert result.details["name"] == "Siris 5 a"
+
+
 def test_system_map_category_for_station_uses_spansh_types() -> None:
     assert actions_web.system_map_category_for_station({"type": "Coriolis Starport"}) == "ORBITAL PORTS"
     assert actions_web.system_map_category_for_station({"type": "Planetary Outpost"}) == "PLANETARY PORTS"
+    assert actions_web.system_map_category_for_station({"type": "Planetary Outpost", "government": "Engineer"}) == "SURFACE SETTLEMENTS"
+    assert actions_web.system_map_category_for_station({"type": "planetary outpost", "government": " engineer "}) == "SURFACE SETTLEMENTS"
+    assert actions_web.system_map_category_for_station({"type": "Planetary Outpost", "government": "Democracy"}) == "PLANETARY PORTS"
+    assert actions_web.system_map_category_for_station({"type": "Unknown", "is_planetary": True}) == "SURFACE SETTLEMENTS"
+    assert actions_web.system_map_category_for_station({"type": "Unknown", "is_planetary": False}) is None
+    assert actions_web.system_map_category_for_station({"type": "Settlement"}) == "ODYSSEY SETTLEMENTS"
     assert actions_web.system_map_category_for_station({"type": "Drake-Class Carrier"}) == "FLEET CARRIERS"
     assert actions_web.system_map_category_for_station({"type": "Mega ship"}) == "INSTALLATIONS"
     assert actions_web.system_map_category_for_station({"type": "Surface Settlement"}) == "SURFACE SETTLEMENTS"
@@ -219,7 +253,7 @@ def test_ensure_in_system_plot_target_rejects_unlandable_body() -> None:
         raise AssertionError("Expected unlandable body to be rejected")
 
 
-def test_plot_candidates_from_bodies_skips_non_planets_and_requests_one_result(monkeypatch) -> None:
+def test_plot_candidates_from_bodies_skips_non_planets_and_requests_candidates(monkeypatch) -> None:
     captured_sizes: list[int] = []
     captured_names: list[str] = []
     captured_requests: list[dict] = []
@@ -260,9 +294,9 @@ def test_plot_candidates_from_bodies_skips_non_planets_and_requests_one_result(m
         }
     })
 
-    assert captured_sizes == [1]
+    assert captured_sizes == [actions_web.PLOT_TARGET_SEARCH_SIZE]
     assert captured_names == ["Eart?"]
-    assert captured_requests[0]["size"] == 1
+    assert captured_requests[0]["size"] == actions_web.PLOT_TARGET_SEARCH_SIZE
     assert captured_requests[0]["sort"] == [{"distance": {"direction": "asc"}}]
     assert captured_requests[0]["reference_coords"] == {"x": 0, "y": 0, "z": 0}
     assert len(candidates) == 1
@@ -313,7 +347,7 @@ def test_plot_candidates_from_stations_requests_nearest_named_station(monkeypatc
             "name": {"value": "Moskowitz Enterpris?"},
         },
         "sort": [{"distance": {"direction": "asc"}}],
-        "size": 1,
+        "size": actions_web.PLOT_TARGET_SEARCH_SIZE,
         "page": 0,
         "reference_coords": {
             "x": -82.625,
@@ -323,6 +357,19 @@ def test_plot_candidates_from_stations_requests_nearest_named_station(monkeypatc
     }
     assert len(candidates) == 1
     assert candidates[0].name == "Moskowitz Enterprise"
+
+
+def test_plot_candidates_from_stations_uses_government_for_engineer_outpost(monkeypatch) -> None:
+    monkeypatch.setattr(actions_web, "prepare_station_request", lambda obj, state: {"filters": {}, "page": 0})
+    monkeypatch.setattr(actions_web, "_spansh_post", lambda url, request: {"results": [{
+        "name": "Demolition Unlimited", "system_name": "Eurybia",
+        "type": "Planetary Outpost", "government": "Engineer", "is_planetary": True,
+    }]})
+
+    candidates = actions_web._plot_candidates_from_stations("Demolition Unlimited", {"Location": {}})
+
+    assert len(candidates) == 1
+    assert candidates[0].system_map_category == "SURFACE SETTLEMENTS"
 
 
 def test_plot_search_query_prefers_station_then_body_then_system() -> None:
@@ -339,7 +386,7 @@ def test_spansh_plot_search_name_disables_fuzzy_matching() -> None:
     assert actions_web.spansh_plot_search_name("") == ""
     assert actions_web._plot_search_obj("Jameson Memorial") == {
         "name": "Jameson Memoria?",
-        "size": 1,
+        "size": actions_web.PLOT_TARGET_SEARCH_SIZE,
     }
 
 
@@ -420,7 +467,7 @@ def test_resolve_plot_target_queries_all_spansh_endpoints(monkeypatch) -> None:
 
     def fake_post(url: str, request_body: dict) -> dict:
         posted_urls.append(url)
-        assert request_body["size"] == 1
+        assert request_body["size"] == actions_web.PLOT_TARGET_SEARCH_SIZE
         assert request_body["sort"] == [{"distance": {"direction": "asc"}}]
         assert request_body["reference_system"] == "Alpha Centauri"
         if url == actions_web.SPANSH_SYSTEMS_URL:

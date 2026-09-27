@@ -16,7 +16,7 @@ class SystemMap:
         self.screen_reader = screen_reader
         self.ed_keys = ed_keys
         self.categories = ["ORBITAL PORTS", "INSTALLATIONS", "LANDFALL PLANETS", "PLANETARY PORTS", "SURFACE SETTLEMENTS", "ODYSSEY SETTLEMENTS", "FLEET CARRIERS"]
-        self.wait_time = 0.5
+        self.wait_time = 0.2
 
     @staticmethod
     def _normalize_search_text(value: str) -> str:

@@ -30,7 +30,6 @@ STATION_TYPE_SYSTEM_MAP_CATEGORY = {
     "Orbis Starport": "ORBITAL PORTS",
     "Outpost": "ORBITAL PORTS",
     "Planetary Construction Depot": "PLANETARY PORTS",
-    "Planetary Outpost": "PLANETARY PORTS",
     "Planetary Port": "PLANETARY PORTS",
     "Settlement": "ODYSSEY SETTLEMENTS",
     "Space Construction Depot": "ORBITAL PORTS",
@@ -119,10 +118,16 @@ class Plotter:
     @staticmethod
     def system_map_category_for_station(station: dict[str, Any]) -> str | None:
         station_type = str(station.get("type") or "").strip()
+        normalized_type = station_type.casefold()
+        if normalized_type == "planetary outpost":
+            government = str(station.get("government") or "").strip()
+            return "SURFACE SETTLEMENTS" if government.casefold() == "engineer" else "PLANETARY PORTS"
+        if normalized_type == "unknown" and station.get("is_planetary") is True:
+            return "SURFACE SETTLEMENTS"
         if station_type in STATION_TYPE_SYSTEM_MAP_CATEGORY:
             return STATION_TYPE_SYSTEM_MAP_CATEGORY[station_type]
         for known_type, category in STATION_TYPE_SYSTEM_MAP_CATEGORY.items():
-            if known_type.casefold() == station_type.casefold():
+            if known_type.casefold() == normalized_type:
                 return category
         return None
 
@@ -181,14 +186,14 @@ class Plotter:
 
     @classmethod
     def _plot_search_obj(cls, query: str) -> dict[str, Any]:
-        return {"name": cls.spansh_plot_search_name(query), "size": 1}
+        return {"name": cls.spansh_plot_search_name(query), "size": PLOT_TARGET_SEARCH_SIZE}
 
     def _apply_plot_request_routing(self, request_body: dict[str, Any], projected_states: Any) -> dict[str, Any]:
         location = get_state_dict(projected_states, 'Location')
         star_pos = location.get('StarPos')
 
         request_body["sort"] = [{"distance": {"direction": "asc"}}]
-        request_body["size"] = 1
+        request_body["size"] = PLOT_TARGET_SEARCH_SIZE
         request_body.pop("reference_route", None)
         filters = request_body.get("filters", {})
         filters.pop("type", None)
@@ -256,8 +261,6 @@ class Plotter:
                 continue
             distance = station.get("distance")
             distance_value = float(distance) if distance is not None else None
-            if name != query:
-                continue
             candidates.append(ResolvedPlotTarget(
                 target_type="station",
                 name=name,
@@ -316,6 +319,7 @@ class Plotter:
 
     @classmethod
     def _select_best_plot_target(cls, candidates: list[ResolvedPlotTarget], query: str) -> ResolvedPlotTarget | None:
+        candidates = [candidate for candidate in candidates if candidate.match_score > 0]
         if not candidates:
             return None
 
@@ -434,6 +438,12 @@ class Plotter:
                 return f"Already in {resolved.system_name}."
 
             if resolved.target_type in ('station', 'body') and self._systems_match(resolved.system_name, current_system):
+                if resolved.target_type == 'body' and resolved.is_landable is False:
+                    return (
+                        f"Best location found: {json.dumps(resolved.details)}. "
+                        f"Already in {resolved.system_name}; {resolved.name} is not landable and cannot be selected "
+                        "from the landfall planets list."
+                    )
                 if not self.enable_in_system_navigation:
                     return (
                         f"Best location found: {json.dumps(resolved.details)}. "
@@ -538,6 +548,7 @@ class Plotter:
 
         self._require_ui_dependencies()
         screen_reader = ScreenReader(hud_color_matrix=self.screen_reader_hud_color_matrix)
+        sleep(1)
         self._select_orrery_from_galaxy_map(screen_reader)
 
         try:
@@ -545,7 +556,7 @@ class Plotter:
         except TimeoutError:
             raise Exception("Failed to open system map from galaxy map orrery view")
 
-        sleep(3)
+        sleep(1)
         self._navigate_system_map_target(resolved_target)
 
     def _plot_in_system(
@@ -601,6 +612,17 @@ class Plotter:
         if current_gui == 'GalaxyMap':
             return current_gui
 
+        if current_gui == 'SystemMap':
+            self.keys.send('SystemMapOpen')
+            try:
+                self.event_manager.wait_for_condition(
+                    'CurrentStatus',
+                    lambda s: s.GuiFocus not in ('SystemMap', 'GalaxyMap'),
+                    4,
+                )
+            except TimeoutError:
+                raise Exception('Failed to close the system map before opening the galaxy map')
+
         self.keys.send(galaxymap_key)
         try:
             self.event_manager.wait_for_condition('CurrentStatus', lambda s: s.GuiFocus == "GalaxyMap", 4)
@@ -629,6 +651,7 @@ class Plotter:
             self.enable_in_system_navigation
             and resolved_target is not None
             and resolved_target.target_type in ('station', 'body')
+            and not (resolved_target.target_type == 'body' and resolved_target.is_landable is False)
         )
 
         collisions = self.keys.get_collisions('UI_Up')
@@ -703,6 +726,9 @@ class Plotter:
             prefix = f"Best location found: {json.dumps(details)}. " if details else ""
             distance_text = f"Distance: {distance_ly} LY, " if distance_ly > 0 else ""
             message = prefix + f"Route to {system_name} successfully plotted ({distance_text}Jumps: {jump_amount})"
+
+            if resolved_target is not None and resolved_target.target_type == 'body' and resolved_target.is_landable is False:
+                message += f" {resolved_target.name} is not landable; in-system body selection was skipped."
 
             if keep_galaxy_map_open and resolved_target is not None:
                 self._plot_in_system_from_galaxy_map(resolved_target, projected_states)
