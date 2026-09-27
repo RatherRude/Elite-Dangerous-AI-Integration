@@ -3,7 +3,14 @@ import { Injectable, NgZone } from "@angular/core";
 //import { invoke } from "@tauri-apps/api/core";
 import { type UnlistenFn } from "@tauri-apps/api/event";
 import { MatSnackBar } from "@angular/material/snack-bar";
-import { BehaviorSubject, Observable, ReplaySubject } from "rxjs";
+import {
+    BehaviorSubject,
+    filter,
+    firstValueFrom,
+    Observable,
+    ReplaySubject,
+    take,
+} from "rxjs";
 import { MatDialog } from "@angular/material/dialog";
 import { UpdateDialogComponent } from "../components/update-dialog/update-dialog.component";
 import { environment } from "../../environments/environment";
@@ -327,6 +334,7 @@ export interface GetQuestsMessage extends BaseCommand {
 
 export interface GetModelUsageHistoryMessage extends BaseCommand {
     type: "get_model_usage_history";
+    request_id?: string;
     usage_kind?: string;
     from?: string;
     to?: string;
@@ -347,6 +355,7 @@ export interface QuestsMessage extends BaseMessage {
 
 export interface ModelUsageHistoryMessage extends BaseMessage {
     type: "model_usage_history";
+    request_id: string;
     data: any;
 }
 
@@ -376,6 +385,7 @@ export class TauriService {
         "starting",
     );
     public runMode$ = this.runModeSubject.asObservable();
+    private backendCommandReadySubject = new BehaviorSubject<boolean>(false);
 
     // ReplaySubject to expose the lines as an Observable
     private messagesSubject = new ReplaySubject<BaseMessage>(100);
@@ -582,10 +592,15 @@ export class TauriService {
                     console.log("Backend is ready");
                     this.runModeSubject.next("configuring");
                 }
+                if (message.type === "command_ready") {
+                    this.backendCommandReadySubject.next(true);
+                }
                 if (message.type === "start") {
+                    this.backendCommandReadySubject.next(false);
                     this.runModeSubject.next("running");
                 }
                 if (message.type === "running_config") {
+                    this.backendCommandReadySubject.next(true);
                     this.runModeSubject.next("running");
                 }
                 if (message.type === "config") {
@@ -603,6 +618,7 @@ export class TauriService {
 
     private processBackendLifecycle(event: any): void {
         this.ngZone.run(() => {
+            this.backendCommandReadySubject.next(false);
             const payload = event?.payload ?? {};
             const previousMode = this.runModeSubject.getValue();
             const message: BackendLifecycleMessage = {
@@ -705,6 +721,7 @@ export class TauriService {
             return;
         }
         try {
+            this.backendCommandReadySubject.next(false);
             this.runModeSubject.next("starting");
             console.log("process stopping...");
             await this.transport.invoke("stop_process", {});
@@ -726,6 +743,17 @@ export class TauriService {
             timestamp: new Date().toISOString(),
             index: this.currentIndex++,
         });
+    }
+    public async waitForBackendCommandReady(): Promise<void> {
+        if (this.backendCommandReadySubject.getValue()) {
+            return;
+        }
+        await firstValueFrom(
+            this.backendCommandReadySubject.pipe(
+                filter((ready) => ready),
+                take(1),
+            ),
+        );
     }
     public async send_command(message: BaseCommand): Promise<void> {
         await this.transport.invoke("send_json_line", {

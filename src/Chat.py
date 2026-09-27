@@ -1012,6 +1012,7 @@ class Chat:
 
 def read_stdin(chat: Chat):
     log("debug", "Reading stdin...")
+    emit_message("command_ready")
     emit_message("running_config", config=config)
     while True:
         line = sys.stdin.readline().strip()
@@ -1057,7 +1058,11 @@ def read_stdin(chat: Chat):
                     limit=data.get("limit", 100),
                     offset=data.get("offset", 0),
                 )
-                emit_message("model_usage_history", data=results)
+                emit_message(
+                    "model_usage_history",
+                    request_id=data.get("request_id"),
+                    data=results,
+                )
             if data.get("type") == "get_system_events":
                 system_address = data.get("system_address")
                 results = chat.get_system_event_data(system_address)
@@ -1164,6 +1169,7 @@ if __name__ == "__main__":
         quest_catalog_manager = QuestCatalogManager()
         model_usage_store = ModelUsageStore()
         startup_phase = "waiting_for_start_signal"
+        emit_message("command_ready")
         while True:
             # print(f"Waiting for command...")
             line = sys.stdin.readline().strip()
@@ -1243,7 +1249,11 @@ if __name__ == "__main__":
                         limit=data.get("limit", 100),
                         offset=data.get("offset", 0),
                     )
-                    emit_message("model_usage_history", data=results)
+                    emit_message(
+                        "model_usage_history",
+                        request_id=data.get("request_id"),
+                        data=results,
+                    )
                 if data.get("type") == "reset_quest_progress":
                     try:
                         QuestDatabase().delete_all()
