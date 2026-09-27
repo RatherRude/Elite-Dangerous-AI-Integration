@@ -107,8 +107,9 @@ const REQUEST_TIMEOUT_MS = 15000;
 })
 export class ModelUsageService implements OnDestroy {
     private responseSubscription: Subscription;
-    private pendingRequests: PendingRequest[] = [];
+    private pendingRequests = new Map<string, PendingRequest>();
     private historyCache = new Map<string, ModelUsageRecord[]>();
+    private nextRequestId = 0;
 
     constructor(private tauriService: TauriService) {
         this.responseSubscription = this.tauriService.output$
@@ -119,10 +120,11 @@ export class ModelUsageService implements OnDestroy {
                 ),
             )
             .subscribe((message) => {
-                const pending = this.pendingRequests.shift();
+                const pending = this.pendingRequests.get(message.request_id);
                 if (!pending) {
                     return;
                 }
+                this.pendingRequests.delete(message.request_id);
                 window.clearTimeout(pending.timeoutId);
                 pending.resolve(
                     (message.data ?? {}) as PersistedModelUsageHistoryData,
@@ -132,11 +134,11 @@ export class ModelUsageService implements OnDestroy {
 
     ngOnDestroy(): void {
         this.responseSubscription.unsubscribe();
-        for (const pending of this.pendingRequests) {
+        for (const pending of this.pendingRequests.values()) {
             window.clearTimeout(pending.timeoutId);
             pending.reject(new Error("Model usage service destroyed"));
         }
-        this.pendingRequests = [];
+        this.pendingRequests.clear();
     }
 
     public clearCache(): void {
@@ -199,36 +201,52 @@ export class ModelUsageService implements OnDestroy {
     private requestHistoryPage(
         message: GetModelUsageHistoryMessage,
     ): Promise<PersistedModelUsageHistoryData> {
-        return new Promise(async (resolve, reject) => {
+        return new Promise((resolve, reject) => {
+            void this.sendHistoryRequest(message, resolve, reject);
+        });
+    }
+
+    private async sendHistoryRequest(
+        message: GetModelUsageHistoryMessage,
+        resolve: (data: PersistedModelUsageHistoryData) => void,
+        reject: (error: Error) => void,
+    ): Promise<void> {
+        try {
+            await this.tauriService.waitForBackendCommandReady();
+            const requestId = `${Date.now()}-${this.nextRequestId++}`;
             const pending: PendingRequest = {
                 resolve,
                 reject,
                 timeoutId: window.setTimeout(() => {
-                    const index = this.pendingRequests.indexOf(pending);
-                    if (index >= 0) {
-                        this.pendingRequests.splice(index, 1);
+                    if (this.pendingRequests.delete(requestId)) {
+                        reject(
+                            new Error(
+                                "Timed out waiting for model usage history",
+                            ),
+                        );
                     }
-                    reject(new Error("Timed out waiting for model usage history"));
                 }, REQUEST_TIMEOUT_MS),
             };
 
-            this.pendingRequests.push(pending);
+            this.pendingRequests.set(requestId, pending);
 
             try {
-                await this.tauriService.send_command(message);
+                await this.tauriService.send_command({
+                    ...message,
+                    request_id: requestId,
+                });
             } catch (error) {
                 window.clearTimeout(pending.timeoutId);
-                const index = this.pendingRequests.indexOf(pending);
-                if (index >= 0) {
-                    this.pendingRequests.splice(index, 1);
-                }
+                this.pendingRequests.delete(requestId);
                 reject(
                     error instanceof Error
                         ? error
                         : new Error(String(error)),
                 );
             }
-        });
+        } catch (error) {
+            reject(error instanceof Error ? error : new Error(String(error)));
+        }
     }
 
     private buildTokenUsage(modelUsage: Record<string, unknown>): TokenUsageBreakdown {

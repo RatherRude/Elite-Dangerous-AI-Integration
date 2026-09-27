@@ -101,11 +101,13 @@
             <mat-icon class="tab-icon">insights</mat-icon>
             Usage
         </ng-template>
-        <div class="tab-content usage-tab-content">
-            @if (config) {
-                <app-model-usage-analytics></app-model-usage-analytics>
-            }
-        </div>
+        <ng-template matTabContent>
+            <div class="tab-content usage-tab-content">
+                @if (config) {
+                    <app-model-usage-analytics></app-model-usage-analytics>
+                }
+            </div>
+        </ng-template>
     </mat-tab>
 
     @if (has_plugin_settings) {
@@ -130,4 +132,3 @@
         </div>
     </div>
 }
-
