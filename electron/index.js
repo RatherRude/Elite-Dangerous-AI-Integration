@@ -127,14 +127,23 @@ function getOverlayUrl(opts = {}) {
   return overlayUrl.toString();
 }
 
-function getPitchRotation(tiltDegrees = 0) {
-  const radians = tiltDegrees * Math.PI / 180;
-  const halfRadians = radians / 2;
-  return { x: Math.sin(halfRadians), y: 0, z: 0, w: Math.cos(halfRadians) };
+function getOverlayRotation(tiltDegrees = 0, yawDegrees = 0) {
+  const halfPitch = tiltDegrees * Math.PI / 360;
+  const halfYaw = yawDegrees * Math.PI / 360;
+  const sinPitch = Math.sin(halfPitch);
+  const cosPitch = Math.cos(halfPitch);
+  const sinYaw = Math.sin(halfYaw);
+  const cosYaw = Math.cos(halfYaw);
+  return {
+    x: cosYaw * sinPitch,
+    y: sinYaw * cosPitch,
+    z: -sinYaw * sinPitch,
+    w: cosYaw * cosPitch,
+  };
 }
 
-function getOverlayPlacement(vrAnchor, vrSizeMeters, horizontalOffset = 0, verticalOffset = 0, distanceOffset = 0, tiltDegrees = 0) {
-  const rotation = getPitchRotation(tiltDegrees);
+function getOverlayPlacement(vrAnchor, vrSizeMeters, horizontalOffset = 0, verticalOffset = 0, distanceOffset = 0, tiltDegrees = 0, yawDegrees = 0) {
+  const rotation = getOverlayRotation(tiltDegrees, yawDegrees);
   if (vrAnchor === 'world') {
     const distance = Math.max(0.1, 2.0 + distanceOffset);
     const widthOffset = 0.5;
@@ -176,6 +185,9 @@ function normalizeOverlayOptions(opts = {}) {
   const vrTiltDegrees = Number.isFinite(opts.vrTiltDegrees)
     ? clamp(opts.vrTiltDegrees, -90, 90)
     : 0;
+  const vrYawDegrees = Number.isFinite(opts.vrYawDegrees)
+    ? clamp(opts.vrYawDegrees, -90, 90)
+    : 0;
   const vrCurvature = Number.isFinite(opts.vrCurvature)
     ? clamp(opts.vrCurvature, 0, 0.5)
     : 0;
@@ -193,6 +205,7 @@ function normalizeOverlayOptions(opts = {}) {
     vrVerticalOffset,
     vrDistanceOffset,
     vrTiltDegrees,
+    vrYawDegrees,
     vrCurvature,
     standaloneTransparent: opts.standaloneTransparent !== false,
     standaloneBackgroundColor: typeof opts.standaloneBackgroundColor === 'string' &&
@@ -904,7 +917,7 @@ async function createVrOverlayWindow(opts) {
     sizeMeters: opts.vrSizeMeters,
     curvature: opts.vrCurvature,
     visible: true,
-    placement: getOverlayPlacement(opts.vrAnchor, opts.vrSizeMeters, opts.vrHorizontalOffset, opts.vrVerticalOffset, opts.vrDistanceOffset, opts.vrTiltDegrees),
+    placement: getOverlayPlacement(opts.vrAnchor, opts.vrSizeMeters, opts.vrHorizontalOffset, opts.vrVerticalOffset, opts.vrDistanceOffset, opts.vrTiltDegrees, opts.vrYawDegrees),
   });
 
   if (!vrOverlay) {

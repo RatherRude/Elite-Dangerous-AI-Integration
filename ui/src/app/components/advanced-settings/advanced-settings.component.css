@@ -317,6 +317,7 @@ div.output-device-column .mat-mdc-form-field-subscript-wrapper {
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .overlay-primary-controls mat-form-field,
@@ -329,6 +330,34 @@ div.output-device-column .mat-mdc-form-field-subscript-wrapper {
   flex: 1 0 100%;
   width: 100%;
   margin-top: 0;
+}
+
+.vr-anchor-field {
+  max-width: 24rem;
+}
+
+.vr-control-group {
+  flex: 1 0 100%;
+  min-width: 0;
+}
+
+.vr-control-group h4 {
+  margin: 0 0 0.35rem;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.vr-control-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1rem;
+}
+
+.vr-placement-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .overlay-toggle-column {
@@ -374,7 +403,7 @@ div.output-device-column .mat-mdc-form-field-subscript-wrapper {
 
 .overlay-slider-field {
   display: flex;
-  flex: 1 1 14rem;
+  min-width: 0;
   flex-direction: column;
   gap: 0.25rem;
 }
@@ -427,6 +456,14 @@ div.output-device-column .mat-mdc-form-field-subscript-wrapper {
   border: 1px solid rgba(255, 183, 77, 0.45);
   border-radius: 8px;
   background: rgba(255, 183, 77, 0.08);
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.vr-compatibility-card > div:first-child {
+  flex: 1 1 18rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .vr-compatibility-card p {
@@ -443,8 +480,17 @@ div.output-device-column .mat-mdc-form-field-subscript-wrapper {
 
 .vr-compatibility-actions {
   display: flex;
+  flex: 0 1 auto;
   flex-wrap: wrap;
   gap: 0.5rem;
+  max-width: 100%;
+}
+
+@media (max-width: 640px) {
+  .vr-control-grid,
+  .vr-placement-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .logbook-actions {

@@ -69,28 +69,6 @@ type PreflightChecklistItem = "commander" | "input" | "output" | "overlay" | "ac
 export class GeneralSettingsComponent implements OnDestroy {
     @Output() openSettingsTarget = new EventEmitter<GeneralSettingsTarget>();
     @ViewChild("generalAvatarSvg") private generalAvatarSvg?: ElementRef<HTMLDivElement>;
-    @ViewChild("preflightList") set preflightListRef(ref: ElementRef<HTMLElement> | undefined) {
-        this.preflightListResizeObserver?.disconnect();
-        this.preflightListResizeObserver = undefined;
-
-        if (!ref) {
-            this.preflightListHeight = 0;
-            return;
-        }
-
-        const updateHeight = () => {
-            this.preflightListHeight = ref.nativeElement.offsetHeight;
-        };
-        updateHeight();
-
-        if (typeof ResizeObserver === "undefined") {
-            return;
-        }
-
-        this.preflightListResizeObserver = new ResizeObserver(updateHeight);
-        this.preflightListResizeObserver.observe(ref.nativeElement);
-    }
-
     config: Config | null = null;
     system: SystemInfo | null = null;
     screens: ScreenInfo[] = [];
@@ -115,7 +93,6 @@ export class GeneralSettingsComponent implements OnDestroy {
     private avatarMimePrimary: string | null = null;
     private avatarSvgText: string | null = null;
     private avatarSvgFetchSeq = 0;
-    private preflightListResizeObserver?: ResizeObserver;
     private vrCompatibilityRefreshTimer?: ReturnType<typeof setTimeout>;
     private readonly svgStateClasses = ["listening", "speaking", "thinking", "acting"];
     private readonly avatarPreviewStateClasses: readonly AvatarPreviewStateClass[] = ["listening", "thinking", "acting", "speaking"];
@@ -126,7 +103,6 @@ export class GeneralSettingsComponent implements OnDestroy {
     assigningPTTIndex: number | null = null;
     isRefreshingAudioDevices = false;
     activePreflightItem: PreflightChecklistItem = "commander";
-    preflightListHeight = 0;
 
     constructor(
         private configService: ConfigService,
@@ -198,7 +174,6 @@ export class GeneralSettingsComponent implements OnDestroy {
         this.keybindsSubscription.unsubscribe();
         this.pluginProvidersSubscription.unsubscribe();
         this.avatarMimeSubscription.unsubscribe();
-        this.preflightListResizeObserver?.disconnect();
         clearTimeout(this.vrCompatibilityRefreshTimer);
         clearInterval(this.avatarPreviewInterval);
     }

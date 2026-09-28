@@ -1221,10 +1221,8 @@
                             <mat-option value="disabled">Disabled</mat-option>
                             <mat-option value="desktop">Desktop Overlay</mat-option>
                             <mat-option value="standalone">Standalone Window</mat-option>
-                            @if (overlayRuntimeInstalled) {
-                                <mat-option value="vr">VR Overlay</mat-option>
-                                <!--<mat-option value="both">Both</mat-option>-->
-                            }
+                            <mat-option value="vr">VR Overlay</mat-option>
+                            <!--<mat-option value="both">Both</mat-option>-->
                         </mat-select>
                     </mat-form-field>
 
@@ -1316,13 +1314,13 @@
                             <div class="vr-compatibility-actions">
                                 <button mat-stroked-button type="button" [disabled]="isVrIntegrationBusy" (click)="refreshOverlayRuntimeInfo()">Check again</button>
                                 @if (overlayCompatibility?.recommendedAction === 'install-openxr-api-layer') {
-                                    <button mat-raised-button color="primary" type="button" [disabled]="isVrIntegrationBusy" (click)="installVrIntegration()">Enable integration</button>
+                                    <button mat-stroked-button type="button" [disabled]="isVrIntegrationBusy" (click)="installVrIntegration()">Enable integration</button>
                                 }
                                 @if (overlayCompatibility?.recommendedAction === 'reinstall-openxr-api-layer') {
-                                    <button mat-raised-button color="primary" type="button" [disabled]="isVrIntegrationBusy" (click)="updateVrIntegration()">Update integration</button>
+                                    <button mat-stroked-button type="button" [disabled]="isVrIntegrationBusy" (click)="updateVrIntegration()">Update integration</button>
                                 }
                                 @if (overlayCompatibility?.recommendedAction === 'enable-openxr-api-layer') {
-                                    <button mat-raised-button color="primary" type="button" [disabled]="isVrIntegrationBusy" (click)="runVrIntegrationAction('enable')">Enable integration</button>
+                                    <button mat-stroked-button type="button" [disabled]="isVrIntegrationBusy" (click)="runVrIntegrationAction('enable')">Enable integration</button>
                                 }
                                 @if (overlayCompatibility?.integrationEnabled) {
                                     <button mat-stroked-button type="button" [disabled]="isVrIntegrationBusy" (click)="runVrIntegrationAction('disable')">Disable integration</button>
@@ -1333,7 +1331,7 @@
                             </div>
                         </div>
 
-                        <mat-form-field>
+                        <mat-form-field class="vr-anchor-field">
                             <mat-label>VR Anchor</mat-label>
                             <mat-select [(ngModel)]="config.overlay_vr_anchor"
                                         (ngModelChange)="onConfigChange({overlay_vr_anchor: $event})">
@@ -1342,59 +1340,65 @@
                             </mat-select>
                         </mat-form-field>
 
-                        <div class="overlay-slider-field">
-                            <label>VR Size: {{ config.overlay_vr_size_meters }} meters</label>
-                            <mat-slider min="0.1" max="3" step="0.1" discrete>
-                                <input matSliderThumb
-                                       [ngModel]="config.overlay_vr_size_meters"
-                                       (ngModelChange)="onConfigChange({overlay_vr_size_meters: $event})">
-                            </mat-slider>
-                        </div>
+                        <section class="vr-control-group">
+                            <h4>Placement</h4>
+                            <div class="vr-control-grid vr-placement-grid">
+                                <div class="overlay-slider-field">
+                                    <label>Horizontal: {{ config.overlay_vr_horizontal_offset }} m</label>
+                                    <mat-slider min="-2" max="2" step="0.05" discrete>
+                                        <input matSliderThumb [ngModel]="config.overlay_vr_horizontal_offset" (ngModelChange)="onConfigChange({overlay_vr_horizontal_offset: $event})">
+                                    </mat-slider>
+                                </div>
+                                <div class="overlay-slider-field">
+                                    <label>Vertical: {{ config.overlay_vr_vertical_offset }} m</label>
+                                    <mat-slider min="-1.5" max="1.5" step="0.05" discrete>
+                                        <input matSliderThumb [ngModel]="config.overlay_vr_vertical_offset" (ngModelChange)="onConfigChange({overlay_vr_vertical_offset: $event})">
+                                    </mat-slider>
+                                </div>
+                                <div class="overlay-slider-field">
+                                    <label>Distance: {{ config.overlay_vr_distance_offset }} m</label>
+                                    <mat-slider min="-0.75" max="1.5" step="0.01" discrete>
+                                        <input matSliderThumb [ngModel]="config.overlay_vr_distance_offset" (ngModelChange)="onConfigChange({overlay_vr_distance_offset: $event})">
+                                    </mat-slider>
+                                </div>
+                            </div>
+                        </section>
 
-                        <div class="overlay-slider-field">
-                            <label>Horizontal Offset: {{ config.overlay_vr_horizontal_offset }} meters</label>
-                            <mat-slider min="-2" max="2" step="0.05" discrete>
-                                <input matSliderThumb
-                                       [ngModel]="config.overlay_vr_horizontal_offset"
-                                       (ngModelChange)="onConfigChange({overlay_vr_horizontal_offset: $event})">
-                            </mat-slider>
-                        </div>
+                        <section class="vr-control-group">
+                            <h4>Orientation</h4>
+                            <div class="vr-control-grid">
+                                <div class="overlay-slider-field">
+                                    <label>Pitch: {{ config.overlay_vr_tilt_degrees }}&deg;</label>
+                                    <mat-slider min="-90" max="90" step="1" discrete>
+                                        <input matSliderThumb [ngModel]="config.overlay_vr_tilt_degrees" (ngModelChange)="onConfigChange({overlay_vr_tilt_degrees: $event})">
+                                    </mat-slider>
+                                </div>
+                                <div class="overlay-slider-field">
+                                    <label>Yaw: {{ config.overlay_vr_yaw_degrees }}&deg;</label>
+                                    <mat-slider min="-90" max="90" step="1" discrete>
+                                        <input matSliderThumb [ngModel]="config.overlay_vr_yaw_degrees" (ngModelChange)="onConfigChange({overlay_vr_yaw_degrees: $event})">
+                                    </mat-slider>
+                                </div>
+                            </div>
+                        </section>
 
-                        <div class="overlay-slider-field">
-                            <label>Vertical Offset: {{ config.overlay_vr_vertical_offset }} meters</label>
-                            <mat-slider min="-1.5" max="1.5" step="0.05" discrete>
-                                <input matSliderThumb
-                                       [ngModel]="config.overlay_vr_vertical_offset"
-                                       (ngModelChange)="onConfigChange({overlay_vr_vertical_offset: $event})">
-                            </mat-slider>
-                        </div>
-
-                        <div class="overlay-slider-field">
-                            <label>Distance Offset: {{ config.overlay_vr_distance_offset }} meters</label>
-                            <mat-slider min="-0.75" max="1.5" step="0.01" discrete>
-                                <input matSliderThumb
-                                       [ngModel]="config.overlay_vr_distance_offset"
-                                       (ngModelChange)="onConfigChange({overlay_vr_distance_offset: $event})">
-                            </mat-slider>
-                        </div>
-
-                        <div class="overlay-slider-field">
-                            <label>Tilt: {{ config.overlay_vr_tilt_degrees }} degrees</label>
-                            <mat-slider min="-90" max="90" step="1" discrete>
-                                <input matSliderThumb
-                                       [ngModel]="config.overlay_vr_tilt_degrees"
-                                       (ngModelChange)="onConfigChange({overlay_vr_tilt_degrees: $event})">
-                            </mat-slider>
-                        </div>
-
-                        <div class="overlay-slider-field">
-                            <label>Curvature: {{ config.overlay_vr_curvature * 360 }} degrees</label>
-                            <mat-slider min="0" max="180" step="1" discrete>
-                                <input matSliderThumb
-                                       [ngModel]="config.overlay_vr_curvature * 360"
-                                       (ngModelChange)="onConfigChange({overlay_vr_curvature: $event / 360})">
-                            </mat-slider>
-                        </div>
+                        <section class="vr-control-group">
+                            <h4>Appearance</h4>
+                            <div class="vr-control-grid">
+                                <div class="overlay-slider-field">
+                                    <label>Size: {{ config.overlay_vr_size_meters }} m</label>
+                                    <mat-slider min="0.1" max="3" step="0.1" discrete>
+                                        <input matSliderThumb [ngModel]="config.overlay_vr_size_meters" (ngModelChange)="onConfigChange({overlay_vr_size_meters: $event})">
+                                    </mat-slider>
+                                </div>
+                                <div class="overlay-slider-field">
+                                    <label>Curvature: {{ config.overlay_vr_curvature * 360 }}&deg;</label>
+                                    <mat-slider min="0" max="180" step="1" discrete>
+                                        <input matSliderThumb [ngModel]="config.overlay_vr_curvature * 360" (ngModelChange)="onConfigChange({overlay_vr_curvature: $event / 360})">
+                                    </mat-slider>
+                                </div>
+                            </div>
+                        </section>
                     }
                 </div>
             </div>
