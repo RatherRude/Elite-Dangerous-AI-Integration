@@ -24,7 +24,6 @@ class OpenRouterPlugin(PluginBase):
                 "settings_config": [{"key": prefix, "label": title, "fields": [
                     text_field("api_key", "OpenRouter API Key", "", hidden=True),
                     text_field(f"{prefix}_api_key", "Override API Key", "", hidden=True),
-                    text_field(f"{prefix}_endpoint", "Endpoint", OPENROUTER_API_URL),
                     text_field(f"{prefix}_model", "Model", OPENROUTER_MODEL),
                     number_field(f"{prefix}_temperature", "Temperature", 1.0, 0.0, 2.0, 0.01),
                     select_field(f"{prefix}_reasoning_effort", "Reasoning Effort", "default", ["default", "none", "minimal", "low", "medium", "high"]),
@@ -51,7 +50,7 @@ class OpenRouterPlugin(PluginBase):
             raise ValueError(f"Unknown OpenRouter model provider: {provider_id}")
         prefix = "agent_llm" if provider_id == "agent-llm" else "llm"
         return ToolToggleOpenAILLMModel(
-            string_setting(settings, f"{prefix}_endpoint", OPENROUTER_API_URL),
+            OPENROUTER_API_URL,
             api_key(settings, prefix),
             string_setting(settings, f"{prefix}_model", OPENROUTER_MODEL),
             float_setting(settings, f"{prefix}_temperature", 1.0),

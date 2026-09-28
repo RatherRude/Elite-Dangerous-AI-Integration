@@ -20,10 +20,11 @@ from lib.Models import (
 )
 from lib.PluginBase import PluginManifest
 from plugins.EdgeTTSPlugin import EDGE_TTS_PLUGIN_GUID, EdgeTTSModel, EdgeTTSPlugin
-from plugins.GoogleAIStudioPlugin import GOOGLE_AI_STUDIO_PLUGIN_GUID, GoogleAIStudioPlugin, GoogleAIStudioLLMModel
+from plugins.GoogleAIStudioPlugin import GOOGLE_AI_STUDIO_API_URL, GOOGLE_AI_STUDIO_PLUGIN_GUID, GoogleAIStudioPlugin, GoogleAIStudioLLMModel
+from plugins.MistralPlugin import MISTRAL_API_URL, MISTRAL_PLUGIN_GUID, MistralPlugin
 from plugins.OpenAICompatiblePlugin import OPENAI_COMPATIBLE_PLUGIN_GUID, OpenAICompatiblePlugin
-from plugins.OpenAIPlugin import OPENAI_PLUGIN_GUID, OpenAIPlugin
-from plugins.OpenRouterPlugin import OPENROUTER_PLUGIN_GUID, OpenRouterPlugin
+from plugins.OpenAIPlugin import OPENAI_API_URL, OPENAI_PLUGIN_GUID, OpenAIPlugin
+from plugins.OpenRouterPlugin import OPENROUTER_API_URL, OPENROUTER_PLUGIN_GUID, OpenRouterPlugin
 from plugins.ProviderPluginHelpers import ToolToggleOpenAILLMModel
 
 
@@ -39,6 +40,38 @@ def manifest(guid: str, name: str) -> PluginManifest:
 
 def provider_ids(plugin: Any) -> set[str]:
     return {provider["id"] for provider in plugin.model_providers or []}
+
+
+def setting_keys(plugin: Any) -> set[str]:
+    return {
+        field["key"]
+        for provider in plugin.model_providers or []
+        for grid in provider["settings_config"]
+        for field in grid["fields"]
+        if "key" in field
+    }
+
+
+def test_fixed_providers_do_not_expose_or_accept_endpoint_overrides() -> None:
+    fixed_providers = (
+        (OpenAIPlugin(manifest(OPENAI_PLUGIN_GUID, "OpenAI")), "llm_endpoint", OPENAI_API_URL),
+        (GoogleAIStudioPlugin(manifest(GOOGLE_AI_STUDIO_PLUGIN_GUID, "Google")), "llm_endpoint", GOOGLE_AI_STUDIO_API_URL),
+        (OpenRouterPlugin(manifest(OPENROUTER_PLUGIN_GUID, "OpenRouter")), "llm_endpoint", OPENROUTER_API_URL),
+        (MistralPlugin(manifest(MISTRAL_PLUGIN_GUID, "Mistral")), "endpoint", MISTRAL_API_URL),
+    )
+
+    for plugin, stale_key, expected_endpoint in fixed_providers:
+        assert not any(key == "endpoint" or key.endswith("_endpoint") for key in setting_keys(plugin))
+        model = plugin.create_model("llm", {stale_key: "https://invalid.example/v1"})
+        assert str(model.client.base_url).rstrip("/") == expected_endpoint.rstrip("/")
+
+
+def test_openai_compatible_endpoints_remain_configurable() -> None:
+    plugin = OpenAICompatiblePlugin(manifest(OPENAI_COMPATIBLE_PLUGIN_GUID, "Compatible"))
+    assert {"custom_llm_endpoint", "local_llm_endpoint"} <= setting_keys(plugin)
+
+    model = plugin.create_model("custom-llm", {"custom_llm_endpoint": "https://example.test/v1"})
+    assert str(model.client.base_url) == "https://example.test/v1/"
 
 
 def test_openai_provider_definitions_and_models() -> None:

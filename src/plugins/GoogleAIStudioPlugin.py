@@ -40,7 +40,6 @@ def _fields(prefix: str) -> list[dict[str, Any]]:
     return [
         text_field("api_key", "Google AI Studio API Key", "", hidden=True),
         text_field(f"{prefix}_api_key", "Override API Key", "", hidden=True),
-        text_field(f"{prefix}_endpoint", "Endpoint", GOOGLE_AI_STUDIO_API_URL),
     ]
 
 
@@ -109,7 +108,7 @@ class GoogleAIStudioPlugin(PluginBase):
             }
             model, reasoning = defaults[prefix]
             return GoogleAIStudioLLMModel(
-                string_setting(settings, f"{prefix}_endpoint", GOOGLE_AI_STUDIO_API_URL), api_key(settings, prefix),
+                GOOGLE_AI_STUDIO_API_URL, api_key(settings, prefix),
                 string_setting(settings, f"{prefix}_model", model),
                 float_setting(settings, f"{prefix}_temperature", 1.0),
                 reasoning_effort=string_setting(settings, f"{prefix}_reasoning_effort", reasoning),
@@ -117,14 +116,14 @@ class GoogleAIStudioPlugin(PluginBase):
             )
         if provider_id == "stt":
             return OpenAIMultiModalSTTModel(
-                string_setting(settings, "stt_endpoint", GOOGLE_AI_STUDIO_API_URL), api_key(settings, "stt"),
+                GOOGLE_AI_STUDIO_API_URL, api_key(settings, "stt"),
                 string_setting(settings, "stt_model", GOOGLE_STT_MODEL),
                 str(settings.get("stt_prompt") or "") or None,
                 provider_name="google-ai-studio",
             )
         if provider_id == "embedding":
             return OpenAIEmbeddingModel(
-                string_setting(settings, "embedding_endpoint", GOOGLE_AI_STUDIO_API_URL), api_key(settings, "embedding"),
+                GOOGLE_AI_STUDIO_API_URL, api_key(settings, "embedding"),
                 string_setting(settings, "embedding_model", GOOGLE_EMBEDDING_MODEL),
             )
         raise ValueError(f"Unknown Google AI Studio model provider: {provider_id}")

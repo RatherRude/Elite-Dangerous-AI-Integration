@@ -33,7 +33,6 @@ def _account_fields(prefix: str) -> list[dict[str, Any]]:
     return [
         text_field("api_key", "OpenAI API Key", "", hidden=True),
         text_field(f"{prefix}_api_key", "Override API Key", "", hidden=True),
-        text_field(f"{prefix}_endpoint", "Endpoint", OPENAI_API_URL),
     ]
 
 
@@ -128,9 +127,8 @@ class OpenAIPlugin(PluginBase):
                 "vlm": (OPENAI_VLM_MODEL, "none"),
             }
             model, reasoning = defaults[prefix]
-            endpoint = string_setting(settings, f"{prefix}_endpoint", OPENAI_API_URL)
             return OpenAIResponsesLLMModel(
-                base_url=endpoint,
+                base_url=OPENAI_API_URL,
                 api_key=api_key(settings, prefix),
                 model_name=string_setting(settings, f"{prefix}_model", model),
                 temperature=float_setting(settings, f"{prefix}_temperature", 1.0),
@@ -139,7 +137,7 @@ class OpenAIPlugin(PluginBase):
             )
         if provider_id == "stt":
             return OpenAISTTModel(
-                string_setting(settings, "stt_endpoint", OPENAI_API_URL), api_key(settings, "stt"),
+                OPENAI_API_URL, api_key(settings, "stt"),
                 string_setting(settings, "stt_model", OPENAI_STT_MODEL),
                 str(settings.get("stt_language") or "") or None,
                 str(settings.get("stt_prompt") or "") or None,
@@ -147,13 +145,13 @@ class OpenAIPlugin(PluginBase):
             )
         if provider_id == "tts":
             return OpenAITTSModel(
-                string_setting(settings, "tts_endpoint", OPENAI_API_URL), api_key(settings, "tts"),
+                OPENAI_API_URL, api_key(settings, "tts"),
                 string_setting(settings, "tts_model", OPENAI_TTS_MODEL),
                 provider_name="openai",
             )
         if provider_id == "embedding":
             return OpenAIEmbeddingModel(
-                string_setting(settings, "embedding_endpoint", OPENAI_API_URL), api_key(settings, "embedding"),
+                OPENAI_API_URL, api_key(settings, "embedding"),
                 string_setting(settings, "embedding_model", OPENAI_EMBEDDING_MODEL),
             )
         raise ValueError(f"Unknown OpenAI model provider: {provider_id}")
