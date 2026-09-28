@@ -4,6 +4,8 @@ import sys
 from typing import Any
 from unittest.mock import MagicMock
 
+import pytest
+
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 SRC_DIR = ROOT_DIR / "src"
@@ -164,7 +166,11 @@ def test_metadata_free_third_party_provider_contract_remains_compatible() -> Non
 
 def test_unchanged_elevenlabs_plugin_loads_creates_and_executes_tts() -> None:
     plugin_dir = ROOT_DIR / "plugins" / "plugin-elevenlabs"
-    manifest = PluginManifest((plugin_dir / "manifest.json").read_text(encoding="utf-8"))
+    manifest_path = plugin_dir / "manifest.json"
+    if not manifest_path.is_file():
+        pytest.skip("ElevenLabs plugin checkout is not available")
+
+    manifest = PluginManifest(manifest_path.read_text(encoding="utf-8"))
     manager = PluginManager({
         "plugin_settings": {
             manifest.guid: {
