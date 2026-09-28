@@ -889,8 +889,6 @@ class Assistant:
                     else:
                         reasons.append(event.kind)
             
-            use_tools = self.config["tools_var"] and ('user' in reasons or 'tool' in reasons)
-
             current_status = get_state_dict(projected_states, "CurrentStatus")
             ship_info = get_state_dict(projected_states, "ShipInfo")
             flags = current_status.get("flags", {})
@@ -915,7 +913,14 @@ class Assistant:
             uses_ui_actions = self.config["ui_actions_var"]
             allowed_actions = self.config.get("allowed_actions", {})
             in_station = bool(flags.get("Docked"))
-            tool_list = self.action_manager.getToolsList(active_mode, uses_actions, uses_web_actions, uses_ui_actions, allowed_actions, in_station) if use_tools else None
+            tool_list = self.action_manager.getToolsList(
+                active_mode,
+                uses_actions,
+                uses_web_actions,
+                uses_ui_actions,
+                allowed_actions,
+                in_station,
+            )
             predicted_actions = None
             if tool_list and user_input and not tool_uses and self.config["use_action_cache_var"]:
                 predicted_actions = self.action_manager.predict_action(user_input[-1], tool_list)

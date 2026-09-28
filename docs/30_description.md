@@ -50,23 +50,19 @@ In addition to this, "Voice tone instructions" are supported for users of openai
 
 ### 4. Vision Capabilities
 
-The AI can take screenshots and analyze their content to provide visual confirmations and insights based on the commander's queries. **This feature relies on enabled Function Calling.**
+The AI can take screenshots and analyze their content to provide visual confirmations and insights based on the commander's queries. This requires a configured vision provider and the relevant action permission.
 
 You can change the Vision model's name, endpoint and if required API key in the "AI Geeks Section" of the settings.  
 
 ### 5. Function Calling
 
-The AI can call specific functions (e.g., firing weapons, adjusting speed, deploying heat sinks) using OpenAI models, enabling direct control over various ship operations.
+The AI can call specific functions (e.g., firing weapons, adjusting speed, deploying heat sinks), enabling direct control over various ship operations.
 
 The same technique is used to take screenshots or fetch internet data if the AI deems it relevant for the conversation, by either your inquiry or game events happening.
 
-**This should be turned off when using non-OpenAI LLMs.** Not only are smaller models usually not able to use this feature, it also slows down their response time by a lot.
-
-**If this feature is turned off the AI will no longer try to: emulate button presses, use internet tools, take screenshots**. It will still be able to chat normally and react to game events, so deactivating it might also be a valid option for commanders that prefer to have an AI that only talks.
+Game, web, and UI action categories can be enabled independently in settings. The selected provider receives the available tools and decides how to translate or ignore them. Disable action categories individually when using a model that cannot call tools reliably or when you prefer a conversational-only assistant.
 
 [Here](./20_actions.md) you can find a list of all currently supported AI Tools that can be called.
-
-![Function Calling](screen/function_calling.png?raw=true "Screen")
 
 ### 6. Web Lookups for Detailed Information (EDSM & Galnet)
 
@@ -291,4 +287,3 @@ We support **every event** in the game that is written to the journal file. You 
 These event-driven interactions are designed to enhance safety, decision-making, and overall user engagement throughout the journey in Elite Dangerous.
 
 ![Event-driven](screen/event_driven.png?raw=true "Screen")
-

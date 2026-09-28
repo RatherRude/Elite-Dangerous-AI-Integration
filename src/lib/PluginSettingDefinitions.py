@@ -1,4 +1,4 @@
-from typing import Literal, TypedDict
+from typing import Literal, NotRequired, TypedDict
 
 class SettingBase(TypedDict):
     key: str
@@ -71,6 +71,14 @@ class PluginSettings(TypedDict):
     grids: list[SettingsGrid]
 
 
+class ApiKeyDetection(TypedDict, total=False):
+    """Optional API-key format detection and recommended provider selections."""
+    patterns: list[str]
+    priority: int
+    setting_key: str
+    provider_selections: dict[str, str]
+
+
 class ModelProviderDefinition(TypedDict):
     """
     Defines a model provider that a plugin can contribute.
@@ -92,3 +100,9 @@ class ModelProviderDefinition(TypedDict):
     Settings fields specific to this provider, rendered inline in Advanced Settings
     when this provider is selected. Values are stored in the plugin's settings namespace.
     """
+
+    slots: NotRequired[list[Literal['llm', 'agent_llm', 'vision', 'stt', 'tts', 'embedding']]]
+    """Application slots where this provider is available. Omitted preserves kind-based behavior."""
+
+    api_key_detection: NotRequired[ApiKeyDetection]
+    """Optional API-key detection metadata used by the settings UI."""

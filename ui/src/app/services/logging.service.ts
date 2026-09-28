@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
 import { BehaviorSubject, filter, map, Observable } from "rxjs";
 import { BaseMessage, TauriService } from "./tauri.service";
-import { EventMessage } from "./event.service.js";
+import { EventMessage } from "./event.service";
 
 export interface LogMessage extends BaseMessage {
     type: "log";

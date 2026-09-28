@@ -232,6 +232,7 @@ class MistralTTSModel(TTSModel):
 
     @override
     def synthesize(self, text: str, voice: str) -> Iterable[bytes]:
+        selected_voice = voice.strip() or self.default_voice
         try:
             with self.client.stream(
                 "POST",
@@ -239,7 +240,7 @@ class MistralTTSModel(TTSModel):
                 headers={"Accept": "text/event-stream"},
                 json={
                     "model": self.model_name,
-                    "voice": self.default_voice,
+                    "voice": selected_voice,
                     "input": text,
                     "response_format": "pcm",
                     "stream": True,
@@ -283,6 +284,7 @@ class MistralPlugin(PluginBase):
                 "kind": "stt",
                 "id": "stt",
                 "label": "Mistral",
+                "slots": ["stt"],
                 "settings_config": [{
                     "key": "stt",
                     "label": "Mistral Speech-to-Text",
@@ -298,6 +300,7 @@ class MistralPlugin(PluginBase):
                 "kind": "vlm",
                 "id": "vlm",
                 "label": "Mistral",
+                "slots": ["vision"],
                 "settings_config": [{
                     "key": "vlm",
                     "label": "Mistral Vision",
@@ -312,6 +315,7 @@ class MistralPlugin(PluginBase):
                 "kind": "embedding",
                 "id": "embedding",
                 "label": "Mistral",
+                "slots": ["embedding"],
                 "settings_config": [{
                     "key": "embedding",
                     "label": "Mistral Embeddings",
@@ -329,6 +333,7 @@ class MistralPlugin(PluginBase):
                 "kind": "tts",
                 "id": "tts",
                 "label": "Mistral",
+                "slots": ["tts"],
                 "settings_config": [{
                     "key": "tts",
                     "label": "Mistral Text-to-Speech",

@@ -10,7 +10,7 @@ import { Subscription } from "rxjs";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { CommonModule } from "@angular/common";
 import { PluginSettingsComponent } from "../plugin-settings/plugin-settings.component";
-import { PolicyService } from "../../services/policy.service.js";
+import { PolicyService } from "../../services/policy.service";
 import {
     AdvancedSettingsComponent,
     AdvancedSettingsFocusTarget,

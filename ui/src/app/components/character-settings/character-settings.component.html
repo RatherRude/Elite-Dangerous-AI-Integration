@@ -172,9 +172,15 @@
                                     <!-- Voice selection -->
                                     <mat-form-field appearance="outline">
                                         <mat-label>Voice</mat-label>
-                                        @if (config.tts_provider === 'openai') {
-                                            <mat-select [ngModel]="activeCharacter.tts_voice"
-                                                    (ngModelChange)="setCharacterProperty('tts_voice', $event)">
+                                        @if (voiceCatalog === 'openai') {
+                                             <mat-select [ngModel]="activeCharacter.tts_voice"
+                                                     (ngModelChange)="setCharacterProperty('tts_voice', $event)">
+                                                @if (!isOpenAIVoice(activeCharacter.tts_voice)) {
+                                                    <mat-option [value]="activeCharacter.tts_voice" style="font-style: italic">
+                                                        {{ activeCharacter.tts_voice }}
+                                                    </mat-option>
+                                                    <mat-divider class="custom-voice-divider"></mat-divider>
+                                                }
                                                 <mat-option value="alloy">Alloy - Neutral, versatile voice</mat-option>
                                                 <mat-option value="ash">Ash - New voice</mat-option>
                                                 <mat-option value="ballad">Ballad - New voice</mat-option>
@@ -186,7 +192,7 @@
                                                 <mat-option value="sage">Sage - New voice</mat-option>
                                                 <mat-option value="shimmer">Shimmer - Clear, warm voice</mat-option>
                                             </mat-select>
-                                        } @else if (config.tts_provider === 'edge-tts') {
+                                        } @else if (voiceCatalog === 'edge') {
                                             <mat-select [ngModel]="activeCharacter.tts_voice"
                                                     (selectionChange)="onVoiceSelectionChange($event.value)">
                                                 @if (isCustomVoice(activeCharacter.tts_voice)) {
@@ -272,7 +278,7 @@
 
                 @if (showVoiceMoreSettings) {
                     <div class="voice-more-settings">
-                        @if (!voiceInstructionSupportedModels.includes(config.tts_model_name)) {
+                        @if (!voiceInstructionSupportedModels.includes(selectedTtsModel)) {
                             <div class="trait-container">
                                 <div class="trait-select">
                                     <mat-form-field appearance="outline">
@@ -283,7 +289,7 @@
                                 </div>
                             </div>
                         }
-                        @if (voiceInstructionSupportedModels.includes(config.tts_model_name)) {
+                        @if (voiceInstructionSupportedModels.includes(selectedTtsModel)) {
                             <div class="trait-select">
                                 <div class="voice-settings-hint">
                                     <b>Voice instructions</b><br>

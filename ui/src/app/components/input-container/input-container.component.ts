@@ -5,7 +5,7 @@ import { MatIconModule } from "@angular/material/icon";
 import {
   SubmitInputMessage,
   TauriService,
-} from "../../services/tauri.service.js";
+} from "../../services/tauri.service";
 
 @Component({
   selector: "app-input-container",
