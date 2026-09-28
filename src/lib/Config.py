@@ -1453,7 +1453,7 @@ def load_config() -> Config:
         'discovery_firegroup_var': 1,
         'weapon_types': [],
         'prefer_primary_bindings': False,
-        'in_system_navigation': False,
+        'in_system_navigation': True,
         # Chat channel tab defaults
         'chat_local_tabbed_var': False,
         'chat_wing_tabbed_var': False,
