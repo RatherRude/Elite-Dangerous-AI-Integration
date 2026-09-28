@@ -12,14 +12,14 @@ import { combineLatest, Subscription } from "rxjs";
 import {
     Config,
     ConfigService,
-} from "../../services/config.service.js";
+} from "../../services/config.service";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { FormsModule } from "@angular/forms";
-import { ConfirmationDialogService } from "../../services/confirmation-dialog.service.js";
+import { ConfirmationDialogService } from "../../services/confirmation-dialog.service";
 import { MatDialog } from "@angular/material/dialog";
-import { EdgeTtsVoicesDialogComponent } from "../edge-tts-voices-dialog/edge-tts-voices-dialog.component.js";
-import { ConfirmationDialogComponent } from "../confirmation-dialog/confirmation-dialog.component.js";
-import { AvatarCatalogDialogComponent, AvatarCatalogResult } from "../avatar-catalog-dialog/avatar-catalog-dialog.component.js";
+import { EdgeTtsVoicesDialogComponent } from "../edge-tts-voices-dialog/edge-tts-voices-dialog.component";
+import { ConfirmationDialogComponent } from "../confirmation-dialog/confirmation-dialog.component";
+import { AvatarCatalogDialogComponent, AvatarCatalogResult } from "../avatar-catalog-dialog/avatar-catalog-dialog.component";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatDivider } from "@angular/material/divider";
 import { MatInputModule } from "@angular/material/input";
@@ -40,7 +40,18 @@ import {
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { CharacterPresets } from "./character-presets";
 import {MatSlideToggle} from "@angular/material/slide-toggle";
-import { ChatService } from "../../services/chat.service.js";
+import { ChatService } from "../../services/chat.service";
+import { bundledVoiceCatalog } from "../../services/bundled-provider-ui";
+
+export const OPENAI_VOICE_IDS = [
+    "alloy", "ash", "ballad", "coral", "echo", "fable",
+    "nova", "onyx", "sage", "shimmer",
+] as const;
+
+export function isOpenAIVoiceId(voice: string | undefined): boolean {
+    return !!voice && (OPENAI_VOICE_IDS as readonly string[]).includes(voice);
+}
+import { ModelProviderDefinition } from "../../services/plugin-settings";
 
 interface PromptSettings {
     // Existing settings
@@ -116,8 +127,10 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
     configSubscription: Subscription;
     characterSubscription: Subscription;
     private avatarMimeSubscription: Subscription;
+    private pluginProvidersSubscription: Subscription;
     private avatarPreviewSvgElementsSubscription?: Subscription;
     activeCharacter: Character | null = null;
+    pluginTTSProviders: ModelProviderDefinition[] = [];
     selectedCharacterIndex: number | null = null;
     editMode = false;
     showVoiceMoreSettings = false;
@@ -658,6 +671,9 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
                 this.refreshAvatarPreviewSvg();
             }
         );
+        this.pluginProvidersSubscription = this.configService.plugin_model_providers$.subscribe(
+            providers => this.pluginTTSProviders = providers.filter(provider => provider.kind === "tts"),
+        );
         this.avatarMimeSubscription = combineLatest([this.characterService.avatarUrl$, this.characterService.avatarMime$]).subscribe(
             ([avatarUrl, mime]) => {
                 this.avatarUrlPrimary = avatarUrl;
@@ -685,10 +701,32 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
         if (this.avatarMimeSubscription) {
             this.avatarMimeSubscription.unsubscribe();
         }
+        this.pluginProvidersSubscription.unsubscribe();
         if (this.avatarPreviewSvgElementsSubscription) {
             this.avatarPreviewSvgElementsSubscription.unsubscribe();
         }
         clearInterval(this.avatarPreviewInterval);
+    }
+
+    get voiceCatalog(): "openai" | "edge" | null {
+        return bundledVoiceCatalog(this.config?.tts_provider);
+    }
+
+    get selectedTtsModel(): string {
+        const selected = this.config?.tts_provider;
+        const provider = this.pluginTTSProviders.find(
+            candidate => selected === `plugin:${candidate.plugin_guid}:${candidate.id}`,
+        );
+        if (!provider) return "";
+        const modelField = provider.settings_config
+            .flatMap(grid => grid.fields)
+            .find(field => field.key === "model" || field.key.endsWith("_model"));
+        if (!modelField) return "";
+        return String(
+            this.config?.plugin_settings?.[provider.plugin_guid]?.[modelField.key]
+            ?? modelField.default_value
+            ?? "",
+        );
     }
 
     public focusActiveCharacterOverview(): void {
@@ -1397,6 +1435,10 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
         ];
 
         return !predefinedVoices.includes(voice);
+    }
+
+    isOpenAIVoice(voice: string | undefined): boolean {
+        return isOpenAIVoiceId(voice);
     }
 
     /**

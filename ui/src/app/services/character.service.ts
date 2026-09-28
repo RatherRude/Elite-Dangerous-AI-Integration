@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
 import { BehaviorSubject, filter, map, Observable } from "rxjs";
 import { BaseCommand, BaseMessage, TauriService } from "./tauri.service";
-import { Config, ConfigService } from "./config.service.js";
+import { Config, ConfigService } from "./config.service";
 import { AvatarService } from "./avatar.service";
 
 export interface ConfigWithCharacters extends Config {

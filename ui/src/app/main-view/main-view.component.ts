@@ -13,9 +13,9 @@ import { SettingsMenuComponent } from "../components/settings-menu/settings-menu
 import { InputContainerComponent } from "../components/input-container/input-container.component";
 import {Config, ConfigService} from "../services/config.service";
 import { Subscription } from "rxjs";
-import { ChatService } from "../services/chat.service.js";
+import { ChatService } from "../services/chat.service";
 import { MatTabsModule } from "@angular/material/tabs";
-import { ChatContainerComponent } from "../components/chat-container/chat-container.component.js";
+import { ChatContainerComponent } from "../components/chat-container/chat-container.component";
 import { StatusContainerComponent } from "../components/status-container/status-container.component";
 import { StorageContainerComponent } from "../components/storage-container/storage-container.component";
 import { StationContainerComponent } from "../components/station-container/station-container.component";
@@ -24,8 +24,8 @@ import { ProjectionsService } from "../services/projections.service";
 import { MemoriesContainerComponent } from "../components/memories-container/memories-container.component";
 import { SearchResultsComponent } from "../components/search-results-container/search-results-container.component";
 import { NavigationContainerComponent } from "../components/navigation-container/navigation-container.component";
-import { MetricsService } from "../services/metrics.service.js";
-import { PolicyService } from "../services/policy.service.js";
+import { MetricsService } from "../services/metrics.service";
+import { PolicyService } from "../services/policy.service";
 import {UIService} from "../services/ui.service";
 import { ActionsContainerComponent } from "../components/actions-container/actions-container.component";
 

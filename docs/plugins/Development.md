@@ -125,6 +125,26 @@ The `PluginBase` base class has the following methods that can be overridden:
 
 The `PluginHelper` instance provides utilities for registering actions, projections, side effects, and more. You can access most of the internal features you need from the `helper` object, such as `send_key()`, various event handler registrations, and more.
 
+## Model Providers
+
+Plugins can register model providers by assigning `self.model_providers` in their constructor. Each provider definition requires `kind`, `id`, `label`, and `settings_config`. The optional `slots` field limits where a provider appears; omitting it preserves the existing kind-based behavior.
+
+```python
+self.model_providers = [{
+    "kind": "llm",
+    "id": "llm",
+    "label": "Example LLM",
+    "settings_config": [],
+}]
+
+def create_model(self, provider_id: str, settings: dict[str, Any]):
+    if provider_id == "llm":
+        return ExampleLLM(settings)
+    raise ValueError(f"Unknown provider: {provider_id}")
+```
+
+Provider references use `plugin:<plugin-guid>:<provider-id>`. `create_model` receives the same provider ID and the plugin's flat `plugin_settings[plugin_guid]` dictionary. The existing `LLMModel`, `STTModel`, `TTSModel`, and `EmbeddingModel` interfaces remain the model contracts; in particular, LLM implementations receive `generate(messages, tools, tool_choice)`. Optional provider metadata such as `slots` and `api_key_detection` is not required for existing plugins.
+
 ## PluginHelper Methods
 
 The `PluginHelper` class provides several methods for interacting with the COVAS:NEXT system:

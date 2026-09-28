@@ -6,7 +6,8 @@ from unittest.mock import MagicMock
 from time import sleep
 from src.lib.Config import map_character_tts_postprocessing
 from src.lib.TTS import TTS
-from src.lib.Models import OpenAITTSModel, EdgeTTSModel
+from src.lib.Models import OpenAITTSModel
+from src.plugins.EdgeTTSPlugin import EdgeTTSModel
 from src.plugins.MistralPlugin import MistralTTSModel
 import numpy as np
 
@@ -164,7 +165,7 @@ def test_mistral_tts_streams_base64_float32_pcm():
     model.client = MagicMock()
     model.client.stream.return_value = stream_context
 
-    output = b"".join(model.synthesize("Hello world", "en_paul_neutral"))
+    output = b"".join(model.synthesize("Hello world", "en_diana_happy"))
 
     call = model.client.stream.call_args
     assert call.args == ("POST", "audio/speech")
@@ -172,7 +173,7 @@ def test_mistral_tts_streams_base64_float32_pcm():
     request = call.kwargs["json"]
     assert request == {
         "model": "voxtral-mini-tts-2603",
-        "voice": "en_paul_neutral",
+        "voice": "en_diana_happy",
         "input": "Hello world",
         "response_format": "pcm",
         "stream": True,
@@ -203,6 +204,36 @@ def test_openai_tts_request_includes_speed(mock_openai):
 
     request = mock_openai.audio.speech.with_streaming_response.create.call_args.kwargs
     assert request["speed"] == 1.5
+
+
+def test_openai_tts_request_includes_supported_voice_instructions(mock_openai):
+    model = OpenAITTSModel(
+        base_url="https://api.openai.com/v1",
+        api_key="test-key",
+        model_name="gpt-4o-mini-tts",
+        voice_instructions="Speak calmly.",
+    )
+    model.client = mock_openai
+
+    assert list(model.synthesize("Hello world", "nova"))
+
+    request = mock_openai.audio.speech.with_streaming_response.create.call_args.kwargs
+    assert request["instructions"] == "Speak calmly."
+
+
+def test_openai_tts_request_omits_unsupported_voice_instructions(mock_openai):
+    model = OpenAITTSModel(
+        base_url="https://api.openai.com/v1",
+        api_key="test-key",
+        model_name="tts-1",
+        voice_instructions="Speak calmly.",
+    )
+    model.client = mock_openai
+
+    assert list(model.synthesize("Hello world", "nova"))
+
+    request = mock_openai.audio.speech.with_streaming_response.create.call_args.kwargs
+    assert "instructions" not in request
 
 def test_edge_tts_playback(mock_pyaudio, mock_miniaudio, mock_openai):
     """Test Edge-TTS playback"""

@@ -96,6 +96,22 @@ export interface PluginSettingsMessage extends BaseMessage {
     has_plugin_settings: boolean;
 }
 
+export type ProviderSlot = "llm" | "agent_llm" | "vision" | "stt" | "tts" | "embedding";
+
+export function filterProvidersForSlot(
+    providers: ModelProviderDefinition[],
+    slot: ProviderSlot,
+): ModelProviderDefinition[] {
+    return providers.filter(provider => !provider.slots || provider.slots.includes(slot));
+}
+
+export interface ApiKeyDetection {
+    patterns?: string[];
+    priority?: number;
+    setting_key?: string;
+    provider_selections?: Record<string, string>;
+}
+
 export interface ModelProviderDefinition {
     kind: 'llm' | 'vlm' | 'stt' | 'tts' | 'embedding';
     id: string;
@@ -103,6 +119,8 @@ export interface ModelProviderDefinition {
     settings_config: SettingsGrid[];
     plugin_guid: string;
     is_builtin: boolean;
+    slots?: ProviderSlot[];
+    api_key_detection?: ApiKeyDetection;
 }
 
 export interface PluginModelProvidersMessage extends BaseMessage {

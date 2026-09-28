@@ -1,17 +1,13 @@
 from abc import ABC, abstractmethod
-from typing import Any, List, Optional, Generator, Iterable
+from typing import Any, List, Optional, Iterable
 import io
 import base64
 import json
 import speech_recognition as sr
 import soundfile as sf
 import numpy as np
-import threading
-import traceback
-from time import sleep, time
+from time import time
 from uuid import uuid4
-import edge_tts
-import miniaudio
 from openai.types.audio.speech_create_params import SpeechCreateParams
 from openai import OpenAI, APIStatusError
 from openai.types.chat import ChatCompletion, ChatCompletionMessageFunctionToolCall, ChatCompletionMessageToolCall
@@ -225,25 +221,6 @@ class OpenAILLMModel(LLMModel):
         if self.model_name in ['gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-5.1']:
             kwargs["verbosity"] = "low"
                     
-        if 'google' in self.base_url or 'google' in self.model_name or 'gemini' in self.model_name:
-            for m in request_messages:
-                if 'tool_calls' in m and m.get('tool_calls', None):
-                    calls = m.get('tool_calls', [])
-                    if calls:
-                        for i in range(len(calls)):
-                            if not isinstance(calls[i], dict):
-                                if hasattr(calls[i], 'model_dump'):
-                                    calls[i] = calls[i].model_dump()
-                                elif hasattr(calls[i], 'dict'):
-                                    calls[i] = calls[i].dict()
-                            
-                            if isinstance(calls[i], dict):
-                                thought_sig = calls[i].get('extra_content',{}).get('google', {}).get('thought_signature')
-                                if not thought_sig:
-                                    calls[i]['extra_content'] = {"google": {
-                                        "thought_signature": "skip_thought_signature_validator"
-                                    }}
-        
         params: dict[str, Any] = {
             "model": self.model_name,
             "messages": request_messages,
@@ -792,61 +769,6 @@ class OpenAIMultiModalSTTModel(STTModel):
             return ''
         return text.strip()
 
-class Mp3Stream(miniaudio.StreamableSource):
-    def __init__(self, gen: Generator, prebuffer_size=4, initial_timeout: float = 10.0, chunk_timeout: float = 5.0) -> None:
-        super().__init__()
-        self.gen = gen
-        self.prebuffer_size = prebuffer_size
-        self.initial_timeout = initial_timeout
-        self.chunk_timeout = chunk_timeout
-        self.buffer = bytearray()
-        self._done = False
-        self._closed = False
-        self._first_chunk = False
-        self._last_chunk_time = time()
-        threading.Thread(target=self._produce, daemon=True).start()
-
-    def _produce(self):
-        try:
-            for ev in self.gen:
-                if self._closed:
-                    break
-                if isinstance(ev, dict) and ev.get('type') == 'audio':
-                    self.buffer.extend(ev['data'])
-                    self._first_chunk = True
-                    self._last_chunk_time = time()
-        except Exception as e:
-            log('error', 'Mp3Stream producer exception', e, traceback.format_exc())
-            raise e
-        finally:
-            self._done = True
-
-    def close(self):  # type: ignore[override]
-        self._closed = True
-        return super().close()
-
-    def read(self, num_bytes: int) -> bytes:
-        if self._closed:
-            return b''
-        out = bytearray()
-        need = max(self.prebuffer_size * 720, num_bytes)
-        while len(out) < need:
-            # timeout checks
-            timeout = self.initial_timeout if not self._first_chunk else self.chunk_timeout
-            if (not self._done) and (time() - self._last_chunk_time > timeout):
-                log('warn', 'TTS Stream timeout (initial)' if not self._first_chunk else 'TTS Stream timeout (gap)')
-                self.close()
-                raise IOError('TTS Stream timeout')
-            if self.buffer:
-                take = min(len(self.buffer), need - len(out))
-                out.extend(self.buffer[:take])
-                del self.buffer[:take]
-            else:
-                if self._done:
-                    break
-                sleep(0.01)
-        return bytes(out)
-
 class TTSModel(ABC):
     model_name: str
     provider_name: str | None
@@ -875,7 +797,7 @@ class OpenAITTSModel(TTSModel):
                 "response_format": "pcm",
                 "speed": self.speed
             }
-            if self.voice_instructions:
+            if self.voice_instructions and self.model_name == "gpt-4o-mini-tts":
                 kwargs["instructions"] = self.voice_instructions
             
             with self.client.audio.speech.with_streaming_response.create(**kwargs) as response:
@@ -892,154 +814,3 @@ class OpenAITTSModel(TTSModel):
                 message = e.message
             
             raise LLMError(f'TTS {e.response.reason_phrase}: {message}', e)
-
-class EdgeTTSModel(TTSModel):
-    def __init__(self, model_name: str, speed: float = 1.0, provider_name: str | None = None):
-        super().__init__(model_name, provider_name=provider_name)
-        self.speed = speed
-        self.prebuffer_size = 4
-
-    def synthesize(self, text: str, voice: str) -> Iterable[bytes]:
-        rate = f"+{int((float(self.speed) - 1) * 100)}%" if float(self.speed) > 1 else f"-{int((1 - float(self.speed)) * 100)}%"
-        response = edge_tts.Communicate(text, voice=voice, rate=rate)
-        
-        pcm_stream = miniaudio.stream_any(
-            source=Mp3Stream(response.stream_sync(), self.prebuffer_size),
-            source_format=miniaudio.FileFormat.MP3,
-            output_format=miniaudio.SampleFormat.SIGNED16,
-            nchannels=1,
-            sample_rate=24000,
-            frames_to_read=1024 // 2
-        )
-
-        for i in pcm_stream:
-            yield i.tobytes()
-
-def create_llm_model(provider: str, config: dict, prefix: str = "llm") -> LLMModel:
-    base_url = str(config.get(f"{prefix}_endpoint", ""))
-    api_key = str(config.get("api_key") if config.get(f"{prefix}_api_key", "") == "" else config.get(f"{prefix}_api_key"))
-    model_name = str(config.get(f"{prefix}_model_name", ""))
-    temperature = float(config.get(f"{prefix}_temperature", 1.0))
-    reasoning_effort = config.get(f"{prefix}_reasoning_effort", None)
-    if reasoning_effort:
-        reasoning_effort = str(reasoning_effort)
-    
-    if provider == "openai":
-        if not base_url:
-            base_url = "https://api.openai.com/v1"
-    elif provider == "google-ai-studio":
-        if not base_url:
-            base_url = "https://generativelanguage.googleapis.com/v1beta"
-    elif provider == "openrouter":
-        if not base_url:
-            base_url = "https://openrouter.ai/api/v1"
-            
-    extra_body = {}
-    extra_headers = {}
-
-    if provider == "openai":
-        return OpenAIResponsesLLMModel(
-            base_url=base_url,
-            api_key=api_key,
-            model_name=model_name,
-            temperature=temperature,
-            reasoning_effort=reasoning_effort,
-            extra_body=extra_body,
-            extra_headers=extra_headers,
-            provider_name=provider,
-        )
-
-    return OpenAILLMModel(
-        base_url=base_url,
-        api_key=api_key,
-        model_name=model_name,
-        temperature=temperature,
-        reasoning_effort=reasoning_effort,
-        extra_body=extra_body,
-        extra_headers=extra_headers,
-        provider_name=provider,
-    )
-
-def create_embedding_model(provider: str, config: dict, prefix: str = "embedding") -> EmbeddingModel:
-    base_url = str(config.get(f"{prefix}_endpoint", ""))
-    api_key = str(config.get("api_key") if config.get(f"{prefix}_api_key", "") == "" else config.get(f"{prefix}_api_key"))
-    model_name = str(config.get(f"{prefix}_model_name", ""))
-    
-    if provider == "openai":
-        if not base_url:
-            base_url = "https://api.openai.com/v1"
-    elif provider == "google-ai-studio":
-        if not base_url:
-            base_url = "https://generativelanguage.googleapis.com/v1beta"
-    elif provider == "openrouter":
-        if not base_url:
-            base_url = "https://openrouter.ai/api/v1"
-          
-
-    return OpenAIEmbeddingModel(
-        base_url=base_url,
-        api_key=api_key,
-        model_name=model_name,
-    )
-
-def create_stt_model(provider: str, config: dict, prefix: str = "stt") -> STTModel | None:
-    if provider == 'none':
-        return None
-
-    base_url = str(config.get(f"{prefix}_endpoint", ""))
-    api_key = str(config.get("api_key") if config.get(f"{prefix}_api_key", "") == "" else config.get(f"{prefix}_api_key"))
-    model_name = str(config.get(f"{prefix}_model_name", "whisper-1"))
-    language = config.get(f"{prefix}_language", None)
-    prompt = config.get(f"{prefix}_prompt", "COVAS, give me a status update... and throw in something inspiring, would you?")
-
-    if provider == "openai" or provider == "custom" or provider == "local-ai-server":
-        if provider == "openai" and not base_url:
-            base_url = "https://api.openai.com/v1"
-        return OpenAISTTModel(
-            base_url,
-            api_key,
-            model_name,
-            language,
-            prompt,
-            provider_name=provider,
-        )
-
-    elif provider == "google-ai-studio" or provider == "custom-multi-modal":
-        if provider == "google-ai-studio" and not base_url:
-            base_url = "https://generativelanguage.googleapis.com/v1beta"
-        return OpenAIMultiModalSTTModel(
-            base_url,
-            api_key,
-            model_name,
-            prompt,
-            provider_name=provider,
-        )
-    
-    return None
-
-def create_tts_model(provider: str, config: dict, prefix: str = "tts") -> TTSModel | None:
-    if provider == 'none':
-        return None
-
-    base_url = str(config.get(f"{prefix}_endpoint", ""))
-    api_key = str(config.get("api_key") if config.get(f"{prefix}_api_key", "") == "" else config.get(f"{prefix}_api_key"))
-    model_name = str(config.get(f"{prefix}_model_name", "tts-1"))
-    speed = float(config.get(f"{prefix}_speed", 1.0))
-    voice_instructions = config.get(f"{prefix}_voice_instructions", "") or None
-
-    if provider == "openai" or provider == "custom" or provider == "local-ai-server":
-        if provider == "openai" and not base_url:
-            base_url = "https://api.openai.com/v1"
-        return OpenAITTSModel(
-            base_url,
-            api_key,
-            model_name,
-            speed,
-            voice_instructions,
-            provider_name=provider,
-        )
-
-    elif provider == "edge-tts":
-        return EdgeTTSModel(model_name, speed, provider_name=provider)
-    
-    return None

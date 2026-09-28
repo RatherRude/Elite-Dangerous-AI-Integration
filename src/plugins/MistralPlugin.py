@@ -70,7 +70,6 @@ def _number_field(
 def _account_fields() -> list[dict[str, Any]]:
     return [
         _text_field("api_key", "Mistral API Key", "", hidden=True),
-        _text_field("endpoint", "Endpoint", MISTRAL_API_URL),
     ]
 
 
@@ -232,6 +231,7 @@ class MistralTTSModel(TTSModel):
 
     @override
     def synthesize(self, text: str, voice: str) -> Iterable[bytes]:
+        selected_voice = voice.strip() or self.default_voice
         try:
             with self.client.stream(
                 "POST",
@@ -239,7 +239,7 @@ class MistralTTSModel(TTSModel):
                 headers={"Accept": "text/event-stream"},
                 json={
                     "model": self.model_name,
-                    "voice": self.default_voice,
+                    "voice": selected_voice,
                     "input": text,
                     "response_format": "pcm",
                     "stream": True,
@@ -283,6 +283,7 @@ class MistralPlugin(PluginBase):
                 "kind": "stt",
                 "id": "stt",
                 "label": "Mistral",
+                "slots": ["stt"],
                 "settings_config": [{
                     "key": "stt",
                     "label": "Mistral Speech-to-Text",
@@ -298,6 +299,7 @@ class MistralPlugin(PluginBase):
                 "kind": "vlm",
                 "id": "vlm",
                 "label": "Mistral",
+                "slots": ["vision"],
                 "settings_config": [{
                     "key": "vlm",
                     "label": "Mistral Vision",
@@ -312,6 +314,7 @@ class MistralPlugin(PluginBase):
                 "kind": "embedding",
                 "id": "embedding",
                 "label": "Mistral",
+                "slots": ["embedding"],
                 "settings_config": [{
                     "key": "embedding",
                     "label": "Mistral Embeddings",
@@ -329,6 +332,7 @@ class MistralPlugin(PluginBase):
                 "kind": "tts",
                 "id": "tts",
                 "label": "Mistral",
+                "slots": ["tts"],
                 "settings_config": [{
                     "key": "tts",
                     "label": "Mistral Text-to-Speech",
@@ -343,12 +347,11 @@ class MistralPlugin(PluginBase):
 
     @override
     def create_model(self, provider_id: str, settings: dict[str, Any]):
-        endpoint = str(settings.get("endpoint") or MISTRAL_API_URL)
         api_key = str(settings.get("api_key") or "-")
 
         if provider_id == "llm":
             return MistralLLMModel(
-                base_url=endpoint,
+                base_url=MISTRAL_API_URL,
                 api_key=api_key,
                 model_name=str(settings.get("llm_model") or MISTRAL_LLM_MODEL),
                 temperature=float(settings.get("llm_temperature", 1.0)),
@@ -357,7 +360,7 @@ class MistralPlugin(PluginBase):
             )
         if provider_id == "stt":
             return OpenAISTTModel(
-                base_url=endpoint,
+                base_url=MISTRAL_API_URL,
                 api_key=api_key,
                 model_name=str(settings.get("stt_model") or MISTRAL_STT_MODEL),
                 language=str(settings.get("stt_language") or "") or None,
@@ -366,7 +369,7 @@ class MistralPlugin(PluginBase):
             )
         if provider_id == "vlm":
             return MistralLLMModel(
-                base_url=endpoint,
+                base_url=MISTRAL_API_URL,
                 api_key=api_key,
                 model_name=str(settings.get("vlm_model") or MISTRAL_VLM_MODEL),
                 temperature=float(settings.get("vlm_temperature", 1.0)),
@@ -375,7 +378,7 @@ class MistralPlugin(PluginBase):
             )
         if provider_id == "embedding":
             return OpenAIEmbeddingModel(
-                base_url=endpoint,
+                base_url=MISTRAL_API_URL,
                 api_key=api_key,
                 model_name=str(
                     settings.get("embedding_model") or MISTRAL_EMBEDDING_MODEL
@@ -383,7 +386,7 @@ class MistralPlugin(PluginBase):
             )
         if provider_id == "tts":
             return MistralTTSModel(
-                base_url=endpoint,
+                base_url=MISTRAL_API_URL,
                 api_key=api_key,
                 model_name=str(settings.get("tts_model") or MISTRAL_TTS_MODEL),
                 default_voice=str(settings.get("tts_voice") or MISTRAL_TTS_VOICE),

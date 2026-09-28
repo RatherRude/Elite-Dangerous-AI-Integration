@@ -30,11 +30,11 @@ import {
 import {
     Config,
     ConfigService,
-} from "../../services/config.service.js";
+} from "../../services/config.service";
 import { MatSnackBar } from "@angular/material/snack-bar";
-import { ConfirmationDialogService } from "../../services/confirmation-dialog.service.js";
-import { GameEventTooltips } from "../character-settings/game-event-tooltips.js";
-import { GameEventCategories } from "../character-settings/game-event-categories.js";
+import { ConfirmationDialogService } from "../../services/confirmation-dialog.service";
+import { GameEventTooltips } from "../character-settings/game-event-tooltips";
+import { GameEventCategories } from "../character-settings/game-event-categories";
 
 @Component({
     selector: "app-event-reactions-settings",

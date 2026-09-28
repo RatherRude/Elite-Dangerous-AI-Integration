@@ -135,20 +135,15 @@
                                     <mat-select panelClass="provider-panel"
                                                 [(ngModel)]="config.stt_provider"
                                                 (ngModelChange)="onConfigChange({stt_provider: $event})">
-                                        <mat-option value="openai">OpenAI</mat-option>
-                                        <mat-option value="google-ai-studio">Google AI Studio (Multi-Modal)</mat-option>
-                                        <mat-option value="local-ai-server">Local AIServer</mat-option>
-                                        @for (provider of pluginSTTProviders; track provider.id) {
+                                        @for (provider of providersForSlot(pluginSTTProviders, 'stt'); track provider.plugin_guid + ':' + provider.id) {
                                             @if (provider.is_builtin) {
                                                 <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
                                             }
                                         }
-                                        <mat-option value="custom">Custom</mat-option>
-                                        <mat-option value="custom-multi-modal">Custom Multi-Modal</mat-option>
                                         <mat-option value="none">None</mat-option>
                                         @if (hasInstalledPluginProviders(pluginSTTProviders)) {
                                             <mat-optgroup label="Plugins">
-                                                @for (provider of pluginSTTProviders; track provider.id) {
+                                                @for (provider of providersForSlot(pluginSTTProviders, 'stt'); track provider.plugin_guid + ':' + provider.id) {
                                                     @if (!provider.is_builtin) {
                                                         <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
                                                     }
@@ -238,20 +233,16 @@
                                     <mat-label>TTS Provider</mat-label>
                                     <mat-select panelClass="provider-panel"
                                                 [(ngModel)]="config.tts_provider"
-                                                (ngModelChange)="onConfigChange({tts_provider: $event})">
-                                        <mat-option value="openai">OpenAI</mat-option>
-                                        <mat-option value="edge-tts">Edge TTS</mat-option>
-                                        <mat-option value="local-ai-server">Local AIServer</mat-option>
-                                        @for (provider of pluginTTSProviders; track provider.id) {
+                                                    (ngModelChange)="onTtsProviderChange($event)">
+                                        @for (provider of providersForSlot(pluginTTSProviders, 'tts'); track provider.plugin_guid + ':' + provider.id) {
                                             @if (provider.is_builtin) {
                                                 <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
                                             }
                                         }
-                                        <mat-option value="custom">Custom</mat-option>
                                         <mat-option value="none">None</mat-option>
                                         @if (hasInstalledPluginProviders(pluginTTSProviders)) {
                                             <mat-optgroup label="Plugins">
-                                                @for (provider of pluginTTSProviders; track provider.id) {
+                                                @for (provider of providersForSlot(pluginTTSProviders, 'tts'); track provider.plugin_guid + ':' + provider.id) {
                                                     @if (!provider.is_builtin) {
                                                         <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
                                                     }
@@ -539,8 +530,6 @@
                                                 }
                                             </ul>
                                         </div>
-                                    } @else if (!config.tools_var) {
-                                        <p class="preflight-helper-text">Actions are disabled.</p>
                                     } @else {
                                         <p class="preflight-helper-text">No action types are currently enabled.</p>
                                         }

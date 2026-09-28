@@ -7,7 +7,7 @@ import {
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatCardModule } from "@angular/material/card";
-import { LoggingService, LogMessage } from "../../services/logging.service.js";
+import { LoggingService, LogMessage } from "../../services/logging.service";
 
 export interface LogEntry {
   type: string;

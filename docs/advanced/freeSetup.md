@@ -28,13 +28,13 @@ The cloud service https://openrouter.ai provides a free tier that can be used to
 - Does not support STT or TTS, so you need to mix and match with other services
 
 To use OpenRouter.ai, you need to sign up for an account and create an API key.
-Once you have an account and an API key, you can check the website for the available models in the :free tier. At the time of writing we recommend using ´meta-llama/llama-3.3-70b-instruct:free`.
+Once you have an account and an API key, you can check the website for the available models in the `:free` tier. At the time of writing we recommend using `meta-llama/llama-3.3-70b-instruct:free`.
 
 ```
 LLM Provider: OpenRouter
-LLM Model Name: meta-llama/llama-3.3-70b-instruct:free
-LLM API Key: <your API key>
-Allow Actions: Disable (Unless you use a paid model that supports actions)
+Model: meta-llama/llama-3.3-70b-instruct:free
+OpenRouter API Key: <your API key>
+Enable Tool Use: Disable unless the selected model supports tools reliably
 ```
 
 ### 1.2 Using Ollama (local)
@@ -58,10 +58,11 @@ After installing Ollama, you need to download a model according to the instructi
 Once the download is complete you can configure the LLM as follows:
 
 ```
-LLM Provider: Custom
-LLM Model Name: lucaelin/ministral-3-3b-cn-gguf
-LLM Endpoint URL: http://localhost:11434/v1
-LLM API Key: <empty>
+LLM Provider: Custom OpenAI-compatible
+Model: lucaelin/ministral-3-3b-cn-gguf
+Endpoint: http://localhost:11434/v1
+API Key: <empty>
+Enable Tool Use: Disable unless the selected model supports tools reliably
 ```
 
 ### 1.3 Using LMStudio (local)
@@ -87,10 +88,11 @@ Next, you need to navigate to the Developer tab and click "Start Server". By def
 Once the server is running, you can configure the Integration as follows:
 
 ```
-LLM Provider: Custom
-LLM Model Name: lucaelin/ministral-3-3b-cn-gguf
-LLM Endpoint URL: http://localhost:1234/v1
-LLM API Key: <empty>
+LLM Provider: Custom OpenAI-compatible
+Model: lucaelin/ministral-3-3b-cn-gguf
+Endpoint: http://localhost:1234/v1
+API Key: <empty>
+Enable Tool Use: Disable unless the selected model supports tools reliably
 ```
 
 ### 1.4 Using AIServer (local)
