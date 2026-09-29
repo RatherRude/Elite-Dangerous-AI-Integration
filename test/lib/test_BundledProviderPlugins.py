@@ -52,6 +52,27 @@ def setting_keys(plugin: Any) -> set[str]:
     }
 
 
+def voice_setting_keys(plugin: Any, provider_id: str) -> set[str]:
+    provider = next(provider for provider in plugin.model_providers or [] if provider["id"] == provider_id)
+    return {
+        field["key"]
+        for grid in provider.get("voice_settings_config", [])
+        for field in grid["fields"]
+        if "key" in field
+    }
+
+
+def test_bundled_tts_providers_define_character_scoped_voice_settings() -> None:
+    assert voice_setting_keys(OpenAIPlugin(manifest(OPENAI_PLUGIN_GUID, "OpenAI")), "tts") == {
+        "voice", "instructions",
+    }
+    assert voice_setting_keys(EdgeTTSPlugin(manifest(EDGE_TTS_PLUGIN_GUID, "Edge")), "tts") == {"voice"}
+    assert voice_setting_keys(MistralPlugin(manifest(MISTRAL_PLUGIN_GUID, "Mistral")), "tts") == {"voice"}
+    compatible = OpenAICompatiblePlugin(manifest(OPENAI_COMPATIBLE_PLUGIN_GUID, "Compatible"))
+    assert voice_setting_keys(compatible, "custom-tts") == {"voice", "instructions"}
+    assert voice_setting_keys(compatible, "local-tts") == {"voice", "instructions"}
+
+
 def test_fixed_providers_do_not_expose_or_accept_endpoint_overrides() -> None:
     fixed_providers = (
         (OpenAIPlugin(manifest(OPENAI_PLUGIN_GUID, "OpenAI")), "llm_endpoint", OPENAI_API_URL),

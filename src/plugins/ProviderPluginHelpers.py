@@ -24,6 +24,19 @@ def text_field(
     }
 
 
+def textarea_field(key: str, label: str, default_value: str, rows: int = 4) -> dict[str, Any]:
+    return {
+        "key": key,
+        "label": label,
+        "type": "textarea",
+        "readonly": False,
+        "placeholder": None,
+        "default_value": default_value,
+        "rows": rows,
+        "cols": None,
+    }
+
+
 def number_field(
     key: str,
     label: str,

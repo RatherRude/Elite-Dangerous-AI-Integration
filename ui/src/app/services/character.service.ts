@@ -88,6 +88,7 @@ export interface Character {
     personality_knowledge_scifi: boolean;
     personality_knowledge_history: boolean;
     tts_voice: string;
+    tts_voice_settings?: Record<string, Record<string, any>>;
     tts_speed: string;
     tts_prompt: string;
     tts_postprocessing?: CharacterTTSPostprocessingConfig;
@@ -139,8 +140,6 @@ export class CharacterService {
 
     private characterListSubject = new BehaviorSubject<Character[]>([]);
     public characterList$ = this.characterListSubject.asObservable();
-
-    public voiceInstructionSupportedModels = ["gpt-4o-mini-tts"]
 
     // Avatar-related properties
     private currentAvatarUrl: string | null = null;
@@ -198,6 +197,20 @@ export class CharacterService {
             this.activeCharacterIndex ?? 0,
             character,
         );
+    }
+
+    public async setTtsProviderVoiceSettings(
+        providerRef: string,
+        settings: Record<string, any>,
+    ): Promise<void> {
+        const character = this.characterSubject.getValue();
+        if (!character) return;
+        character.tts_voice_settings = {
+            ...(character.tts_voice_settings ?? {}),
+            [providerRef]: { ...settings },
+        };
+        this.characterSubject.next(character);
+        await this.updateCharacter(this.activeCharacterIndex ?? 0, character);
     }
 
     public getCharacterEventProperty<T extends keyof Character["event_reactions"]>(

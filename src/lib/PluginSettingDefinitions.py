@@ -106,3 +106,6 @@ class ModelProviderDefinition(TypedDict):
 
     api_key_detection: NotRequired[ApiKeyDetection]
     """Optional API-key detection metadata used by the settings UI."""
+
+    voice_settings_config: NotRequired[list[SettingsGrid]]
+    """Optional character-scoped voice settings for TTS providers."""

@@ -137,8 +137,6 @@ class Chat:
             self.config["active_character_index"]
         ]
 
-        self.voice_instructions = self.character["tts_prompt"]
-
         self.backstory = self.character["character"].replace(
             "{commander_name}", self.config["commander_name"]
         )
@@ -266,6 +264,7 @@ class Chat:
                 show_chat_message("warning", f"STT provider is not a registered plugin: {self.config['stt_provider']}")
 
         self.ttsModel: TTSModel | None = None
+        tts_voice_settings: dict[str, Any] | None = None
         if self.config["tts_provider"] != "none":
             tts_plugin = parse_plugin_provider(self.config["tts_provider"])
             if tts_plugin:
@@ -279,18 +278,48 @@ class Chat:
                     )
                 else:
                     self.ttsModel = cast(TTSModel, model)
+                    provider = self.plugin_manager.get_plugin_provider(tts_plugin[0], tts_plugin[1])
+                    grids = provider.get("voice_settings_config") if provider else None
+                    if grids is not None:
+                        fields = [field for grid in grids for field in grid["fields"]]
+                        defaults = {
+                            field["key"]: field.get("default_value")
+                            for field in fields
+                            if "default_value" in field
+                        }
+                        stored = self.character.get("tts_voice_settings", {}).get(
+                            self.config["tts_provider"], {}
+                        )
+                        declared_keys = {field["key"] for field in fields}
+                        stored = {
+                            key: value
+                            for key, value in stored.items()
+                            if key in declared_keys
+                        } if isinstance(stored, dict) else {}
+                        tts_voice_settings = {
+                            **defaults,
+                            **stored,
+                        }
+                        if any(field["key"] == "voice" for field in fields):
+                            tts_voice_settings.setdefault("voice", self.character["tts_voice"])
+                        if any(field["key"] == "instructions" for field in fields):
+                            tts_voice_settings.setdefault("instructions", self.character["tts_prompt"])
             else:
                 show_chat_message("warning", f"TTS provider is not a registered plugin: {self.config['tts_provider']}")
 
         if self.ttsModel is not None:
             if hasattr(self.ttsModel, "speed"):
                 self.ttsModel.speed = float(self.character["tts_speed"])
-            if hasattr(self.ttsModel, "voice_instructions"):
+            if tts_voice_settings is None and hasattr(self.ttsModel, "voice_instructions"):
                 self.ttsModel.voice_instructions = self.character["tts_prompt"] or None
 
         self.tts = TTS(
             tts_model=self.ttsModel,
-            voice=self.character["tts_voice"],
+            voice=str(
+                (tts_voice_settings or {}).get("voice")
+                or self.character["tts_voice"]
+            ),
+            voice_settings=tts_voice_settings,
             speed=float(self.character["tts_speed"]),
             postprocessing_config=self.character.get("tts_postprocessing"),
             output_device=self.config["output_device_name"],
@@ -718,7 +747,10 @@ class Chat:
         show_chat_message("info", "API Key: Loaded")
         show_chat_message("info", f"Mic Mode: {self.config['ptt_var']}")
         show_chat_message("info", f"Current model: {self.llmModel.model_name}")
-        show_chat_message("info", f"Current TTS voice: {self.character['tts_voice']}")
+        if self.tts.voice_settings is not None and "voice" not in self.tts.voice_settings:
+            show_chat_message("info", "Current TTS provider has no configured voice")
+        else:
+            show_chat_message("info", f"Current TTS voice: {self.tts.voice}")
         show_chat_message("info", f"Current TTS Speed: {self.character['tts_speed']}")
         show_chat_message("info", "Current backstory: " + self.backstory)
 

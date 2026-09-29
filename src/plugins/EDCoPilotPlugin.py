@@ -411,6 +411,7 @@ class EDCoPilotPlugin(PluginBase):
                             ]
                         ),
                     ],
+                    voice_settings_config=[],
                 ),
             ]
 
@@ -525,13 +526,23 @@ class EDCoPilotPlugin(PluginBase):
     def process_edcopilot_events(self):
 
         config = self._helper._config
-        active_character = config['characters'][config['active_character_index']]
+        tts_provider = config.get('tts_provider')
+
+        def character_voice(character: dict[str, Any]):
+            if self.is_edcopilot_dominant():
+                return None
+            provider_settings = character.get('tts_voice_settings', {}).get(tts_provider, {})
+            if isinstance(provider_settings, dict) and 'voice' in provider_settings:
+                voice = provider_settings['voice']
+                return voice if isinstance(voice, str) and voice else None
+            return character.get('tts_voice')
+
         read_commentary = self.settings.get("read_commentary", False)
-        voice = self.settings.get("voice", active_character.get('tts_voice'))
+        voice = self.settings.get("voice") or None
         post_processing = None
         for i,c in enumerate(config['characters']):
             if c.get('name') == voice:
-                voice = c.get('tts_voice')
+                voice = character_voice(c)
                 post_processing = c.get('tts_postprocessing')
 
         while True:

@@ -115,6 +115,38 @@ def test_openai_tts_playback(mock_pyaudio, mock_openai):
     assert mock_pyaudio['stream'].write.call_count == ceil(2*24_000/1024)
 
 
+def test_tts_passes_character_voice_settings_and_applies_voice_override(mock_pyaudio):
+    mock_model = MagicMock(spec=OpenAITTSModel)
+    mock_model.synthesize_with_settings.return_value = [b'pcm']
+    tts = TTS(
+        mock_model,
+        voice="configured-voice",
+        voice_settings={"voice": "configured-voice", "instructions": "Sound calm."},
+    )
+
+    assert list(tts._stream_audio("Hello", voice_override="actor-voice")) == [b'pcm']
+    mock_model.synthesize_with_settings.assert_called_once_with("Hello", {
+        "voice": "actor-voice",
+        "instructions": "Sound calm.",
+    })
+    mock_model.synthesize.assert_not_called()
+
+
+def test_tts_does_not_inject_legacy_voice_into_provider_settings(mock_pyaudio):
+    mock_model = MagicMock(spec=OpenAITTSModel)
+    mock_model.synthesize_with_settings.return_value = [b'pcm']
+    tts = TTS(
+        mock_model,
+        voice="legacy-voice",
+        voice_settings={"description": "Warm and conversational."},
+    )
+
+    assert list(tts._stream_audio("Hello", voice_override="actor-voice")) == [b'pcm']
+    mock_model.synthesize_with_settings.assert_called_once_with("Hello", {
+        "description": "Warm and conversational.",
+    })
+
+
 def test_openai_tts_playback_with_voice_instructions(mock_pyaudio, mock_openai):
     """Test OpenAI TTS playback with voice instructions"""
     mock_model = MagicMock(spec=OpenAITTSModel)
@@ -211,11 +243,12 @@ def test_openai_tts_request_includes_supported_voice_instructions(mock_openai):
         base_url="https://api.openai.com/v1",
         api_key="test-key",
         model_name="gpt-4o-mini-tts",
-        voice_instructions="Speak calmly.",
     )
     model.client = mock_openai
 
-    assert list(model.synthesize("Hello world", "nova"))
+    assert list(model.synthesize_with_settings("Hello world", {
+        "voice": "nova", "instructions": "Speak calmly.",
+    }))
 
     request = mock_openai.audio.speech.with_streaming_response.create.call_args.kwargs
     assert request["instructions"] == "Speak calmly."
@@ -226,11 +259,12 @@ def test_openai_tts_request_omits_unsupported_voice_instructions(mock_openai):
         base_url="https://api.openai.com/v1",
         api_key="test-key",
         model_name="tts-1",
-        voice_instructions="Speak calmly.",
     )
     model.client = mock_openai
 
-    assert list(model.synthesize("Hello world", "nova"))
+    assert list(model.synthesize_with_settings("Hello world", {
+        "voice": "nova", "instructions": "Speak calmly.",
+    }))
 
     request = mock_openai.audio.speech.with_streaming_response.create.call_args.kwargs
     assert "instructions" not in request

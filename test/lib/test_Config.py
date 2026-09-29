@@ -47,7 +47,7 @@ def test_migrate_removes_tools_var_and_migrates_providers() -> None:
         "tts_provider": "edge-tts",
     })
 
-    assert migrated["config_version"] == 23
+    assert migrated["config_version"] == 24
     assert "tools_var" not in migrated
     assert migrated["llm_provider"] == "plugin:7f6f8e98-576f-4d1d-9d87-0f8f7f2f3c61:llm"
     assert migrated["tts_provider"] == "plugin:e2d57ec0-56f5-45de-88ed-621d4a28d7b5:tts"
@@ -81,8 +81,42 @@ def test_migrate_removes_tools_var_from_current_config() -> None:
         "tools_var": True,
     })
 
-    assert migrated["config_version"] == 23
+    assert migrated["config_version"] == 24
     assert "tools_var" not in migrated
+
+
+def test_migrate_character_voice_settings_for_selected_provider() -> None:
+    provider = "plugin:d17f20f6-2514-4a1f-9e54-2a3c089f5c2b:tts"
+    migrated = migrate({
+        "config_version": 23,
+        "tts_provider": provider,
+        "characters": [{
+            "name": "Commander",
+            "tts_voice": "en_diana_happy",
+            "tts_prompt": "Sound calm.",
+            "tts_voice_settings": {"plugin:other:tts": {"voice": "other"}},
+        }],
+        "plugin_settings": {
+            "d17f20f6-2514-4a1f-9e54-2a3c089f5c2b": {"tts_voice": "ignored-global"},
+        },
+    })
+
+    character = migrated["characters"][0]
+    assert character["tts_voice_settings"] == {
+        "plugin:other:tts": {"voice": "other"},
+        provider: {"voice": "en_diana_happy", "instructions": "Sound calm."},
+    }
+    assert "tts_voice" not in migrated["plugin_settings"]["d17f20f6-2514-4a1f-9e54-2a3c089f5c2b"]
+
+
+def test_character_voice_settings_survive_default_merge() -> None:
+    provider_settings = {"plugin:example:tts": {"voice": "sample.wav", "style": "warm"}}
+    merged = ConfigModule.merge_config_data(
+        {"tts_voice": "nova", "tts_voice_settings": {}},
+        {"tts_voice": "sample.wav", "tts_voice_settings": provider_settings},
+    )
+
+    assert merged["tts_voice_settings"] == provider_settings
 
 
 def test_provider_migration_preserves_third_party_settings() -> None:
@@ -141,7 +175,7 @@ def test_provider_migration_does_not_guess_lookalike_endpoint_ownership() -> Non
 def test_backup_import_does_not_restore_removed_provider_keys(monkeypatch) -> None:
     monkeypatch.setattr(ConfigModule, "emit_message", lambda *args, **kwargs: None)
     monkeypatch.setattr(ConfigModule, "save_config", lambda config: None)
-    current = {"config_version": 23, "plugin_settings": {}}
+    current = {"config_version": 24, "plugin_settings": {}}
 
     updated = ConfigModule.update_config(current, {
         "config_version": 21,
@@ -163,7 +197,7 @@ def test_backup_import_does_not_restore_removed_provider_keys(monkeypatch) -> No
 def test_versionless_backup_import_migrates_legacy_providers(monkeypatch) -> None:
     monkeypatch.setattr(ConfigModule, "emit_message", lambda *args, **kwargs: None)
     monkeypatch.setattr(ConfigModule, "save_config", lambda config: None)
-    current = {"config_version": 23, "plugin_settings": {}, "characters": []}
+    current = {"config_version": 24, "plugin_settings": {}, "characters": []}
 
     updated = ConfigModule.update_config(current, {
         "commander_name": "Test",
@@ -178,7 +212,7 @@ def test_versionless_backup_import_migrates_legacy_providers(monkeypatch) -> Non
         "llm_reasoning_effort": "none",
     })
 
-    assert updated["config_version"] == 23
+    assert updated["config_version"] == 24
     assert updated["llm_provider"].endswith(":llm")
     assert updated["plugin_settings"]["7f6f8e98-576f-4d1d-9d87-0f8f7f2f3c61"]["llm_model"] == "legacy-model"
     assert "llm_model_name" not in updated

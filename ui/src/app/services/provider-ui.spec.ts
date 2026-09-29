@@ -1,9 +1,12 @@
-import { isOpenAIVoiceId } from "../components/character-settings/character-settings.component";
 import { ConfigService } from "./config.service";
-import { filterProvidersForSlot, ModelProviderDefinition } from "./plugin-settings";
+import {
+    filterProvidersForSlot,
+    ModelProviderDefinition,
+    providerVoiceDisplayValue,
+    providerVoiceSettingsValues,
+} from "./plugin-settings";
 import { TauriService } from "./tauri.service";
 import { EMPTY } from "rxjs";
-import { bundledDefaultVoice, bundledVoiceCatalog } from "./bundled-provider-ui";
 import { TestBed } from "@angular/core/testing";
 import { SettingsGridComponent } from "../components/settings-grid/settings-grid.component";
 import { SettingsGrid } from "./plugin-settings";
@@ -46,20 +49,59 @@ describe("provider UI compatibility", () => {
         }));
     });
 
-    it("recognizes unknown OpenAI voice IDs for preservation", () => {
-        expect(isOpenAIVoiceId("nova")).toBeTrue();
-        expect(isOpenAIVoiceId("future-custom-voice")).toBeFalse();
+    it("resolves character voice settings from provider metadata", () => {
+        const tts: ModelProviderDefinition = {
+            ...provider("tts"),
+            kind: "tts",
+            voice_settings_config: [{
+                key: "voice",
+                label: "Voice",
+                fields: [{
+                    key: "voice", label: "Voice", type: "select", readonly: false,
+                    placeholder: null, default_value: "default-voice", max_length: null,
+                    min_length: null, hidden: false, multi_select: false,
+                    select_options: [
+                        { key: "default", label: "Default Voice", value: "default-voice", disabled: false },
+                        { key: "character", label: "Character Voice", value: "character-voice", disabled: false },
+                    ],
+                }, {
+                    key: "instructions", label: "Instructions", type: "textarea", readonly: false,
+                    placeholder: null, default_value: "", max_length: null,
+                    min_length: null, hidden: false,
+                }],
+            }] as SettingsGrid[],
+        };
+        const providerRef = "plugin:plugin:tts";
+
+        expect(providerVoiceSettingsValues(providerRef, [tts], undefined)).toEqual({
+            voice: "default-voice",
+            instructions: "",
+        });
+        expect(providerVoiceSettingsValues(providerRef, [tts], {
+            [providerRef]: { voice: "character-voice" },
+        })).toEqual({ voice: "character-voice", instructions: "" });
+        expect(providerVoiceSettingsValues("plugin:plugin:legacy", [provider("legacy")], undefined)).toBeUndefined();
+        expect(providerVoiceDisplayValue(providerRef, [tts], undefined, "legacy-voice")).toBe("Default Voice");
+        expect(providerVoiceDisplayValue(providerRef, [tts], {
+            [providerRef]: { voice: "character-voice" },
+        }, "legacy-voice")).toBe("Character Voice");
     });
 
-    it("keeps bundled voice policy out of provider metadata", () => {
-        const openAI = "plugin:7f6f8e98-576f-4d1d-9d87-0f8f7f2f3c61:tts";
-        const edge = "plugin:e2d57ec0-56f5-45de-88ed-621d4a28d7b5:tts";
-        expect(bundledVoiceCatalog(openAI)).toBe("openai");
-        expect(bundledDefaultVoice(openAI)).toBe("nova");
-        expect(bundledVoiceCatalog(edge)).toBe("edge");
-        expect(bundledDefaultVoice(edge)).toBe("en-US-AvaMultilingualNeural");
-        expect(bundledVoiceCatalog("plugin:third-party:tts")).toBeNull();
-        expect(bundledDefaultVoice("plugin:third-party:tts")).toBeNull();
+    it("distinguishes legacy providers from providers without a voice concept", () => {
+        const legacy = { ...provider("legacy"), kind: "tts" } as ModelProviderDefinition;
+        const voiceless = {
+            ...provider("voiceless"),
+            kind: "tts",
+            voice_settings_config: [],
+        } as ModelProviderDefinition;
+
+        expect(providerVoiceDisplayValue("plugin:plugin:legacy", [legacy], undefined, "legacy-voice"))
+            .toBe("legacy-voice");
+        expect(providerVoiceSettingsValues("plugin:plugin:voiceless", [voiceless], {
+            "plugin:plugin:voiceless": { voice: "stale-voice" },
+        })).toEqual({});
+        expect(providerVoiceDisplayValue("plugin:plugin:voiceless", [voiceless], undefined, "legacy-voice"))
+            .toBeUndefined();
     });
 });
 

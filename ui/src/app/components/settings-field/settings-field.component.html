@@ -81,6 +81,9 @@
                 (ngModelChange)="onValueChange($event)"
                 [disabled]="field.readonly || false"
                 [multiple]="field.multi_select">
+                @if (hasUnknownSelectValue()) {
+                    <mat-option [value]="value">{{ value }}</mat-option>
+                }
                 @for (option of field.select_options; track option.key) {
                     <mat-option [value]="option.value" [disabled]="option.disabled">{{ option.label }}</mat-option>
                 }

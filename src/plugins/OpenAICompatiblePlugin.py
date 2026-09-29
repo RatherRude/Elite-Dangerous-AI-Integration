@@ -8,7 +8,7 @@ from lib.Models import (
     OpenAITTSModel,
 )
 from lib.PluginBase import PluginBase, PluginManifest
-from plugins.ProviderPluginHelpers import ToolToggleOpenAILLMModel, bool_setting, float_setting, number_field, paragraph, select_field, string_setting, text_field, toggle_field
+from plugins.ProviderPluginHelpers import ToolToggleOpenAILLMModel, bool_setting, float_setting, number_field, paragraph, select_field, string_setting, textarea_field, text_field, toggle_field
 
 
 OPENAI_COMPATIBLE_PLUGIN_GUID = "64a79751-078d-48c6-9540-193afde6c469"
@@ -60,13 +60,23 @@ def _definition(
             text_field(f"{prefix}_prompt", "Prompt", ""),
             paragraph("Audio is sent to the selected multimodal model as conversation input."),
         ])
-    return {
+    definition: dict[str, Any] = {
         "kind": kind,
         "id": provider_id,
         "label": label,
         "slots": [slot],
         "settings_config": [{"key": prefix, "label": label, "fields": fields}],
     }
+    if kind == "tts":
+        definition["voice_settings_config"] = [{
+            "key": "voice",
+            "label": f"{label} Voice",
+            "fields": [
+                text_field("voice", "Voice Name or Reference Path", "nova"),
+                textarea_field("instructions", "Voice Instructions", ""),
+            ],
+        }]
+    return definition
 
 
 class OpenAICompatiblePlugin(PluginBase):
