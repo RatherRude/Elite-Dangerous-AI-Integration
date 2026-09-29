@@ -170,34 +170,6 @@
                                         (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_language', $event)">
                                 </mat-form-field>
                             </div>
-                            <div class="character-voice-container">
-                                <div class="trait-select">
-                                    @if (hasVoiceSettingsConfig) {
-                                        @for (grid of selectedVoiceSettingsConfig; track grid.key) {
-                                            <app-settings-grid
-                                                [grid]="grid"
-                                                [getValue]="createVoiceGetValueFn()"
-                                                [setValue]="createVoiceSetValueFn()"
-                                                headerLevel="h4">
-                                            </app-settings-grid>
-                                        }
-                                    } @else {
-                                        <mat-form-field appearance="outline">
-                                            <mat-label>Voice</mat-label>
-                                            <input matInput [ngModel]="activeCharacter.tts_voice"
-                                                (ngModelChange)="setCharacterProperty('tts_voice', $event)">
-                                        </mat-form-field>
-                                    }
-                                </div>
-                                <div class="voice-settings-toggle">
-                                    <button mat-button
-                                            type="button"
-                                            (click)="showVoiceMoreSettings = !showVoiceMoreSettings">
-                                        Voice settings
-                                        <mat-icon>{{ showVoiceMoreSettings ? 'expand_less' : 'expand_more' }}</mat-icon>
-                                    </button>
-                                </div>
-                            </div>
                         </div>
 
                         <!-- Avatar Section -->
@@ -230,10 +202,41 @@
                             </div>
                         </div>
                     </div>
-                </div>
 
-                @if (showVoiceMoreSettings) {
-                    <div class="voice-more-settings">
+                    <mat-expansion-panel class="character-voice-panel"
+                                         [expanded]="showVoiceSettings"
+                                         (opened)="showVoiceSettings = true"
+                                         (closed)="showVoiceSettings = false">
+                        <mat-expansion-panel-header>
+                            <mat-panel-title>
+                                <mat-icon>record_voice_over</mat-icon>
+                                Voice &amp; processing
+                            </mat-panel-title>
+                            <mat-panel-description class="voice-panel-description">
+                                Provider voice, speed, effects, and environment processing
+                            </mat-panel-description>
+                        </mat-expansion-panel-header>
+                        <div class="voice-settings-content">
+                                <div class="provider-voice-settings">
+                                    @if (hasVoiceSettingsConfig) {
+                                        @for (grid of selectedVoiceSettingsConfig; track grid.key) {
+                                            <app-settings-grid
+                                                [grid]="grid"
+                                                [getValue]="createVoiceGetValueFn()"
+                                                [setValue]="createVoiceSetValueFn()"
+                                                headerLevel="h4">
+                                            </app-settings-grid>
+                                        }
+                                    } @else {
+                                        <h4>Voice</h4>
+                                        <mat-form-field appearance="outline">
+                                            <mat-label>Voice</mat-label>
+                                            <input matInput [ngModel]="activeCharacter.tts_voice"
+                                                (ngModelChange)="setCharacterProperty('tts_voice', $event)">
+                                        </mat-form-field>
+                                    }
+                                </div>
+                                <div class="voice-more-settings">
                         <div class="trait-container">
                             <div class="trait-select">
                                 <mat-form-field appearance="outline">
@@ -357,8 +360,10 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-                }
+                                </div>
+                            </div>
+                    </mat-expansion-panel>
+                </div>
 
                 <!-- Character settings when preset is not custom -->
                 @if (activeCharacter.personality_preset !== 'custom') {

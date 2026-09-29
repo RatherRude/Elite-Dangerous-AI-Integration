@@ -39,6 +39,7 @@ import {
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { CharacterPresets } from "./character-presets";
 import {MatSlideToggle} from "@angular/material/slide-toggle";
+import { MatExpansionModule } from "@angular/material/expansion";
 import { ChatService } from "../../services/chat.service";
 import { SettingsGridComponent } from "../settings-grid/settings-grid.component";
 
@@ -105,6 +106,7 @@ interface LowHighPassPresetOption {
         MatDivider,
         MatTooltipModule,
         MatSlideToggle,
+        MatExpansionModule,
         SettingsGridComponent,
     ],
     templateUrl: "./character-settings.component.html",
@@ -124,7 +126,7 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
     pluginTTSProviders: ModelProviderDefinition[] = [];
     selectedCharacterIndex: number | null = null;
     editMode = false;
-    showVoiceMoreSettings = false;
+    showVoiceSettings = false;
     initializing: boolean = true;
     /** Primary MIME from CharacterService (blob avatars); null when no file or unknown. */
     private avatarMimePrimary: string | null = null;
@@ -1015,7 +1017,7 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
                     this.config.characters[this.selectedCharacterIndex],
                 ),
             );
-            this.showVoiceMoreSettings = false;
+            this.showVoiceSettings = false;
             this.editMode = true;
         } else {
             // If already in edit mode, exit with confirmation for unsaved changes
@@ -1043,7 +1045,7 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
         // actually its all saved already, all we need it to clear the local backup
 
         this.localCharacterCopy = null;
-        this.showVoiceMoreSettings = false;
+        this.showVoiceSettings = false;
         this.editMode = false;
     }
 
@@ -1068,7 +1070,7 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
         this.localCharacterCopy = null;
 
         // Always exit edit mode
-        this.showVoiceMoreSettings = false;
+        this.showVoiceSettings = false;
         this.editMode = false;
     }
 
