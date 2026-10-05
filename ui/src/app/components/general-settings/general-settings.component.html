@@ -131,12 +131,12 @@
                                     <strong>Selected providers</strong>
                                     <table>
                                         <tbody>
-                                            <tr><th scope="row"><button type="button" (click)="openTarget('llm-provider')">Main LLM</button></th><td>{{ providerLabel(config.llm_provider, 'llm') }}</td></tr>
-                                            <tr><th scope="row"><button type="button" (click)="openTarget('agent-llm-provider')">Agent LLM</button></th><td>{{ providerLabel(config.agent_llm_provider, 'agent_llm') }}</td></tr>
-                                            <tr><th scope="row"><button type="button" (click)="openTarget('stt-provider')">STT / Microphone</button></th><td>{{ providerLabel(config.stt_provider, 'stt') }}</td></tr>
-                                            <tr><th scope="row"><button type="button" (click)="openTarget('tts-provider')">TTS / Speaker</button></th><td>{{ providerLabel(config.tts_provider, 'tts') }}</td></tr>
-                                            <tr><th scope="row"><button type="button" (click)="openTarget('vision-provider')">Vision</button></th><td>{{ providerLabel(config.vision_provider, 'vision') }}</td></tr>
-                                            <tr><th scope="row"><button type="button" (click)="openTarget('embedding-provider')">Embedding / Logbook</button></th><td>{{ providerLabel(config.embedding_provider, 'embedding') }}</td></tr>
+                                            <tr><th scope="row"><button type="button" (click)="openTarget('llm-provider')">Main LLM</button></th><td><button type="button" (click)="openTarget('llm-provider')">{{ providerLabel(config.llm_provider, 'llm') }}</button></td></tr>
+                                            <tr><th scope="row"><button type="button" (click)="openTarget('agent-llm-provider')">Agent LLM</button></th><td><button type="button" (click)="openTarget('agent-llm-provider')">{{ providerLabel(config.agent_llm_provider, 'agent_llm') }}</button></td></tr>
+                                            <tr><th scope="row"><button type="button" (click)="openTarget('stt-provider')">STT / Microphone</button></th><td><button type="button" (click)="openTarget('stt-provider')">{{ providerLabel(config.stt_provider, 'stt') }}</button></td></tr>
+                                            <tr><th scope="row"><button type="button" (click)="openTarget('tts-provider')">TTS / Speaker</button></th><td><button type="button" (click)="openTarget('tts-provider')">{{ providerLabel(config.tts_provider, 'tts') }}</button></td></tr>
+                                            <tr><th scope="row"><button type="button" (click)="openTarget('vision-provider')">Vision</button></th><td><button type="button" (click)="openTarget('vision-provider')">{{ providerLabel(config.vision_provider, 'vision') }}</button></td></tr>
+                                            <tr><th scope="row"><button type="button" (click)="openTarget('embedding-provider')">Embedding / Logbook</button></th><td><button type="button" (click)="openTarget('embedding-provider')">{{ providerLabel(config.embedding_provider, 'embedding') }}</button></td></tr>
                                         </tbody>
                                     </table>
                                 </div>

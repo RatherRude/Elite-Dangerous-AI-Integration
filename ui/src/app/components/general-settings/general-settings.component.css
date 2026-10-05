@@ -234,7 +234,7 @@ mat-slide-toggle {
   background: transparent;
 }
 
-.preflight-provider-summary th button {
+.preflight-provider-summary button {
   border: 0;
   padding: 0;
   background: transparent;
@@ -246,11 +246,11 @@ mat-slide-toggle {
   text-transform: inherit;
 }
 
-.preflight-provider-summary th button:hover {
+.preflight-provider-summary button:hover {
   text-decoration: underline;
 }
 
-.preflight-provider-summary th button:focus-visible {
+.preflight-provider-summary button:focus-visible {
   outline: 2px solid var(--hud-cyan);
   outline-offset: 2px;
 }
