@@ -13,7 +13,7 @@ from lib.PluginSettingDefinitions import (
     SettingsGrid, 
     ToggleSetting, 
     ParagraphSetting,
-    ModelProviderDefinition, TextSetting, AvatarSetting
+    ModelProviderDefinition, TextSetting
 )
 from lib.Logger import log, show_chat_message
 from lib.PluginBase import PluginBase, PluginManifest
@@ -380,18 +380,8 @@ class EDCoPilotPlugin(PluginBase):
                             ),
                             TextSetting(
                                 key="voice",
-                                label="EDCoPilot Voice",
+                                label="EDCoPilot Character Name / Voice",
                                 type="text",
-                            ),
-                            AvatarSetting(
-                                key="avatar",
-                                label="Change EDCoPilot avatar",
-                                type="avatar",
-                                readonly=False,
-                                placeholder=None,
-                                default_value="",
-                                default_avatar_url=EDCOPILOT_AVATAR_URL,
-                                default_avatar_label="Default EDCoPilot Avatar",
                             )
                         ]
                     ),
@@ -537,12 +527,16 @@ class EDCoPilotPlugin(PluginBase):
         config = self._helper._config
         active_character = config['characters'][config['active_character_index']]
         read_commentary = self.settings.get("read_commentary", False)
-        voice = self.settings.get("voice", active_character.get('tts_voice'))
+        selected_voice = self.settings.get("voice", active_character.get('tts_voice'))
+        voice = selected_voice
         post_processing = None
-        for i,c in enumerate(config['characters']):
-            if c.get('name') == voice:
-                voice = c.get('tts_voice')
-                post_processing = c.get('tts_postprocessing')
+        avatar_url = EDCOPILOT_AVATAR_URL
+        for character in config['characters']:
+            if character.get('name') == selected_voice:
+                voice = character.get('tts_voice')
+                post_processing = character.get('tts_postprocessing')
+                avatar_url = character.get('avatar') or EDCOPILOT_AVATAR_URL
+                break
 
         while True:
             if not self.client.pending_events.empty():
@@ -554,12 +548,7 @@ class EDCoPilotPlugin(PluginBase):
                     def dispatch_edcopilot_event(include_avatar: bool = False):
                         content = {"text": text}
                         if include_avatar:
-                            selected_avatar = self.settings.get("avatar")
-                            content["avatar_url"] = (
-                                selected_avatar
-                                if isinstance(selected_avatar, str) and selected_avatar
-                                else EDCOPILOT_AVATAR_URL
-                            )
+                            content["avatar_url"] = avatar_url
                         self._helper.dispatch_event(PluginEvent(
                             kind="plugin",
                             plugin_event_name="EdCoPilotEvent",

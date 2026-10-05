@@ -10,8 +10,6 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 
 export interface AvatarCatalogDialogData {
   currentAvatarPath?: string;
-  defaultAvatarUrl?: string;
-  defaultAvatarLabel?: string;
 }
 
 export interface AvatarCatalogResult {
@@ -145,14 +143,6 @@ export class AvatarCatalogDialogComponent implements OnInit {
   isCurrentlyDefault(): boolean {
     // Current avatar is default if it's empty, null, or undefined
     return !this.data.currentAvatarPath;
-  }
-
-  getDefaultAvatarUrl(): string {
-    return this.data.defaultAvatarUrl || 'assets/cn_avatar_default.svg';
-  }
-
-  getDefaultAvatarLabel(): string {
-    return this.data.defaultAvatarLabel || 'Default Avatar';
   }
 
   async deleteAvatar(avatarPath: string) {
