@@ -26,6 +26,11 @@ mat-panel-title mat-icon {
   height: 1.25rem;
 }
 
+.provider-title-selection {
+  font-size: 0.667em;
+  font-weight: 400;
+}
+
 .font-scale-setting {
   display: grid;
   grid-template-columns: minmax(12rem, 1fr) minmax(12rem, 18rem) auto;

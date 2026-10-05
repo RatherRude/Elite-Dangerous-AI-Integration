@@ -122,6 +122,14 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             case "commander":
                 this.focusAdvancedSetting("commander-name");
                 break;
+            case "llm-provider":
+            case "agent-llm-provider":
+            case "stt-provider":
+            case "tts-provider":
+            case "vision-provider":
+            case "embedding-provider":
+                this.focusAdvancedSetting(target);
+                break;
             case "character":
                 this.selectedIndex = 1;
                 break;

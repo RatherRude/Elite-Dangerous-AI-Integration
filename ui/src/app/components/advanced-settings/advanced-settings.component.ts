@@ -35,7 +35,7 @@ import {
     MatExpansionPanelHeader,
     MatExpansionPanelTitle,
 } from "@angular/material/expansion";
-import { filterProvidersForSlot, ModelProviderDefinition, ProviderSlot, SettingsGrid } from "../../services/plugin-settings";
+import { filterProvidersForSlot, modelProviderLabel, ModelProviderDefinition, ProviderSlot, SettingsGrid } from "../../services/plugin-settings";
 import { ApiKeyDetectionService } from "../../services/api-key-detection.service";
 import { bundledDefaultVoice } from "../../services/bundled-provider-ui";
 import { SettingsGridComponent } from "../settings-grid/settings-grid.component";
@@ -50,11 +50,17 @@ import { FontScaleService } from "../../services/font-scale.service";
 
 export type AdvancedSettingsFocusTarget =
     | "commander-name"
+    | "llm-provider"
+    | "agent-llm-provider"
+    | "stt-provider"
+    | "tts-provider"
+    | "vision-provider"
+    | "embedding-provider"
     | "stt-input-device"
     | "tts-output-device"
     | "overlay-mode";
 
-type AdvancedSettingsPanel = "commander" | "stt" | "tts" | "overlay" | "remote-interface";
+type AdvancedSettingsPanel = "commander" | "llm" | "agent-llm" | "stt" | "tts" | "vision" | "embedding" | "overlay" | "remote-interface";
 
 @Component({
     selector: "app-advanced-settings",
@@ -90,6 +96,18 @@ export class AdvancedSettingsComponent implements OnDestroy {
     @Output() questEditorOpen = new EventEmitter<void>();
     @ViewChild("commanderNameInput") private commanderNameInput?: ElementRef<HTMLInputElement>;
     @ViewChild("commanderNameField", { read: ElementRef }) private commanderNameField?: ElementRef<HTMLElement>;
+    @ViewChild("llmProviderField", { read: ElementRef }) private llmProviderField?: ElementRef<HTMLElement>;
+    @ViewChild("llmProviderSelect") private llmProviderSelect?: MatSelect;
+    @ViewChild("agentLlmProviderField", { read: ElementRef }) private agentLlmProviderField?: ElementRef<HTMLElement>;
+    @ViewChild("agentLlmProviderSelect") private agentLlmProviderSelect?: MatSelect;
+    @ViewChild("sttProviderField", { read: ElementRef }) private sttProviderField?: ElementRef<HTMLElement>;
+    @ViewChild("sttProviderSelect") private sttProviderSelect?: MatSelect;
+    @ViewChild("ttsProviderField", { read: ElementRef }) private ttsProviderField?: ElementRef<HTMLElement>;
+    @ViewChild("ttsProviderSelect") private ttsProviderSelect?: MatSelect;
+    @ViewChild("visionProviderField", { read: ElementRef }) private visionProviderField?: ElementRef<HTMLElement>;
+    @ViewChild("visionProviderSelect") private visionProviderSelect?: MatSelect;
+    @ViewChild("embeddingProviderField", { read: ElementRef }) private embeddingProviderField?: ElementRef<HTMLElement>;
+    @ViewChild("embeddingProviderSelect") private embeddingProviderSelect?: MatSelect;
     @ViewChild("sttInputDeviceField", { read: ElementRef }) private sttInputDeviceField?: ElementRef<HTMLElement>;
     @ViewChild("sttInputDeviceSelect") private sttInputDeviceSelect?: MatSelect;
     @ViewChild("ttsOutputDeviceField", { read: ElementRef }) private ttsOutputDeviceField?: ElementRef<HTMLElement>;
@@ -131,8 +149,12 @@ export class AdvancedSettingsComponent implements OnDestroy {
     private vrCompatibilityRefreshTimer?: ReturnType<typeof setTimeout>;
     expandedPanels: Record<AdvancedSettingsPanel, boolean> = {
         commander: false,
+        llm: false,
+        "agent-llm": false,
         stt: false,
         tts: false,
+        vision: false,
+        embedding: false,
         overlay: false,
         "remote-interface": false,
     };
@@ -241,6 +263,18 @@ export class AdvancedSettingsComponent implements OnDestroy {
         switch (target) {
             case "commander-name":
                 return "commander";
+            case "llm-provider":
+                return "llm";
+            case "agent-llm-provider":
+                return "agent-llm";
+            case "stt-provider":
+                return "stt";
+            case "tts-provider":
+                return "tts";
+            case "vision-provider":
+                return "vision";
+            case "embedding-provider":
+                return "embedding";
             case "stt-input-device":
                 return "stt";
             case "tts-output-device":
@@ -255,6 +289,30 @@ export class AdvancedSettingsComponent implements OnDestroy {
             case "commander-name":
                 this.commanderNameInput?.nativeElement.focus();
                 this.commanderNameField?.nativeElement.scrollIntoView({ behavior: "smooth", block: "center" });
+                break;
+            case "llm-provider":
+                this.llmProviderSelect?.focus();
+                this.llmProviderField?.nativeElement.scrollIntoView({ behavior: "smooth", block: "center" });
+                break;
+            case "agent-llm-provider":
+                this.agentLlmProviderSelect?.focus();
+                this.agentLlmProviderField?.nativeElement.scrollIntoView({ behavior: "smooth", block: "center" });
+                break;
+            case "stt-provider":
+                this.sttProviderSelect?.focus();
+                this.sttProviderField?.nativeElement.scrollIntoView({ behavior: "smooth", block: "center" });
+                break;
+            case "tts-provider":
+                this.ttsProviderSelect?.focus();
+                this.ttsProviderField?.nativeElement.scrollIntoView({ behavior: "smooth", block: "center" });
+                break;
+            case "vision-provider":
+                this.visionProviderSelect?.focus();
+                this.visionProviderField?.nativeElement.scrollIntoView({ behavior: "smooth", block: "center" });
+                break;
+            case "embedding-provider":
+                this.embeddingProviderSelect?.focus();
+                this.embeddingProviderField?.nativeElement.scrollIntoView({ behavior: "smooth", block: "center" });
                 break;
             case "stt-input-device":
                 this.sttInputDeviceSelect?.focus();
@@ -306,6 +364,10 @@ export class AdvancedSettingsComponent implements OnDestroy {
 
     providersForSlot(providers: ModelProviderDefinition[], slot: ProviderSlot): ModelProviderDefinition[] {
         return filterProvidersForSlot(providers, slot);
+    }
+
+    providerLabel(providerRef: string, slot: ProviderSlot): string {
+        return modelProviderLabel(providerRef, slot, this.pluginModelProviders);
     }
 
     // Get plugin setting value

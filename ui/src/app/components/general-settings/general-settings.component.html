@@ -127,6 +127,19 @@
                                         API key can only contain letters, numbers, underscores, dots, and hyphens
                                     </mat-error>
                                 </mat-form-field>
+                                <div class="preflight-provider-summary">
+                                    <strong>Selected providers</strong>
+                                    <table>
+                                        <tbody>
+                                            <tr><th scope="row"><button type="button" (click)="openTarget('llm-provider')">Main LLM</button></th><td>{{ providerLabel(config.llm_provider, 'llm') }}</td></tr>
+                                            <tr><th scope="row"><button type="button" (click)="openTarget('agent-llm-provider')">Agent LLM</button></th><td>{{ providerLabel(config.agent_llm_provider, 'agent_llm') }}</td></tr>
+                                            <tr><th scope="row"><button type="button" (click)="openTarget('stt-provider')">STT / Microphone</button></th><td>{{ providerLabel(config.stt_provider, 'stt') }}</td></tr>
+                                            <tr><th scope="row"><button type="button" (click)="openTarget('tts-provider')">TTS / Speaker</button></th><td>{{ providerLabel(config.tts_provider, 'tts') }}</td></tr>
+                                            <tr><th scope="row"><button type="button" (click)="openTarget('vision-provider')">Vision</button></th><td>{{ providerLabel(config.vision_provider, 'vision') }}</td></tr>
+                                            <tr><th scope="row"><button type="button" (click)="openTarget('embedding-provider')">Embedding / Logbook</button></th><td>{{ providerLabel(config.embedding_provider, 'embedding') }}</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             }
 
                             @case ('input') {
@@ -544,7 +557,7 @@
                                     <mat-select [ngModel]="activeCharacterIndex"
                                                 (ngModelChange)="onCharacterSelect($event)">
                                         @for (character of characterList; track $index) {
-                                            <mat-option [value]="$index">{{ character.name || ('Character ' + ($index + 1)) }}</mat-option>
+                                            <mat-option [value]="$index">{{ character.name || ('Character ' + ($index + 1)) }}{{ character.tts_voice ? ' [' + character.tts_voice + ']' : '' }}</mat-option>
                                         }
                                     </mat-select>
                                 </mat-form-field>

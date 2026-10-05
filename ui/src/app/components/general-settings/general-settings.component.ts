@@ -28,7 +28,7 @@ import { MatSliderModule } from "@angular/material/slider";
 import { MatDialog } from "@angular/material/dialog";
 import { ScreenInfo } from "../../models/screen-info";
 import { Character, CharacterService } from "../../services/character.service";
-import { filterProvidersForSlot, ModelProviderDefinition, ProviderSlot } from "../../services/plugin-settings";
+import { filterProvidersForSlot, modelProviderLabel, ModelProviderDefinition, ProviderSlot } from "../../services/plugin-settings";
 import { ApiKeyDetectionService } from "../../services/api-key-detection.service";
 import { bundledDefaultVoice } from "../../services/bundled-provider-ui";
 import { ConfirmationDialogComponent } from "../confirmation-dialog/confirmation-dialog.component";
@@ -36,6 +36,12 @@ import { ChatService } from "../../services/chat.service";
 
 export type GeneralSettingsTarget =
     | "commander"
+    | "llm-provider"
+    | "agent-llm-provider"
+    | "stt-provider"
+    | "tts-provider"
+    | "vision-provider"
+    | "embedding-provider"
     | "character"
     | "audio-input"
     | "audio-output"
@@ -282,12 +288,12 @@ export class GeneralSettingsComponent implements OnDestroy {
     }
 
     get soundInputSummary(): string {
-        const provider = this.providerLabel(this.config?.stt_provider, this.pluginSTTProviders);
+        const provider = this.providerLabel(this.config?.stt_provider, "stt");
         return `${provider} / ${this.inputDeviceName}`;
     }
 
     get soundOutputSummary(): string {
-        const provider = this.providerLabel(this.config?.tts_provider, this.pluginTTSProviders);
+        const provider = this.providerLabel(this.config?.tts_provider, "tts");
         return `${provider} / ${this.outputDeviceName}`;
     }
 
@@ -370,22 +376,8 @@ export class GeneralSettingsComponent implements OnDestroy {
         return counts;
     }
 
-    isPluginProvider(provider: string | undefined | null): boolean {
-        return provider?.startsWith("plugin:") ?? false;
-    }
-
-    providerLabel(provider: string | undefined | null, pluginProviders: ModelProviderDefinition[] = []): string {
-        if (!provider) {
-            return "Not set";
-        }
-        if (this.isPluginProvider(provider)) {
-            const match = pluginProviders.find(
-                (pluginProvider) => provider === `plugin:${pluginProvider.plugin_guid}:${pluginProvider.id}`,
-            );
-            return match?.label ?? "Plugin";
-        }
-
-        return provider === "none" ? "None" : provider;
+    providerLabel(provider: string | undefined | null, slot: ProviderSlot): string {
+        return modelProviderLabel(provider, slot, this.pluginModelProviders);
     }
 
     get avatarPreviewUsesInlineSvg(): boolean {

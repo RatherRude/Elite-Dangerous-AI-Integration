@@ -95,6 +95,24 @@ export function filterProvidersForSlot(
     return providers.filter(provider => !provider.slots || provider.slots.includes(slot));
 }
 
+export function modelProviderLabel(
+    providerRef: string | null | undefined,
+    slot: ProviderSlot,
+    providers: ModelProviderDefinition[],
+): string {
+    if (!providerRef) return "Not set";
+    if (providerRef === "none") return "None";
+    if (!providerRef.startsWith("plugin:")) return providerRef;
+
+    const kind = slot === "agent_llm" ? "llm" : slot === "vision" ? "vlm" : slot;
+    const provider = providers.find(p =>
+        p.kind === kind &&
+        (!p.slots || p.slots.includes(slot)) &&
+        providerRef === `plugin:${p.plugin_guid}:${p.id}`
+    );
+    return provider?.label ?? "Plugin";
+}
+
 export interface ApiKeyDetection {
     patterns?: string[];
     priority?: number;

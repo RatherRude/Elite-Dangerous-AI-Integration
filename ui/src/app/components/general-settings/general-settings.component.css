@@ -201,6 +201,60 @@ mat-slide-toggle {
   line-height: 1.4;
 }
 
+.preflight-provider-summary {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.85rem;
+}
+
+.preflight-provider-summary table {
+  width: 100%;
+  margin-top: 0.5rem;
+  border-spacing: 0 0.35rem;
+  text-align: left;
+}
+
+.preflight-provider-summary th {
+  width: 12rem;
+  padding: 0 1rem 0 0;
+  font-weight: 400;
+  text-align: left;
+}
+
+.preflight-provider-summary td {
+  color: var(--hud-cyan);
+  text-align: left;
+}
+
+.preflight-provider-summary th,
+.preflight-provider-summary td {
+  border-bottom: 0;
+}
+
+.preflight-provider-summary tr:hover td {
+  background: transparent;
+}
+
+.preflight-provider-summary th button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  text-transform: inherit;
+}
+
+.preflight-provider-summary th button:hover {
+  text-decoration: underline;
+}
+
+.preflight-provider-summary th button:focus-visible {
+  outline: 2px solid var(--hud-cyan);
+  outline-offset: 2px;
+}
+
 .vr-compatibility-card {
   display: flex;
   flex-wrap: wrap;
