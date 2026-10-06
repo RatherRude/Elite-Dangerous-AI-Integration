@@ -13,7 +13,10 @@
                         <mat-select [(value)]="selectedCharacterIndex" (selectionChange)="onCharacterSelect($event.value)" [disabled]="editMode">
                             <mat-divider *ngIf="config.characters && config.characters.length > 0"></mat-divider>
                             <mat-option *ngFor="let character of config.characters; let i = index" [value]="i">
-                                {{ character.name }} ({{ character.tts_voice }})
+                                {{ character.name }}
+                                @if (getCharacterVoiceDisplay(character); as voiceDisplay) {
+                                    ({{ voiceDisplay }})
+                                }
                                 <span class="char-details">
                                     {{ character.personality_preset | slice:0:1 | uppercase }}{{ character.personality_preset | slice:1 }} -
                                     {{ countActiveEvents(character) }} active events
@@ -167,81 +170,6 @@
                                         (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_language', $event)">
                                 </mat-form-field>
                             </div>
-                            <div class="character-voice-container">
-                                <div class="trait-select">
-                                    <!-- Voice selection -->
-                                    <mat-form-field appearance="outline">
-                                        <mat-label>Voice</mat-label>
-                                        @if (voiceCatalog === 'openai') {
-                                             <mat-select [ngModel]="activeCharacter.tts_voice"
-                                                     (ngModelChange)="setCharacterProperty('tts_voice', $event)">
-                                                @if (!isOpenAIVoice(activeCharacter.tts_voice)) {
-                                                    <mat-option [value]="activeCharacter.tts_voice" style="font-style: italic">
-                                                        {{ activeCharacter.tts_voice }}
-                                                    </mat-option>
-                                                    <mat-divider class="custom-voice-divider"></mat-divider>
-                                                }
-                                                <mat-option value="alloy">Alloy - Neutral, versatile voice</mat-option>
-                                                <mat-option value="ash">Ash - New voice</mat-option>
-                                                <mat-option value="ballad">Ballad - New voice</mat-option>
-                                                <mat-option value="coral">Coral - New voice</mat-option>
-                                                <mat-option value="echo">Echo - Deeper, experienced voice</mat-option>
-                                                <mat-option value="fable">Fable - Warm, soft-spoken voice</mat-option>
-                                                <mat-option value="nova">Nova - Bright, friendly voice</mat-option>
-                                                <mat-option value="onyx">Onyx - Deep, authoritative voice</mat-option>
-                                                <mat-option value="sage">Sage - New voice</mat-option>
-                                                <mat-option value="shimmer">Shimmer - Clear, warm voice</mat-option>
-                                            </mat-select>
-                                        } @else if (voiceCatalog === 'edge') {
-                                            <mat-select [ngModel]="activeCharacter.tts_voice"
-                                                    (selectionChange)="onVoiceSelectionChange($event.value)">
-                                                @if (isCustomVoice(activeCharacter.tts_voice)) {
-                                                    <mat-option [value]="activeCharacter.tts_voice" style="font-style: italic">
-                                                        {{ getVoiceDisplayName(activeCharacter.tts_voice) }}
-                                                    </mat-option>
-                                                    <mat-divider class="custom-voice-divider"></mat-divider>
-                                                }
-                                                <mat-optgroup label="English - United States">
-                                                    <mat-option value="en-US-AvaMultilingualNeural">Ava Multilingual (Female)</mat-option>
-                                                    <mat-option value="en-US-AndrewMultilingualNeural">Andrew Multilingual (Male)</mat-option>
-                                                    <mat-option value="en-US-AriaNeural">Aria (Female) - Positive, Confident</mat-option>
-                                                    <mat-option value="en-US-AnaNeural">Ana (Female) - Cute</mat-option>
-                                                    <mat-option value="en-US-ChristopherNeural">Christopher (Male) - Reliable, Authority</mat-option>
-                                                    <mat-option value="en-US-EricNeural">Eric (Male) - Rational</mat-option>
-                                                    <mat-option value="en-US-GuyNeural">Guy (Male) - Passion</mat-option>
-                                                    <mat-option value="en-US-JennyNeural">Jenny (Female) - Friendly, Considerate</mat-option>
-                                                    <mat-option value="en-US-MichelleNeural">Michelle (Female) - Friendly, Pleasant</mat-option>
-                                                    <mat-option value="en-US-RogerNeural">Roger (Male) - Lively</mat-option>
-                                                    <mat-option value="en-US-SteffanNeural">Steffan (Male) - Rational</mat-option>
-                                                </mat-optgroup>
-                                                <mat-optgroup label="English - United Kingdom">
-                                                    <mat-option value="en-GB-LibbyNeural">Libby (Female)</mat-option>
-                                                    <mat-option value="en-GB-MaisieNeural">Maisie (Female)</mat-option>
-                                                    <mat-option value="en-GB-RyanNeural">Ryan (Male)</mat-option>
-                                                    <mat-option value="en-GB-SoniaNeural">Sonia (Female)</mat-option>
-                                                    <mat-option value="en-GB-ThomasNeural">Thomas (Male)</mat-option>
-                                                </mat-optgroup>
-                                                <mat-optgroup label="English - Australia">
-                                                    <mat-option value="en-AU-NatashaNeural">Natasha (Female)</mat-option>
-                                                    <mat-option value="en-AU-WilliamNeural">William (Male)</mat-option>
-                                                </mat-optgroup>
-                                                <mat-option value="show-all-voices">Show All Voices...</mat-option>
-                                            </mat-select>
-                                        } @else {
-                                            <input matInput [ngModel]="activeCharacter.tts_voice"
-                                                (ngModelChange)="setCharacterProperty('tts_voice', $event)">
-                                        }
-                                    </mat-form-field>
-                                </div>
-                                <div class="voice-settings-toggle">
-                                    <button mat-button
-                                            type="button"
-                                            (click)="showVoiceMoreSettings = !showVoiceMoreSettings">
-                                        Voice settings
-                                        <mat-icon>{{ showVoiceMoreSettings ? 'expand_less' : 'expand_more' }}</mat-icon>
-                                    </button>
-                                </div>
-                            </div>
                         </div>
 
                         <!-- Avatar Section -->
@@ -274,36 +202,50 @@
                             </div>
                         </div>
                     </div>
-                </div>
 
-                @if (showVoiceMoreSettings) {
-                    <div class="voice-more-settings">
-                        @if (!voiceInstructionSupportedModels.includes(selectedTtsModel)) {
-                            <div class="trait-container">
-                                <div class="trait-select">
-                                    <mat-form-field appearance="outline">
-                                        <mat-label>Speed</mat-label>
-                                        <input matInput [ngModel]="activeCharacter.tts_speed"
-                                                (ngModelChange)="setCharacterProperty('tts_speed', $event)">
-                                    </mat-form-field>
+                    <mat-expansion-panel class="character-voice-panel"
+                                         [expanded]="showVoiceSettings"
+                                         (opened)="showVoiceSettings = true"
+                                         (closed)="showVoiceSettings = false">
+                        <mat-expansion-panel-header>
+                            <mat-panel-title>
+                                <mat-icon>record_voice_over</mat-icon>
+                                Voice &amp; processing
+                            </mat-panel-title>
+                            <mat-panel-description class="voice-panel-description">
+                                Provider voice, speed, effects, and environment processing
+                            </mat-panel-description>
+                        </mat-expansion-panel-header>
+                        <div class="voice-settings-content">
+                                <div class="provider-voice-settings">
+                                    @if (hasVoiceSettingsConfig) {
+                                        @for (grid of selectedVoiceSettingsConfig; track grid.key) {
+                                            <app-settings-grid
+                                                [grid]="grid"
+                                                [getValue]="createVoiceGetValueFn()"
+                                                [setValue]="createVoiceSetValueFn()"
+                                                headerLevel="h4">
+                                            </app-settings-grid>
+                                        }
+                                    } @else {
+                                        <h4>Voice</h4>
+                                        <mat-form-field appearance="outline">
+                                            <mat-label>Voice</mat-label>
+                                            <input matInput [ngModel]="activeCharacter.tts_voice"
+                                                (ngModelChange)="setCharacterProperty('tts_voice', $event)">
+                                        </mat-form-field>
+                                    }
                                 </div>
-                            </div>
-                        }
-                        @if (voiceInstructionSupportedModels.includes(selectedTtsModel)) {
+                                <div class="voice-more-settings">
+                        <div class="trait-container">
                             <div class="trait-select">
-                                <div class="voice-settings-hint">
-                                    <b>Voice instructions</b><br>
-                                    Enter a detailed description of how you want your voice to sound.<br>
-                                    You can include accent, emotional range, tone, impressions, and speed.<br>
-                                    Warning: This will increase the cost of each query!
-                                </div>
                                 <mat-form-field appearance="outline">
-                                    <mat-label>Voice Tone Instructions</mat-label>
-                                    <textarea matInput [ngModel]="activeCharacter.tts_prompt"
-                                            (ngModelChange)="setCharacterProperty('tts_prompt', $event)"></textarea>
+                                    <mat-label>Speed</mat-label>
+                                    <input matInput [ngModel]="activeCharacter.tts_speed"
+                                            (ngModelChange)="setCharacterProperty('tts_speed', $event)">
                                 </mat-form-field>
                             </div>
-                        }
+                        </div>
                         <div class="voice-effects-section">
                             <div class="voice-effects-title">Voice FX</div>
                             <div class="trait-container">
@@ -418,8 +360,10 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-                }
+                                </div>
+                            </div>
+                    </mat-expansion-panel>
+                </div>
 
                 <!-- Character settings when preset is not custom -->
                 @if (activeCharacter.personality_preset !== 'custom') {

@@ -781,6 +781,10 @@ class TTSModel(ABC):
     def synthesize(self, text: str, voice: str) -> Iterable[bytes]:
         pass
 
+    def synthesize_with_settings(self, text: str, settings: dict[str, Any]) -> Iterable[bytes]:
+        """Synthesize with character-scoped provider settings while preserving legacy models."""
+        return self.synthesize(text, str(settings.get("voice") or ""))
+
 class OpenAITTSModel(TTSModel):
     def __init__(self, base_url: str, api_key: str, model_name: str, speed: float = 1.0, voice_instructions: str | None = None, provider_name: str | None = None):
         super().__init__(model_name, provider_name=provider_name)
@@ -814,3 +818,12 @@ class OpenAITTSModel(TTSModel):
                 message = e.message
             
             raise LLMError(f'TTS {e.response.reason_phrase}: {message}', e)
+
+    def synthesize_with_settings(self, text: str, settings: dict[str, Any]) -> Iterable[bytes]:
+        previous_instructions = self.voice_instructions
+        instructions = settings.get("instructions")
+        self.voice_instructions = str(instructions) if instructions else None
+        try:
+            yield from self.synthesize(text, str(settings.get("voice") or ""))
+        finally:
+            self.voice_instructions = previous_instructions

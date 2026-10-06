@@ -861,6 +861,7 @@ class Character(TypedDict, total=False):
     personality_knowledge_scifi: bool
     personality_knowledge_history: bool
     tts_voice: str
+    tts_voice_settings: dict[str, dict[str, Any]]
     tts_speed: str
     tts_prompt: str
     tts_postprocessing: CharacterTTSPostprocessingConfig
@@ -1544,6 +1545,32 @@ def migrate(data: dict) -> dict:
                     )
         data['config_version'] = 23
 
+    if data['config_version'] < 24:
+        selected_tts_provider = data.get('tts_provider')
+        for character in data.get('characters', []):
+            if not isinstance(character, dict):
+                continue
+            voice_settings = character.setdefault('tts_voice_settings', {})
+            if not isinstance(voice_settings, dict):
+                voice_settings = {}
+                character['tts_voice_settings'] = voice_settings
+            if isinstance(selected_tts_provider, str) and selected_tts_provider != 'none':
+                provider_settings = voice_settings.setdefault(selected_tts_provider, {})
+                if isinstance(provider_settings, dict):
+                    voice = character.get('tts_voice')
+                    if isinstance(voice, str) and voice:
+                        provider_settings.setdefault('voice', voice)
+                    instructions = character.get('tts_prompt')
+                    if isinstance(instructions, str) and instructions:
+                        provider_settings.setdefault('instructions', instructions)
+
+        mistral_settings = data.get('plugin_settings', {}).get(
+            'd17f20f6-2514-4a1f-9e54-2a3c089f5c2b', {}
+        )
+        if isinstance(mistral_settings, dict):
+            mistral_settings.pop('tts_voice', None)
+        data['config_version'] = 24
+
     data.pop('tools_var', None)
 
     for key in LEGACY_PROVIDER_SETTING_KEYS:
@@ -1583,7 +1610,7 @@ def merge_config_data(defaults: dict, user: dict):
                 continue
 
             # Plugin settings
-            if key == "plugin_settings":
+            if key in {"plugin_settings", "tts_voice_settings"}:
                 # Copy plugin settings directly, since we don't know what settings are supposed to be there.
                 merge[key] = user.get(key) or {}
                 continue
@@ -1620,6 +1647,13 @@ def getDefaultCharacter(config: Config) -> Character:
         if 0 <= active_index < len(characters)
         else None
     )
+    selected_tts_provider = config.get('tts_provider')
+    initial_voice = current_voice or 'en-US-AvaMultilingualNeural'
+    initial_voice_settings = (
+        {selected_tts_provider: {'voice': initial_voice}}
+        if isinstance(selected_tts_provider, str) and selected_tts_provider.startswith('plugin:')
+        else {}
+    )
     return Character({
         "name": 'Default',
         "character": "Keep your responses extremely brief and minimal. Maintain a professional and serious tone in all responses. Stick to factual information. You are COVAS:NEXT (Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal) - professional, efficient, and no-nonsense. Provides essential information without unnecessary elaboration. Focuses on factual data and operational status. 'Destination reached.' 'Fuel level acceptable.' Clean, precise communication. Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS:NEXT. Always respond in English regardless of the language spoken to you. Balance emotional understanding with factual presentation. Use everyday language that balances casual and professional tones. Project an air of expertise and certainty when providing information. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.",
@@ -1637,7 +1671,8 @@ def getDefaultCharacter(config: Config) -> Character:
         "personality_knowledge_pop_culture": False,
         "personality_knowledge_scifi": False,
         "personality_knowledge_history": False,
-        "tts_voice": current_voice or 'en-US-AvaMultilingualNeural',
+        "tts_voice": initial_voice,
+        "tts_voice_settings": initial_voice_settings,
         "tts_speed": '1.2',
         "tts_prompt": '',
         "tts_postprocessing": get_default_character_tts_postprocessing(),
@@ -1661,7 +1696,7 @@ def getDefaultCharacter(config: Config) -> Character:
 
 def load_config() -> Config:
     defaults: Config = {
-        'config_version': 23,
+        'config_version': 24,
         'commander_name': "",
         'characters': [],
         'active_character_index': 0,  # -1 means using the default legacy character

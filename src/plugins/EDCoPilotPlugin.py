@@ -411,6 +411,7 @@ class EDCoPilotPlugin(PluginBase):
                             ]
                         ),
                     ],
+                    voice_settings_config=[],
                 ),
             ]
 
@@ -525,18 +526,26 @@ class EDCoPilotPlugin(PluginBase):
     def process_edcopilot_events(self):
 
         config = self._helper._config
-        active_character = config['characters'][config['active_character_index']]
+        tts_provider = config.get('tts_provider')
+
+        def character_voice(character: dict[str, Any]):
+            if self.is_edcopilot_dominant():
+                return None
+            provider_settings = character.get('tts_voice_settings', {}).get(tts_provider, {})
+            if isinstance(provider_settings, dict) and 'voice' in provider_settings:
+                voice = provider_settings['voice']
+                return voice if isinstance(voice, str) and voice else None
+            return character.get('tts_voice')
+
         read_commentary = self.settings.get("read_commentary", False)
-        selected_voice = self.settings.get("voice", active_character.get('tts_voice'))
-        voice = selected_voice
+        voice = self.settings.get("voice") or None
         post_processing = None
         avatar_url = EDCOPILOT_AVATAR_URL
-        for character in config['characters']:
-            if character.get('name') == selected_voice:
-                voice = character.get('tts_voice')
-                post_processing = character.get('tts_postprocessing')
-                avatar_url = character.get('avatar') or EDCOPILOT_AVATAR_URL
-                break
+        for i,c in enumerate(config['characters']):
+            if c.get('name') == voice:
+                voice = character_voice(c)
+                post_processing = c.get('tts_postprocessing')
+                avatar_url = c.get('avatar') or EDCOPILOT_AVATAR_URL
 
         while True:
             if not self.client.pending_events.empty():

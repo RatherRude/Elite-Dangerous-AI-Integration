@@ -14,6 +14,7 @@ from plugins.ProviderPluginHelpers import (
     number_field,
     select_field,
     string_setting,
+    textarea_field,
     text_field,
 )
 from plugins.EdgeTTSPlugin import EDGE_TTS_PLUGIN_GUID
@@ -92,6 +93,12 @@ class OpenAIPlugin(PluginBase):
                 "settings_config": [{"key": "tts", "label": "OpenAI Text-to-Speech", "fields": [
                     *_account_fields("tts"),
                     text_field("tts_model", "Model", OPENAI_TTS_MODEL),
+                ]}],
+                "voice_settings_config": [{"key": "voice", "label": "OpenAI Voice", "fields": [
+                    select_field("voice", "Voice", "nova", [
+                        "alloy", "ash", "ballad", "coral", "echo", "fable", "nova", "onyx", "sage", "shimmer",
+                    ]),
+                    textarea_field("instructions", "Voice Instructions", ""),
                 ]}],
             },
             {

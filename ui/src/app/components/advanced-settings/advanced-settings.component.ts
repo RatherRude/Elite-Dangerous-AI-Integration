@@ -35,9 +35,8 @@ import {
     MatExpansionPanelHeader,
     MatExpansionPanelTitle,
 } from "@angular/material/expansion";
-import { filterProvidersForSlot, modelProviderLabel, ModelProviderDefinition, ProviderSlot, SettingsGrid } from "../../services/plugin-settings";
+import { filterProvidersForSlot, modelProviderLabel, ModelProviderDefinition, providerVoiceSettingsValues, ProviderSlot, SettingsGrid } from "../../services/plugin-settings";
 import { ApiKeyDetectionService } from "../../services/api-key-detection.service";
-import { bundledDefaultVoice } from "../../services/bundled-provider-ui";
 import { SettingsGridComponent } from "../settings-grid/settings-grid.component";
 import { MatDialog } from "@angular/material/dialog";
 import { ConfirmationDialogComponent } from "../confirmation-dialog/confirmation-dialog.component";
@@ -417,9 +416,12 @@ export class AdvancedSettingsComponent implements OnDestroy {
 
     async onTtsProviderChange(providerRef: string): Promise<void> {
         await this.onConfigChange({ tts_provider: providerRef });
-        const defaultVoice = bundledDefaultVoice(providerRef);
-        if (defaultVoice) {
-            await this.characterService.setCharacterProperty("tts_voice", defaultVoice);
+        const character = this.characterService.getCurrentCharacter();
+        const voiceSettings = providerVoiceSettingsValues(
+            providerRef, this.pluginTTSProviders, character?.tts_voice_settings,
+        );
+        if (voiceSettings) {
+            await this.characterService.setTtsProviderVoiceSettings(providerRef, voiceSettings);
         }
     }
 
@@ -429,9 +431,12 @@ export class AdvancedSettingsComponent implements OnDestroy {
         this.apiKeyType = result.label;
         await this.onConfigChange(result.update);
         if (typeof result.update.tts_provider === "string") {
-            const defaultVoice = bundledDefaultVoice(result.update.tts_provider);
-            if (defaultVoice) {
-                await this.characterService.setCharacterProperty("tts_voice", defaultVoice);
+            const character = this.characterService.getCurrentCharacter();
+            const voiceSettings = providerVoiceSettingsValues(
+                result.update.tts_provider, this.pluginTTSProviders, character?.tts_voice_settings,
+            );
+            if (voiceSettings) {
+                await this.characterService.setTtsProviderVoiceSettings(result.update.tts_provider, voiceSettings);
             }
         }
     }

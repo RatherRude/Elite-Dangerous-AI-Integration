@@ -55,4 +55,11 @@ export class SettingsFieldComponent {
     onButtonClick(): void {
         this.buttonClick.emit();
     }
+
+    hasUnknownSelectValue(): boolean {
+        return !this.field.multi_select
+            && this.value !== undefined
+            && this.value !== null
+            && !this.field.select_options?.some(option => option.value === this.value);
+    }
 }

@@ -145,6 +145,29 @@ def create_model(self, provider_id: str, settings: dict[str, Any]):
 
 Provider references use `plugin:<plugin-guid>:<provider-id>`. `create_model` receives the same provider ID and the plugin's flat `plugin_settings[plugin_guid]` dictionary. The existing `LLMModel`, `STTModel`, `TTSModel`, and `EmbeddingModel` interfaces remain the model contracts; in particular, LLM implementations receive `generate(messages, tools, tool_choice)`. Optional provider metadata such as `slots` and `api_key_detection` is not required for existing plugins.
 
+TTS providers may optionally add `voice_settings_config`, using the same `SettingsGrid` format as provider settings. These values are stored per character and provider rather than in the plugin's global settings. Use `voice` as the primary field key when the provider has one; its label and field type may represent a named voice, a description, or a reference-audio path. Providers without a voice concept may omit that field, while an explicit empty list declares that the provider has no character-level voice controls. Omitting `voice_settings_config` entirely retains the legacy `synthesize(text, voice)` behavior.
+
+```python
+self.model_providers = [{
+    "kind": "tts",
+    "id": "tts",
+    "label": "Example TTS",
+    "settings_config": [],
+    "voice_settings_config": [{
+        "key": "voice",
+        "label": "Voice",
+        "fields": [TextSetting(
+            key="voice",
+            label="Reference audio path",
+            type="text",
+            default_value="",
+        )],
+    }],
+}]
+```
+
+Existing implementations only need `synthesize(text, voice)`. Providers that require additional character voice fields may override `synthesize_with_settings(text, settings)`; its default implementation forwards `settings["voice"]` to `synthesize`.
+
 ## PluginHelper Methods
 
 The `PluginHelper` class provides several methods for interacting with the COVAS:NEXT system:

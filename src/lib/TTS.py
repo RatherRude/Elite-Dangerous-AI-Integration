@@ -110,6 +110,7 @@ class TTS:
         self,
         tts_model: Optional[TTSModel] = None,
         voice: str = "nova",
+        voice_settings: dict[str, Any] | None = None,
         speed: float = 1.0,
         postprocessing_config: CharacterTTSPostprocessingConfig | None = None,
         output_device: Optional[str] = None,
@@ -117,6 +118,7 @@ class TTS:
     ):
         self.tts_model = tts_model
         self.voice = voice
+        self.voice_settings = dict(voice_settings) if voice_settings is not None else None
         self.speed = speed
         self.postprocessing_config = map_character_tts_postprocessing(
             postprocessing_config or get_default_character_tts_postprocessing(),
@@ -555,7 +557,14 @@ class TTS:
         else:
             try:
                 selected_voice = voice_override if voice_override else self.voice
-                for chunk in self.tts_model.synthesize(text, selected_voice):
+                if self.voice_settings is not None:
+                    settings = dict(self.voice_settings)
+                    if voice_override is not None and "voice" in settings:
+                        settings["voice"] = voice_override
+                    audio = self.tts_model.synthesize_with_settings(text, settings)
+                else:
+                    audio = self.tts_model.synthesize(text, selected_voice)
+                for chunk in audio:
                     if metrics is not None and metrics.get("time_to_first_byte_ms") is None:
                         metrics["time_to_first_byte_ms"] = (time() - started_at) * 1000
                     yield chunk

@@ -339,8 +339,14 @@ class MistralPlugin(PluginBase):
                     "fields": [
                         *_account_fields(),
                         _text_field("tts_model", "Model", MISTRAL_TTS_MODEL),
-                        _text_field("tts_voice", "Voice", MISTRAL_TTS_VOICE),
                     ],  # type: ignore[typeddict-item]
+                }],
+                "voice_settings_config": [{
+                    "key": "voice",
+                    "label": "Mistral Voice",
+                    "fields": [
+                        _text_field("voice", "Voice", MISTRAL_TTS_VOICE),
+                    ],
                 }],
             },
         ]
@@ -389,6 +395,6 @@ class MistralPlugin(PluginBase):
                 base_url=MISTRAL_API_URL,
                 api_key=api_key,
                 model_name=str(settings.get("tts_model") or MISTRAL_TTS_MODEL),
-                default_voice=str(settings.get("tts_voice") or MISTRAL_TTS_VOICE),
+                default_voice=MISTRAL_TTS_VOICE,
             )
         raise ValueError(f"Unknown Mistral model provider: {provider_id}")
