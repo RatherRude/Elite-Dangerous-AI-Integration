@@ -207,6 +207,7 @@ export interface OverlayCreateOptions {
     vrVerticalOffset?: number;
     vrDistanceOffset?: number;
     vrTiltDegrees?: number;
+    vrYawDegrees?: number;
     vrCurvature?: number;
 }
 
