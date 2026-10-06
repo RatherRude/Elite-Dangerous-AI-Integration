@@ -131,8 +131,8 @@
                                     <strong>Selected providers</strong>
                                     <table>
                                         <tbody>
-                                            <tr><th scope="row"><button type="button" (click)="openTarget('llm-provider')">Main LLM</button></th><td><button type="button" (click)="openTarget('llm-provider')">{{ providerLabel(config.llm_provider, 'llm') }}</button></td></tr>
-                                            <tr><th scope="row"><button type="button" (click)="openTarget('agent-llm-provider')">Agent LLM</button></th><td><button type="button" (click)="openTarget('agent-llm-provider')">{{ providerLabel(config.agent_llm_provider, 'agent_llm') }}</button></td></tr>
+                                            <tr><th scope="row"><button type="button" (click)="openTarget('llm-provider')">Main LLM</button></th><td><button type="button" (click)="openTarget('llm-provider')">{{ llmSummary(config.llm_provider, 'llm') }}</button></td></tr>
+                                            <tr><th scope="row"><button type="button" (click)="openTarget('agent-llm-provider')">Agent LLM</button></th><td><button type="button" (click)="openTarget('agent-llm-provider')">{{ llmSummary(config.agent_llm_provider, 'agent_llm') }}</button></td></tr>
                                             <tr><th scope="row"><button type="button" (click)="openTarget('stt-provider')">STT / Microphone</button></th><td><button type="button" (click)="openTarget('stt-provider')">{{ providerLabel(config.stt_provider, 'stt') }}</button></td></tr>
                                             <tr><th scope="row"><button type="button" (click)="openTarget('tts-provider')">TTS / Speaker</button></th><td><button type="button" (click)="openTarget('tts-provider')">{{ providerLabel(config.tts_provider, 'tts') }}</button></td></tr>
                                             <tr><th scope="row"><button type="button" (click)="openTarget('vision-provider')">Vision</button></th><td><button type="button" (click)="openTarget('vision-provider')">{{ providerLabel(config.vision_provider, 'vision') }}</button></td></tr>

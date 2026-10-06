@@ -580,7 +580,7 @@
                     @if (activeCharacter.personality_preset !== 'custom') {
                         <div class="character-prompt-actions-row">
                             <div class="character-prompt-actions">
-                                <button mat-raised-button
+                                <button mat-raised-button class="write-own-prompt-button"
                                         color="warn"
                                         (click)="enableCustomCharacterEditor()"
                                         [matTooltip]="'Switch to custom mode to write your own character prompt. Warning: This action cannot be undone'"
@@ -588,7 +588,7 @@
                                     <mat-icon>edit</mat-icon> Write Your Own Prompt
                                 </button>
 
-                                <button mat-raised-button
+                                <button mat-raised-button class="randomize-preset-button"
                                         color="accent"
                                         (click)="randomizePreset()"
                                         [matTooltip]="'Generate a random personality preset'"

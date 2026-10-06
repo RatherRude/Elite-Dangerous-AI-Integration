@@ -241,6 +241,40 @@ ul {
   margin-bottom: 12px;
 }
 
+// Preview the preset controls that disappear when custom prompt mode is confirmed.
+#character-creation:has(.write-own-prompt-button:is(:hover, :focus-visible)) {
+  .personality-settings,
+  .randomize-preset-button {
+    opacity: 0.4;
+    filter: grayscale(100%);
+  }
+}
+
+// Give the preset controls a gentle dice-like wobble before randomizing them.
+#character-creation:has(.randomize-preset-button:is(:hover, :focus-visible)) {
+  .personality-settings .trait-select,
+  .personality-settings .knowledge-areas,
+  .randomize-preset-button {
+    animation: preset-dice-shake 1s ease-in-out infinite;
+  }
+
+  .personality-settings .trait-select:nth-child(even) {
+    animation-delay: -0.5s;
+  }
+}
+
+@keyframes preset-dice-shake {
+  0%, 100% { transform: translate(0, 0) rotate(0); }
+  25% { transform: translate(-2px, 1px) rotate(-1deg); }
+  50% { transform: translate(2px, -2px) rotate(1deg); }
+  75% { transform: translate(-1px, 2px) rotate(-0.5deg); }
+}
+
+.personality-settings,
+.randomize-preset-button {
+  transition: opacity 0.2s ease, filter 0.2s ease;
+}
+
 .character-display.with-traits {
   display: flex;
 

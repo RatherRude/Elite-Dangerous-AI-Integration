@@ -28,7 +28,7 @@ import { MatSliderModule } from "@angular/material/slider";
 import { MatDialog } from "@angular/material/dialog";
 import { ScreenInfo } from "../../models/screen-info";
 import { Character, CharacterService } from "../../services/character.service";
-import { filterProvidersForSlot, modelProviderLabel, ModelProviderDefinition, ProviderSlot } from "../../services/plugin-settings";
+import { filterProvidersForSlot, llmProviderSummary, modelProviderLabel, ModelProviderDefinition, ProviderSlot } from "../../services/plugin-settings";
 import { ApiKeyDetectionService } from "../../services/api-key-detection.service";
 import { bundledDefaultVoice } from "../../services/bundled-provider-ui";
 import { ConfirmationDialogComponent } from "../confirmation-dialog/confirmation-dialog.component";
@@ -378,6 +378,10 @@ export class GeneralSettingsComponent implements OnDestroy {
 
     providerLabel(provider: string | undefined | null, slot: ProviderSlot): string {
         return modelProviderLabel(provider, slot, this.pluginModelProviders);
+    }
+
+    llmSummary(provider: string, slot: "llm" | "agent_llm"): string {
+        return llmProviderSummary(provider, slot, this.pluginModelProviders, this.config?.plugin_settings ?? {});
     }
 
     get avatarPreviewUsesInlineSvg(): boolean {

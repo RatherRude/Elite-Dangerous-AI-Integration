@@ -113,6 +113,25 @@ export function modelProviderLabel(
     return provider?.label ?? "Plugin";
 }
 
+export function llmProviderSummary(
+    providerRef: string | null | undefined,
+    slot: "llm" | "agent_llm",
+    providers: ModelProviderDefinition[],
+    pluginSettings: Record<string, Record<string, unknown>>,
+): string {
+    const label = modelProviderLabel(providerRef, slot, providers);
+    const provider = providers.find(p =>
+        p.kind === "llm" &&
+        (!p.slots || p.slots.includes(slot)) &&
+        providerRef === `plugin:${p.plugin_guid}:${p.id}`
+    );
+    const modelField = provider?.settings_config.flatMap(grid => grid.fields)
+        .find(field => field.label === "Model" || field.key === "model" || field.key.endsWith("_model"));
+    const configured = provider && modelField ? pluginSettings[provider.plugin_guid]?.[modelField.key] : undefined;
+    const model = typeof configured === "string" && configured.trim() ? configured.trim() : modelField?.default_value;
+    return typeof model === "string" && model.trim() ? `${label} - ${model.trim()}` : label;
+}
+
 export interface ApiKeyDetection {
     patterns?: string[];
     priority?: number;
