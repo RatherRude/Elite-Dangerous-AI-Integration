@@ -250,6 +250,9 @@ mat-slide-toggle {
   text-align: left;
   text-transform: inherit;
 }
+.preflight-provider-summary td button {
+  color: var(--hud-text);
+}
 
 .preflight-provider-summary button:hover {
   text-decoration: underline;
