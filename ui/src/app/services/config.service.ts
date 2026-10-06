@@ -78,58 +78,16 @@ export interface Config {
     characters: unknown[];
     active_character_index: number;
     // Other config settings
-    llm_provider:
-        | "openai"
-        | "openrouter"
-        | "google-ai-studio"
-        | "custom"
-        | "local-ai-server";
-    llm_model_name: string;
-    llm_reasoning_effort: 'default' | 'none' | 'minimal' | 'low' | 'medium' | 'high' | null;
-    llm_api_key: string;
-    llm_endpoint: string;
-    llm_temperature: number;
-    agent_llm_provider:
-        | "openai"
-        | "openrouter"
-        | "google-ai-studio"
-        | "custom"
-        | "local-ai-server";
-    agent_llm_model_name: string;
-    agent_llm_reasoning_effort: 'default' | 'none' | 'minimal' | 'low' | 'medium' | 'high' | null;
-    agent_llm_api_key: string;
-    agent_llm_endpoint: string;
-    agent_llm_temperature: number;
+    llm_provider: string;
+    agent_llm_provider: string;
     agent_llm_max_tries: number;
     mute_search: boolean;
-    vision_provider: "openai" | "google-ai-studio" | "custom" | "none" | "local-ai-server" | string;
-    vision_model_name: string;
-    vision_endpoint: string;
-    vision_api_key: string;
-    stt_provider:
-        | "openai"
-        | "custom"
-        | "custom-multi-modal"
-        | "google-ai-studio"
-        | "none"
-        | "local-ai-server"
-        | string;
-    stt_model_name: string;
-    stt_api_key: string;
-    stt_endpoint: string;
-    stt_language: string;
-    stt_custom_prompt: string;
+    vision_provider: string;
+    stt_provider: string;
     stt_required_word: string;
-    tts_provider: "openai" | "edge-tts" | "custom" | "none" | "local-ai-server" | string;
-    tts_model_name: string;
-    tts_api_key: string;
-    tts_endpoint: string;
+    tts_provider: string;
     // Embedding settings
-    embedding_provider: "openai" | "google-ai-studio" | "custom" | "none" | "local-ai-server" | string;
-    embedding_model_name: string;
-    embedding_api_key: string;
-    embedding_endpoint: string;
-    tools_var: boolean;
+    embedding_provider: string;
     vision_var: boolean;
     ptt_var: "voice_activation" | "push_to_talk" | "push_to_mute" | "toggle";
     ptt_inverted_var: boolean;
@@ -178,6 +136,7 @@ export interface Config {
     overlay_vr_vertical_offset: number;
     overlay_vr_distance_offset: number;
     overlay_vr_tilt_degrees: number;
+    overlay_vr_yaw_degrees: number;
     overlay_vr_curvature: number;
 
     enable_remote_tracing?: boolean;

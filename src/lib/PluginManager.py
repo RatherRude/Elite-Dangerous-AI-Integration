@@ -6,7 +6,7 @@ import os
 import sys
 from typing import Self
 
-from lib.Config import Config
+from lib.Config import Config, save_config
 
 from .PluginSettingDefinitions import PluginSettings, ModelProviderDefinition, ParagraphSetting, SettingsGrid, ErrorSetting
 from .Logger import log
@@ -45,6 +45,26 @@ class PluginManager:
         log('debug', f"Plugins folder ({plugin_folder}) added to path.")
         sys.path.insert(0, plugin_folder)
 
+    def _initialize_plugin_settings(self, plugin: PluginBase) -> PluginBase:
+        """Load and migrate one plugin's settings without changing its public API."""
+        guid = plugin.plugin_manifest.guid
+        stored = self.config.get('plugin_settings', {}).get(guid, {})
+        plugin.settings = dict(stored) if isinstance(stored, dict) else {}
+        previous_settings = dict(plugin.settings)
+        try:
+            settings_version = max(0, int(plugin.settings.get('settings_version', 0)))
+        except (TypeError, ValueError):
+            settings_version = 0
+        target_version = max(0, int(plugin.settings_schema_version))
+        while settings_version < target_version:
+            plugin.migrate_settings(plugin.settings, settings_version)
+            settings_version += 1
+            plugin.settings['settings_version'] = settings_version
+        if plugin.settings != previous_settings:
+            self.config.setdefault('plugin_settings', {})[guid] = plugin.settings
+            self.settings_migrated = True
+        return plugin
+
     def load_plugin_module(self, manifest: 'PluginManifest', file_path: str) -> 'PluginBase':
         # Get the module name from file name
         module_name = os.path.splitext(os.path.basename(file_path))[0]
@@ -68,22 +88,7 @@ class PluginManager:
         for attr in dir(module):
             obj = getattr(module, attr)
             if isinstance(obj, type) and issubclass(obj, PluginBase) and obj is not PluginBase:
-                plugin = obj(manifest) # Instantiate and return
-                plugin.settings = self.config.get('plugin_settings', {}).get(manifest.guid, {})
-                previous_settings = dict(plugin.settings)
-                try:
-                    settings_version = max(0, int(plugin.settings.get('settings_version', 0)))
-                except (TypeError, ValueError):
-                    settings_version = 0
-                target_version = max(0, int(plugin.settings_schema_version))
-                while settings_version < target_version:
-                    plugin.migrate_settings(plugin.settings, settings_version)
-                    settings_version += 1
-                    plugin.settings['settings_version'] = settings_version
-                if plugin.settings != previous_settings:
-                    self.config.setdefault('plugin_settings', {})[manifest.guid] = plugin.settings
-                    self.settings_migrated = True
-                return plugin
+                return self._initialize_plugin_settings(obj(manifest))
 
         raise TypeError("No valid PluginBase subclass found.")
     def load_plugins(self) -> Self:
@@ -150,23 +155,47 @@ class PluginManager:
         from plugins.EDCoPilotPlugin import EDCoPilotPlugin
         edcopilot_guid = 'ec3eee66-8c4c-4ede-be36-b8612b14a5c0'
         self.builtin_plugin_guids.add(edcopilot_guid)
-        self.plugin_list[edcopilot_guid] = EDCoPilotPlugin(PluginManifest(json.dumps({
+        self.plugin_list[edcopilot_guid] = self._initialize_plugin_settings(EDCoPilotPlugin(PluginManifest(json.dumps({
             "guid": edcopilot_guid,
             "name": "EDCoPilot Plugin",
             "author": "Elite Dangerous AI Integration",
             "version": "1.0.0",
             "repository": ""
-        })))
+        }))))
 
         from plugins.MistralPlugin import MISTRAL_PLUGIN_GUID, MistralPlugin
         self.builtin_plugin_guids.add(MISTRAL_PLUGIN_GUID)
-        self.plugin_list[MISTRAL_PLUGIN_GUID] = MistralPlugin(PluginManifest(json.dumps({
+        self.plugin_list[MISTRAL_PLUGIN_GUID] = self._initialize_plugin_settings(MistralPlugin(PluginManifest(json.dumps({
             "guid": MISTRAL_PLUGIN_GUID,
             "name": "Mistral Plugin",
             "author": "Elite Dangerous AI Integration",
             "version": "1.0.0",
             "repository": ""
-        })))
+        }))))
+
+        from plugins.EdgeTTSPlugin import EDGE_TTS_PLUGIN_GUID, EdgeTTSPlugin
+        from plugins.GoogleAIStudioPlugin import GOOGLE_AI_STUDIO_PLUGIN_GUID, GoogleAIStudioPlugin
+        from plugins.OpenAICompatiblePlugin import OPENAI_COMPATIBLE_PLUGIN_GUID, OpenAICompatiblePlugin
+        from plugins.OpenAIPlugin import OPENAI_PLUGIN_GUID, OpenAIPlugin
+        from plugins.OpenRouterPlugin import OPENROUTER_PLUGIN_GUID, OpenRouterPlugin
+
+        bundled_providers = [
+            (EDGE_TTS_PLUGIN_GUID, "Edge TTS Plugin", EdgeTTSPlugin),
+            (GOOGLE_AI_STUDIO_PLUGIN_GUID, "Google AI Studio Plugin", GoogleAIStudioPlugin),
+            (OPENAI_COMPATIBLE_PLUGIN_GUID, "OpenAI-compatible Plugin", OpenAICompatiblePlugin),
+            (OPENAI_PLUGIN_GUID, "OpenAI Plugin", OpenAIPlugin),
+            (OPENROUTER_PLUGIN_GUID, "OpenRouter Plugin", OpenRouterPlugin),
+        ]
+        for guid, name, plugin_type in bundled_providers:
+            self.builtin_plugin_guids.add(guid)
+            manifest = PluginManifest(json.dumps({
+                "guid": guid,
+                "name": name,
+                "author": "COVAS:NEXT",
+                "version": "1.0.0",
+                "repository": "",
+            }))
+            self.plugin_list[guid] = self._initialize_plugin_settings(plugin_type(manifest))
     
     def register_settings(self):
         """Register all settings and model providers for each plugin."""
@@ -236,6 +265,7 @@ class PluginManager:
 
         if self.settings_migrated:
             emit_message("config", config=self.config)
+            save_config(self.config)
             self.settings_migrated = False
 
         # Broadcast settings configs to UI
@@ -310,6 +340,14 @@ class PluginManager:
         Returns:
             The model instance, or None if creation failed
         """
+        provider = self.get_plugin_provider(plugin_guid, provider_id)
+        if provider is None:
+            log('error', f"Plugin provider '{plugin_guid}:{provider_id}' is not registered")
+            return None
+        if provider['kind'] != expected_kind:
+            log('error', f"Plugin provider '{plugin_guid}:{provider_id}' has kind {provider['kind']}, expected {expected_kind}")
+            return None
+
         # Find the plugin
         plugin: PluginBase | None = None
         for p in self.plugin_list.values():

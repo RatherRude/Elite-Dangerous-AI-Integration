@@ -6,7 +6,7 @@ import tempfile
 from pathlib import Path
 from time import sleep
 
-from PIL import Image
+from PIL import Image, ImageOps
 
 from .Logger import log
 
@@ -16,14 +16,13 @@ MACOS_STEAM_STREAMING_PROCESS_NAMES = ("steamstreamingclient", "streaming_client
 
 
 def resize_and_crop_16_9(image: Image.Image, new_height: int) -> Image.Image:
-    width, height = image.size
-    aspect_ratio = width / height
-    new_width = int(new_height * aspect_ratio)
-    image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
-
-    target_width = int(new_height * (16 / 9))
-    left = (new_width - target_width) / 2
-    return image.crop((left, 0, left + target_width, new_height))
+    target_size = (round(new_height * (16 / 9)), new_height)
+    return ImageOps.fit(
+        image,
+        target_size,
+        method=Image.Resampling.LANCZOS,
+        centering=(0.5, 0.5),
+    )
 
 
 def get_windows_game_window_handle():

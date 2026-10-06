@@ -303,7 +303,7 @@ export class ActionsContainerComponent implements OnDestroy {
     }
 
     private isActionAvailable(action: ActionButton): boolean {
-        if (!this.config?.tools_var || !this.config.game_actions_var) return false;
+        if (!this.config?.game_actions_var) return false;
         if (this.config.allowed_actions?.[action.action] !== true) return false;
         if (!this.scopeMatches(action.scope)) return false;
 

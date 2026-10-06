@@ -1,9 +1,16 @@
+:host {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
 .general-dashboard {
   position: relative;
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 1rem;
-  min-height: 16.25rem;
+  min-height: 0;
 }
 
 mat-form-field {
@@ -16,8 +23,10 @@ mat-slide-toggle {
 
 .preflight-shell {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 0.5rem;
+  min-height: 0;
   /*padding: 1rem;*/
   border: 0;
   border-radius: 14px;
@@ -35,17 +44,20 @@ mat-slide-toggle {
 
 .preflight-layout {
   display: grid;
+  flex: 1;
   grid-template-columns: minmax(13.75rem, 1fr) minmax(0, 2fr);
   gap: 0.75rem;
   align-items: stretch;
-  min-height: 25.625rem;
+  min-height: 0;
 }
 
 .preflight-list {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-height: 0;
   padding: 2px 0;
+  overflow-y: auto;
 }
 
 .preflight-item {
@@ -167,7 +179,7 @@ mat-slide-toggle {
   flex: 1 1 auto;
   max-height: none;
   min-height: 0;
-  padding: 0.75rem 0.75rem 3.4rem;
+  padding: 0.75rem 0.75rem calc(7rem + env(safe-area-inset-bottom));
   overflow: auto;
   opacity: 1;
 }
@@ -177,21 +189,14 @@ mat-slide-toggle {
 }
 
 .preflight-detail-footer {
-  position: absolute;
-  right: 0.55rem;
-  bottom: 0.45rem;
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
   justify-content: flex-end;
+  margin-top: 1rem;
   padding: 0;
   border: 0;
   background: transparent;
-  pointer-events: none;
-}
-
-.preflight-detail-footer button {
-  pointer-events: auto;
 }
 
 .preflight-helper-text {
@@ -199,6 +204,60 @@ mat-slide-toggle {
   color: rgba(255, 255, 255, 0.72);
   font-size: 0.85rem;
   line-height: 1.4;
+}
+
+.preflight-provider-summary {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.85rem;
+}
+
+.preflight-provider-summary table {
+  width: 100%;
+  margin-top: 0.5rem;
+  border-spacing: 0 0.35rem;
+  text-align: left;
+}
+
+.preflight-provider-summary th {
+  width: 12rem;
+  padding: 0 1rem 0 0;
+  font-weight: 400;
+  text-align: left;
+}
+
+.preflight-provider-summary td {
+  color: var(--hud-cyan);
+  text-align: left;
+}
+
+.preflight-provider-summary th,
+.preflight-provider-summary td {
+  border-bottom: 0;
+}
+
+.preflight-provider-summary tr:hover td {
+  background: transparent;
+}
+
+.preflight-provider-summary button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  text-transform: inherit;
+}
+
+.preflight-provider-summary button:hover {
+  text-decoration: underline;
+}
+
+.preflight-provider-summary button:focus-visible {
+  outline: 2px solid var(--hud-cyan);
+  outline-offset: 2px;
 }
 
 .vr-compatibility-card {
@@ -504,6 +563,7 @@ div.output-device-column .mat-mdc-form-field-subscript-wrapper {
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .overlay-primary-controls mat-form-field,
@@ -516,6 +576,34 @@ div.output-device-column .mat-mdc-form-field-subscript-wrapper {
   flex: 1 0 100%;
   width: 100%;
   margin-top: 0;
+}
+
+.vr-anchor-field {
+  max-width: 24rem;
+}
+
+.vr-control-group {
+  flex: 1 0 100%;
+  min-width: 0;
+}
+
+.vr-control-group h4 {
+  margin: 0 0 0.35rem;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.vr-control-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1rem;
+}
+
+.vr-placement-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .overlay-toggle-column {
@@ -561,7 +649,7 @@ div.output-device-column .mat-mdc-form-field-subscript-wrapper {
 
 .overlay-slider-field {
   display: flex;
-  flex: 1 1 14rem;
+  min-width: 0;
   flex-direction: column;
   gap: 0.25rem;
 }
@@ -573,6 +661,32 @@ div.output-device-column .mat-mdc-form-field-subscript-wrapper {
 
 .overlay-slider-field mat-slider {
   width: 100%;
+}
+
+.vr-compatibility-card {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.vr-compatibility-card > div:first-child {
+  flex: 1 1 18rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.vr-compatibility-actions {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  max-width: 100%;
+}
+
+@media (max-width: 640px) {
+  .vr-control-grid,
+  .vr-placement-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .overlay-backend-info {
@@ -609,7 +723,6 @@ div.output-device-column .mat-mdc-form-field-subscript-wrapper {
   }
 
   .preflight-detail {
-    height: auto !important;
     min-height: 20rem;
   }
 }

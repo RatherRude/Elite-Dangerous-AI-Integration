@@ -1,8 +1,8 @@
 import { AfterViewChecked, Component, ElementRef, Input, OnChanges, SimpleChanges, OnDestroy } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatCardModule } from "@angular/material/card";
-import { ChatMessage, ChatService } from "../../services/chat.service.js";
-import { Character, CharacterService } from "../../services/character.service.js";
+import { ChatMessage, ChatService } from "../../services/chat.service";
+import { Character, CharacterService } from "../../services/character.service";
 import { Subscription } from "rxjs";
 
 @Component({

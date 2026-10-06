@@ -64,14 +64,13 @@
             </div>
         }
         
-        <mat-slide-toggle [ngModel]="config.tools_var && config.game_actions_var"
-                          (ngModelChange)="onConfigChange({game_actions_var: $event})"
-                          [disabled]="!config.tools_var">
+        <mat-slide-toggle [ngModel]="config.game_actions_var"
+                          (ngModelChange)="onConfigChange({game_actions_var: $event})">
             Enable Game Actions
         </mat-slide-toggle>
         <p>Game actions are performed by the AI on your behalf, like deploying the landing gear or opening
             the galaxy map. <a target="_blank" rel="noopener noreferrer" href="https://ratherrude.github.io/Elite-Dangerous-AI-Integration/20_actions/#available-game-actions">Learn more.</a></p>
-        @if (config.tools_var && config.game_actions_var) {
+        @if (config.game_actions_var) {
             <mat-expansion-panel>
                 <mat-expansion-panel-header>
                     <mat-panel-title>
@@ -310,18 +309,16 @@
         }
         
         <div style="display:flex; align-items:center; gap:8px;">
-            <mat-slide-toggle [ngModel]="config.tools_var && config.web_search_actions_var"
-                              (ngModelChange)="onConfigChange({web_search_actions_var: $event})"
-                              [disabled]="!config.tools_var">
+            <mat-slide-toggle [ngModel]="config.web_search_actions_var"
+                              (ngModelChange)="onConfigChange({web_search_actions_var: $event})">
                 Enable Web Actions
             </mat-slide-toggle>
         </div>
         <p>Web actions are performed by the AI on your behalf and allow you to search the web for
             information, like searching for stations selling a specific commodity or material.</p>
         <div style="display:flex; align-items:center; gap:8px;">
-            <mat-slide-toggle [ngModel]="config.tools_var && config.ui_actions_var"
-                              (ngModelChange)="onConfigChange({ui_actions_var: $event})"
-                              [disabled]="!config.tools_var">
+            <mat-slide-toggle [ngModel]="config.ui_actions_var"
+                              (ngModelChange)="onConfigChange({ui_actions_var: $event})">
                 Enable UI Actions
             </mat-slide-toggle>
         </div>
@@ -336,9 +333,8 @@
                 Warning: Performing UI changes creates noticeable cost!
             </span>
         </label>
-        <mat-slide-toggle [ngModel]="config.tools_var && config.use_action_cache_var"
-                            (ngModelChange)="onConfigChange({use_action_cache_var: $event})"
-                            [disabled]="!config.tools_var">
+        <mat-slide-toggle [ngModel]="config.use_action_cache_var"
+                            (ngModelChange)="onConfigChange({use_action_cache_var: $event})">
             Enable Action Cache
         </mat-slide-toggle>
         <p>The action cache allows the AI to learn from previous interactions and reuse actions for similar

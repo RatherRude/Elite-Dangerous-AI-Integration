@@ -241,6 +241,40 @@ ul {
   margin-bottom: 12px;
 }
 
+// Preview the preset controls that disappear when custom prompt mode is confirmed.
+#character-creation:has(.write-own-prompt-button:is(:hover, :focus-visible)) {
+  .personality-settings,
+  .randomize-preset-button {
+    opacity: 0.4;
+    filter: grayscale(100%);
+  }
+}
+
+// Give the preset controls a gentle dice-like wobble before randomizing them.
+#character-creation:has(.randomize-preset-button:is(:hover, :focus-visible)) {
+  .personality-settings .trait-select,
+  .personality-settings .knowledge-areas,
+  .randomize-preset-button {
+    animation: preset-dice-shake 1s ease-in-out infinite;
+  }
+
+  .personality-settings .trait-select:nth-child(even) {
+    animation-delay: -0.5s;
+  }
+}
+
+@keyframes preset-dice-shake {
+  0%, 100% { transform: translate(0, 0) rotate(0); }
+  25% { transform: translate(-2px, 1px) rotate(-1deg); }
+  50% { transform: translate(2px, -2px) rotate(1deg); }
+  75% { transform: translate(-1px, 2px) rotate(-0.5deg); }
+}
+
+.personality-settings,
+.randomize-preset-button {
+  transition: opacity 0.2s ease, filter 0.2s ease;
+}
+
 .character-display.with-traits {
   display: flex;
 
@@ -489,61 +523,47 @@ ul {
   }
 }
 
-.character-voice-container {
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
+.character-voice-panel {
+  margin-bottom: 20px;
 }
 
-.voice-settings-toggle {
-  display: flex;
-  align-items: flex-start;
-  padding-top: 8px;
+.voice-panel-description {
+  justify-content: flex-end;
+  font-size: 0.82rem;
+}
 
-  button {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    white-space: nowrap;
-    min-height: 40px;
-    padding: 0 14px;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 20px;
-    background: rgba(255, 255, 255, 0.05);
-    color: rgba(255, 255, 255, 0.92);
-    transition:
-      background-color 0.2s ease,
-      border-color 0.2s ease,
-      transform 0.2s ease;
+.provider-voice-settings {
+  width: 100%;
 
-    &:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: rgba(255, 255, 255, 0.3);
-    }
-
-    &:focus-visible {
-      outline: 2px solid rgba(255, 255, 255, 0.35);
-      outline-offset: 2px;
-    }
-
-    mat-icon {
-      margin: 0;
-      opacity: 0.85;
-    }
+  > h4 {
+    margin: 16px 0 8px;
+    font-size: 1rem;
+    font-weight: 500;
   }
 }
 
 .voice-more-settings {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 16px;
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+
+  > .trait-container .trait-select {
+    flex: 0 1 280px;
+  }
 }
 
 .voice-effects-section {
   display: flex;
   flex-direction: column;
   gap: 12px;
+
+  .trait-container {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .voice-effects-title {
@@ -555,6 +575,35 @@ ul {
   margin-bottom: 8px;
   color: rgba(255, 255, 255, 0.75);
   line-height: 1.5;
+}
+
+@media (max-width: 720px) {
+  .character-edit-header {
+    flex-direction: column;
+
+    .character-edit-header-left-column,
+    .avatar-edit-section {
+      width: 100%;
+    }
+
+    .avatar-edit-section {
+      display: flex;
+      justify-content: center;
+    }
+  }
+
+  .voice-panel-description {
+    display: none;
+  }
+
+  .voice-effects-section .trait-container {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .voice-more-settings > .trait-container .trait-select {
+    flex-basis: 100%;
+  }
 }
 
 // Mute category button styling

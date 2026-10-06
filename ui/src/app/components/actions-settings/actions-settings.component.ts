@@ -3,7 +3,7 @@ import { CommonModule } from "@angular/common";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { MatSelectModule } from "@angular/material/select";
-import { Config, ConfigService, WeaponType, KeybindsMessages } from "../../services/config.service.js";
+import { Config, ConfigService, WeaponType, KeybindsMessages } from "../../services/config.service";
 import { Subscription } from "rxjs";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { FormsModule } from "@angular/forms";

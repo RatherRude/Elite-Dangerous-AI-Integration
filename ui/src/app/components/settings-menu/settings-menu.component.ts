@@ -10,7 +10,7 @@ import { Subscription } from "rxjs";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { CommonModule } from "@angular/common";
 import { PluginSettingsComponent } from "../plugin-settings/plugin-settings.component";
-import { PolicyService } from "../../services/policy.service.js";
+import { PolicyService } from "../../services/policy.service";
 import {
     AdvancedSettingsComponent,
     AdvancedSettingsFocusTarget,
@@ -121,6 +121,14 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
         switch (target) {
             case "commander":
                 this.focusAdvancedSetting("commander-name");
+                break;
+            case "llm-provider":
+            case "agent-llm-provider":
+            case "stt-provider":
+            case "tts-provider":
+            case "vision-provider":
+            case "embedding-provider":
+                this.focusAdvancedSetting(target);
                 break;
             case "character":
                 this.selectedIndex = 1;

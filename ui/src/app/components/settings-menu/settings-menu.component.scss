@@ -25,6 +25,18 @@
   box-sizing: border-box;
 }
 
+.overview-tab-content {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.overview-tab-content app-general-settings {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .tab-icon {
   margin-right: 8px;
 }

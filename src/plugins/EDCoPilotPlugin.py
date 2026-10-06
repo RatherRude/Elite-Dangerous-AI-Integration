@@ -13,7 +13,7 @@ from lib.PluginSettingDefinitions import (
     SettingsGrid, 
     ToggleSetting, 
     ParagraphSetting,
-    ModelProviderDefinition,TextSetting
+    ModelProviderDefinition, TextSetting
 )
 from lib.Logger import log, show_chat_message
 from lib.PluginBase import PluginBase, PluginManifest
@@ -370,11 +370,6 @@ class EDCoPilotPlugin(PluginBase):
                                 placeholder=None,
                                 default_value=False
                             ),
-                            TextSetting(
-                                key="voice",
-                                label="EDCoPilot Voice",
-                                type="text",
-                            ),
                             ToggleSetting(
                                 key="react_to_commentary",
                                 label="React to EDCoPilot commentary",
@@ -382,6 +377,11 @@ class EDCoPilotPlugin(PluginBase):
                                 readonly=False,
                                 placeholder=None,
                                 default_value=False
+                            ),
+                            TextSetting(
+                                key="voice",
+                                label="EDCoPilot Character Name / Voice",
+                                type="text",
                             )
                         ]
                     ),
@@ -411,6 +411,7 @@ class EDCoPilotPlugin(PluginBase):
                             ]
                         ),
                     ],
+                    voice_settings_config=[],
                 ),
             ]
 
@@ -525,14 +526,26 @@ class EDCoPilotPlugin(PluginBase):
     def process_edcopilot_events(self):
 
         config = self._helper._config
-        active_character = config['characters'][config['active_character_index']]
+        tts_provider = config.get('tts_provider')
+
+        def character_voice(character: dict[str, Any]):
+            if self.is_edcopilot_dominant():
+                return None
+            provider_settings = character.get('tts_voice_settings', {}).get(tts_provider, {})
+            if isinstance(provider_settings, dict) and 'voice' in provider_settings:
+                voice = provider_settings['voice']
+                return voice if isinstance(voice, str) and voice else None
+            return character.get('tts_voice')
+
         read_commentary = self.settings.get("read_commentary", False)
-        voice = self.settings.get("voice", active_character.get('tts_voice'))
+        voice = self.settings.get("voice") or None
         post_processing = None
+        avatar_url = EDCOPILOT_AVATAR_URL
         for i,c in enumerate(config['characters']):
             if c.get('name') == voice:
-                voice = c.get('tts_voice')
+                voice = character_voice(c)
                 post_processing = c.get('tts_postprocessing')
+                avatar_url = c.get('avatar') or EDCOPILOT_AVATAR_URL
 
         while True:
             if not self.client.pending_events.empty():
@@ -544,7 +557,7 @@ class EDCoPilotPlugin(PluginBase):
                     def dispatch_edcopilot_event(include_avatar: bool = False):
                         content = {"text": text}
                         if include_avatar:
-                            content["avatar_url"] = EDCOPILOT_AVATAR_URL
+                            content["avatar_url"] = avatar_url
                         self._helper.dispatch_event(PluginEvent(
                             kind="plugin",
                             plugin_event_name="EdCoPilotEvent",

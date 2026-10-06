@@ -14,12 +14,12 @@ import {
     Config,
     ConfigService,
     SystemInfo,
-} from "../../services/config.service.js";
+} from "../../services/config.service";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { FormsModule } from "@angular/forms";
 import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
-import { Character, CharacterService } from "../../services/character.service.js";
+import { Character, CharacterService } from "../../services/character.service";
 import { ConfigBackupService } from "../../services/config-backup.service";
 import { MatIcon } from "@angular/material/icon";
 import {
@@ -35,7 +35,8 @@ import {
     MatExpansionPanelHeader,
     MatExpansionPanelTitle,
 } from "@angular/material/expansion";
-import { ModelProviderDefinition, SettingsGrid } from "../../services/plugin-settings";
+import { filterProvidersForSlot, modelProviderLabel, ModelProviderDefinition, providerVoiceSettingsValues, ProviderSlot, SettingsGrid } from "../../services/plugin-settings";
+import { ApiKeyDetectionService } from "../../services/api-key-detection.service";
 import { SettingsGridComponent } from "../settings-grid/settings-grid.component";
 import { MatDialog } from "@angular/material/dialog";
 import { ConfirmationDialogComponent } from "../confirmation-dialog/confirmation-dialog.component";
@@ -48,11 +49,17 @@ import { FontScaleService } from "../../services/font-scale.service";
 
 export type AdvancedSettingsFocusTarget =
     | "commander-name"
+    | "llm-provider"
+    | "agent-llm-provider"
+    | "stt-provider"
+    | "tts-provider"
+    | "vision-provider"
+    | "embedding-provider"
     | "stt-input-device"
     | "tts-output-device"
     | "overlay-mode";
 
-type AdvancedSettingsPanel = "commander" | "stt" | "tts" | "overlay" | "remote-interface";
+type AdvancedSettingsPanel = "commander" | "llm" | "agent-llm" | "stt" | "tts" | "vision" | "embedding" | "overlay" | "remote-interface";
 
 @Component({
     selector: "app-advanced-settings",
@@ -88,6 +95,18 @@ export class AdvancedSettingsComponent implements OnDestroy {
     @Output() questEditorOpen = new EventEmitter<void>();
     @ViewChild("commanderNameInput") private commanderNameInput?: ElementRef<HTMLInputElement>;
     @ViewChild("commanderNameField", { read: ElementRef }) private commanderNameField?: ElementRef<HTMLElement>;
+    @ViewChild("llmProviderField", { read: ElementRef }) private llmProviderField?: ElementRef<HTMLElement>;
+    @ViewChild("llmProviderSelect") private llmProviderSelect?: MatSelect;
+    @ViewChild("agentLlmProviderField", { read: ElementRef }) private agentLlmProviderField?: ElementRef<HTMLElement>;
+    @ViewChild("agentLlmProviderSelect") private agentLlmProviderSelect?: MatSelect;
+    @ViewChild("sttProviderField", { read: ElementRef }) private sttProviderField?: ElementRef<HTMLElement>;
+    @ViewChild("sttProviderSelect") private sttProviderSelect?: MatSelect;
+    @ViewChild("ttsProviderField", { read: ElementRef }) private ttsProviderField?: ElementRef<HTMLElement>;
+    @ViewChild("ttsProviderSelect") private ttsProviderSelect?: MatSelect;
+    @ViewChild("visionProviderField", { read: ElementRef }) private visionProviderField?: ElementRef<HTMLElement>;
+    @ViewChild("visionProviderSelect") private visionProviderSelect?: MatSelect;
+    @ViewChild("embeddingProviderField", { read: ElementRef }) private embeddingProviderField?: ElementRef<HTMLElement>;
+    @ViewChild("embeddingProviderSelect") private embeddingProviderSelect?: MatSelect;
     @ViewChild("sttInputDeviceField", { read: ElementRef }) private sttInputDeviceField?: ElementRef<HTMLElement>;
     @ViewChild("sttInputDeviceSelect") private sttInputDeviceSelect?: MatSelect;
     @ViewChild("ttsOutputDeviceField", { read: ElementRef }) private ttsOutputDeviceField?: ElementRef<HTMLElement>;
@@ -106,14 +125,7 @@ export class AdvancedSettingsComponent implements OnDestroy {
     characterSubscription: Subscription;
     pluginProvidersSubscription: Subscription;
     screensSubscription: Subscription;
-    voiceInstructionSupportedModels: string[] = this.characterService.voiceInstructionSupportedModels;
     hideApiKey = true;
-    hideLlmApiKey = true;
-    hideAgentLlmApiKey = true;
-    hideSttApiKey = true;
-    hideTtsApiKey = true;
-    hideVisionApiKey = true;
-    hideEmbeddingApiKey = true;
     apiKeyType: string | null = null;
     assigningPTTIndex: number | null = null;
     isRefreshingAudioDevices = false;
@@ -136,8 +148,12 @@ export class AdvancedSettingsComponent implements OnDestroy {
     private vrCompatibilityRefreshTimer?: ReturnType<typeof setTimeout>;
     expandedPanels: Record<AdvancedSettingsPanel, boolean> = {
         commander: false,
+        llm: false,
+        "agent-llm": false,
         stt: false,
         tts: false,
+        vision: false,
+        embedding: false,
         overlay: false,
         "remote-interface": false,
     };
@@ -148,6 +164,7 @@ export class AdvancedSettingsComponent implements OnDestroy {
     pluginSTTProviders: ModelProviderDefinition[] = [];
     pluginTTSProviders: ModelProviderDefinition[] = [];
     pluginEmbeddingProviders: ModelProviderDefinition[] = [];
+    pluginModelProviders: ModelProviderDefinition[] = [];
 
     constructor(
         private configService: ConfigService,
@@ -158,6 +175,7 @@ export class AdvancedSettingsComponent implements OnDestroy {
         private dialog: MatDialog,
         private chatService: ChatService,
         private fontScaleService: FontScaleService,
+        private apiKeyDetectionService: ApiKeyDetectionService,
     ) {
         this.fontScale = this.fontScaleService.scale;
         this.configSubscription = this.configService.config$.subscribe(
@@ -178,6 +196,7 @@ export class AdvancedSettingsComponent implements OnDestroy {
         );
         this.pluginProvidersSubscription = this.configService.plugin_model_providers$.subscribe(
             (providers) => {
+                this.pluginModelProviders = providers;
                 this.pluginLLMProviders = providers.filter(p => p.kind === 'llm');
                 this.pluginVLMProviders = providers.filter(p => p.kind === 'vlm');
                 this.pluginSTTProviders = providers.filter(p => p.kind === 'stt');
@@ -243,6 +262,18 @@ export class AdvancedSettingsComponent implements OnDestroy {
         switch (target) {
             case "commander-name":
                 return "commander";
+            case "llm-provider":
+                return "llm";
+            case "agent-llm-provider":
+                return "agent-llm";
+            case "stt-provider":
+                return "stt";
+            case "tts-provider":
+                return "tts";
+            case "vision-provider":
+                return "vision";
+            case "embedding-provider":
+                return "embedding";
             case "stt-input-device":
                 return "stt";
             case "tts-output-device":
@@ -257,6 +288,30 @@ export class AdvancedSettingsComponent implements OnDestroy {
             case "commander-name":
                 this.commanderNameInput?.nativeElement.focus();
                 this.commanderNameField?.nativeElement.scrollIntoView({ behavior: "smooth", block: "center" });
+                break;
+            case "llm-provider":
+                this.llmProviderSelect?.focus();
+                this.llmProviderField?.nativeElement.scrollIntoView({ behavior: "smooth", block: "center" });
+                break;
+            case "agent-llm-provider":
+                this.agentLlmProviderSelect?.focus();
+                this.agentLlmProviderField?.nativeElement.scrollIntoView({ behavior: "smooth", block: "center" });
+                break;
+            case "stt-provider":
+                this.sttProviderSelect?.focus();
+                this.sttProviderField?.nativeElement.scrollIntoView({ behavior: "smooth", block: "center" });
+                break;
+            case "tts-provider":
+                this.ttsProviderSelect?.focus();
+                this.ttsProviderField?.nativeElement.scrollIntoView({ behavior: "smooth", block: "center" });
+                break;
+            case "vision-provider":
+                this.visionProviderSelect?.focus();
+                this.visionProviderField?.nativeElement.scrollIntoView({ behavior: "smooth", block: "center" });
+                break;
+            case "embedding-provider":
+                this.embeddingProviderSelect?.focus();
+                this.embeddingProviderField?.nativeElement.scrollIntoView({ behavior: "smooth", block: "center" });
                 break;
             case "stt-input-device":
                 this.sttInputDeviceSelect?.focus();
@@ -306,6 +361,14 @@ export class AdvancedSettingsComponent implements OnDestroy {
         return providers.some(provider => !provider.is_builtin);
     }
 
+    providersForSlot(providers: ModelProviderDefinition[], slot: ProviderSlot): ModelProviderDefinition[] {
+        return filterProvidersForSlot(providers, slot);
+    }
+
+    providerLabel(providerRef: string, slot: ProviderSlot): string {
+        return modelProviderLabel(providerRef, slot, this.pluginModelProviders);
+    }
+
     // Get plugin setting value
     getPluginProviderSetting(pluginGuid: string, key: string, defaultValue: any = null): any {
         const pluginSettings = this.config?.plugin_settings?.[pluginGuid];
@@ -342,62 +405,40 @@ export class AdvancedSettingsComponent implements OnDestroy {
         };
     }
 
-    updateTTSVoice(voice: string) {
-        this.characterService.setCharacterProperty("tts_voice", voice);
+    createButtonClickFn(pluginGuid: string): (fieldKey: string) => void {
+        return (fieldKey: string) => {
+            this.configService.clickPluginSettingsButton(pluginGuid, fieldKey).catch((error) => {
+                console.error("Error handling provider settings button click:", error);
+                this.snackBar.open("Error handling provider button click", "OK", { duration: 5000 });
+            });
+        };
     }
-    updateTTSSpeed(speed: string) {
-        this.characterService.setCharacterProperty("tts_speed", speed);
-    }
-    updateTTSPrompt(prompt: string) {
-        this.characterService.setCharacterProperty("tts_prompt", prompt);
+
+    async onTtsProviderChange(providerRef: string): Promise<void> {
+        await this.onConfigChange({ tts_provider: providerRef });
+        const character = this.characterService.getCurrentCharacter();
+        const voiceSettings = providerVoiceSettingsValues(
+            providerRef, this.pluginTTSProviders, character?.tts_voice_settings,
+        );
+        if (voiceSettings) {
+            await this.characterService.setTtsProviderVoiceSettings(providerRef, voiceSettings);
+        }
     }
 
     async onApiKeyChange(apiKey: string) {
         if (!this.config) return;
-
-        await this.onConfigChange({ api_key: apiKey });
-
-        let providerChanges: Partial<Config> = {};
-
-        if (apiKey.startsWith("AQ") || apiKey.startsWith("AIzaS")) {
-            this.apiKeyType = "Google AI Studio";
-            providerChanges = {
-                llm_provider: "google-ai-studio",
-                agent_llm_provider: "google-ai-studio",
-                stt_provider: "google-ai-studio",
-                vision_provider: "google-ai-studio",
-                tts_provider: "edge-tts",
-                vision_var: true,
-                embedding_provider: "google-ai-studio",
-            };
-        } else if (apiKey.startsWith("sk-or-v1")) {
-            this.apiKeyType = "OpenRouter";
-            providerChanges = {
-                llm_provider: "openrouter",
-                agent_llm_provider: "openrouter",
-                stt_provider: "none",
-                vision_provider: "none",
-                tts_provider: "edge-tts",
-                vision_var: false,
-                embedding_provider: "none",
-            };
-        } else if (apiKey.startsWith("sk-")) {
-            this.apiKeyType = "OpenAI";
-            providerChanges = {
-                llm_provider: "openai",
-                agent_llm_provider: "openai",
-                stt_provider: "openai",
-                vision_provider: "openai",
-                tts_provider: "edge-tts",
-                vision_var: true,
-                embedding_provider: "openai",
-            };
-        } else {
-            this.apiKeyType = null;
-            return;
+        const result = this.apiKeyDetectionService.buildUpdate(apiKey, this.config, this.pluginModelProviders);
+        this.apiKeyType = result.label;
+        await this.onConfigChange(result.update);
+        if (typeof result.update.tts_provider === "string") {
+            const character = this.characterService.getCurrentCharacter();
+            const voiceSettings = providerVoiceSettingsValues(
+                result.update.tts_provider, this.pluginTTSProviders, character?.tts_voice_settings,
+            );
+            if (voiceSettings) {
+                await this.characterService.setTtsProviderVoiceSettings(result.update.tts_provider, voiceSettings);
+            }
         }
-
-        await this.onConfigChange(providerChanges);
     }
 
     async onAssignPTT(e: Event, index: number) {

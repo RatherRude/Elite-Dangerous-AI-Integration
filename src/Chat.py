@@ -18,13 +18,9 @@ from EDMesg.CovasNext import (
     ExternalBackgroundChatNotification,
 )
 from lib.Models import (
-    create_llm_model,
     LLMModel,
-    create_embedding_model,
     EmbeddingModel,
-    create_stt_model,
     STTModel,
-    create_tts_model,
     TTSModel,
 )
 
@@ -141,8 +137,6 @@ class Chat:
             self.config["active_character_index"]
         ]
 
-        self.voice_instructions = self.character["tts_prompt"]
-
         self.backstory = self.character["character"].replace(
             "{commander_name}", self.config["commander_name"]
         )
@@ -190,8 +184,8 @@ class Chat:
                 )
             self.llmModel = cast(LLMModel, model)
         else:
-            self.llmModel = create_llm_model(
-                self.config["llm_provider"], self.config, "llm"
+            raise RuntimeError(
+                f"LLM provider is not a registered plugin: {self.config['llm_provider']}"
             )
 
         # Agent LLM model - check for plugin provider
@@ -210,8 +204,8 @@ class Chat:
                 )
             self.agent_llm_model = cast(LLMModel, model)
         else:
-            self.agent_llm_model = create_llm_model(
-                self.config["agent_llm_provider"], self.config, "agent_llm"
+            raise RuntimeError(
+                f"Agent LLM provider is not a registered plugin: {self.config['agent_llm_provider']}"
             )
 
         # embeddings
@@ -229,20 +223,13 @@ class Chat:
                 )
             else:
                 self.embeddingModel = cast(EmbeddingModel, model)
-        elif embedding_provider in [
-            "openai",
-            "custom",
-            "google-ai-studio",
-            "local-ai-server",
-        ]:
-            self.embeddingModel = create_embedding_model(
-                embedding_provider, self.config, "embedding"
-            )
+        elif embedding_provider != "none":
+            show_chat_message("warning", f"Embedding provider is not a registered plugin: {embedding_provider}")
 
         # vision
         self.visionModel: LLMModel | None = None
         if self.config["vision_var"]:
-            vision_provider = self.config.get("vision_provider", "openai")
+            vision_provider = self.config.get("vision_provider", "none")
             vision_plugin = parse_plugin_provider(vision_provider)
             if vision_plugin:
                 model = self.plugin_manager.create_plugin_model(
@@ -256,9 +243,7 @@ class Chat:
                 else:
                     self.visionModel = cast(LLMModel, model)
             else:
-                self.visionModel = create_llm_model(
-                    vision_provider, self.config, "vision"
-                )
+                show_chat_message("warning", f"Vision provider is not a registered plugin: {vision_provider}")
 
         log("debug", "Initializing Speech processing...")
         self.sttModel: STTModel | None = None
@@ -276,11 +261,10 @@ class Chat:
                 else:
                     self.sttModel = cast(STTModel, model)
             else:
-                self.sttModel = create_stt_model(
-                    self.config["stt_provider"], self.config, "stt"
-                )
+                show_chat_message("warning", f"STT provider is not a registered plugin: {self.config['stt_provider']}")
 
         self.ttsModel: TTSModel | None = None
+        tts_voice_settings: dict[str, Any] | None = None
         if self.config["tts_provider"] != "none":
             tts_plugin = parse_plugin_provider(self.config["tts_provider"])
             if tts_plugin:
@@ -294,18 +278,48 @@ class Chat:
                     )
                 else:
                     self.ttsModel = cast(TTSModel, model)
+                    provider = self.plugin_manager.get_plugin_provider(tts_plugin[0], tts_plugin[1])
+                    grids = provider.get("voice_settings_config") if provider else None
+                    if grids is not None:
+                        fields = [field for grid in grids for field in grid["fields"]]
+                        defaults = {
+                            field["key"]: field.get("default_value")
+                            for field in fields
+                            if "default_value" in field
+                        }
+                        stored = self.character.get("tts_voice_settings", {}).get(
+                            self.config["tts_provider"], {}
+                        )
+                        declared_keys = {field["key"] for field in fields}
+                        stored = {
+                            key: value
+                            for key, value in stored.items()
+                            if key in declared_keys
+                        } if isinstance(stored, dict) else {}
+                        tts_voice_settings = {
+                            **defaults,
+                            **stored,
+                        }
+                        if any(field["key"] == "voice" for field in fields):
+                            tts_voice_settings.setdefault("voice", self.character["tts_voice"])
+                        if any(field["key"] == "instructions" for field in fields):
+                            tts_voice_settings.setdefault("instructions", self.character["tts_prompt"])
             else:
-                # Create a config copy with character specific settings
-                tts_config = dict(self.config.copy())
-                tts_config["tts_speed"] = float(self.character["tts_speed"])
-                tts_config["tts_voice_instructions"] = self.character["tts_prompt"]
-                self.ttsModel = create_tts_model(
-                    self.config["tts_provider"], tts_config, "tts"
-                )
+                show_chat_message("warning", f"TTS provider is not a registered plugin: {self.config['tts_provider']}")
+
+        if self.ttsModel is not None:
+            if hasattr(self.ttsModel, "speed"):
+                self.ttsModel.speed = float(self.character["tts_speed"])
+            if tts_voice_settings is None and hasattr(self.ttsModel, "voice_instructions"):
+                self.ttsModel.voice_instructions = self.character["tts_prompt"] or None
 
         self.tts = TTS(
             tts_model=self.ttsModel,
-            voice=self.character["tts_voice"],
+            voice=str(
+                (tts_voice_settings or {}).get("voice")
+                or self.character["tts_voice"]
+            ),
+            voice_settings=tts_voice_settings,
             speed=float(self.character["tts_speed"]),
             postprocessing_config=self.character.get("tts_postprocessing"),
             output_device=self.config["output_device_name"],
@@ -732,9 +746,11 @@ class Chat:
         )
         show_chat_message("info", "API Key: Loaded")
         show_chat_message("info", f"Mic Mode: {self.config['ptt_var']}")
-        show_chat_message("info", f"Using Function Calling: {self.config['tools_var']}")
-        show_chat_message("info", f"Current model: {self.config['llm_model_name']}")
-        show_chat_message("info", f"Current TTS voice: {self.character['tts_voice']}")
+        show_chat_message("info", f"Current model: {self.llmModel.model_name}")
+        if self.tts.voice_settings is not None and "voice" not in self.tts.voice_settings:
+            show_chat_message("info", "Current TTS provider has no configured voice")
+        else:
+            show_chat_message("info", f"Current TTS voice: {self.tts.voice}")
         show_chat_message("info", f"Current TTS Speed: {self.character['tts_speed']}")
         show_chat_message("info", "Current backstory: " + self.backstory)
 
@@ -800,46 +816,45 @@ class Chat:
 
         self.event_manager.process()
 
-        if self.config["tools_var"]:
-            log("info", "Register actions...")
-            hud_color_matrix = load_hud_color_matrix(self.config)
+        log("info", "Register actions...")
+        hud_color_matrix = load_hud_color_matrix(self.config)
 
-            register_actions(
-                actionManager=self.action_manager,
-                eventManager=self.event_manager,
-                promptGenerator=self.prompt_generator,
-                llmModel=self.llmModel,
-                visionModel=self.visionModel,
-                visionModelName=self.config["vision_model_name"],
-                embeddingModel=self.embeddingModel,
-                edKeys=self.ed_keys,
-                discovery_primary_var_flag=self.config.get(
-                    "discovery_primary_var", True
-                ),
-                discovery_firegroup_var_flag=self.config.get(
-                    "discovery_firegroup_var", 1
-                ),
-                chat_local_tabbed_flag=self.config.get("chat_local_tabbed_var", False),
-                chat_wing_tabbed_flag=self.config.get("chat_wing_tabbed_var", False),
-                chat_system_tabbed_flag=self.config.get("chat_system_tabbed_var", True),
-                chat_squadron_tabbed_flag=self.config.get(
-                    "chat_squadron_tabbed_var", False
-                ),
-                chat_direct_tabbed_flag=self.config.get(
-                    "chat_direct_tabbed_var", False
-                ),
-                overlay_show_hud=self.config.get("overlay_show_hud", False),
-                weapon_types_list=self.config.get("weapon_types", []),
-                agent_llm_model=self.agent_llm_model,
-                agent_llm_max_tries=self.config.get("agent_llm_max_tries", 7),
-                hud_color_matrix=hud_color_matrix,
-                in_system_navigation_flag=self.config.get(
-                    "in_system_navigation", False
-                ),
-            )
+        register_actions(
+            actionManager=self.action_manager,
+            eventManager=self.event_manager,
+            promptGenerator=self.prompt_generator,
+            llmModel=self.llmModel,
+            visionModel=self.visionModel,
+            visionModelName=self.visionModel.model_name if self.visionModel else "",
+            embeddingModel=self.embeddingModel,
+            edKeys=self.ed_keys,
+            discovery_primary_var_flag=self.config.get(
+                "discovery_primary_var", True
+            ),
+            discovery_firegroup_var_flag=self.config.get(
+                "discovery_firegroup_var", 1
+            ),
+            chat_local_tabbed_flag=self.config.get("chat_local_tabbed_var", False),
+            chat_wing_tabbed_flag=self.config.get("chat_wing_tabbed_var", False),
+            chat_system_tabbed_flag=self.config.get("chat_system_tabbed_var", True),
+            chat_squadron_tabbed_flag=self.config.get(
+                "chat_squadron_tabbed_var", False
+            ),
+            chat_direct_tabbed_flag=self.config.get(
+                "chat_direct_tabbed_var", False
+            ),
+            overlay_show_hud=self.config.get("overlay_show_hud", False),
+            weapon_types_list=self.config.get("weapon_types", []),
+            agent_llm_model=self.agent_llm_model,
+            agent_llm_max_tries=self.config.get("agent_llm_max_tries", 7),
+            hud_color_matrix=hud_color_matrix,
+            in_system_navigation_flag=self.config.get(
+                "in_system_navigation", False
+            ),
+        )
 
-            log("info", "Actions ready.")
-            show_chat_message("info", "Actions ready.")
+        log("info", "Actions ready.")
+        show_chat_message("info", "Actions ready.")
 
         # Execute plugin helper ready hooks
         self.plugin_manager.on_chat_start(self.plugin_helper)
@@ -1012,6 +1027,7 @@ class Chat:
 
 def read_stdin(chat: Chat):
     log("debug", "Reading stdin...")
+    emit_message("command_ready")
     emit_message("running_config", config=config)
     while True:
         line = sys.stdin.readline().strip()
@@ -1057,7 +1073,11 @@ def read_stdin(chat: Chat):
                     limit=data.get("limit", 100),
                     offset=data.get("offset", 0),
                 )
-                emit_message("model_usage_history", data=results)
+                emit_message(
+                    "model_usage_history",
+                    request_id=data.get("request_id"),
+                    data=results,
+                )
             if data.get("type") == "get_system_events":
                 system_address = data.get("system_address")
                 results = chat.get_system_event_data(system_address)
@@ -1164,6 +1184,7 @@ if __name__ == "__main__":
         quest_catalog_manager = QuestCatalogManager()
         model_usage_store = ModelUsageStore()
         startup_phase = "waiting_for_start_signal"
+        emit_message("command_ready")
         while True:
             # print(f"Waiting for command...")
             line = sys.stdin.readline().strip()
@@ -1243,7 +1264,11 @@ if __name__ == "__main__":
                         limit=data.get("limit", 100),
                         offset=data.get("offset", 0),
                     )
-                    emit_message("model_usage_history", data=results)
+                    emit_message(
+                        "model_usage_history",
+                        request_id=data.get("request_id"),
+                        data=results,
+                    )
                 if data.get("type") == "reset_quest_progress":
                     try:
                         QuestDatabase().delete_all()

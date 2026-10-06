@@ -7,6 +7,7 @@ import traceback
 from typing import Any, Literal, TypedDict, Dict, cast, List
 import os
 import sys
+from urllib.parse import urlparse
 
 from .HudColorMatrix import HudColorMatrix
 from .Logger import log
@@ -860,6 +861,7 @@ class Character(TypedDict, total=False):
     personality_knowledge_scifi: bool
     personality_knowledge_history: bool
     tts_voice: str
+    tts_voice_settings: dict[str, dict[str, Any]]
     tts_speed: str
     tts_prompt: str
     tts_postprocessing: CharacterTTSPostprocessingConfig
@@ -884,44 +886,19 @@ class Character(TypedDict, total=False):
 class Config(TypedDict):
     config_version: int
     api_key: str
-    llm_api_key: str
-    llm_endpoint: str
     commander_name: str
     characters: List[Character]
     active_character_index: int
-    llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom', 'local-ai-server']
-    llm_model_name: str
-    llm_reasoning_effort: Literal['default', 'none', 'minimal', 'low', 'medium', 'high'] | None
-    llm_temperature: float
-    agent_llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom', 'local-ai-server']
-    agent_llm_model_name: str
-    agent_llm_reasoning_effort: Literal['default', 'none', 'minimal', 'low', 'medium', 'high'] | None
-    agent_llm_endpoint: str
-    agent_llm_api_key: str
-    agent_llm_temperature: float
+    llm_provider: str
+    agent_llm_provider: str
     agent_llm_max_tries: int
     mute_search: bool
     vision_provider: str
-    vision_model_name: str
-    vision_endpoint: str
-    vision_api_key: str
-    stt_provider: Literal['openai', 'custom', 'custom-multi-modal', 'google-ai-studio', 'none', 'local-ai-server']
-    stt_model_name: str
-    stt_api_key: str
-    stt_endpoint: str
-    stt_language: str
-    stt_custom_prompt: str
+    stt_provider: str
     stt_required_word: str
-    tts_provider: Literal['openai', 'edge-tts', 'custom', 'none', 'local-ai-server']
-    tts_model_name: str
-    tts_api_key: str
-    tts_endpoint: str
+    tts_provider: str
     # Embedding settings
-    embedding_provider: Literal['openai', 'google-ai-studio', 'custom', 'none', 'local-ai-server']
-    embedding_model_name: str
-    embedding_endpoint: str
-    embedding_api_key: str
-    tools_var: bool
+    embedding_provider: str
     vision_var: bool
     ptt_var: Literal['voice_activation', 'push_to_talk', 'push_to_mute', 'toggle']
     ptt_inverted_var: bool
@@ -970,6 +947,7 @@ class Config(TypedDict):
     overlay_vr_vertical_offset: float
     overlay_vr_distance_offset: float
     overlay_vr_tilt_degrees: float
+    overlay_vr_yaw_degrees: float
     overlay_vr_curvature: float
     
     enable_remote_tracing: bool
@@ -1027,6 +1005,85 @@ def get_asset_path(filename: str) -> str:
             os.path.join(os.path.dirname(__file__), '../assets'))
 
     return os.path.join(assets_dir, filename)
+
+
+LEGACY_PROVIDER_SETTING_KEYS = (
+    'llm_api_key', 'llm_endpoint', 'llm_model_name', 'llm_reasoning_effort', 'llm_temperature',
+    'agent_llm_model_name', 'agent_llm_reasoning_effort', 'agent_llm_endpoint',
+    'agent_llm_api_key', 'agent_llm_temperature',
+    'vision_model_name', 'vision_endpoint', 'vision_api_key',
+    'stt_model_name', 'stt_api_key', 'stt_endpoint', 'stt_language', 'stt_custom_prompt',
+    'tts_model_name', 'tts_api_key', 'tts_endpoint',
+    'embedding_model_name', 'embedding_endpoint', 'embedding_api_key',
+)
+
+
+def _migrate_provider_selection(
+    data: dict,
+    selector: str,
+    legacy_provider: str,
+    plugin_guid: str,
+    provider_id: str,
+    mappings: dict[str, str],
+    *,
+    shared_api_key: bool = False,
+    api_key_target: str | None = None,
+) -> None:
+    if data.get(selector) != legacy_provider:
+        return
+    _copy_provider_settings(
+        data, plugin_guid, mappings,
+        shared_api_key=shared_api_key,
+        api_key_target=api_key_target,
+    )
+    data[selector] = f'plugin:{plugin_guid}:{provider_id}'
+
+
+def _copy_provider_settings(
+    data: dict,
+    plugin_guid: str,
+    mappings: dict[str, str],
+    *,
+    shared_api_key: bool = False,
+    api_key_target: str | None = None,
+) -> None:
+    plugin_settings = data.setdefault('plugin_settings', {}).setdefault(plugin_guid, {})
+    if shared_api_key:
+        plugin_settings.setdefault('api_key', data.get('api_key', ''))
+    for target, source in mappings.items():
+        if target not in plugin_settings and source in data:
+            plugin_settings[target] = data[source]
+    if api_key_target and not plugin_settings.get(api_key_target):
+        plugin_settings[api_key_target] = data.get('api_key', '')
+
+
+def _prefixed_provider_mappings(prefix: str, mappings: dict[str, str]) -> dict[str, str]:
+    prefixed = {}
+    for target, source in mappings.items():
+        suffix = target
+        for role_prefix in ('agent_llm_', 'embedding_', 'llm_', 'vlm_', 'stt_', 'tts_'):
+            if target.startswith(role_prefix):
+                suffix = target[len(role_prefix):]
+                break
+        prefixed[f'{prefix}_{suffix}'] = source
+    return prefixed
+
+
+def _provider_from_legacy_endpoint(endpoint: object) -> str | None:
+    if not isinstance(endpoint, str):
+        return None
+    hostname = (urlparse(endpoint).hostname or '').lower()
+    if hostname == 'api.openai.com':
+        return 'openai'
+    if hostname == 'generativelanguage.googleapis.com':
+        return 'google-ai-studio'
+    if hostname == 'openrouter.ai':
+        return 'openrouter'
+    if hostname == 'api.mistral.ai':
+        return 'mistral'
+    if hostname in {'127.0.0.1', 'localhost'}:
+        return 'local-ai-server'
+    return None
 
 
 def migrate(data: dict) -> dict:
@@ -1329,6 +1386,196 @@ def migrate(data: dict) -> dict:
         data['config_version'] = 20
         data['allowed_actions'] = default_allowed_actions.copy()
 
+    if data['config_version'] < 21:
+        data['config_version'] = 21
+
+    legacy_tools_var = data.get('tools_var')
+
+    if data['config_version'] < 22:
+        openai_guid = '7f6f8e98-576f-4d1d-9d87-0f8f7f2f3c61'
+        google_guid = '51f1df0c-479d-4f0f-a585-57c08d9e1901'
+        openrouter_guid = 'a9d9fb7a-18df-4602-bf7d-53f3486f7d18'
+        compatible_guid = '64a79751-078d-48c6-9540-193afde6c469'
+        edge_guid = 'e2d57ec0-56f5-45de-88ed-621d4a28d7b5'
+        mistral_guid = 'd17f20f6-2514-4a1f-9e54-2a3c089f5c2b'
+
+        llm_mappings = {
+            'llm_model': 'llm_model_name', 'llm_temperature': 'llm_temperature',
+            'llm_reasoning_effort': 'llm_reasoning_effort', 'llm_endpoint': 'llm_endpoint',
+            'llm_api_key': 'llm_api_key',
+        }
+        agent_mappings = {
+            'agent_llm_model': 'agent_llm_model_name', 'agent_llm_temperature': 'agent_llm_temperature',
+            'agent_llm_reasoning_effort': 'agent_llm_reasoning_effort', 'agent_llm_endpoint': 'agent_llm_endpoint',
+            'agent_llm_api_key': 'agent_llm_api_key',
+        }
+        vlm_mappings = {
+            'vlm_model': 'vision_model_name', 'vlm_endpoint': 'vision_endpoint',
+            'vlm_api_key': 'vision_api_key',
+        }
+        stt_mappings = {
+            'stt_model': 'stt_model_name', 'stt_endpoint': 'stt_endpoint',
+            'stt_api_key': 'stt_api_key', 'stt_language': 'stt_language',
+            'stt_prompt': 'stt_custom_prompt',
+        }
+        tts_mappings = {
+            'tts_model': 'tts_model_name', 'tts_endpoint': 'tts_endpoint',
+            'tts_api_key': 'tts_api_key',
+        }
+        embedding_mappings = {
+            'embedding_model': 'embedding_model_name', 'embedding_endpoint': 'embedding_endpoint',
+            'embedding_api_key': 'embedding_api_key',
+        }
+
+        legacy_mistral_slots = {
+            'llm_provider': ('llm_endpoint', 'llm_model_name', 'llm_model'),
+            'agent_llm_provider': ('agent_llm_endpoint', 'agent_llm_model_name', 'llm_model'),
+            'vision_provider': ('vision_endpoint', 'vision_model_name', 'vlm_model'),
+            'stt_provider': ('stt_endpoint', 'stt_model_name', 'stt_model'),
+            'tts_provider': ('tts_endpoint', 'tts_model_name', 'tts_model'),
+            'embedding_provider': ('embedding_endpoint', 'embedding_model_name', 'embedding_model'),
+        }
+        for selector, (endpoint_key, model_key, target_model_key) in legacy_mistral_slots.items():
+            if data.get(selector) == 'mistral':
+                mistral_settings = data.setdefault('plugin_settings', {}).setdefault(mistral_guid, {})
+                mistral_settings.setdefault('api_key', data.get('api_key', ''))
+                mistral_settings.setdefault('endpoint', data.get(endpoint_key, ''))
+                mistral_settings.setdefault(target_model_key, data.get(model_key, ''))
+
+        for legacy, guid in (('openai', openai_guid), ('google-ai-studio', google_guid)):
+            _migrate_provider_selection(data, 'llm_provider', legacy, guid, 'llm', llm_mappings, shared_api_key=True)
+            _migrate_provider_selection(data, 'agent_llm_provider', legacy, guid, 'agent-llm', agent_mappings, shared_api_key=True)
+            _migrate_provider_selection(data, 'vision_provider', legacy, guid, 'vlm', vlm_mappings, shared_api_key=True)
+            _migrate_provider_selection(data, 'stt_provider', legacy, guid, 'stt', stt_mappings, shared_api_key=True)
+            _migrate_provider_selection(data, 'embedding_provider', legacy, guid, 'embedding', embedding_mappings, shared_api_key=True)
+        _migrate_provider_selection(data, 'tts_provider', 'openai', openai_guid, 'tts', tts_mappings, shared_api_key=True)
+
+        _migrate_provider_selection(data, 'llm_provider', 'mistral', mistral_guid, 'llm', llm_mappings, shared_api_key=True)
+        _migrate_provider_selection(data, 'agent_llm_provider', 'mistral', mistral_guid, 'llm', llm_mappings, shared_api_key=True)
+        _migrate_provider_selection(data, 'vision_provider', 'mistral', mistral_guid, 'vlm', vlm_mappings, shared_api_key=True)
+        _migrate_provider_selection(data, 'stt_provider', 'mistral', mistral_guid, 'stt', stt_mappings, shared_api_key=True)
+        _migrate_provider_selection(data, 'tts_provider', 'mistral', mistral_guid, 'tts', tts_mappings, shared_api_key=True)
+        _migrate_provider_selection(data, 'embedding_provider', 'mistral', mistral_guid, 'embedding', embedding_mappings, shared_api_key=True)
+
+        _migrate_provider_selection(data, 'llm_provider', 'openrouter', openrouter_guid, 'llm', llm_mappings, shared_api_key=True)
+        _migrate_provider_selection(data, 'agent_llm_provider', 'openrouter', openrouter_guid, 'agent-llm', agent_mappings, shared_api_key=True)
+        _migrate_provider_selection(data, 'tts_provider', 'edge-tts', edge_guid, 'tts', {})
+
+        compatible_roles = [
+            ('llm_provider', 'custom', 'custom-llm', 'custom_llm', llm_mappings),
+            ('agent_llm_provider', 'custom', 'custom-agent-llm', 'custom_agent_llm', agent_mappings),
+            ('vision_provider', 'custom', 'custom-vlm', 'custom_vlm', vlm_mappings),
+            ('stt_provider', 'custom', 'custom-stt', 'custom_stt', stt_mappings),
+            ('stt_provider', 'custom-multi-modal', 'custom-multimodal-stt', 'custom_multimodal_stt', stt_mappings),
+            ('tts_provider', 'custom', 'custom-tts', 'custom_tts', tts_mappings),
+            ('embedding_provider', 'custom', 'custom-embedding', 'custom_embedding', embedding_mappings),
+            ('llm_provider', 'local-ai-server', 'local-llm', 'local_llm', llm_mappings),
+            ('agent_llm_provider', 'local-ai-server', 'local-agent-llm', 'local_agent_llm', agent_mappings),
+            ('vision_provider', 'local-ai-server', 'local-vlm', 'local_vlm', vlm_mappings),
+            ('stt_provider', 'local-ai-server', 'local-stt', 'local_stt', stt_mappings),
+            ('tts_provider', 'local-ai-server', 'local-tts', 'local_tts', tts_mappings),
+            ('embedding_provider', 'local-ai-server', 'local-embedding', 'local_embedding', embedding_mappings),
+        ]
+        for selector, legacy, provider_id, prefix, mappings in compatible_roles:
+            prefixed = _prefixed_provider_mappings(prefix, mappings)
+            api_target = next((target for target in prefixed if target.endswith('_api_key')), None)
+            _migrate_provider_selection(
+                data, selector, legacy, compatible_guid, provider_id, prefixed,
+                api_key_target=api_target,
+            )
+
+        # Preserve recognizable settings left behind by a previously selected built-in
+        # without changing the user's current provider selection.
+        legacy_roles = [
+            ('llm_provider', 'llm_endpoint', 'llm', 'local_llm', llm_mappings),
+            ('agent_llm_provider', 'agent_llm_endpoint', 'agent_llm', 'local_agent_llm', agent_mappings),
+            ('vision_provider', 'vision_endpoint', 'vlm', 'local_vlm', vlm_mappings),
+            ('stt_provider', 'stt_endpoint', 'stt', 'local_stt', stt_mappings),
+            ('tts_provider', 'tts_endpoint', 'tts', 'local_tts', tts_mappings),
+            ('embedding_provider', 'embedding_endpoint', 'embedding', 'local_embedding', embedding_mappings),
+        ]
+        legacy_provider_ids = {
+            'openai', 'google-ai-studio', 'openrouter', 'mistral',
+            'custom', 'custom-multi-modal', 'local-ai-server', 'edge-tts',
+        }
+        for selector, endpoint_key, role, local_prefix, mappings in legacy_roles:
+            if data.get(selector) in legacy_provider_ids:
+                continue
+            inferred = _provider_from_legacy_endpoint(data.get(endpoint_key))
+            if inferred in {'openai', 'google-ai-studio'}:
+                guid = openai_guid if inferred == 'openai' else google_guid
+                _copy_provider_settings(data, guid, mappings, shared_api_key=True)
+            elif inferred == 'openrouter' and role in {'llm', 'agent_llm'}:
+                _copy_provider_settings(data, openrouter_guid, mappings, shared_api_key=True)
+            elif inferred == 'mistral':
+                target_model = 'llm_model' if role == 'agent_llm' else f'{role}_model'
+                _copy_provider_settings(data, mistral_guid, {
+                    'endpoint': endpoint_key,
+                    target_model: next(source for target, source in mappings.items() if target.endswith('_model')),
+                }, shared_api_key=True)
+            elif inferred == 'local-ai-server':
+                prefixed = _prefixed_provider_mappings(local_prefix, mappings)
+                api_target = next((target for target in prefixed if target.endswith('_api_key')), None)
+                _copy_provider_settings(data, compatible_guid, prefixed, api_key_target=api_target)
+
+        data['config_version'] = 22
+
+    if data['config_version'] < 23:
+        if isinstance(legacy_tools_var, bool):
+            provider_tool_settings = {
+                'plugin:a9d9fb7a-18df-4602-bf7d-53f3486f7d18:llm': (
+                    'a9d9fb7a-18df-4602-bf7d-53f3486f7d18', 'llm_tools_enabled',
+                ),
+                'plugin:a9d9fb7a-18df-4602-bf7d-53f3486f7d18:agent-llm': (
+                    'a9d9fb7a-18df-4602-bf7d-53f3486f7d18', 'agent_llm_tools_enabled',
+                ),
+                'plugin:64a79751-078d-48c6-9540-193afde6c469:custom-llm': (
+                    '64a79751-078d-48c6-9540-193afde6c469', 'custom_llm_tools_enabled',
+                ),
+                'plugin:64a79751-078d-48c6-9540-193afde6c469:custom-agent-llm': (
+                    '64a79751-078d-48c6-9540-193afde6c469', 'custom_agent_llm_tools_enabled',
+                ),
+            }
+            for selector in ('llm_provider', 'agent_llm_provider'):
+                target = provider_tool_settings.get(data.get(selector))
+                if target:
+                    plugin_guid, setting_key = target
+                    data.setdefault('plugin_settings', {}).setdefault(plugin_guid, {}).setdefault(
+                        setting_key, legacy_tools_var,
+                    )
+        data['config_version'] = 23
+
+    if data['config_version'] < 24:
+        selected_tts_provider = data.get('tts_provider')
+        for character in data.get('characters', []):
+            if not isinstance(character, dict):
+                continue
+            voice_settings = character.setdefault('tts_voice_settings', {})
+            if not isinstance(voice_settings, dict):
+                voice_settings = {}
+                character['tts_voice_settings'] = voice_settings
+            if isinstance(selected_tts_provider, str) and selected_tts_provider != 'none':
+                provider_settings = voice_settings.setdefault(selected_tts_provider, {})
+                if isinstance(provider_settings, dict):
+                    voice = character.get('tts_voice')
+                    if isinstance(voice, str) and voice:
+                        provider_settings.setdefault('voice', voice)
+                    instructions = character.get('tts_prompt')
+                    if isinstance(instructions, str) and instructions:
+                        provider_settings.setdefault('instructions', instructions)
+
+        mistral_settings = data.get('plugin_settings', {}).get(
+            'd17f20f6-2514-4a1f-9e54-2a3c089f5c2b', {}
+        )
+        if isinstance(mistral_settings, dict):
+            mistral_settings.pop('tts_voice', None)
+        data['config_version'] = 24
+
+    data.pop('tools_var', None)
+
+    for key in LEGACY_PROVIDER_SETTING_KEYS:
+        data.pop(key, None)
+
     data.setdefault('overlay_standalone_transparent', True)
     data.setdefault('overlay_standalone_background_color', '#000000')
 
@@ -1363,7 +1610,7 @@ def merge_config_data(defaults: dict, user: dict):
                 continue
 
             # Plugin settings
-            if key == "plugin_settings":
+            if key in {"plugin_settings", "tts_voice_settings"}:
                 # Copy plugin settings directly, since we don't know what settings are supposed to be there.
                 merge[key] = user.get(key) or {}
                 continue
@@ -1393,6 +1640,20 @@ def merge_config_data(defaults: dict, user: dict):
     return merge
 
 def getDefaultCharacter(config: Config) -> Character:
+    characters = config.get('characters', [])
+    active_index = config.get('active_character_index', -1)
+    current_voice = (
+        characters[active_index].get('tts_voice')
+        if 0 <= active_index < len(characters)
+        else None
+    )
+    selected_tts_provider = config.get('tts_provider')
+    initial_voice = current_voice or 'en-US-AvaMultilingualNeural'
+    initial_voice_settings = (
+        {selected_tts_provider: {'voice': initial_voice}}
+        if isinstance(selected_tts_provider, str) and selected_tts_provider.startswith('plugin:')
+        else {}
+    )
     return Character({
         "name": 'Default',
         "character": "Keep your responses extremely brief and minimal. Maintain a professional and serious tone in all responses. Stick to factual information. You are COVAS:NEXT (Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal) - professional, efficient, and no-nonsense. Provides essential information without unnecessary elaboration. Focuses on factual data and operational status. 'Destination reached.' 'Fuel level acceptable.' Clean, precise communication. Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS:NEXT. Always respond in English regardless of the language spoken to you. Balance emotional understanding with factual presentation. Use everyday language that balances casual and professional tones. Project an air of expertise and certainty when providing information. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.",
@@ -1410,7 +1671,8 @@ def getDefaultCharacter(config: Config) -> Character:
         "personality_knowledge_pop_culture": False,
         "personality_knowledge_scifi": False,
         "personality_knowledge_history": False,
-        "tts_voice": 'en-US-AvaMultilingualNeural' if config.get('tts_provider') == 'edge-tts' else 'nova',
+        "tts_voice": initial_voice,
+        "tts_voice_settings": initial_voice_settings,
         "tts_speed": '1.2',
         "tts_prompt": '',
         "tts_postprocessing": get_default_character_tts_postprocessing(),
@@ -1434,12 +1696,11 @@ def getDefaultCharacter(config: Config) -> Character:
 
 def load_config() -> Config:
     defaults: Config = {
-        'config_version': 20,
+        'config_version': 24,
         'commander_name': "",
         'characters': [],
         'active_character_index': 0,  # -1 means using the default legacy character
         'api_key': "",
-        'tools_var': True,
         'vision_var': False,
         'ptt_var': 'voice_activation',
         'ptt_inverted_var': False,
@@ -1453,7 +1714,7 @@ def load_config() -> Config:
         'discovery_firegroup_var': 1,
         'weapon_types': [],
         'prefer_primary_bindings': False,
-        'in_system_navigation': False,
+        'in_system_navigation': True,
         # Chat channel tab defaults
         'chat_local_tabbed_var': False,
         'chat_wing_tabbed_var': False,
@@ -1464,42 +1725,17 @@ def load_config() -> Config:
         'input_device_name': get_default_input_device_name(),
         'output_device_name': get_default_output_device_name(),
         'output_volume_multiplier': 1.0,
-        'llm_provider': "openai",
-        'llm_model_name': "gpt-5.4-nano",
-        'llm_reasoning_effort': 'none',
-        'llm_endpoint': "https://api.openai.com/v1",
-        'llm_api_key': "",
-        'llm_temperature': 1.0,
-        'agent_llm_provider': "openai",
-        'agent_llm_model_name': "gpt-5.4-mini",
-        'agent_llm_reasoning_effort': 'low',
-        'agent_llm_endpoint': "https://api.openai.com/v1",
-        'agent_llm_api_key': "",
-        'agent_llm_temperature': 1.0,
+        'llm_provider': "plugin:7f6f8e98-576f-4d1d-9d87-0f8f7f2f3c61:llm",
+        'agent_llm_provider': "plugin:7f6f8e98-576f-4d1d-9d87-0f8f7f2f3c61:agent-llm",
         'agent_llm_max_tries': 7,
         'mute_search': False,
         'ptt_key': '',
         'ptt_key_secondary': '',
         'vision_provider': "none",
-        'vision_model_name': "gpt-5.4-nano",
-        'vision_endpoint': "https://api.openai.com/v1",
-        'vision_api_key': "",
         'stt_provider': "none",
-        'stt_model_name': "gpt-4o-mini-transcribe",
-        'stt_endpoint': "https://api.openai.com/v1",
-        'stt_api_key': "",
-        'stt_language': "",
-        'stt_custom_prompt': '',
         'stt_required_word': '',
         'tts_provider': "none",
-        'tts_model_name': "edge-tts",
-        'tts_endpoint': "",
-        'tts_api_key': "",
-        # Embedding defaults
-        'embedding_provider': 'openai',
-        'embedding_model_name': 'text-embedding-3-small',
-        'embedding_endpoint': 'https://api.openai.com/v1',
-        'embedding_api_key': "",
+        'embedding_provider': 'plugin:7f6f8e98-576f-4d1d-9d87-0f8f7f2f3c61:embedding',
         "ed_journal_path": "",
         "ed_appdata_path": "",
         "linux_edcp": False,
@@ -1522,6 +1758,7 @@ def load_config() -> Config:
         "overlay_vr_vertical_offset": 0.0,
         "overlay_vr_distance_offset": 0.0,
         "overlay_vr_tilt_degrees": 0.0,
+        "overlay_vr_yaw_degrees": 0.0,
         "overlay_vr_curvature": 0.0,
         
         "enable_remote_tracing": False,
@@ -1566,7 +1803,7 @@ def load_config() -> Config:
                 data = migrate(data)
                 merged_config = merge_config_data(defaults, data)
                 
-                print(f"Configuration loaded successfully. Commander: {merged_config.get('commander_name')}, Characters: {len(merged_config.get('characters', []))}, temp {merged_config.get('llm_temperature')}")
+                print(f"Configuration loaded successfully. Commander: {merged_config.get('commander_name')}, Characters: {len(merged_config.get('characters', []))}")
                 return cast(Config, merged_config)  # pyright: ignore[reportInvalidCast]
             else:
                 print("Empty config file, using defaults")
@@ -1762,12 +1999,21 @@ def cast_int_float(current: dict, data: dict) -> dict:
 
 def update_config(config: Config, data: dict) -> Config:
     incoming_version = data.get('config_version')
+    is_versionless_backup = (
+        incoming_version is None
+        and 'characters' in data
+        and ('commander_name' in data or any(key in data for key in LEGACY_PROVIDER_SETTING_KEYS))
+    )
     if (
         isinstance(incoming_version, int)
         and incoming_version < config['config_version']
-    ):
+    ) or is_versionless_backup:
         # Backup imports use the ordinary update path, so migrate old full configs here too.
         data = migrate(data)
+
+    data.pop('tools_var', None)
+    for key in LEGACY_PROVIDER_SETTING_KEYS:
+        data.pop(key, None)
 
     data = cast_int_float(config, data)
 
@@ -1778,74 +2024,6 @@ def update_config(config: Config, data: dict) -> Config:
             v = float(config.get("output_volume_multiplier", 1.0))
         data["output_volume_multiplier"] = max(0.0, min(1.5, v))
     
-    # Update provider-specific settings
-    if data.get("llm_provider"):
-        if data["llm_provider"] == "openai":
-            data["llm_endpoint"] = "https://api.openai.com/v1"
-            data["llm_model_name"] = "gpt-5.4-nano"
-            data["llm_api_key"] = ""
-            data["tools_var"] = True
-            data["llm_reasoning_effort"] = 'none'
-
-        elif data["llm_provider"] == "openrouter":
-            data["llm_endpoint"] = "https://openrouter.ai/api/v1/"
-            data["llm_model_name"] = "meta-llama/llama-3.3-70b-instruct:free"
-            data["llm_api_key"] = ""
-            data["tools_var"] = False
-            data["llm_reasoning_effort"] = 'default'
-
-        elif data["llm_provider"] == "google-ai-studio":
-            data["llm_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
-            data["llm_model_name"] = "gemini-3.1-flash-lite-preview"
-            data["llm_api_key"] = ""
-            data["tools_var"] = True
-            data["llm_reasoning_effort"] = "none"
-
-        elif data["llm_provider"] == "local-ai-server":
-            data["llm_endpoint"] = "http://127.0.0.1:8080"
-            data["llm_model_name"] = "gpt-4.1-mini"
-            data["llm_api_key"] = ""
-            data["tools_var"] = True
-            data["llm_reasoning_effort"] = 'default'
-
-        elif data["llm_provider"] == "custom":
-            data["llm_endpoint"] = "https://api.openai.com/v1"
-            data["llm_model_name"] = "gpt-4.1-mini"
-            data["llm_api_key"] = ""
-            data["tools_var"] = False
-            data["llm_reasoning_effort"] = 'default'
-
-    if data.get("agent_llm_provider"):
-        if data["agent_llm_provider"] == "openai":
-            data["agent_llm_endpoint"] = "https://api.openai.com/v1"
-            data["agent_llm_model_name"] = "gpt-5.4-mini"
-            data["agent_llm_api_key"] = ""
-            data["agent_llm_reasoning_effort"] = 'low'
-
-        elif data["agent_llm_provider"] == "openrouter":
-            data["agent_llm_endpoint"] = "https://openrouter.ai/api/v1/"
-            data["agent_llm_model_name"] = "meta-llama/llama-3.3-70b-instruct:free"
-            data["agent_llm_api_key"] = ""
-            data["agent_llm_reasoning_effort"] = 'default'
-
-        elif data["agent_llm_provider"] == "google-ai-studio":
-            data["agent_llm_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
-            data["agent_llm_model_name"] = "gemini-3.1-flash-lite-preview"
-            data["agent_llm_api_key"] = ""
-            data["agent_llm_reasoning_effort"] = "low"
-
-        elif data["agent_llm_provider"] == "local-ai-server":
-            data["agent_llm_endpoint"] = "http://127.0.0.1:8080"
-            data["agent_llm_model_name"] = "gpt-4.1-mini"
-            data["agent_llm_api_key"] = ""
-            data["agent_llm_reasoning_effort"] = 'default'
-
-        elif data["agent_llm_provider"] == "custom":
-            data["agent_llm_endpoint"] = "https://api.openai.com/v1"
-            data["agent_llm_model_name"] = "gpt-4.1-mini"
-            data["agent_llm_api_key"] = ""
-            data["agent_llm_reasoning_effort"] = 'default'
-
     if data.get("agent_llm_max_tries") is not None:
         try:
             agent_tries = int(data["agent_llm_max_tries"])
@@ -1854,136 +2032,6 @@ def update_config(config: Config, data: dict) -> Config:
         if agent_tries < 1:
             agent_tries = 1
         data["agent_llm_max_tries"] = agent_tries
-
-    if data.get("vision_provider"):
-        if data["vision_provider"] == "openai":
-            data["vision_endpoint"] = "https://api.openai.com/v1"
-            data["vision_model_name"] = "gpt-5.4-nano"
-            data["vision_api_key"] = ""
-            data["vision_var"] = True
-
-        elif data["vision_provider"] == "google-ai-studio":
-            data["vision_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
-            data["vision_model_name"] = "gemini-2.5-flash"
-            data["vision_api_key"] = ""
-            data["vision_var"] = True
-
-        elif data["vision_provider"] == "custom":
-            data["vision_endpoint"] = "https://api.openai.com/v1"
-            data["vision_model_name"] = "gpt-4o-mini"
-            data["vision_api_key"] = ""
-            data["vision_var"] = True
-
-        elif data["vision_provider"] == "local-ai-server":
-            data["vision_endpoint"] = "http://127.0.0.1:8080"
-            if not data.get("vision_model_name"):
-                data["vision_model_name"] = "gpt-4o-mini"
-            data["vision_api_key"] = ""
-            data["vision_var"] = True
-
-        elif data["vision_provider"] == "none":
-            data["vision_endpoint"] = ""
-            data["vision_model_name"] = ""
-            data["vision_api_key"] = ""
-            data["vision_var"] = False
-
-    if data.get("stt_provider"):
-        if data["stt_provider"] == "openai":
-            data["stt_endpoint"] = "https://api.openai.com/v1"
-            data["stt_model_name"] = "whisper-1"
-            data["stt_api_key"] = ""
-
-        if data["stt_provider"] == "local-ai-server":
-            data["stt_endpoint"] = "http://127.0.0.1:8080"
-            data["stt_model_name"] = "whisper-1"
-            data["stt_api_key"] = ""
-
-        if data["stt_provider"] == "custom":
-            data["stt_endpoint"] = "https://api.openai.com/v1"
-            data["stt_model_name"] = "whisper-1"
-            data["stt_api_key"] = ""
-
-        if data["stt_provider"] == "google-ai-studio":
-            data["stt_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
-            data["stt_model_name"] = "gemini-2.5-flash-lite"
-            data["stt_api_key"] = ""
-
-        if data["stt_provider"] == "custom-multi-modal":
-            data["stt_endpoint"] = "https://api.openai.com/v1"
-            data["stt_model_name"] = "gpt-4o-mini-audio-preview"
-            data["stt_api_key"] = ""
-
-        if data["stt_provider"] == "none":
-            data["stt_endpoint"] = ""
-            data["stt_model_name"] = ""
-            data["stt_api_key"] = ""
-
-    if data.get("tts_provider"):
-        if data["tts_provider"] == "openai":
-            data["tts_endpoint"] = "https://api.openai.com/v1"
-            data["tts_model_name"] = "gpt-4o-mini-tts"
-            for character in config["characters"]:
-                character["tts_voice"] = "nova"
-            data["tts_api_key"] = ""
-
-        if data["tts_provider"] == "local-ai-server":
-            data["tts_endpoint"] = "http://127.0.0.1:8080"
-            data["tts_model_name"] = "tts-1"
-            for character in config["characters"]:
-                character["tts_voice"] = "nova"
-            data["tts_api_key"] = ""
-
-        if data["tts_provider"] == "edge-tts":
-            data["tts_endpoint"] = ""
-            data["tts_model_name"] = ""
-            for character in config["characters"]:
-                character["tts_voice"] = "en-US-AvaMultilingualNeural"
-            data["tts_api_key"] = ""
-
-        if data["tts_provider"] == "custom":
-            data["tts_endpoint"] = "https://api.openai.com/v1"
-            data["tts_model_name"] = "gpt-4o-mini-tts"
-            for character in config["characters"]:
-                character["tts_voice"] = "nova"
-            data["tts_api_key"] = ""
-
-        if data["tts_provider"] == "none":
-            data["tts_endpoint"] = ""
-            data["tts_model_name"] = ""
-            for character in config["characters"]:
-                character["tts_voice"] = ""
-            data["tts_api_key"] = ""
-
-    # Embedding provider
-    if data.get("embedding_provider"):
-        if data["embedding_provider"] == "openai":
-            data["embedding_endpoint"] = "https://api.openai.com/v1"
-            data["embedding_model_name"] = "text-embedding-3-small"
-            data["embedding_api_key"] = ""
-
-        elif data["embedding_provider"] == "google-ai-studio":
-            data["embedding_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
-            data["embedding_model_name"] = "gemini-embedding-001"
-            data["embedding_api_key"] = ""
-
-        elif data["embedding_provider"] == "custom":
-            # Leave endpoint/model/api_key as provided or default to OpenAI-compatible
-            if not data.get("embedding_endpoint"):
-                data["embedding_endpoint"] = "https://api.openai.com/v1"
-            if not data.get("embedding_model_name"):
-                data["embedding_model_name"] = "text-embedding-3-small"
-            if not data.get("embedding_api_key"):
-                data["embedding_api_key"] = ""
-
-        elif data["embedding_provider"] == "local-ai-server":
-            data["embedding_endpoint"] = "http://127.0.0.1:8080"
-            data["embedding_model_name"] = "text-embedding-3-small"
-            data["embedding_api_key"] = ""
-
-        elif data["embedding_provider"] == "none":
-            data["embedding_endpoint"] = ""
-            data["embedding_model_name"] = ""
-            data["embedding_api_key"] = ""
 
     # Now merge and save as before
     new_config = cast(Config, {**config, **data})

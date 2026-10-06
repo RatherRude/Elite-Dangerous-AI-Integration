@@ -163,19 +163,6 @@ class Assistant:
     def _get_quest_audio_dir(self) -> Path:
         return Path(__file__).resolve().parent.parent / "data" / "audio"
 
-    def _get_character_tts_voice(self) -> str:
-        """Return the active character's TTS voice for fallback when an actor has no voice."""
-        characters = self.config.get('characters') or []
-        if not characters:
-            return 'nova'
-        idx = self.config.get('active_character_index', 0)
-        idx = max(0, min(idx, len(characters) - 1))
-        ch = characters[idx] if isinstance(characters[idx], dict) else None
-        voice = ch.get('tts_voice') if ch else None
-        if isinstance(voice, str) and voice.strip():
-            return voice.strip()
-        return 'nova'
-
     def _get_active_character_tts_postprocessing(self) -> CharacterTTSPostprocessingConfig | None:
         characters = self.config.get('characters') or []
         if not characters:
@@ -652,8 +639,7 @@ class Assistant:
                 return
             actor_voice = actor.get('voice')
             if not isinstance(actor_voice, str) or not actor_voice:
-                actor_voice = self._get_character_tts_voice()
-                # log('info', f"Quest action npc_message actor '{actor_id}' has no voice; using character voice")
+                actor_voice = None
             actor_prompt = actor.get('prompt')
             actor_name = actor.get('name')
             actor_name_color = actor.get('name_color')
@@ -889,8 +875,6 @@ class Assistant:
                     else:
                         reasons.append(event.kind)
             
-            use_tools = self.config["tools_var"] and ('user' in reasons or 'tool' in reasons)
-
             current_status = get_state_dict(projected_states, "CurrentStatus")
             ship_info = get_state_dict(projected_states, "ShipInfo")
             flags = current_status.get("flags", {})
@@ -915,7 +899,14 @@ class Assistant:
             uses_ui_actions = self.config["ui_actions_var"]
             allowed_actions = self.config.get("allowed_actions", {})
             in_station = bool(flags.get("Docked"))
-            tool_list = self.action_manager.getToolsList(active_mode, uses_actions, uses_web_actions, uses_ui_actions, allowed_actions, in_station) if use_tools else None
+            tool_list = self.action_manager.getToolsList(
+                active_mode,
+                uses_actions,
+                uses_web_actions,
+                uses_ui_actions,
+                allowed_actions,
+                in_station,
+            )
             predicted_actions = None
             if tool_list and user_input and not tool_uses and self.config["use_action_cache_var"]:
                 predicted_actions = self.action_manager.predict_action(user_input[-1], tool_list)

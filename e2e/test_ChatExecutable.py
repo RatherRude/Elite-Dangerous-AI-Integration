@@ -12,7 +12,6 @@ default_config = {
         "when they're being an idiot-in the most colorful way possible. \n\n" +
         "Professionally reply within one sentence, never ask questions and don't engage in smalltalk.",
     'api_key': "sk-DEADBEEF",
-    'tools_var': True,
     'vision_var': True,
     'ptt_var': 'push_to_talk',
     'ptt_inverted_var': False,

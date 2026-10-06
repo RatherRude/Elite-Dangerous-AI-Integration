@@ -12,11 +12,11 @@
         }
     </header>
 
-    @if (!config?.tools_var || !config?.game_actions_var) {
+    @if (!config?.game_actions_var) {
         <div class="empty-state">
             <mat-icon>toggle_off</mat-icon>
             <h3>Game actions disabled</h3>
-            <p>Enable tools and game actions in settings to use direct controls.</p>
+            <p>Enable game actions in settings to use direct controls.</p>
         </div>
     } @else {
         <div class="action-groups">

@@ -7,19 +7,18 @@ import {
     MatLabel,
 } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
-import { MatOptgroup, MatOption, MatSelect } from "@angular/material/select";
+import { MatOption, MatSelect } from "@angular/material/select";
 import { combineLatest, Subscription } from "rxjs";
 import {
     Config,
     ConfigService,
-} from "../../services/config.service.js";
+} from "../../services/config.service";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { FormsModule } from "@angular/forms";
-import { ConfirmationDialogService } from "../../services/confirmation-dialog.service.js";
+import { ConfirmationDialogService } from "../../services/confirmation-dialog.service";
 import { MatDialog } from "@angular/material/dialog";
-import { EdgeTtsVoicesDialogComponent } from "../edge-tts-voices-dialog/edge-tts-voices-dialog.component.js";
-import { ConfirmationDialogComponent } from "../confirmation-dialog/confirmation-dialog.component.js";
-import { AvatarCatalogDialogComponent, AvatarCatalogResult } from "../avatar-catalog-dialog/avatar-catalog-dialog.component.js";
+import { ConfirmationDialogComponent } from "../confirmation-dialog/confirmation-dialog.component";
+import { AvatarCatalogDialogComponent, AvatarCatalogResult } from "../avatar-catalog-dialog/avatar-catalog-dialog.component";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatDivider } from "@angular/material/divider";
 import { MatInputModule } from "@angular/material/input";
@@ -40,7 +39,11 @@ import {
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { CharacterPresets } from "./character-presets";
 import {MatSlideToggle} from "@angular/material/slide-toggle";
-import { ChatService } from "../../services/chat.service.js";
+import { MatExpansionModule } from "@angular/material/expansion";
+import { ChatService } from "../../services/chat.service";
+import { SettingsGridComponent } from "../settings-grid/settings-grid.component";
+
+import { ModelProviderDefinition, providerVoiceDisplayValue, SettingsGrid } from "../../services/plugin-settings";
 
 interface PromptSettings {
     // Existing settings
@@ -101,9 +104,10 @@ interface LowHighPassPresetOption {
         MatSelect,
         MatOption,
         MatDivider,
-        MatOptgroup,
         MatTooltipModule,
         MatSlideToggle,
+        MatExpansionModule,
+        SettingsGridComponent,
     ],
     templateUrl: "./character-settings.component.html",
     styleUrl: "./character-settings.component.scss",
@@ -116,11 +120,13 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
     configSubscription: Subscription;
     characterSubscription: Subscription;
     private avatarMimeSubscription: Subscription;
+    private pluginProvidersSubscription: Subscription;
     private avatarPreviewSvgElementsSubscription?: Subscription;
     activeCharacter: Character | null = null;
+    pluginTTSProviders: ModelProviderDefinition[] = [];
     selectedCharacterIndex: number | null = null;
     editMode = false;
-    showVoiceMoreSettings = false;
+    showVoiceSettings = false;
     initializing: boolean = true;
     /** Primary MIME from CharacterService (blob avatars); null when no file or unknown. */
     private avatarMimePrimary: string | null = null;
@@ -134,7 +140,6 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
     highlightCharacterOverview = false;
     private localCharacterCopy: Character | null = null;
     isApplyingChange: boolean = false;
-    voiceInstructionSupportedModels: string[] = this.characterService.voiceInstructionSupportedModels;
     readonly lowHighPassPresets: LowHighPassPresetOption[] = [
         { id: "off", label: "Off", lowpass: null, highpass: null },
         { id: "subtle-comms", label: "Slightly Filtered", lowpass: { enabled: true, cutoff: 8000 }, highpass: { enabled: true, cutoff: 120 } },
@@ -201,442 +206,6 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
         { id: "fast-and-nervous", label: "Fast and Nervous", config: { enabled: true, pitch_shift_semitones: 2.0, time_stretch: 0.9 } },
     ];
 
-    edgeTtsVoices = [
-        // English voices - US
-        {
-            value: "en-US-AvaMultilingualNeural",
-            label: "Ava Multilingual (Female)",
-            locale: "en-US",
-        },
-        {
-            value: "en-US-AndrewMultilingualNeural",
-            label: "Andrew Multilingual (Male)",
-            locale: "en-US",
-        },
-        {
-            value: "en-US-EmmaMultilingualNeural",
-            label: "Emma Multilingual (Female)",
-            locale: "en-US",
-        },
-        {
-            value: "en-US-BrianMultilingualNeural",
-            label: "Brian Multilingual (Male)",
-            locale: "en-US",
-        },
-        {
-            value: "en-US-JennyMultilingualNeural",
-            label: "Jenny Multilingual (Female)",
-            locale: "en-US",
-        },
-        {
-            value: "en-US-RyanMultilingualNeural",
-            label: "Ryan Multilingual (Male)",
-            locale: "en-US",
-        },
-        {
-            value: "en-US-EvelynMultilingualNeural",
-            label: "Evelyn Multilingual (Female)",
-            locale: "en-US",
-        },
-        {
-            value: "en-US-AriaNeural",
-            label: "Aria (Female) - Positive, Confident",
-            locale: "en-US",
-        },
-        {
-            value: "en-US-AnaNeural",
-            label: "Ana (Female) - Cute",
-            locale: "en-US",
-        },
-        {
-            value: "en-US-ChristopherNeural",
-            label: "Christopher (Male) - Reliable, Authority",
-            locale: "en-US",
-        },
-        {
-            value: "en-US-EricNeural",
-            label: "Eric (Male) - Rational",
-            locale: "en-US",
-        },
-        {
-            value: "en-US-GuyNeural",
-            label: "Guy (Male) - Passion",
-            locale: "en-US",
-        },
-        {
-            value: "en-US-JennyNeural",
-            label: "Jenny (Female) - Friendly, Considerate",
-            locale: "en-US",
-        },
-        {
-            value: "en-US-MichelleNeural",
-            label: "Michelle (Female) - Friendly, Pleasant",
-            locale: "en-US",
-        },
-        {
-            value: "en-US-RogerNeural",
-            label: "Roger (Male) - Lively",
-            locale: "en-US",
-        },
-        {
-            value: "en-US-SteffanNeural",
-            label: "Steffan (Male) - Rational",
-            locale: "en-US",
-        },
-
-        // English voices - UK
-        {
-            value: "en-GB-LibbyNeural",
-            label: "Libby (Female)",
-            locale: "en-GB",
-        },
-        {
-            value: "en-GB-MaisieNeural",
-            label: "Maisie (Female)",
-            locale: "en-GB",
-        },
-        { value: "en-GB-RyanNeural", label: "Ryan (Male)", locale: "en-GB" },
-        {
-            value: "en-GB-SoniaNeural",
-            label: "Sonia (Female)",
-            locale: "en-GB",
-        },
-        {
-            value: "en-GB-ThomasNeural",
-            label: "Thomas (Male)",
-            locale: "en-GB",
-        },
-
-        // English voices - Australia
-        {
-            value: "en-AU-NatashaNeural",
-            label: "Natasha (Female)",
-            locale: "en-AU",
-        },
-        {
-            value: "en-AU-WilliamNeural",
-            label: "William (Male)",
-            locale: "en-AU",
-        },
-        {
-            value: "en-CA-ClaraNeural",
-            label: "Clara (Female)",
-            locale: "en-CA",
-        },
-        { value: "en-CA-LiamNeural", label: "Liam (Male)", locale: "en-CA" },
-        {
-            value: "en-IE-ConnorNeural",
-            label: "Connor (Male)",
-            locale: "en-IE",
-        },
-        {
-            value: "en-IE-EmilyNeural",
-            label: "Emily (Female)",
-            locale: "en-IE",
-        },
-        {
-            value: "en-IN-NeerjaNeural",
-            label: "Neerja (Female)",
-            locale: "en-IN",
-        },
-        {
-            value: "en-IN-PrabhatNeural",
-            label: "Prabhat (Male)",
-            locale: "en-IN",
-        },
-        {
-            value: "en-NZ-MitchellNeural",
-            label: "Mitchell (Male)",
-            locale: "en-NZ",
-        },
-        {
-            value: "en-NZ-MollyNeural",
-            label: "Molly (Female)",
-            locale: "en-NZ",
-        },
-        { value: "en-ZA-LeahNeural", label: "Leah (Female)", locale: "en-ZA" },
-        { value: "en-ZA-LukeNeural", label: "Luke (Male)", locale: "en-ZA" },
-
-        // French voices
-        {
-            value: "fr-FR-VivienneMultilingualNeural",
-            label: "Vivienne Multilingual (Female)",
-            locale: "fr-FR",
-        },
-        {
-            value: "fr-FR-RemyMultilingualNeural",
-            label: "Remy Multilingual (Male)",
-            locale: "fr-FR",
-        },
-        {
-            value: "fr-FR-LucienMultilingualNeural",
-            label: "Lucien Multilingual (Male)",
-            locale: "fr-FR",
-        },
-        {
-            value: "fr-FR-DeniseNeural",
-            label: "Denise (Female)",
-            locale: "fr-FR",
-        },
-        {
-            value: "fr-FR-EloiseNeural",
-            label: "Eloise (Female)",
-            locale: "fr-FR",
-        },
-        { value: "fr-FR-HenriNeural", label: "Henri (Male)", locale: "fr-FR" },
-        {
-            value: "fr-CA-AntoineNeural",
-            label: "Antoine (Male)",
-            locale: "fr-CA",
-        },
-        { value: "fr-CA-JeanNeural", label: "Jean (Male)", locale: "fr-CA" },
-        {
-            value: "fr-CA-SylvieNeural",
-            label: "Sylvie (Female)",
-            locale: "fr-CA",
-        },
-
-        // German voices
-        {
-            value: "de-DE-SeraphinaMultilingualNeural",
-            label: "Seraphina Multilingual (Female)",
-            locale: "de-DE",
-        },
-        {
-            value: "de-DE-FlorianMultilingualNeural",
-            label: "Florian Multilingual (Male)",
-            locale: "de-DE",
-        },
-        {
-            value: "de-DE-AmalaNeural",
-            label: "Amala (Female)",
-            locale: "de-DE",
-        },
-        {
-            value: "de-DE-ConradNeural",
-            label: "Conrad (Male)",
-            locale: "de-DE",
-        },
-        {
-            value: "de-DE-KatjaNeural",
-            label: "Katja (Female)",
-            locale: "de-DE",
-        },
-        {
-            value: "de-DE-KillianNeural",
-            label: "Killian (Male)",
-            locale: "de-DE",
-        },
-
-        // Spanish voices
-        {
-            value: "es-ES-ArabellaMultilingualNeural",
-            label: "Arabella Multilingual (Female)",
-            locale: "es-ES",
-        },
-        {
-            value: "es-ES-IsidoraMultilingualNeural",
-            label: "Isidora Multilingual (Female)",
-            locale: "es-ES",
-        },
-        {
-            value: "es-ES-TristanMultilingualNeural",
-            label: "Tristan Multilingual (Male)",
-            locale: "es-ES",
-        },
-        {
-            value: "es-ES-XimenaMultilingualNeural",
-            label: "Ximena Multilingual (Female)",
-            locale: "es-ES",
-        },
-        {
-            value: "es-ES-AlvaroNeural",
-            label: "Alvaro (Male)",
-            locale: "es-ES",
-        },
-        {
-            value: "es-ES-ElviraNeural",
-            label: "Elvira (Female)",
-            locale: "es-ES",
-        },
-        {
-            value: "es-MX-DaliaNeural",
-            label: "Dalia (Female)",
-            locale: "es-MX",
-        },
-        { value: "es-MX-JorgeNeural", label: "Jorge (Male)", locale: "es-MX" },
-
-        // Russian voices
-        {
-            value: "ru-RU-DmitryNeural",
-            label: "Dmitry (Male)",
-            locale: "ru-RU",
-        },
-        {
-            value: "ru-RU-SvetlanaNeural",
-            label: "Svetlana (Female)",
-            locale: "ru-RU",
-        },
-
-        // Italian voices
-        {
-            value: "it-IT-AlessioMultilingualNeural",
-            label: "Alessio Multilingual (Male)",
-            locale: "it-IT",
-        },
-        {
-            value: "it-IT-IsabellaMultilingualNeural",
-            label: "Isabella Multilingual (Female)",
-            locale: "it-IT",
-        },
-        {
-            value: "it-IT-GiuseppeMultilingualNeural",
-            label: "Giuseppe Multilingual (Male)",
-            locale: "it-IT",
-        },
-        {
-            value: "it-IT-MarcelloMultilingualNeural",
-            label: "Marcello Multilingual (Male)",
-            locale: "it-IT",
-        },
-        { value: "it-IT-DiegoNeural", label: "Diego (Male)", locale: "it-IT" },
-        { value: "it-IT-ElsaNeural", label: "Elsa (Female)", locale: "it-IT" },
-        {
-            value: "it-IT-IsabellaNeural",
-            label: "Isabella (Female)",
-            locale: "it-IT",
-        },
-
-        // Japanese voices
-        { value: "ja-JP-KeitaNeural", label: "Keita (Male)", locale: "ja-JP" },
-        {
-            value: "ja-JP-NanamiNeural",
-            label: "Nanami (Female)",
-            locale: "ja-JP",
-        },
-
-        // Portuguese voices
-        {
-            value: "pt-BR-MacerioMultilingualNeural",
-            label: "Macerio Multilingual (Male)",
-            locale: "pt-BR",
-        },
-        {
-            value: "pt-BR-ThalitaMultilingualNeural",
-            label: "Thalita Multilingual (Female)",
-            locale: "pt-BR",
-        },
-        {
-            value: "pt-BR-AntonioNeural",
-            label: "Antonio (Male)",
-            locale: "pt-BR",
-        },
-        {
-            value: "pt-BR-FranciscaNeural",
-            label: "Francisca (Female)",
-            locale: "pt-BR",
-        },
-        {
-            value: "pt-PT-DuarteNeural",
-            label: "Duarte (Male)",
-            locale: "pt-PT",
-        },
-        {
-            value: "pt-PT-RaquelNeural",
-            label: "Raquel (Female)",
-            locale: "pt-PT",
-        },
-
-        // Chinese voices
-        {
-            value: "zh-CN-XiaoxiaoMultilingualNeural",
-            label: "Xiaoxiao Multilingual (Female)",
-            locale: "zh-CN",
-        },
-        {
-            value: "zh-CN-XiaochenMultilingualNeural",
-            label: "Xiaochen Multilingual (Female)",
-            locale: "zh-CN",
-        },
-        {
-            value: "zh-CN-XiaoyuMultilingualNeural",
-            label: "Xiaoyu Multilingual (Female)",
-            locale: "zh-CN",
-        },
-        {
-            value: "zh-CN-YunyiMultilingualNeural",
-            label: "Yunyi Multilingual (Female)",
-            locale: "zh-CN",
-        },
-        {
-            value: "zh-CN-YunfanMultilingualNeural",
-            label: "Yunfan Multilingual (Male)",
-            locale: "zh-CN",
-        },
-        {
-            value: "zh-CN-YunxiaoMultilingualNeural",
-            label: "Yunxiao Multilingual (Male)",
-            locale: "zh-CN",
-        },
-        {
-            value: "zh-CN-XiaoxiaoNeural",
-            label: "Xiaoxiao (Female) - Warm",
-            locale: "zh-CN",
-        },
-        {
-            value: "zh-CN-YunyangNeural",
-            label: "Yunyang (Male) - Professional",
-            locale: "zh-CN",
-        },
-        {
-            value: "zh-TW-HsiaoChenNeural",
-            label: "HsiaoChen (Female)",
-            locale: "zh-TW",
-        },
-        {
-            value: "zh-TW-YunJheNeural",
-            label: "YunJhe (Male)",
-            locale: "zh-TW",
-        },
-
-        // Arabic voices
-        { value: "ar-SA-HamedNeural", label: "Hamed (Male)", locale: "ar-SA" },
-        {
-            value: "ar-SA-ZariyahNeural",
-            label: "Zariyah (Female)",
-            locale: "ar-SA",
-        },
-
-        // Hindi voices
-        {
-            value: "hi-IN-MadhurNeural",
-            label: "Madhur (Male)",
-            locale: "hi-IN",
-        },
-        {
-            value: "hi-IN-SwaraNeural",
-            label: "Swara (Female)",
-            locale: "hi-IN",
-        },
-
-        // Korean voices
-        {
-            value: "ko-KR-HyunsuMultilingualNeural",
-            label: "Hyunsu Multilingual (Male)",
-            locale: "ko-KR",
-        },
-        {
-            value: "ko-KR-InJoonNeural",
-            label: "InJoon (Male)",
-            locale: "ko-KR",
-        },
-        {
-            value: "ko-KR-SunHiNeural",
-            label: "SunHi (Female)",
-            locale: "ko-KR",
-        },
-    ];
-
     constructor(
         private configService: ConfigService,
         private characterService: CharacterService,
@@ -657,6 +226,9 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
                 this.activeCharacter = character;
                 this.refreshAvatarPreviewSvg();
             }
+        );
+        this.pluginProvidersSubscription = this.configService.plugin_model_providers$.subscribe(
+            providers => this.pluginTTSProviders = providers.filter(provider => provider.kind === "tts"),
         );
         this.avatarMimeSubscription = combineLatest([this.characterService.avatarUrl$, this.characterService.avatarMime$]).subscribe(
             ([avatarUrl, mime]) => {
@@ -685,10 +257,75 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
         if (this.avatarMimeSubscription) {
             this.avatarMimeSubscription.unsubscribe();
         }
+        this.pluginProvidersSubscription.unsubscribe();
         if (this.avatarPreviewSvgElementsSubscription) {
             this.avatarPreviewSvgElementsSubscription.unsubscribe();
         }
         clearInterval(this.avatarPreviewInterval);
+    }
+
+    get selectedTtsProvider(): ModelProviderDefinition | null {
+        const selected = this.config?.tts_provider;
+        return this.pluginTTSProviders.find(
+            candidate => selected === `plugin:${candidate.plugin_guid}:${candidate.id}`,
+        ) ?? null;
+    }
+
+    get selectedTtsProviderRef(): string | null {
+        const provider = this.selectedTtsProvider;
+        return provider ? `plugin:${provider.plugin_guid}:${provider.id}` : null;
+    }
+
+    get selectedVoiceSettingsConfig(): SettingsGrid[] {
+        return this.selectedTtsProvider?.voice_settings_config ?? [];
+    }
+
+    get hasVoiceSettingsConfig(): boolean {
+        return this.selectedTtsProvider?.voice_settings_config !== undefined;
+    }
+
+    getVoiceSettingValue(fieldKey: string, defaultValue: any): any {
+        const providerRef = this.selectedTtsProviderRef;
+        if (!providerRef || !this.activeCharacter) return defaultValue;
+        const stored = this.activeCharacter.tts_voice_settings?.[providerRef];
+        if (stored && Object.prototype.hasOwnProperty.call(stored, fieldKey)) {
+            return stored[fieldKey];
+        }
+        if (defaultValue !== undefined) return defaultValue;
+        if (fieldKey === "voice") return this.activeCharacter.tts_voice;
+        if (fieldKey === "instructions") return this.activeCharacter.tts_prompt;
+        return defaultValue;
+    }
+
+    getCharacterVoiceDisplay(character: Character): string | null {
+        const providerRef = this.selectedTtsProviderRef;
+        if (!providerRef) return character.tts_voice || null;
+        return providerVoiceDisplayValue(
+            providerRef,
+            this.pluginTTSProviders,
+            character.tts_voice_settings,
+            character.tts_voice,
+        ) ?? null;
+    }
+
+    async setVoiceSettingValue(fieldKey: string, value: any): Promise<void> {
+        const providerRef = this.selectedTtsProviderRef;
+        if (!providerRef || !this.activeCharacter) return;
+
+        const voiceSettings = { ...(this.activeCharacter.tts_voice_settings ?? {}) };
+        voiceSettings[providerRef] = {
+            ...(voiceSettings[providerRef] ?? {}),
+            [fieldKey]: value,
+        };
+        await this.characterService.setCharacterProperty("tts_voice_settings", voiceSettings);
+    }
+
+    createVoiceGetValueFn(): (fieldKey: string, defaultValue: any) => any {
+        return (fieldKey, defaultValue) => this.getVoiceSettingValue(fieldKey, defaultValue);
+    }
+
+    createVoiceSetValueFn(): (fieldKey: string, value: any) => void {
+        return (fieldKey, value) => void this.setVoiceSettingValue(fieldKey, value);
     }
 
     public focusActiveCharacterOverview(): void {
@@ -1343,91 +980,6 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
         } regardless of the language spoken to you.`;
     }
 
-    onVoiceSelectionChange(value: any) {
-        if (value === "show-all-voices") {
-            this.openEdgeTtsVoicesDialog();
-        } else {
-            this.setCharacterProperty("tts_voice", value);
-        }
-    }
-
-    openEdgeTtsVoicesDialog() {
-        const currentVoice = this.activeCharacter?.tts_voice ?? "en-US-AvaMultilingualNeural";
-
-        const dialogRef = this.dialog.open(EdgeTtsVoicesDialogComponent, {
-            width: "50rem",
-            maxWidth: "calc(100vw - 2rem)",
-            data: {
-                voices: this.edgeTtsVoices,
-                selectedVoice: currentVoice,
-            },
-        });
-
-        dialogRef.afterClosed().subscribe((result) => {
-            if (result) {
-                this.setCharacterProperty("tts_voice", result);
-            }
-        });
-    }
-
-    /**
-     * Check if the voice is not in the predefined list of common voices
-     */
-    isCustomVoice(voice: string | undefined): boolean {
-        if (!voice) return false;
-
-        // Get the list of voices in the dropdowns
-        const predefinedVoices = [
-            "en-US-AriaNeural",
-            "en-US-AnaNeural",
-            "en-US-ChristopherNeural",
-            "en-US-EricNeural",
-            "en-US-GuyNeural",
-            "en-US-JennyNeural",
-            "en-US-MichelleNeural",
-            "en-US-RogerNeural",
-            "en-US-SteffanNeural",
-            "en-GB-LibbyNeural",
-            "en-GB-MaisieNeural",
-            "en-GB-RyanNeural",
-            "en-GB-SoniaNeural",
-            "en-GB-ThomasNeural",
-            "en-AU-NatashaNeural",
-            "en-AU-WilliamNeural",
-        ];
-
-        return !predefinedVoices.includes(voice);
-    }
-
-    /**
-     * Get a readable display name for a voice ID
-     */
-    getVoiceDisplayName(voice: string): string {
-        // First check if it's in our full list of voices
-        const foundVoice = this.edgeTtsVoices.find((v) => v.value === voice);
-        if (foundVoice) {
-            return `${foundVoice.label} (${foundVoice.locale})`;
-        }
-
-        // If not found in our list, try to format it nicely
-        if (voice.includes("-")) {
-            // Format like "en-US-JaneNeural" to "Jane (en-US)"
-            const parts = voice.split("-");
-            if (parts.length >= 3) {
-                const locale = `${parts[0]}-${parts[1]}`;
-                // Extract the name (remove "Neural" suffix if present)
-                let name = parts.slice(2).join("-");
-                if (name.endsWith("Neural")) {
-                    name = name.substring(0, name.length - 6);
-                }
-                return `${name} (${locale})`;
-            }
-        }
-
-        // If all else fails, just return the voice ID
-        return voice;
-    }
-
     // Character Management Methods
     onCharacterSelect(index: number) {
         if (!this.config) return;
@@ -1465,7 +1017,7 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
                     this.config.characters[this.selectedCharacterIndex],
                 ),
             );
-            this.showVoiceMoreSettings = false;
+            this.showVoiceSettings = false;
             this.editMode = true;
         } else {
             // If already in edit mode, exit with confirmation for unsaved changes
@@ -1493,7 +1045,7 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
         // actually its all saved already, all we need it to clear the local backup
 
         this.localCharacterCopy = null;
-        this.showVoiceMoreSettings = false;
+        this.showVoiceSettings = false;
         this.editMode = false;
     }
 
@@ -1518,7 +1070,7 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
         this.localCharacterCopy = null;
 
         // Always exit edit mode
-        this.showVoiceMoreSettings = false;
+        this.showVoiceSettings = false;
         this.editMode = false;
     }
 
