@@ -377,6 +377,27 @@ mat-slide-toggle {
   margin-bottom: 0.75rem;
 }
 
+.covas-crew-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.covas-crew-overview h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.covas-crew-info {
+  min-width: 0;
+}
+
+.covas-crew-info strong {
+  color: rgba(255, 255, 255, 0.9);
+  overflow-wrap: anywhere;
+}
+
 .covas-event-summary {
   display: flex;
   justify-content: center;

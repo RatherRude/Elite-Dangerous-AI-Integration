@@ -77,6 +77,7 @@ export interface Config {
     // Stored characters
     characters: unknown[];
     active_character_index: number;
+    active_characters: number[];
     // Other config settings
     llm_provider: string;
     agent_llm_provider: string;

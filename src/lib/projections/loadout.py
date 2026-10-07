@@ -55,6 +55,7 @@ class LoadoutState(BaseModel):
     ShipName: str | None = None
     HullValue: int | None = None
     HullHealth: float | None = None
+    VoiceHealth: float | None = None
     ShipIdent: str | None = None
     ModulesValue: int | None = None
     CargoCapacity: int | None = None
@@ -80,6 +81,7 @@ class Loadout(Projection[LoadoutState]):
             self.state.ShipName = payload.get("ShipName")
             self.state.HullValue = payload.get("HullValue")
             self.state.HullHealth = payload.get("HullHealth")
+            self.state.VoiceHealth = self.state.HullHealth
             self.state.ShipIdent = payload.get("ShipIdent")
             self.state.ModulesValue = payload.get("ModulesValue")
             self.state.CargoCapacity = payload.get("CargoCapacity")
@@ -126,8 +128,14 @@ class Loadout(Projection[LoadoutState]):
             payload = cast(HullDamageEvent, event.content)
             if payload.get("Fighter") is not True:
                 self.state.HullHealth = payload.get("Health")
+                self.state.VoiceHealth = self.state.HullHealth
+            return
+
+        if isinstance(event, GameEvent) and event.content.get("event") in ["RepairDrone", "RebootRepair"]:
+            self.state.VoiceHealth = 1.0
             return
 
         if isinstance(event, GameEvent) and event.content.get("event") in ["RepairAll", "Died"]:
             _payload = cast(RepairAllEvent, event.content)
             self.state.HullHealth = 1.0
+            self.state.VoiceHealth = self.state.HullHealth

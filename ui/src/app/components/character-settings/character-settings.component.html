@@ -8,83 +8,98 @@
                 [class.focus-highlight]="highlightCharacterOverview"
                 tabindex="-1">
                 <div class="character-selector">
-                    <mat-form-field appearance="fill">
-                        <mat-label>Select Character</mat-label>
-                        <mat-select [(value)]="selectedCharacterIndex" (selectionChange)="onCharacterSelect($event.value)" [disabled]="editMode">
-                            <mat-divider *ngIf="config.characters && config.characters.length > 0"></mat-divider>
-                            <mat-option *ngFor="let character of config.characters; let i = index" [value]="i">
-                                {{ character.name }}
-                                @if (getCharacterVoiceDisplay(character); as voiceDisplay) {
-                                    ({{ voiceDisplay }})
-                                }
-                                <span class="char-details">
-                                    {{ character.personality_preset | slice:0:1 | uppercase }}{{ character.personality_preset | slice:1 }} -
-                                    {{ countActiveEvents(character) }} active events
-                                </span>
-                            </mat-option>
-                        </mat-select>
-                    </mat-form-field>
                     @if (!editMode) {
-                        <div class="character-display" [class.with-traits]="!isCustomPreset()">
-                            <div class="character-avatar-preview">
-                                @if (avatarPreviewUsesInlineSvg) {
-                                    <div class="avatar-preview-svg"
-                                         #avatarPreviewSvg
-                                         [ngClass]="avatarPreviewStateClass"
-                                         [innerHTML]="sanitizedAvatarPreviewSvg"
-                                         [attr.aria-label]="activeCharacter.name + ' avatar'"
-                                         role="img"></div>
-                                } @else {
-                                    <img [src]="getAvatarUrl()"
-                                         [alt]="activeCharacter.name + ' avatar'"
-                                         class="avatar-preview-image"
-                                         [ngClass]="avatarPreviewStateClass">
-                                }
-                            </div>
+                        <app-crew-roster [config]="config" [showManager]="modifyingCrewRoster"
+                                         [addingCharacter]="addingStandbyCharacter"
+                                         (characterAddRequested)="addStandbyCharacter()"
+                                         (characterEditRequested)="toggleEditMode($event)"
+                                         (characterDuplicateRequested)="duplicateStandbyCharacter($event)"
+                                         (characterDeleteRequested)="deleteCharacter($event)"
+                                         (rosterManagerChanged)="modifyingCrewRoster = $event"
+                                         (characterPreviewed)="hoveredCharacterIndex = $event"
+                                         (primarySelected)="onCharacterSelect($event)"></app-crew-roster>
+                    }
+                    @if (!hasMultipleActiveCrew && !modifyingCrewRoster) {
+                        <mat-form-field appearance="fill">
+                            <mat-label>Primary Character</mat-label>
+                            <mat-select [(value)]="selectedCharacterIndex" (selectionChange)="onCharacterSelect($event.value)" [disabled]="editMode">
+                                <mat-divider *ngIf="config.characters && config.characters.length > 0"></mat-divider>
+                                <mat-option *ngFor="let character of config.characters; let i = index" [value]="i">
+                                    {{ character.name }}
+                                    @if (getCharacterVoiceDisplay(character); as voiceDisplay) {
+                                        ({{ voiceDisplay }})
+                                    }
+                                    <span class="char-details">
+                                        {{ character.personality_preset | slice:0:1 | uppercase }}{{ character.personality_preset | slice:1 }} -
+                                        {{ countActiveEvents(character) }} active events
+                                    </span>
+                                </mat-option>
+                            </mat-select>
+                        </mat-form-field>
+                    }
+                    @if (!editMode && !modifyingCrewRoster && overviewCharacter; as character) {
+                        <div class="character-display" [class.with-traits]="character.personality_preset !== 'custom'">
+                            @if (!hasMultipleActiveCrew) {
+                                <div class="character-avatar-preview">
+                                    @if (avatarPreviewUsesInlineSvg) {
+                                        <div class="avatar-preview-svg"
+                                             #avatarPreviewSvg
+                                             [ngClass]="avatarPreviewStateClass"
+                                             [innerHTML]="sanitizedAvatarPreviewSvg"
+                                             [attr.aria-label]="activeCharacter.name + ' avatar'"
+                                             role="img"></div>
+                                    } @else {
+                                        <img [src]="getAvatarUrl()"
+                                             [alt]="activeCharacter.name + ' avatar'"
+                                             class="avatar-preview-image"
+                                             [ngClass]="avatarPreviewStateClass">
+                                    }
+                                </div>
+                            }
                             <div class="character-content">
-                                <span class="trait-label">{{activeCharacter.name}}:</span>
-                                {{!isCustomPreset() ? activeCharacter.personality_character_inspiration : activeCharacter.character}}
+                                <span class="trait-label">{{character.name}}:</span>
+                                {{character.personality_preset !== 'custom' ? character.personality_character_inspiration : character.character}}
                             </div>
-                            @if (!isCustomPreset()) {
+                            @if (character.personality_preset !== 'custom') {
                                 <div class="character-traits">
                                     <div class="trait-item">
                                         <span class="trait-label">Verbosity:</span>
-                                        <span class="trait-value">{{activeCharacter.personality_verbosity}}%</span>
+                                        <span class="trait-value">{{character.personality_verbosity}}%</span>
                                     </div>
                                     <div class="trait-item">
                                         <span class="trait-label">Vulgarity:</span>
-                                        <span class="trait-value">{{activeCharacter.personality_vulgarity}}%</span>
+                                        <span class="trait-value">{{character.personality_vulgarity}}%</span>
                                     </div>
                                     <div class="trait-item">
                                         <span class="trait-label">Empathy:</span>
-                                        <span class="trait-value">{{activeCharacter.personality_empathy}}%</span>
+                                        <span class="trait-value">{{character.personality_empathy}}%</span>
                                     </div>
                                     <div class="trait-item">
                                         <span class="trait-label">Formality:</span>
-                                        <span class="trait-value">{{activeCharacter.personality_formality}}%</span>
+                                        <span class="trait-value">{{character.personality_formality}}%</span>
                                     </div>
                                     <div class="trait-item">
                                         <span class="trait-label">Confidence:</span>
-                                        <span class="trait-value">{{activeCharacter.personality_confidence}}%</span>
+                                        <span class="trait-value">{{character.personality_confidence}}%</span>
                                     </div>
                                     <div class="trait-item">
                                         <span class="trait-label">Tone:</span>
-                                        <span class="trait-value">{{activeCharacter.personality_tone}}</span>
+                                        <span class="trait-value">{{character.personality_tone}}</span>
                                     </div>
                                     <div class="trait-item">
                                         <span class="trait-label">Ethical Alignment:</span>
-                                        <span class="trait-value">{{activeCharacter.personality_ethical_alignment}}</span>
+                                        <span class="trait-value">{{character.personality_ethical_alignment}}</span>
                                     </div>
                                     <div class="trait-item">
                                         <span class="trait-label">Moral Alignment:</span>
-                                        <span class="trait-value">{{activeCharacter.personality_moral_alignment}}</span>
+                                        <span class="trait-value">{{character.personality_moral_alignment}}</span>
                                     </div>
                                     <div class="trait-item">
                                         <span class="trait-label">Knowledge:</span>
                                         <div class="trait-value">
-                                            <span [class.active]="activeCharacter.personality_knowledge_pop_culture">pop culture</span>
-                                            <span [class.active]="activeCharacter.personality_knowledge_scifi">sci-fi</span>
-                                            <span [class.active]="activeCharacter.personality_knowledge_history">history</span>
+                                            <span [class.active]="character.personality_knowledge_pop_culture">pop culture</span>
+                                            <span [class.active]="character.personality_knowledge_scifi">sci-fi</span>
+                                            <span [class.active]="character.personality_knowledge_history">history</span>
                                         </div>
                                     </div>
                                 </div>
@@ -92,10 +107,10 @@
                         </div>
                     }
 
-                    <div class="character-buttons">
+                    <div class="character-buttons" *ngIf="!modifyingCrewRoster && (!hasMultipleActiveCrew || editMode)">
                         <!-- When not in edit mode, show Edit and New buttons -->
                         @if (!editMode) {
-                            <button mat-raised-button color="primary"
+                            <button mat-raised-button color="accent" class="secondary-character-button"
                                     [disabled]="selectedCharacterIndex === 0"
                                     [matTooltip]="'Enter edit mode to modify character name, personality traits, and event reactions'"
                                     matTooltipPosition="above"
@@ -103,21 +118,21 @@
                                 <mat-icon>edit</mat-icon> Edit
                             </button>
 
-                            <button mat-raised-button color="accent" class="secondary-character-button" (click)="addNewCharacter()"
+                            <button mat-raised-button color="primary" (click)="addNewCharacter()"
                                     [matTooltip]="selectedCharacterIndex === 0 ? 'Create a new character with customizable traits and personality prompt' : 'Create a new character based on the current one'"
                                     matTooltipPosition="above">
                                 <mat-icon>add</mat-icon> New
 
                             </button>
 
-                            <button mat-raised-button color="accent" class="secondary-character-button"
+                            <button mat-raised-button color="primary"
                                     (click)="duplicateSelectedCharacter()"
                                     [matTooltip]="selectedCharacterIndex === 0 ? 'Create a copy of this character that you can customize with different traits and settings' : 'Create a copy of this character with all current settings'"
                                     matTooltipPosition="above">
                                 <mat-icon>content_copy</mat-icon> Duplicate
                             </button>
 
-                            <button mat-raised-button color="accent" class="secondary-character-button"
+                            <button mat-raised-button color="warn"
                                     [disabled]="selectedCharacterIndex === 0"
                                     (click)="deleteSelectedCharacter()"
                                     [matTooltip]="'Permanently delete the currently selected character'"
@@ -144,7 +159,7 @@
             </div>
 
             <!-- Character settings - only visible when editing -->
-            <div id="character-creation" *ngIf="editMode">
+            <div id="character-creation" *ngIf="editMode && !modifyingCrewRoster">
 
 
                 <!-- Character Name -->
@@ -197,6 +212,12 @@
                                                 matTooltip="Change avatar">
                                             <mat-icon>edit</mat-icon>
                                         </button>
+                                    </div>
+                                    <div class="character-color-picker">
+                                        <label for="character-color">Character Color</label>
+                                        <input id="character-color" type="color"
+                                               [value]="activeCharacter.color || '#00bcd4'"
+                                               (change)="setCharacterProperty('color', $any($event.target).value)">
                                     </div>
                                 </div>
                             </div>
@@ -567,12 +588,22 @@
         <div class="clear_history">
             <button
                 mat-raised-button
-                color="warn"
+                color="accent"
+                class="secondary-character-button"
                 matTooltip="Clear current conversation history. Useful after changing character so the AI starts with a blank slate."
                 (click)="onClearHistory()">
                 <mat-icon>delete_sweep</mat-icon>
                 Clear Conversation
             </button>
+            @if (!editMode) {
+                <button mat-raised-button class="modify-crew-button"
+                        [attr.aria-expanded]="modifyingCrewRoster" aria-controls="standby-roster"
+                        [matTooltip]="modifyingCrewRoster ? 'Finish modifying the crew roster' : 'Manage active and standby crew'"
+                        (click)="toggleCrewRoster()">
+                    <mat-icon>{{ modifyingCrewRoster ? 'done' : 'groups' }}</mat-icon>
+                    {{ modifyingCrewRoster ? 'Done' : 'Modify Crew Roster' }}
+                </button>
+            }
         </div>
     }
 </div>

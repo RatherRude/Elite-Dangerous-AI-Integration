@@ -72,6 +72,7 @@ export interface CharacterTTSPostprocessingConfig {
 
 export interface Character {
     name: string;
+    color?: string;
     character: string;
     personality_preset: string;
     personality_verbosity: number;
@@ -254,12 +255,12 @@ export class CharacterService {
 
         await this.tauriService.send_command(message);
     }
-    public async addDefaultCharacter(): Promise<void> {
+    public async addDefaultCharacter(setActive: boolean = true): Promise<void> {
         const message: CharacterOperationMessage = {
             type: "change_character",
             timestamp: new Date().toISOString(),
             operation: "add",
-            set_active: true,
+            set_active: setActive,
         };
 
         await this.tauriService.send_command(message);
@@ -289,7 +290,6 @@ export class CharacterService {
         };
 
         await this.tauriService.send_command(message);
-        await this.setActiveCharacter(0);
     }
 
     public async setActiveCharacter(index: number): Promise<void> {

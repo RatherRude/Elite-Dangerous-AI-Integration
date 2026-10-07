@@ -27,11 +27,12 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatSliderModule } from "@angular/material/slider";
 import { MatDialog } from "@angular/material/dialog";
 import { ScreenInfo } from "../../models/screen-info";
-import { Character, CharacterService } from "../../services/character.service";
+import { Character, CharacterService, ConfigWithCharacters } from "../../services/character.service";
 import { filterProvidersForSlot, llmProviderSummary, modelProviderLabel, ModelProviderDefinition, providerVoiceSettingsValues, ProviderSlot } from "../../services/plugin-settings";
 import { ApiKeyDetectionService } from "../../services/api-key-detection.service";
 import { ConfirmationDialogComponent } from "../confirmation-dialog/confirmation-dialog.component";
 import { ChatService } from "../../services/chat.service";
+import { CrewRosterComponent } from "../crew-roster/crew-roster.component";
 
 export type GeneralSettingsTarget =
     | "commander"
@@ -69,6 +70,7 @@ type PreflightChecklistItem = "commander" | "input" | "output" | "overlay" | "ac
         MatError,
         MatTooltipModule,
         MatSliderModule,
+        CrewRosterComponent,
     ],
     templateUrl: "./general-settings.component.html",
     styleUrls: ["./general-settings.component.css"],
@@ -82,6 +84,7 @@ export class GeneralSettingsComponent implements OnDestroy {
     overlayRuntimeInfo: OverlayRuntimeInfo | null = null;
     isVrIntegrationBusy = false;
     activeCharacter: Character | null = null;
+    previewCharacterIndex: number | null = null;
     characterList: Character[] = [];
     keybindsData: KeybindsMessages | null = null;
     pluginSTTProviders: ModelProviderDefinition[] = [];
@@ -125,6 +128,7 @@ export class GeneralSettingsComponent implements OnDestroy {
         this.configSubscription = this.configService.config$.subscribe(
             (config) => {
                 this.config = config;
+                this.previewCharacterIndex = null;
                 this.assigningPTTIndex = null;
             },
         );
@@ -208,6 +212,9 @@ export class GeneralSettingsComponent implements OnDestroy {
     }
 
     setActivePreflightItem(item: PreflightChecklistItem): void {
+        if (item !== this.activePreflightItem) {
+            this.previewCharacterIndex = null;
+        }
         this.activePreflightItem = item;
     }
 
@@ -325,8 +332,27 @@ export class GeneralSettingsComponent implements OnDestroy {
         return enabledTypes;
     }
 
+    get hasMultipleActiveCrew(): boolean {
+        return (this.config?.active_characters?.length ?? 0) > 1;
+    }
+
+    get crewOverviewConfig(): ConfigWithCharacters | null {
+        return this.config as ConfigWithCharacters | null;
+    }
+
+    get overviewCharacter(): Character | null {
+        if (
+            this.hasMultipleActiveCrew
+            && this.previewCharacterIndex !== null
+            && this.config?.active_characters.includes(this.previewCharacterIndex)
+        ) {
+            return this.characterList[this.previewCharacterIndex] ?? this.activeCharacter;
+        }
+        return this.activeCharacter;
+    }
+
     get characterPrompt(): string {
-        return this.activeCharacter?.character?.trim() || "No character prompt configured yet.";
+        return this.overviewCharacter?.character?.trim() || "No character prompt configured yet.";
     }
 
     get characterName(): string {
@@ -334,7 +360,7 @@ export class GeneralSettingsComponent implements OnDestroy {
     }
 
     get eventReactionCounts(): { on: number; off: number; hidden: number } {
-        const events = this.activeCharacter?.event_reactions;
+        const events = this.overviewCharacter?.event_reactions;
         const counts = { on: 0, off: 0, hidden: 0 };
         if (!events) {
             return counts;
