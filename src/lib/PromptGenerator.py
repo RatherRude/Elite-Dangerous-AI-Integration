@@ -2370,6 +2370,12 @@ class PromptGenerator:
         if event_name == "InDockingRange":
             return f"{self.commander_name}'s ship is now close enough to the station to make a docking request."
 
+        if event_name == "VoiceDamaged":
+            return "{self.commander_name}'s voice module has been damaged; your speech output is distorted."
+
+        if event_name == "VoiceRepaired":
+            return "{self.commander_name}'s voice module has been repaired; damage-related speech distortion has cleared."
+
         if event_name == "DockingComputerDocking":
             return f"{self.commander_name}'s ship has initiated automated docking computer"
 

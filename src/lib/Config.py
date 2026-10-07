@@ -105,6 +105,8 @@ game_events = {
     'DockingComputerUndocking': False,
     'DockingComputerDeactivated': False,
     'InDockingRange': True,
+    'VoiceDamaged': True,
+    'VoiceRepaired': True,
     'NavRoute': False,
     'NavRouteClear': False,
     'CrewLaunchFighter': True,

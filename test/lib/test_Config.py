@@ -17,6 +17,12 @@ from src.lib.Config import (
 )
 
 
+@pytest.mark.parametrize('event_name', ['VoiceDamaged', 'VoiceRepaired'])
+def test_voice_events_have_enabled_default_reactions(event_name):
+    assert ConfigModule.game_events[event_name] is True
+    assert ConfigModule.default_event_reactions[event_name] == 'on'
+
+
 def test_action_defaults_match_registered_permissions() -> None:
     actions_source = (
         ROOT_DIR / "src" / "lib" / "actions" / "Actions.py"
