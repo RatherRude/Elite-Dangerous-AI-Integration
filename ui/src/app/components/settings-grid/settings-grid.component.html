@@ -10,7 +10,16 @@
             <h4>{{ grid.label }}</h4>
         }
     }
-    @for (field of grid.fields; track field.key) {
+    <ng-container *ngTemplateOutlet="fieldsTemplate; context: { $implicit: grid.fields }"></ng-container>
+</div>
+
+<ng-template #fieldsTemplate let-fields>
+    @for (field of fields; track field.key) {
+        @if (field.type === 'condition') {
+            @if (matchesCondition(field.condition)) {
+                <ng-container *ngTemplateOutlet="fieldsTemplate; context: { $implicit: field.fields }"></ng-container>
+            }
+        } @else {
         <app-settings-field
             [field]="field"
             [value]="getFieldValue(field)"
@@ -18,5 +27,6 @@
             (valueChange)="onFieldChange(field, $event)"
             (buttonClick)="handleButtonClick(field)">
         </app-settings-field>
+        }
     }
-</div>
+</ng-template>

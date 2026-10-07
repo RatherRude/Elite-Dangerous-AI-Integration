@@ -43,7 +43,7 @@ import { MatExpansionModule } from "@angular/material/expansion";
 import { ChatService } from "../../services/chat.service";
 import { SettingsGridComponent } from "../settings-grid/settings-grid.component";
 
-import { ModelProviderDefinition, providerVoiceDisplayValue, SettingsGrid } from "../../services/plugin-settings";
+import { ModelProviderDefinition, providerVoiceDisplayValue, SettingsGrid, voiceSettingsContext } from "../../services/plugin-settings";
 
 interface PromptSettings {
     // Existing settings
@@ -287,9 +287,12 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
     getVoiceSettingValue(fieldKey: string, defaultValue: any): any {
         const providerRef = this.selectedTtsProviderRef;
         if (!providerRef || !this.activeCharacter) return defaultValue;
-        const stored = this.activeCharacter.tts_voice_settings?.[providerRef];
-        if (stored && Object.prototype.hasOwnProperty.call(stored, fieldKey)) {
-            return stored[fieldKey];
+        const values = voiceSettingsContext(
+            this.config?.plugin_settings?.[this.selectedTtsProvider!.plugin_guid],
+            this.activeCharacter.tts_voice_settings?.[providerRef],
+        );
+        if (Object.prototype.hasOwnProperty.call(values, fieldKey)) {
+            return values[fieldKey];
         }
         if (defaultValue !== undefined) return defaultValue;
         if (fieldKey === "voice") return this.activeCharacter.tts_voice;

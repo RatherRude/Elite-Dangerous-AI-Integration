@@ -1,7 +1,7 @@
 from typing import Any, override
 
 from lib.PluginBase import PluginBase, PluginManifest
-from plugins.ProviderPluginHelpers import ToolToggleOpenAILLMModel, api_key, bool_setting, float_setting, number_field, paragraph, select_field, string_setting, text_field, toggle_field
+from plugins.ProviderPluginHelpers import ToolToggleOpenAILLMModel, api_key as _shared_api_key, bool_setting, float_setting, number_field, paragraph, select_field, string_setting, text_field, toggle_field
 from plugins.EdgeTTSPlugin import EDGE_TTS_PLUGIN_GUID
 
 
@@ -10,7 +10,32 @@ OPENROUTER_API_URL = "https://openrouter.ai/api/v1/"
 OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct:free"
 
 
+def api_key(settings: dict[str, Any], prefix: str) -> str:
+    baseline = settings.get('legacy_shared_api_key')
+    if isinstance(baseline, str):
+        if settings.get('api_key') == baseline:
+            return str(settings.get(f'{prefix}_api_key') or settings.get('api_key') or '-')
+        return str(settings.get('api_key') or '-')
+    return _shared_api_key(settings, prefix)
+
+
 class OpenRouterPlugin(PluginBase):
+    settings_schema_version = 1
+
+    @override
+    def migrate_settings(self, settings: dict[str, Any], from_version: int) -> None:
+        if from_version != 0:
+            return
+        if not settings.get('api_key'):
+            for prefix in ('llm', 'agent_llm'):
+                key = settings.get(f'{prefix}_api_key')
+                if isinstance(key, str) and key:
+                    settings['api_key'] = key
+                    break
+        if any(settings.get(f'{prefix}_api_key') and settings[f'{prefix}_api_key'] != settings.get('api_key')
+               for prefix in ('llm', 'agent_llm')):
+            settings.setdefault('legacy_shared_api_key', settings.get('api_key', ''))
+
     @override
     def __init__(self, plugin_manifest: PluginManifest):
         super().__init__(plugin_manifest)
@@ -23,7 +48,6 @@ class OpenRouterPlugin(PluginBase):
                 "kind": "llm", "id": provider_id, "label": "OpenRouter", "slots": [slot],
                 "settings_config": [{"key": prefix, "label": title, "fields": [
                     text_field("api_key", "OpenRouter API Key", "", hidden=True),
-                    text_field(f"{prefix}_api_key", "Override API Key", "", hidden=True),
                     text_field(f"{prefix}_model", "Model", OPENROUTER_MODEL),
                     number_field(f"{prefix}_temperature", "Temperature", 1.0, 0.0, 2.0, 0.01),
                     select_field(f"{prefix}_reasoning_effort", "Reasoning Effort", "default", ["default", "none", "minimal", "low", "medium", "high"]),

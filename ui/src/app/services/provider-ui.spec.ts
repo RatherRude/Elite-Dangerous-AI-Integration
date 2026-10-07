@@ -4,12 +4,14 @@ import {
     ModelProviderDefinition,
     providerVoiceDisplayValue,
     providerVoiceSettingsValues,
+    voiceSettingsContext,
 } from "./plugin-settings";
 import { TauriService } from "./tauri.service";
 import { EMPTY } from "rxjs";
 import { TestBed } from "@angular/core/testing";
 import { SettingsGridComponent } from "../components/settings-grid/settings-grid.component";
 import { SettingsGrid } from "./plugin-settings";
+import { CharacterSettingsComponent } from "../components/character-settings/character-settings.component";
 
 describe("provider UI compatibility", () => {
     const provider = (
@@ -32,6 +34,28 @@ describe("provider UI compatibility", () => {
 
         expect(filterProvidersForSlot([legacy, main, agent], "llm")).toEqual([legacy, main]);
         expect(filterProvidersForSlot([legacy, main, agent], "agent_llm")).toEqual([legacy, agent]);
+    });
+
+    it("merges plugin globals into voice conditions with character values taking precedence", () => {
+        const globals = { tts_model: "global-model", instructions: "global style", enabled: true };
+        const character = { instructions: "", enabled: false };
+        expect(voiceSettingsContext(globals, character)).toEqual({
+            tts_model: "global-model", instructions: "", enabled: false,
+        });
+        const tts = { ...provider("tts"), kind: "tts" } as ModelProviderDefinition;
+        const instance = Object.create(CharacterSettingsComponent.prototype) as CharacterSettingsComponent;
+        instance.pluginTTSProviders = [tts];
+        instance.config = {
+            tts_provider: "plugin:plugin:tts", plugin_settings: { plugin: globals },
+        } as any;
+        instance.activeCharacter = {
+            tts_voice_settings: { "plugin:plugin:tts": character },
+        } as any;
+        expect(instance.getVoiceSettingValue("tts_model", undefined)).toBe("global-model");
+        expect(instance.getVoiceSettingValue("instructions", "default")).toBe("");
+        expect(instance.getVoiceSettingValue("enabled", undefined)).toBeFalse();
+        expect(instance.getVoiceSettingValue("missing", undefined)).toBeUndefined();
+        expect(globals.instructions).toBe("global style");
     });
 
     it("routes provider buttons with the owning plugin GUID", async () => {

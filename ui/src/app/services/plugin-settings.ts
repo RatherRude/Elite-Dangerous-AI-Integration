@@ -10,7 +10,67 @@ export interface PluginSettings {
 export interface SettingsGrid {
     key: string;
     label: string;
-    fields: (TextSetting | TextAreaSetting | NumericalSetting | ToggleSetting | SelectSetting | ButtonSetting | ParagraphSetting | ErrorSetting)[];
+    fields: SettingsElement[];
+}
+
+export type SettingsElement = TextSetting | TextAreaSetting | NumericalSetting | ToggleSetting | SelectSetting | ButtonSetting | ParagraphSetting | ErrorSetting | ConditionSetting;
+
+export interface SettingCondition {
+    key: string;
+    operator: "eq" | "neq" | "gt" | "geq" | "lt" | "leq" | "in" | "not_in" | "contains" | "not_contains" | "is_set" | "is_unset";
+    value?: unknown;
+    default_show?: boolean;
+}
+
+export interface ConditionSetting {
+    key: string;
+    type: "condition";
+    condition: SettingCondition;
+    fields: SettingsElement[];
+}
+
+/** All actual fields, including hidden descendants; containers have no stored value. */
+export function settingsFields(elements: SettingsElement[]): SettingBase[] {
+    return elements.flatMap(element => element.type === "condition"
+        ? settingsFields(element.fields) : [element]);
+}
+
+export function matchesSettingCondition(condition: SettingCondition, actual: unknown): boolean {
+    const unset = actual === undefined || actual === null;
+    if (condition.operator === "is_set") return !unset;
+    if (condition.operator === "is_unset") return unset;
+    if (actual === undefined || actual === null) return condition.default_show ?? false;
+    const expected = condition.value;
+    switch (condition.operator) {
+        case "eq": return actual === expected;
+        case "neq": return actual !== expected;
+        case "gt": case "geq": case "lt": case "leq":
+            if (typeof actual !== "number" || typeof expected !== "number"
+                || !Number.isFinite(actual) || !Number.isFinite(expected)) return false;
+            switch (condition.operator) {
+                case "gt": return actual > expected;
+                case "geq": return actual >= expected;
+                case "lt": return actual < expected;
+                case "leq": return actual <= expected;
+            }
+        case "in": case "not_in":
+            if (!Array.isArray(expected)) return false;
+            return condition.operator === "in" ? expected.includes(actual) : !expected.includes(actual);
+        case "contains": case "not_contains": {
+            if (!Array.isArray(actual) && !(typeof actual === "string" && typeof expected === "string")) return false;
+            const contains = Array.isArray(actual) ? actual.includes(expected) : (actual as string).includes(expected as string);
+            return condition.operator === "contains" ? contains : !contains;
+        }
+        default: return false;
+    }
+}
+
+/** Voice conditions can reference global keys; character values win on collisions. */
+export function voiceSettingsContext(
+    pluginSettings: Record<string, any> | undefined,
+    characterSettings: Record<string, any> | undefined,
+): Record<string, any> {
+    return { ...pluginSettings, ...characterSettings };
 }
 
 export interface SettingBase {
@@ -107,12 +167,12 @@ export function providerVoiceSettingsValues(
 
     const defaults = Object.fromEntries(
         provider.voice_settings_config
-            .flatMap(grid => grid.fields)
+            .flatMap(grid => settingsFields(grid.fields))
             .filter(field => field.default_value !== undefined)
             .map(field => [field.key, field.default_value]),
     );
     const declaredKeys = new Set(
-        provider.voice_settings_config.flatMap(grid => grid.fields).map(field => field.key),
+        provider.voice_settings_config.flatMap(grid => settingsFields(grid.fields)).map(field => field.key),
     );
     const stored = Object.fromEntries(
         Object.entries(voiceSettings?.[providerRef] ?? {})
@@ -133,7 +193,7 @@ export function providerVoiceDisplayValue(
     if (!provider || provider.voice_settings_config === undefined) return legacyFallback || undefined;
 
     const voiceField = provider.voice_settings_config
-        .flatMap(grid => grid.fields)
+        .flatMap(grid => settingsFields(grid.fields))
         .find(field => field.key === "voice");
     if (!voiceField) return undefined;
 
@@ -182,7 +242,7 @@ export function llmProviderSummary(
         (!p.slots || p.slots.includes(slot)) &&
         providerRef === `plugin:${p.plugin_guid}:${p.id}`
     );
-    const modelField = provider?.settings_config.flatMap(grid => grid.fields)
+    const modelField = provider?.settings_config.flatMap(grid => settingsFields(grid.fields))
         .find(field => field.label === "Model" || field.key === "model" || field.key.endsWith("_model"));
     const configured = provider && modelField ? pluginSettings[provider.plugin_guid]?.[modelField.key] : undefined;
     const model = typeof configured === "string" && configured.trim() ? configured.trim() : modelField?.default_value;

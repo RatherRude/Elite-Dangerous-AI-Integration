@@ -213,6 +213,10 @@ class OpenAILLMModel(LLMModel):
     def _extract_response_text(self, content: Any) -> str | None:
         return content if isinstance(content, str) and content else None
 
+    def _prepare_request_params(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Allow providers to enforce their model's parameter compatibility."""
+        return params
+
     def generate(self, messages: List[dict], tools: Optional[List[dict]] = None, tool_choice: Optional[Any] = None) -> tuple[str | None, List[Any] | None, ModelUsageStats]:
         started_at = time()
         kwargs = {}
@@ -246,7 +250,7 @@ class OpenAILLMModel(LLMModel):
             params["extra_headers"] = self.extra_headers
 
         try:
-            raw_response = self.client.chat.completions.with_raw_response.create(**params)  # pyright: ignore[reportCallIssue]
+            raw_response = self.client.chat.completions.with_raw_response.create(**self._prepare_request_params(params))  # pyright: ignore[reportCallIssue]
             completion = raw_response.parse()
             retry_attempts = raw_response.retries_taken
         except APIStatusError as e:
@@ -545,6 +549,10 @@ class OpenAIResponsesLLMModel(LLMModel):
 
         return tool_calls or None
 
+    def _prepare_request_params(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Allow providers to enforce their model's parameter compatibility."""
+        return params
+
     def generate(self, messages: List[dict], tools: Optional[List[dict]] = None, tool_choice: Optional[Any] = None) -> tuple[str | None, List[Any] | None, ModelUsageStats]:
         started_at = time()
         params: dict[str, Any] = {
@@ -571,7 +579,7 @@ class OpenAIResponsesLLMModel(LLMModel):
             params["extra_headers"] = self.extra_headers
 
         try:
-            raw_response = self.client.responses.with_raw_response.create(**params)
+            raw_response = self.client.responses.with_raw_response.create(**self._prepare_request_params(params))
             response = raw_response.parse()
             retry_attempts = raw_response.retries_taken
         except APIStatusError as e:
@@ -664,6 +672,9 @@ class OpenAISTTModel(STTModel):
         self.language = language
         self.prompt = prompt
 
+    def _prepare_request_params(self, params: dict[str, Any]) -> dict[str, Any]:
+        return params
+
     def transcribe(self, audio: sr.AudioData) -> str:
         audio_raw = audio.get_raw_data(convert_rate=16000, convert_width=2)
         # Convert raw PCM data to numpy array
@@ -681,12 +692,12 @@ class OpenAISTTModel(STTModel):
             kwargs: dict[str, Any] = {
                 "model": self.model_name,
                 "file": audio_ogg,
-                "language": self.language if self.language else None,  # pyright: ignore[reportArgumentType]
+                "language": self.language if self.language else None,
             }
             if self.prompt:
                 kwargs["prompt"] = self.prompt
 
-            transcription = self.client.audio.transcriptions.create(**kwargs)
+            transcription = self.client.audio.transcriptions.create(**self._prepare_request_params(kwargs))
         except APIStatusError as e:
             log("debug", "STT error request:", e.request.method, e.request.url, e.request.headers)
             log("debug", "STT error response:", e.response.status_code, e.response.headers, e.response.read().decode('utf-8', errors='replace'))
@@ -728,7 +739,7 @@ class OpenAIMultiModalSTTModel(STTModel):
                     {"role":"system", "content":
                         "You are a high quality transcription model. You are given audio input from the user, and return the transcribed text from the input. Do NOT add any additional text in your response, only respond with the text given by the user.\n" +
                         "The audio may be related to space sci-fi terminology like systems, equipment, and station names, specifically the game Elite Dangerous.\n" + 
-                        #"Here is an example of the type of text you should return: <example>" + self.prompt + "</example>\n" +
+                        (f"Additional transcription context: {self.prompt}\n" if self.prompt else "") +
                         "Always provide an exact transcription of the audio. If the user is not speaking or inaudible, return only the word 'silence'."
                     },
                     {"role": "user", "content": [{

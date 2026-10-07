@@ -125,7 +125,144 @@ The `PluginBase` base class has the following methods that can be overridden:
 
 The `PluginHelper` instance provides utilities for registering actions, projections, side effects, and more. You can access most of the internal features you need from the `helper` object, such as `send_key()`, various event handler registrations, and more.
 
+## Conditional settings
+
+Use `ConditionSetting` to show nested fields only when another setting matches a
+comparison. It works in plugin `settings_config`, model-provider `settings_config`,
+and character-scoped `voice_settings_config`. Conditions can contain other conditions.
+
+```python
+from lib.PluginBase import PluginBase
+from lib.PluginSettingDefinitions import (
+    PluginSettings, SettingsGrid, ToggleSetting, NumericalSetting,
+    ParagraphSetting, ConditionSetting,
+)
+
+
+class ExamplePlugin(PluginBase):
+    settings_config = PluginSettings(
+        key="example",
+        label="Example Plugin",
+        icon="settings",
+        grids=[SettingsGrid(
+            key="general",
+            label="General",
+            fields=[
+                ToggleSetting(
+                    key="enable_advanced", label="Enable advanced settings",
+                    type="toggle", default_value=False,
+                ),
+                ConditionSetting(
+                    key="advanced_options",
+                    type="condition",
+                    condition={
+                        "key": "enable_advanced", "operator": "eq",
+                        "value": True, "default_show": False,
+                    },
+                    fields=[
+                        NumericalSetting(
+                            key="temperature", label="Temperature", type="number",
+                            default_value=0.7, min_value=0, max_value=2, step=0.1,
+                        ),
+                        ConditionSetting(
+                            key="high_temperature_notice",
+                            type="condition",
+                            condition={
+                                "key": "temperature", "operator": "geq",
+                                "value": 1.5, "default_show": False,
+                            },
+                            fields=[ParagraphSetting(
+                                key="temperature_notice", label="High temperature",
+                                type="paragraph",
+                                content="Responses may be less predictable.",
+                            )],
+                        ),
+                    ],
+                ),
+            ],
+        )],
+    )
+
+    def on_chat_start(self, helper):
+        advanced = self.settings.get("enable_advanced", False)
+        temperature = self.settings.get("temperature", 0.7) if advanced else 0.7
+        # Use temperature in your plugin.
+```
+
+The container's `key` identifies the UI element; `condition.key` is the flat key
+to read from the current settings namespace (the owning plugin, or the current
+character/provider for voice settings, merged with its owning plugin's global
+settings). `condition.default_show` is the visibility
+result when that key is unset (missing or null), and defaults to `False`. It is
+not an input to the comparison, and input defaults are not used for condition
+evaluation. Saved values, including `False`, `0`, and an empty string, are compared
+normally. Keep element keys unique within each list of fields.
+
+Use `condition={"key": "custom_mode", "operator": "is_unset"}` to show help
+until a value is saved. `is_set` and `is_unset` evaluate presence directly, so
+`default_show` does not affect these two operators. `False`, `0`, and `""` all
+count as set.
+
+| Operator | Comparison |
+| --- | --- |
+| `eq`, `neq` | Strict equality / inequality (no string-to-number conversion) |
+| `gt`, `geq` | Greater than / greater than or equal |
+| `lt`, `leq` | Less than / less than or equal |
+| `in`, `not_in` | Setting value is / is not in the list supplied as `value` |
+| `contains`, `not_contains` | A list setting contains / does not contain `value`, or a string setting contains / does not contain a string substring |
+| `is_set`, `is_unset` | Whether the key has a non-null value / is missing or null; `value` is not required |
+
+For example, show fields in either of two modes with
+`condition={"key": "mode", "operator": "in", "value": ["custom", "expert"], "default_show": False}`.
+Equality and list membership compare primitive values by type and value; objects
+are not compared structurally. Numeric comparisons require finite numbers.
+Invalid operand types for numeric or containment comparisons hide the fields,
+including for `not_in` and `not_contains`.
+
+Visibility updates as settings change. Hidden values are preserved and nested
+inputs still store their own flat keys; no value is stored for the condition
+container. Conditions control UI visibility only: plugin code should decide
+whether to use the hidden values, as the example does above. Nested buttons still
+call `on_settings_button` with their own key.
+
 ## Model Providers
+
+### Configuration migration ownership
+
+`Config.py` handles the one-time conversion of old built-in provider selectors and
+top-level settings into `plugin:<guid>:<provider-id>` references and flat
+`plugin_settings[guid]` dictionaries. It leaves each plugin's `settings_version`
+unchanged (or absent for newly migrated settings). It does not import plugins or
+apply their current model defaults.
+
+After that handoff, each plugin owns its migrations independently:
+
+```python
+class ExamplePlugin(PluginBase):
+    settings_schema_version = 2
+
+    def migrate_settings(self, settings, from_version):
+        if from_version == 0:
+            # Upgrade the initial settings copied from the old built-in provider.
+            settings.setdefault("new_option", False)
+        elif from_version == 1:
+            # Upgrade this plugin's next schema without repeating earlier changes.
+            if "old_option" in settings:
+                settings.setdefault("renamed_option", settings.pop("old_option"))
+```
+
+`PluginManager` treats an absent version as `0`, runs migrations in order, and
+stores the resulting `settings_version`. This happens at startup and when importing
+an older backup while the application is running. Already-current schemas are not
+migrated again, and versions newer than the installed plugin are preserved.
+The application `config_version` does not need to change for a plugin-only update.
+
+The bundled OpenAI, Google AI Studio, and OpenRouter plugins also preserve imported
+per-role API-key overrides. Legacy non-empty role keys take precedence over the
+old global key. If a backup uses different keys for different roles, those effective
+credentials remain in use until the shared API-key setting is changed; a new shared
+key then takes precedence for all roles. Existing explicit plugin values take
+precedence over values copied by the legacy handoff.
 
 Plugins can register model providers by assigning `self.model_providers` in their constructor. Each provider definition requires `kind`, `id`, `label`, and `settings_config`. The optional `slots` field limits where a provider appears; omitting it preserves the existing kind-based behavior.
 
@@ -146,6 +283,45 @@ def create_model(self, provider_id: str, settings: dict[str, Any]):
 Provider references use `plugin:<plugin-guid>:<provider-id>`. `create_model` receives the same provider ID and the plugin's flat `plugin_settings[plugin_guid]` dictionary. The existing `LLMModel`, `STTModel`, `TTSModel`, and `EmbeddingModel` interfaces remain the model contracts; in particular, LLM implementations receive `generate(messages, tools, tool_choice)`. Optional provider metadata such as `slots` and `api_key_detection` is not required for existing plugins.
 
 TTS providers may optionally add `voice_settings_config`, using the same `SettingsGrid` format as provider settings. These values are stored per character and provider rather than in the plugin's global settings. Use `voice` as the primary field key when the provider has one; its label and field type may represent a named voice, a description, or a reference-audio path. Providers without a voice concept may omit that field, while an explicit empty list declares that the provider has no character-level voice controls. Omitting `voice_settings_config` entirely retains the legacy `synthesize(text, voice)` behavior.
+
+### Voice settings namespace and conditions
+
+Voice inputs and conditions read a merged settings namespace: the owning plugin's
+global configuration, overlaid with the current character's provider-specific
+configuration. **Character settings take precedence on matching keys**, including
+explicit `False`, `0`, empty strings, and null values. Editing a voice input writes
+only to the character configuration.
+
+Keep logical setting keys unique across a plugin's global settings and character
+voice settings, as well as across its providers: grids and condition containers do
+not introduce a storage namespace. For example, use `tts_model` globally and
+`voice` / `instructions` per character. Do not give unrelated global and character
+inputs the same key. Alternative, mutually exclusive representations of the same
+setting may share its key deliberately.
+
+A character condition can therefore reference a global model selection:
+
+```python
+ConditionSetting(
+    key="tts_style_options",
+    type="condition",
+    condition={
+        "key": "tts_model",
+        "operator": "in",
+        "value": ["model-with-style", "another-model-with-style"],
+        "default_show": True,  # Whether the provider's unsaved default supports style
+    },
+    fields=[TextAreaSetting(
+        key="instructions", label="Voice style", type="textarea", default_value="",
+    )],
+)
+```
+
+At synthesis time, `synthesize_with_settings` receives the same merged namespace,
+with declared voice defaults supplying values absent from both saved configurations.
+Nested defaults are included even while their fields are hidden. A condition's
+`default_show` still applies when its referenced key is unset; input defaults are
+not substituted into UI condition comparisons.
 
 ```python
 self.model_providers = [{

@@ -1,4 +1,4 @@
-from typing import Literal, NotRequired, TypedDict
+from typing import Any, Iterator, Literal, NotRequired, TypeAlias, TypedDict
 
 class SettingBase(TypedDict):
     key: str
@@ -57,11 +57,48 @@ class ErrorSetting(SettingBase):
     """Used to display an error message."""
     content: str
 
+class SettingCondition(TypedDict):
+    """Compare a key in the current namespace, or use default_show when unset."""
+    key: str
+    operator: Literal['eq', 'neq', 'gt', 'geq', 'lt', 'leq', 'in', 'not_in', 'contains', 'not_contains', 'is_set', 'is_unset']
+    value: NotRequired[object]
+    default_show: NotRequired[bool]
+
+class ConditionSetting(TypedDict):
+    """Show nested fields when the condition matches; hidden values are preserved."""
+    key: str
+    type: Literal['condition']
+    condition: SettingCondition
+    fields: list['SettingsElement']
+
+SettingsField: TypeAlias = TextSetting | TextAreaSetting | SelectSetting | NumericalSetting | ToggleSetting | ButtonSetting | ParagraphSetting | ErrorSetting
+SettingsElement: TypeAlias = SettingsField | ConditionSetting
+
 class SettingsGrid(TypedDict):
     """Defines a grid of settings for a plugin."""
     key: str
     label: str
-    fields: list[TextSetting | TextAreaSetting | SelectSetting | NumericalSetting | ToggleSetting | ButtonSetting | ParagraphSetting | ErrorSetting]
+    fields: list[SettingsElement]
+
+def settings_fields(elements: list[SettingsElement]) -> Iterator[SettingsField]:
+    """Include hidden descendants when resolving defaults and persisted values."""
+    for element in elements:
+        if element['type'] == 'condition':
+            yield from settings_fields(element['fields'])
+        else:
+            yield element
+
+
+def resolve_voice_settings(
+    grids: list[SettingsGrid], plugin_settings: dict[str, Any], character_settings: dict[str, Any],
+) -> dict[str, Any]:
+    """Merge voice defaults, plugin globals, and character overrides, in that order."""
+    defaults = {
+        field['key']: field['default_value']
+        for grid in grids for field in settings_fields(grid['fields'])
+        if 'default_value' in field
+    }
+    return {**defaults, **plugin_settings, **character_settings}
 
 class PluginSettings(TypedDict):
     """Used to define the settings for a plugin."""
@@ -108,4 +145,6 @@ class ModelProviderDefinition(TypedDict):
     """Optional API-key detection metadata used by the settings UI."""
 
     voice_settings_config: NotRequired[list[SettingsGrid]]
-    """Optional character-scoped voice settings for TTS providers."""
+    """Character voice settings use merged plugin globals with character values taking precedence.
+    Use unique logical setting keys across the global and character schemas.
+    """

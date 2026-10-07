@@ -263,10 +263,7 @@ class PluginManager:
             }
             self.plugin_settings_configs[guid] = error_settings
 
-        if self.settings_migrated:
-            emit_message("config", config=self.config)
-            save_config(self.config)
-            self.settings_migrated = False
+        self._persist_migrated_settings()
 
         # Broadcast settings configs to UI
         emit_message(
@@ -278,6 +275,12 @@ class PluginManager:
         # Broadcast model providers to UI
         emit_message("plugin_model_providers", providers=self.plugin_model_providers)
 
+    def _persist_migrated_settings(self) -> None:
+        if self.settings_migrated:
+            emit_message("config", config=self.config)
+            save_config(self.config)
+            self.settings_migrated = False
+
     def on_settings_changed(self, new_config: Config):
         """
         Executed when the plugin settings are changed, and will call the on_settings_changed hook for each plugin.
@@ -286,10 +289,13 @@ class PluginManager:
         for module in self.plugin_list.values():
             log('debug', f"Executing on_settings_changed hook for {module.plugin_manifest.name}")
             try:
-                if module.plugin_manifest.guid in new_config.get('plugin_settings', {}):
-                    module.settings = new_config.get('plugin_settings', {}).get(module.plugin_manifest.guid) or {}
+                # Backup imports may contain older plugin schemas even while the
+                # application is running. Apply the same versioned initialization
+                # as at startup, and clear stale state for removed settings.
+                self._initialize_plugin_settings(module)
             except Exception as e:
                 log('error', f"Failed to execute on_settings_changed hook for {module.plugin_manifest.name}: {e}")
+        self._persist_migrated_settings()
 
     def on_settings_button(self, plugin_guid: str, key: str):
         """Route a plugin settings button click to its owning plugin."""
