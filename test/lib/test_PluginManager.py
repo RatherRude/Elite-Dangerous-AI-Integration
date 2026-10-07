@@ -1,4 +1,5 @@
 import json
+from copy import deepcopy
 from pathlib import Path
 import sys
 from typing import Any
@@ -16,7 +17,9 @@ from lib.PluginBase import PluginBase, PluginManifest
 from lib.PluginManager import PluginManager
 from lib.Logger import ModelUsageStats
 from lib.Models import EmbeddingModel, LLMModel, OpenAILLMModel, OpenAIResponsesLLMModel, STTModel, TTSModel
-from plugins.OpenAIPlugin import OPENAI_PLUGIN_GUID
+from plugins.OpenAIPlugin import OPENAI_PLUGIN_GUID, OPENAI_LLM_MODEL, OpenAIPlugin
+from plugins.GoogleAIStudioPlugin import GOOGLE_AI_STUDIO_PLUGIN_GUID, GOOGLE_LLM_MODEL, GoogleAIStudioPlugin
+from plugins.OpenRouterPlugin import OPENROUTER_PLUGIN_GUID, OpenRouterPlugin
 
 
 class MigratingPlugin(PluginBase):
@@ -122,6 +125,147 @@ def test_initialize_plugins_without_settings_do_not_share_state() -> None:
     first.settings["only_first"] = True
 
     assert "only_first" not in second.settings
+
+
+@pytest.mark.parametrize("plugin_type,guid,legacy_provider,old_model,new_model", [
+    (OpenAIPlugin, OPENAI_PLUGIN_GUID, "openai", "gpt-5.4-nano", OPENAI_LLM_MODEL),
+    (GoogleAIStudioPlugin, GOOGLE_AI_STUDIO_PLUGIN_GUID, "google-ai-studio", "gemini-3.1-flash-lite-preview", GOOGLE_LLM_MODEL),
+])
+def test_running_backup_import_applies_and_persists_plugin_migrations(
+    plugin_type, guid, legacy_provider, old_model, new_model, monkeypatch,
+) -> None:
+    import lib.Config as ConfigModule
+    import lib.PluginManager as PluginManagerModule
+
+    current: Any = {"config_version": 24, "plugin_settings": {
+        guid: {"settings_version": plugin_type.settings_schema_version, "api_key": "current", "llm_model": new_model},
+    }}
+    manager = PluginManager(current)
+    plugin = plugin_type(PluginManifest(json.dumps({"guid": guid, "name": legacy_provider})))
+    manager.plugin_list[guid] = manager._initialize_plugin_settings(plugin)
+    saved = []
+    emitted = []
+    monkeypatch.setattr(ConfigModule, "save_config", lambda config: None)
+    monkeypatch.setattr(ConfigModule, "emit_message", lambda *args, **kwargs: None)
+    monkeypatch.setattr(PluginManagerModule, "save_config", lambda config: saved.append(deepcopy(config)))
+    monkeypatch.setattr(PluginManagerModule, "emit_message", lambda kind, **kwargs: emitted.append((kind, deepcopy(kwargs))))
+
+    imported = ConfigModule.update_config(current, {
+        "config_version": 21, "llm_provider": legacy_provider, "llm_model_name": old_model,
+        "llm_api_key": "imported-secret", "llm_temperature": 0.0, "llm_reasoning_effort": "none",
+    })
+    assert "settings_version" not in imported["plugin_settings"][guid]
+    manager.on_settings_changed(imported)
+
+    settings = imported["plugin_settings"][guid]
+    assert settings["settings_version"] == plugin_type.settings_schema_version
+    assert settings["api_key"] == "imported-secret"
+    assert settings["llm_model"] == new_model
+    assert settings["llm_temperature"] == 0.0
+    if plugin_type is GoogleAIStudioPlugin:
+        assert settings["llm_custom_temperature"] is True
+        assert settings["llm_reasoning_effort"] == "minimal"
+    assert plugin.settings == settings
+    assert saved == [imported]
+    assert emitted == [("config", {"config": imported})]
+    assert manager.settings_migrated is False
+
+    # Ordinary subsequent updates must not repeat migrations or restore defaults.
+    if plugin_type is GoogleAIStudioPlugin:
+        settings["llm_custom_temperature"] = False
+    manager.on_settings_changed(imported)
+    assert len(saved) == 1 and len(emitted) == 1
+    assert plugin.settings == settings
+
+
+@pytest.mark.parametrize("plugin_type,guid,model", [
+    (OpenAIPlugin, OPENAI_PLUGIN_GUID, "gpt-6-sol"),
+    (GoogleAIStudioPlugin, GOOGLE_AI_STUDIO_PLUGIN_GUID, "gemini-3.8-flash"),
+])
+def test_plugin_version_one_only_repairs_credentials(plugin_type, guid, model) -> None:
+    previous = {"settings_version": 1, "api_key": "", "stt_api_key": "role-secret", "llm_model": model,
+                "llm_temperature": 0.0, "llm_custom_temperature": False, "extra": {"keep": True}}
+    config: Any = {"config_version": 24, "plugin_settings": {guid: deepcopy(previous)}}
+    manager = PluginManager(config)
+    plugin = plugin_type(PluginManifest(json.dumps({"guid": guid, "name": "Provider"})))
+    manager._initialize_plugin_settings(plugin)
+    assert plugin.settings == {**previous, "api_key": "role-secret", "settings_version": plugin_type.settings_schema_version}
+    assert config["config_version"] == 24
+
+
+@pytest.mark.parametrize("settings_version", [2, 99])
+def test_current_and_future_plugin_versions_are_not_migrated(settings_version) -> None:
+    stored = {"settings_version": settings_version, "api_key": "explicit", "llm_model": "gpt-6-sol", "extra": "keep"}
+    config: Any = {"config_version": 24, "plugin_settings": {OPENAI_PLUGIN_GUID: deepcopy(stored)}}
+    manager = PluginManager(config)
+    plugin = OpenAIPlugin(PluginManifest(json.dumps({"guid": OPENAI_PLUGIN_GUID, "name": "OpenAI"})))
+    plugin.migrate_settings = MagicMock(side_effect=AssertionError("Migration must not repeat"))
+    manager._initialize_plugin_settings(plugin)
+    manager.plugin_list[OPENAI_PLUGIN_GUID] = plugin
+    manager.on_settings_changed(config)
+    plugin.migrate_settings.assert_not_called()
+    assert plugin.settings == stored and config["plugin_settings"][OPENAI_PLUGIN_GUID] == stored
+    assert manager.settings_migrated is False
+
+
+def test_settings_update_clears_removed_plugin_state() -> None:
+    guid = "metadata-free"
+    manager = PluginManager({"plugin_settings": {guid: {"prefix": "stale"}}})  # type: ignore[arg-type]
+    plugin = MetadataFreeProviderPlugin(PluginManifest(json.dumps({"guid": guid, "name": "Compatible"})))
+    manager.plugin_list[guid] = manager._initialize_plugin_settings(plugin)
+    manager.on_settings_changed({"plugin_settings": {}})  # type: ignore[arg-type]
+    assert plugin.settings == {}
+
+
+@pytest.mark.parametrize("plugin_type,guid,provider", [
+    (OpenAIPlugin, OPENAI_PLUGIN_GUID, "openai"),
+    (GoogleAIStudioPlugin, GOOGLE_AI_STUDIO_PLUGIN_GUID, "google-ai-studio"),
+    (OpenRouterPlugin, OPENROUTER_PLUGIN_GUID, "openrouter"),
+])
+@pytest.mark.parametrize("empty_agent_override", [True, False])
+def test_legacy_role_credentials_survive_shared_key_migration(
+    plugin_type, guid, provider, empty_agent_override,
+) -> None:
+    from lib.Config import migrate
+
+    legacy = {
+        "config_version": 21, "api_key": "global-secret",
+        "llm_provider": provider, "llm_api_key": "main-override",
+        "agent_llm_provider": provider,
+    }
+    if empty_agent_override:
+        legacy["agent_llm_api_key"] = ""
+    config: Any = migrate(legacy)
+    manager = PluginManager(config)
+    plugin = plugin_type(PluginManifest(json.dumps({"guid": guid, "name": provider})))
+    manager._initialize_plugin_settings(plugin)
+    assert plugin.settings["api_key"] == "main-override"
+    assert plugin.create_model("llm", plugin.settings).client.api_key == "main-override"
+    assert plugin.create_model("agent-llm", plugin.settings).client.api_key == "global-secret"
+
+    # A user-entered shared key supersedes the imported role overrides.
+    plugin.settings["api_key"] = "replacement"
+    assert plugin.create_model("llm", plugin.settings).client.api_key == "replacement"
+    assert plugin.create_model("agent-llm", plugin.settings).client.api_key == "replacement"
+    plugin.settings["api_key"] = ""
+    assert plugin.create_model("llm", plugin.settings).client.api_key == "-"
+
+
+def test_mixed_legacy_provider_keys_are_not_assigned_to_the_wrong_plugin() -> None:
+    from lib.Config import migrate
+
+    config: Any = migrate({
+        "config_version": 21, "api_key": "openai-global",
+        "llm_provider": "openai", "llm_api_key": "",
+        "agent_llm_provider": "google-ai-studio", "agent_llm_api_key": "google-override",
+    })
+    manager = PluginManager(config)
+    openai = manager._initialize_plugin_settings(OpenAIPlugin(PluginManifest(json.dumps({"guid": OPENAI_PLUGIN_GUID, "name": "OpenAI"}))))
+    google = manager._initialize_plugin_settings(GoogleAIStudioPlugin(PluginManifest(json.dumps({"guid": GOOGLE_AI_STUDIO_PLUGIN_GUID, "name": "Google"}))))
+    assert openai.settings["api_key"] == "openai-global"
+    assert google.settings["api_key"] == "google-override"
+    assert openai.create_model("llm", openai.settings).client.api_key == "openai-global"
+    assert google.create_model("agent-llm", google.settings).client.api_key == "google-override"
 
 
 def test_default_provider_plugins_register_and_create_models() -> None:

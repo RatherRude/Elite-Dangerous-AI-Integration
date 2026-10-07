@@ -102,7 +102,7 @@ def paragraph(content: str) -> dict[str, Any]:
 
 
 def api_key(settings: dict[str, Any], prefix: str, shared_key: str = "api_key") -> str:
-    return str(settings.get(f"{prefix}_api_key") or settings.get(shared_key) or "-")
+    return str(settings.get(shared_key) or settings.get(f"{prefix}_api_key") or "-")
 
 
 def string_setting(settings: dict[str, Any], key: str, default: str) -> str:
