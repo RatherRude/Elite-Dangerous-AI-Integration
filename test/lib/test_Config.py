@@ -279,18 +279,18 @@ def test_active_crew_limit_includes_primary_on_migration_and_save(monkeypatch, p
     migrated = migrate(config.copy())
     updated = ConfigModule.update_config(config, {'active_characters': [0, 1, 2, 3, 4, 5]})
 
-    expected = [primary, *[index for index in range(6) if index != primary]][:4]
+    expected = [primary, *[index for index in range(6) if index != primary]][:3]
     assert migrated['active_characters'] == updated['active_characters'] == expected
 
 
-def test_adding_a_new_primary_never_exceeds_four_active_characters(monkeypatch) -> None:
+def test_adding_a_new_primary_never_exceeds_three_active_characters(monkeypatch) -> None:
     monkeypatch.setattr(ConfigModule, 'emit_message', lambda *args, **kwargs: None)
     monkeypatch.setattr(ConfigModule, 'save_config', lambda config: None)
     updated = ConfigModule.update_character(crew_config(active=[0, 1, 2, 3]), {
         'operation': 'add', 'character': {'name': 'New'}, 'set_active': True,
     })
 
-    assert len(updated['active_characters']) == 4
+    assert len(updated['active_characters']) == 3
     assert updated['active_characters'][0] == updated['active_character_index'] == 4
 
 
