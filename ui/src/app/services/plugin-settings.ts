@@ -70,7 +70,10 @@ export function voiceSettingsContext(
     pluginSettings: Record<string, any> | undefined,
     characterSettings: Record<string, any> | undefined,
 ): Record<string, any> {
-    return { ...pluginSettings, ...characterSettings };
+    const setValues = (settings: Record<string, any> | undefined) => Object.fromEntries(
+        Object.entries(settings ?? {}).filter(([, value]) => value !== undefined && value !== null),
+    );
+    return { ...setValues(pluginSettings), ...setValues(characterSettings) };
 }
 
 export interface SettingBase {
@@ -159,53 +162,44 @@ export function providerVoiceSettingsValues(
     providerRef: string,
     providers: ModelProviderDefinition[],
     voiceSettings: Record<string, Record<string, any>> | undefined,
+    pluginSettings?: Record<string, Record<string, any>>,
 ): Record<string, any> | undefined {
     const provider = providers.find(
         candidate => providerRef === `plugin:${candidate.plugin_guid}:${candidate.id}`,
     );
-    if (!provider || provider.voice_settings_config === undefined) return undefined;
+    if (!provider) return undefined;
 
     const defaults = Object.fromEntries(
-        provider.voice_settings_config
+        (provider.voice_settings_config ?? [])
             .flatMap(grid => settingsFields(grid.fields))
             .filter(field => field.default_value !== undefined)
             .map(field => [field.key, field.default_value]),
     );
-    const declaredKeys = new Set(
-        provider.voice_settings_config.flatMap(grid => settingsFields(grid.fields)).map(field => field.key),
-    );
-    const stored = Object.fromEntries(
-        Object.entries(voiceSettings?.[providerRef] ?? {})
-            .filter(([key]) => declaredKeys.has(key)),
-    );
-    return { ...defaults, ...stored };
+    return {
+        ...defaults,
+        ...voiceSettingsContext(pluginSettings?.[provider.plugin_guid], voiceSettings?.[providerRef]),
+    };
 }
 
 export function providerVoiceDisplayValue(
     providerRef: string,
     providers: ModelProviderDefinition[],
     voiceSettings: Record<string, Record<string, any>> | undefined,
-    legacyFallback: string,
+    pluginSettings?: Record<string, Record<string, any>>,
 ): string | undefined {
     const provider = providers.find(
         candidate => providerRef === `plugin:${candidate.plugin_guid}:${candidate.id}`,
     );
-    if (!provider || provider.voice_settings_config === undefined) return legacyFallback || undefined;
+    if (!provider) return undefined;
 
-    const voiceField = provider.voice_settings_config
-        .flatMap(grid => settingsFields(grid.fields))
+    const voiceField = provider.voice_settings_config?.flatMap(grid => settingsFields(grid.fields))
         .find(field => field.key === "voice");
-    if (!voiceField) return undefined;
+    if (provider.voice_settings_config !== undefined && !voiceField) return undefined;
 
-    const stored = voiceSettings?.[providerRef];
-    const value = stored && Object.prototype.hasOwnProperty.call(stored, "voice")
-        ? stored["voice"]
-        : Object.prototype.hasOwnProperty.call(voiceField, "default_value")
-            ? voiceField.default_value
-            : legacyFallback;
+    const value = providerVoiceSettingsValues(providerRef, providers, voiceSettings, pluginSettings)?.["voice"];
     if (value === undefined || value === null || value === "") return undefined;
 
-    if (voiceField.type === "select") {
+    if (voiceField?.type === "select") {
         const option = voiceField.select_options?.find(candidate => candidate.value === value);
         if (option) return option.label;
     }

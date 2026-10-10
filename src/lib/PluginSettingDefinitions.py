@@ -98,7 +98,11 @@ def resolve_voice_settings(
         for grid in grids for field in settings_fields(grid['fields'])
         if 'default_value' in field
     }
-    return {**defaults, **plugin_settings, **character_settings}
+    return {
+        **defaults,
+        **{key: value for key, value in plugin_settings.items() if value is not None},
+        **{key: value for key, value in character_settings.items() if value is not None},
+    }
 
 class PluginSettings(TypedDict):
     """Used to define the settings for a plugin."""

@@ -110,6 +110,29 @@ def test_migrate_character_voice_settings_for_selected_provider() -> None:
         provider: {"voice": "en_diana_happy", "instructions": "Sound calm."},
     }
     assert "tts_voice" not in migrated["plugin_settings"]["d17f20f6-2514-4a1f-9e54-2a3c089f5c2b"]
+    assert "tts_voice" not in character
+    assert "tts_prompt" not in character
+
+
+def test_current_character_does_not_remigrate_legacy_voice_to_new_provider() -> None:
+    stored = {"plugin:old:tts": {"voice": "old-voice", "instructions": "old style"}}
+    migrated = migrate({
+        "config_version": 24,
+        "tts_provider": "plugin:new:tts",
+        "characters": [{"tts_voice": "old-voice", "tts_prompt": "old style", "tts_voice_settings": stored}],
+    })
+    assert migrated["characters"] == [{"tts_voice_settings": stored}]
+    assert migrate(deepcopy(migrated)) == migrated
+
+
+def test_new_character_inherits_provider_defaults_without_voice_overrides() -> None:
+    character = ConfigModule.getDefaultCharacter({
+        "tts_provider": "plugin:new:tts", "active_character_index": 0,
+        "characters": [{"tts_voice": "old-voice", "tts_voice_settings": {"plugin:old:tts": {"voice": "old-voice"}}}],
+    })
+    assert character["tts_voice_settings"] == {}
+    assert "tts_voice" not in character
+    assert "tts_prompt" not in character
 
 
 def test_character_voice_settings_survive_default_merge() -> None:

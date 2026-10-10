@@ -860,10 +860,8 @@ class Character(TypedDict, total=False):
     personality_knowledge_pop_culture: bool
     personality_knowledge_scifi: bool
     personality_knowledge_history: bool
-    tts_voice: str
     tts_voice_settings: dict[str, dict[str, Any]]
     tts_speed: str
-    tts_prompt: str
     tts_postprocessing: CharacterTTSPostprocessingConfig
     tts_environment_damage_effects_var: bool
     tts_environment_helmet_effects_var: bool
@@ -1600,6 +1598,13 @@ def migrate(data: dict) -> dict:
 
     data.pop('tools_var', None)
 
+    # Legacy voice fields are consumed only by the migration above. Never retain
+    # them as cross-provider fallbacks in an already migrated character.
+    for character in data.get('characters', []):
+        if isinstance(character, dict):
+            character.pop('tts_voice', None)
+            character.pop('tts_prompt', None)
+
     for key in LEGACY_PROVIDER_SETTING_KEYS:
         data.pop(key, None)
 
@@ -1667,20 +1672,6 @@ def merge_config_data(defaults: dict, user: dict):
     return merge
 
 def getDefaultCharacter(config: Config) -> Character:
-    characters = config.get('characters', [])
-    active_index = config.get('active_character_index', -1)
-    current_voice = (
-        characters[active_index].get('tts_voice')
-        if 0 <= active_index < len(characters)
-        else None
-    )
-    selected_tts_provider = config.get('tts_provider')
-    initial_voice = current_voice or 'en-US-AvaMultilingualNeural'
-    initial_voice_settings = (
-        {selected_tts_provider: {'voice': initial_voice}}
-        if isinstance(selected_tts_provider, str) and selected_tts_provider.startswith('plugin:')
-        else {}
-    )
     return Character({
         "name": 'Default',
         "character": "Keep your responses extremely brief and minimal. Maintain a professional and serious tone in all responses. Stick to factual information. You are COVAS:NEXT (Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal) - professional, efficient, and no-nonsense. Provides essential information without unnecessary elaboration. Focuses on factual data and operational status. 'Destination reached.' 'Fuel level acceptable.' Clean, precise communication. Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS:NEXT. Always respond in English regardless of the language spoken to you. Balance emotional understanding with factual presentation. Use everyday language that balances casual and professional tones. Project an air of expertise and certainty when providing information. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.",
@@ -1698,10 +1689,8 @@ def getDefaultCharacter(config: Config) -> Character:
         "personality_knowledge_pop_culture": False,
         "personality_knowledge_scifi": False,
         "personality_knowledge_history": False,
-        "tts_voice": initial_voice,
-        "tts_voice_settings": initial_voice_settings,
+        "tts_voice_settings": {},
         "tts_speed": '1.2',
-        "tts_prompt": '',
         "tts_postprocessing": get_default_character_tts_postprocessing(),
         "tts_environment_damage_effects_var": True,
         "tts_environment_helmet_effects_var": True,

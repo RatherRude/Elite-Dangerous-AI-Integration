@@ -294,20 +294,17 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
         if (Object.prototype.hasOwnProperty.call(values, fieldKey)) {
             return values[fieldKey];
         }
-        if (defaultValue !== undefined) return defaultValue;
-        if (fieldKey === "voice") return this.activeCharacter.tts_voice;
-        if (fieldKey === "instructions") return this.activeCharacter.tts_prompt;
         return defaultValue;
     }
 
     getCharacterVoiceDisplay(character: Character): string | null {
         const providerRef = this.selectedTtsProviderRef;
-        if (!providerRef) return character.tts_voice || null;
+        if (!providerRef) return null;
         return providerVoiceDisplayValue(
             providerRef,
             this.pluginTTSProviders,
             character.tts_voice_settings,
-            character.tts_voice,
+            this.config?.plugin_settings,
         ) ?? null;
     }
 

@@ -34,6 +34,7 @@ from plugins.GoogleAIStudioPlugin import (
     GOOGLE_AI_STUDIO_PLUGIN_GUID,
     GOOGLE_STT_MODEL,
     GOOGLE_TRANSCRIBE_MODEL,
+    GOOGLE_TTS_VOICE,
     GoogleAIStudioLLMModel,
     GoogleAIStudioPlugin,
     GoogleAIStudioTTSModel,
@@ -394,6 +395,24 @@ def test_voice_settings_merge_globals_nested_defaults_and_character_overrides() 
     assert result == {"tts_model": "gpt-4o-mini-tts", "instructions": "", "enabled": False, "voice": "cedar"}
     assert resolve_voice_settings(provider["voice_settings_config"], {}, {})["instructions"] == ""
     assert globals["enabled"] is True and character["voice"] == "cedar"
+
+
+def test_voice_resolution_switches_provider_without_reusing_other_provider_voice() -> None:
+    openai = OpenAIPlugin(manifest(OPENAI_PLUGIN_GUID, "OpenAI"))
+    google = GoogleAIStudioPlugin(manifest(GOOGLE_AI_STUDIO_PLUGIN_GUID, "Google AI Studio"))
+    providers = {
+        f"plugin:{plugin.plugin_manifest.guid}:tts": next(p for p in plugin.model_providers if p["id"] == "tts")
+        for plugin in (openai, google)
+    }
+    openai_ref, google_ref = providers
+    character = {openai_ref: {"voice": "cedar", "instructions": ""}}
+    grids = providers[google_ref]["voice_settings_config"]
+    assert resolve_voice_settings(grids, {}, character.get(google_ref, {}))["voice"] == GOOGLE_TTS_VOICE
+    assert resolve_voice_settings(grids, {"voice": "Puck"}, character.get(google_ref, {}))["voice"] == "Puck"
+    character[google_ref] = {"voice": "Kore"}
+    assert resolve_voice_settings(grids, {"voice": "Puck"}, character[google_ref])["voice"] == "Kore"
+    assert resolve_voice_settings(providers[openai_ref]["voice_settings_config"], {"voice": "nova"}, character[openai_ref])["voice"] == "cedar"
+    assert resolve_voice_settings(grids, {"voice": "Puck"}, {"voice": None})["voice"] == "Puck"
 
 
 def test_openai_transcribe_uses_plural_languages() -> None:

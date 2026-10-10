@@ -112,7 +112,7 @@ describe("nested conditional settings", () => {
         const ref = "plugin:example:tts";
         expect(providerVoiceSettingsValues(ref, [provider], undefined)).toEqual({ voice: "default voice" });
         const stored = { [ref]: { voice: "saved voice", advanced_options: true, unknown: 1 } };
-        expect(providerVoiceSettingsValues(ref, [provider], stored)).toEqual({ voice: "saved voice" });
-        expect(providerVoiceDisplayValue(ref, [provider], stored, "legacy")).toBe("saved voice");
+        expect(providerVoiceSettingsValues(ref, [provider], stored)).toEqual({ voice: "saved voice", advanced_options: true, unknown: 1 });
+        expect(providerVoiceDisplayValue(ref, [provider], stored)).toBe("saved voice");
     });
 });

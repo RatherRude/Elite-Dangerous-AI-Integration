@@ -12,6 +12,8 @@ import { TestBed } from "@angular/core/testing";
 import { SettingsGridComponent } from "../components/settings-grid/settings-grid.component";
 import { SettingsGrid } from "./plugin-settings";
 import { CharacterSettingsComponent } from "../components/character-settings/character-settings.component";
+import { GeneralSettingsComponent } from "../components/general-settings/general-settings.component";
+import { AdvancedSettingsComponent } from "../components/advanced-settings/advanced-settings.component";
 
 describe("provider UI compatibility", () => {
     const provider = (
@@ -104,11 +106,34 @@ describe("provider UI compatibility", () => {
         expect(providerVoiceSettingsValues(providerRef, [tts], {
             [providerRef]: { voice: "character-voice" },
         })).toEqual({ voice: "character-voice", instructions: "" });
-        expect(providerVoiceSettingsValues("plugin:plugin:legacy", [provider("legacy")], undefined)).toBeUndefined();
-        expect(providerVoiceDisplayValue(providerRef, [tts], undefined, "legacy-voice")).toBe("Default Voice");
+        expect(providerVoiceSettingsValues("plugin:plugin:legacy", [provider("legacy")], undefined)).toEqual({});
+        expect(providerVoiceDisplayValue(providerRef, [tts], undefined)).toBe("Default Voice");
         expect(providerVoiceDisplayValue(providerRef, [tts], {
             [providerRef]: { voice: "character-voice" },
-        }, "legacy-voice")).toBe("Character Voice");
+        })).toBe("Character Voice");
+        const globals = { plugin: { voice: "character-voice", instructions: "global style" } };
+        expect(providerVoiceDisplayValue(providerRef, [tts], undefined, globals)).toBe("Character Voice");
+        expect(providerVoiceSettingsValues(providerRef, [tts], undefined, globals)).toEqual({
+            voice: "character-voice", instructions: "global style",
+        });
+        expect(providerVoiceSettingsValues(providerRef, [tts], {
+            [providerRef]: { voice: "default-voice", instructions: "" },
+        }, globals)).toEqual({ voice: "default-voice", instructions: "" });
+
+        const instance = Object.create(CharacterSettingsComponent.prototype) as CharacterSettingsComponent;
+        instance.pluginTTSProviders = [tts, { ...tts, id: "other", plugin_guid: "other" }];
+        instance.activeCharacter = {
+            tts_voice: "stale-legacy-voice",
+            tts_voice_settings: { [providerRef]: { voice: "character-voice" } },
+        } as any;
+        instance.config = { tts_provider: "plugin:other:other", plugin_settings: {} } as any;
+        expect(instance.getVoiceSettingValue("voice", "default-voice")).toBe("default-voice");
+        expect(instance.getCharacterVoiceDisplay(instance.activeCharacter!)).toBe("Default Voice");
+        instance.config!.plugin_settings = { other: { voice: "character-voice" } };
+        expect(instance.getVoiceSettingValue("voice", "default-voice")).toBe("character-voice");
+        expect(instance.getCharacterVoiceDisplay(instance.activeCharacter!)).toBe("Character Voice");
+        instance.config!.tts_provider = providerRef;
+        expect(instance.getVoiceSettingValue("voice", "default-voice")).toBe("character-voice");
     });
 
     it("distinguishes legacy providers from providers without a voice concept", () => {
@@ -119,14 +144,33 @@ describe("provider UI compatibility", () => {
             voice_settings_config: [],
         } as ModelProviderDefinition;
 
-        expect(providerVoiceDisplayValue("plugin:plugin:legacy", [legacy], undefined, "legacy-voice"))
-            .toBe("legacy-voice");
+        expect(providerVoiceDisplayValue("plugin:plugin:legacy", [legacy], undefined))
+            .toBeUndefined();
+        expect(providerVoiceDisplayValue("plugin:plugin:legacy", [legacy], {
+            "plugin:plugin:legacy": { voice: "plugin-scoped-voice" },
+        })).toBe("plugin-scoped-voice");
         expect(providerVoiceSettingsValues("plugin:plugin:voiceless", [voiceless], {
             "plugin:plugin:voiceless": { voice: "stale-voice" },
-        })).toEqual({});
-        expect(providerVoiceDisplayValue("plugin:plugin:voiceless", [voiceless], undefined, "legacy-voice"))
+        })).toEqual({ voice: "stale-voice" });
+        expect(providerVoiceDisplayValue("plugin:plugin:voiceless", [voiceless], undefined))
             .toBeUndefined();
     });
+
+    for (const component of [GeneralSettingsComponent, AdvancedSettingsComponent]) {
+        it(`${component.name} switches providers without persisting inherited voice defaults`, async () => {
+            const instance = Object.create(component.prototype) as any;
+            instance.onConfigChange = jasmine.createSpy().and.resolveTo();
+            instance.characterService = jasmine.createSpyObj("CharacterService", ["getCurrentCharacter", "setTtsProviderVoiceSettings"]);
+            await instance.onTtsProviderChange("plugin:new:tts");
+            expect(instance.onConfigChange).toHaveBeenCalledWith({ tts_provider: "plugin:new:tts" });
+            expect(instance.characterService.setTtsProviderVoiceSettings).not.toHaveBeenCalled();
+
+            instance.config = {};
+            instance.apiKeyDetectionService = { buildUpdate: () => ({ label: "provider", update: { tts_provider: "plugin:new:tts" } }) };
+            await instance.onApiKeyChange("key");
+            expect(instance.characterService.setTtsProviderVoiceSettings).not.toHaveBeenCalled();
+        });
+    }
 });
 
 describe("provider settings layout", () => {
