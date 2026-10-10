@@ -100,6 +100,8 @@ export class GeneralSettingsComponent implements OnDestroy {
     private characterListSubscription: Subscription;
     private keybindsSubscription: Subscription;
     private pluginProvidersSubscription: Subscription;
+    private pluginCharactersSubscription: Subscription;
+    private activePluginCharacterCount = 0;
     private avatarMimeSubscription: Subscription;
     private avatarMimePrimary: string | null = null;
     private avatarSvgText: string | null = null;
@@ -164,6 +166,9 @@ export class GeneralSettingsComponent implements OnDestroy {
                 this.pluginTTSProviders = providers.filter((provider) => provider.kind === "tts");
             },
         );
+        this.pluginCharactersSubscription = this.configService.pluginCharacters$.subscribe(characters => {
+            this.activePluginCharacterCount = characters.filter(character => character.active).length;
+        });
         this.avatarMimeSubscription = combineLatest([this.characterService.avatarUrl$, this.characterService.avatarMime$]).subscribe(
             ([avatarUrl, mime]) => {
                 this.avatarUrl = avatarUrl || this.characterService.getAvatarUrl();
@@ -202,6 +207,7 @@ export class GeneralSettingsComponent implements OnDestroy {
         this.characterListSubscription.unsubscribe();
         this.keybindsSubscription.unsubscribe();
         this.pluginProvidersSubscription.unsubscribe();
+        this.pluginCharactersSubscription.unsubscribe();
         this.avatarMimeSubscription.unsubscribe();
         clearTimeout(this.vrCompatibilityRefreshTimer);
         clearInterval(this.avatarPreviewInterval);
@@ -333,7 +339,9 @@ export class GeneralSettingsComponent implements OnDestroy {
     }
 
     get hasMultipleActiveCrew(): boolean {
-        return (this.config?.active_characters?.length ?? 0) > 1;
+        const indices = new Set([this.config?.active_character_index, ...(this.config?.active_characters ?? [])]);
+        const regularCrew = [...indices].filter(index => index !== undefined && !!this.config?.characters[index]).length;
+        return regularCrew + this.activePluginCharacterCount > 1;
     }
 
     get crewOverviewConfig(): ConfigWithCharacters | null {

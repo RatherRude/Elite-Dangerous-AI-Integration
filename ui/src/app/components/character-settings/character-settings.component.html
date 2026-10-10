@@ -13,6 +13,7 @@
                                          [addingCharacter]="addingStandbyCharacter"
                                          (characterAddRequested)="addStandbyCharacter()"
                                          (characterEditRequested)="toggleEditMode($event)"
+                                         (pluginCharacterEditRequested)="editPluginCharacter($event)"
                                          (characterDuplicateRequested)="duplicateStandbyCharacter($event)"
                                          (characterDeleteRequested)="deleteCharacter($event)"
                                          (rosterManagerChanged)="modifyingCrewRoster = $event"
@@ -172,9 +173,11 @@
                                     <input matInput
                                         [ngModel]="activeCharacter.name"
                                         [ngModelOptions]="{updateOn: 'blur'}"
+                                        [readonly]="!!editingPluginCharacter"
                                         (ngModelChange)="setCharacterPropertyAndUpdatePrompt('name', $event)">
                                 </mat-form-field>
                             </div>
+                            @if (!editingPluginCharacter) {
                             <div class="trait-input">
                                 <!-- Character Language -->
                                 <mat-form-field appearance="outline">
@@ -185,6 +188,7 @@
                                         (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_language', $event)">
                                 </mat-form-field>
                             </div>
+                            }
                         </div>
 
                         <!-- Avatar Section -->
@@ -223,6 +227,15 @@
                             </div>
                         </div>
                     </div>
+
+                    @if (editingPluginCharacter; as plugin) {
+                        @for (grid of plugin.settings_config; track grid.key) {
+                            <app-settings-grid [grid]="grid"
+                                               [getValue]="createPluginCharacterGetValueFn()"
+                                               [setValue]="createPluginCharacterSetValueFn()"
+                                               headerLevel="h4"></app-settings-grid>
+                        }
+                    }
 
                     <mat-expansion-panel class="character-voice-panel"
                                          [expanded]="showVoiceSettings"
@@ -357,6 +370,7 @@
                                     </mat-form-field>
                                 </div>
                             </div>
+                            @if (!editingPluginCharacter) {
                             <div class="trait-container">
                                 <div class="trait-select">
                                     <mat-slide-toggle
@@ -380,6 +394,7 @@
                                     </mat-slide-toggle>
                                 </div>
                             </div>
+                            }
                         </div>
                                 </div>
                             </div>
@@ -387,7 +402,7 @@
                 </div>
 
                 <!-- Character settings when preset is not custom -->
-                @if (activeCharacter.personality_preset !== 'custom') {
+                @if (!editingPluginCharacter && activeCharacter.personality_preset !== 'custom') {
                     <div class="personality-settings">
                         <div class="trait-container">
                             <!-- Character Inspiration -->
@@ -540,7 +555,8 @@
                     </div>
                 }
                 
-                <!-- Character Prompt Display - Always Visible -->
+                @if (!editingPluginCharacter) {
+                <!-- Regular character prompt and personality actions -->
                 <div class="character-display character-prompt-section">
                     @if (activeCharacter.personality_preset !== 'custom') {
                         <div class="character-prompt-actions-row">
@@ -582,6 +598,7 @@
                         </mat-form-field>
                     }
                 </div>
+                }
             </div>
         </div>
 

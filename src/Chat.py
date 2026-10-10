@@ -467,6 +467,8 @@ class Chat:
                 plugin_message if isinstance(plugin_message, str) and plugin_message.strip() else event.plugin_event_name,
                 plugin_event_name=event.plugin_event_name,
                 avatar_url=avatar_url if isinstance(avatar_url, str) and avatar_url else None,
+                display_name=plugin_content.get('display_name'),
+                display_color=plugin_content.get('display_color'),
             )
         if event.kind == "quest":
             event = cast(QuestEvent, event)
@@ -1044,6 +1046,8 @@ def read_stdin(chat: Chat):
                         )
             if data.get("type") == "submit_input":
                 chat.submit_input(data["input"])
+            if data.get("type") == "change_plugin_character":
+                chat.plugin_manager.update_plugin_character(data.get("plugin_guid"), data.get("character"))
             if data.get("type") == "run_action":
                 chat.run_action(data["action"], data.get("arguments"))
             if data.get("type") == "plugin_settings_button":
@@ -1219,6 +1223,8 @@ if __name__ == "__main__":
                     )
                 if data.get("type") == "change_character":
                     config = update_character(config, data)
+                if data.get("type") == "change_plugin_character":
+                    plugin_manager.update_plugin_character(data.get("plugin_guid"), data.get("character"))
                 if data.get("type") == "reset_game_events":
                     config = reset_game_events(config, data["character_index"])
                 if data.get("type") == "clear_history":

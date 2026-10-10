@@ -3,6 +3,15 @@ import { BehaviorSubject, filter, map, Observable } from "rxjs";
 import { BaseCommand, BaseMessage, TauriService } from "./tauri.service";
 import { Config, ConfigService } from "./config.service";
 import { AvatarService } from "./avatar.service";
+import { SettingsGrid } from "./plugin-settings";
+
+export interface PluginCharacter {
+    plugin_guid: string;
+    character: Partial<Character> & { name: string; [key: string]: any };
+    active: boolean;
+    settings_config: SettingsGrid[];
+    default_avatar?: string | null;
+}
 
 export interface ConfigWithCharacters extends Config {
     characters: Character[];
