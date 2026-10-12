@@ -2,6 +2,8 @@ import traceback
 import importlib
 import json
 import os
+from copy import deepcopy
+from pathlib import Path
 
 import sys
 from typing import Self
@@ -60,10 +62,75 @@ class PluginManager:
             plugin.migrate_settings(plugin.settings, settings_version)
             settings_version += 1
             plugin.settings['settings_version'] = settings_version
+        if plugin.character is not None:
+            plugin.character = deepcopy(plugin.character)
+            settings_before_character = deepcopy(plugin.settings)
+            try:
+                path = self._character_path(guid)
+                plugin.initialize_character(self.config)
+                if path.exists():
+                    stored_character = json.loads(path.read_text(encoding='utf-8'))
+                    if not isinstance(stored_character, dict):
+                        raise ValueError('Plugin character must be an object')
+                    plugin.character.update(stored_character)
+                    if plugin.character != stored_character:
+                        self._save_character(plugin)
+                else:
+                    self._save_character(plugin)
+            except Exception as e:
+                # Do not discard legacy settings if their replacement could not be saved/loaded.
+                plugin.settings = settings_before_character
+                log('error', f'Failed to load character for {plugin.plugin_manifest.name}: {e}')
         if plugin.settings != previous_settings:
             self.config.setdefault('plugin_settings', {})[guid] = plugin.settings
             self.settings_migrated = True
         return plugin
+
+    def _character_path(self, guid: str) -> Path:
+        # Manifests may use non-UUID GUIDs, but must not escape plugin_data.
+        if not guid or guid in {'.', '..'} or any(c in guid for c in '/\\:'):
+            raise ValueError('Invalid plugin GUID')
+        return Path('plugin_data') / guid / 'character.json'
+
+    def _save_character(self, plugin: PluginBase) -> None:
+        path = self._character_path(plugin.plugin_manifest.guid)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = path.with_suffix('.json.tmp')
+        temporary.write_text(json.dumps(plugin.character, indent=4), encoding='utf-8')
+        temporary.replace(path)
+
+    def broadcast_characters(self) -> None:
+        characters = []
+        for plugin in self.plugin_list.values():
+            if plugin.character is not None:
+                characters.append({
+                    'plugin_guid': plugin.plugin_manifest.guid,
+                    'character': plugin.character,
+                    'active': plugin.is_character_active(),
+                    'settings_config': plugin.character_settings_config,
+                    'default_avatar': plugin.character_default_avatar,
+                })
+        emit_message('plugin_characters', characters=characters)
+
+    def update_plugin_character(self, plugin_guid: str | None, character: object) -> None:
+        plugin = next((p for p in self.plugin_list.values() if p.plugin_manifest.guid == plugin_guid), None)
+        if plugin is None or plugin.character is None or not isinstance(character, dict):
+            return
+        previous = plugin.character
+        # Only fields declared by the plugin can be edited; never add crew/personality state.
+        plugin.character = {key: deepcopy(character.get(key, value)) for key, value in previous.items()}
+        try:
+            self._save_character(plugin)
+        except Exception as e:
+            plugin.character = previous
+            log('error', f'Failed to save character for {plugin.plugin_manifest.name}: {e}')
+            self.broadcast_characters()
+            return
+        try:
+            plugin.on_character_changed()
+        except Exception as e:
+            log('error', f'Character changed hook failed for {plugin.plugin_manifest.name}: {e}')
+        self.broadcast_characters()
 
     def load_plugin_module(self, manifest: 'PluginManifest', file_path: str) -> 'PluginBase':
         # Get the module name from file name
@@ -277,6 +344,7 @@ class PluginManager:
         
         # Broadcast model providers to UI
         emit_message("plugin_model_providers", providers=self.plugin_model_providers)
+        self.broadcast_characters()
 
     def on_settings_changed(self, new_config: Config):
         """
@@ -290,6 +358,7 @@ class PluginManager:
                     module.settings = new_config.get('plugin_settings', {}).get(module.plugin_manifest.guid) or {}
             except Exception as e:
                 log('error', f"Failed to execute on_settings_changed hook for {module.plugin_manifest.name}: {e}")
+        self.broadcast_characters()
 
     def on_settings_button(self, plugin_guid: str, key: str):
         """Route a plugin settings button click to its owning plugin."""

@@ -168,6 +168,8 @@ class TTS:
                 "context": item.get("context", "speech"),
                 "file_path": item.get("file_path"),
                 "voice": item.get("voice"),
+                "voice_settings": item.get("voice_settings"),
+                "speed": item.get("speed"),
                 "postprocessing": item.get("postprocessing"),
                 "postprocessing_layers": item.get("postprocessing_layers"),
                 "on_start": item.get("on_start"),
@@ -282,6 +284,8 @@ class TTS:
                                 voice if isinstance(voice, str) else None,
                                 cast(CharacterTTSPostprocessingConfig | None, postprocessing if isinstance(postprocessing, dict) else None),
                                 cast(list[CharacterTTSPostprocessingConfig | None] | None, postprocessing_layers if isinstance(postprocessing_layers, list) else None),
+                                voice_settings_override=item.get('voice_settings'),
+                                speed_override=item.get('speed'),
                             )
                     except Exception as e:
                         self.read_queue.put(item)
@@ -311,6 +315,8 @@ class TTS:
         voice_override: str | None = None,
         postprocessing_override: CharacterTTSPostprocessingConfig | None = None,
         postprocessing_layers: list[CharacterTTSPostprocessingConfig | None] | None = None,
+        voice_settings_override: dict[str, Any] | None = None,
+        speed_override: float | None = None,
     ):
         # Fix numberformatting for different providers
         text = re.sub(r"\d+(,\d{3})*(\.\d+)?", self._number_to_text, text)
@@ -331,7 +337,10 @@ class TTS:
             "response_ms": None,
             "time_to_first_byte_ms": None,
         }
-        audio_stream = self._stream_audio(text, voice_override, stream_metrics)
+        if voice_settings_override is None and speed_override is None:
+            audio_stream = self._stream_audio(text, voice_override, stream_metrics)
+        else:
+            audio_stream = self._stream_audio(text, voice_override, stream_metrics, voice_settings_override, speed_override)
         if postprocessing:
             audio_stream = self._postprocess_audio(audio_stream, postprocessing)
 
@@ -541,11 +550,13 @@ class TTS:
         text: str,
         voice_override: str | None = None,
         metrics: dict[str, float | None] | None = None,
+        voice_settings_override: dict[str, Any] | None = None,
+        speed_override: float | None = None,
     ):
         started_at = time()
         if self.tts_model is None:
             word_count = len(text.split())
-            words_per_minute = 150 * float(self.speed)
+            words_per_minute = 150 * float(speed_override or self.speed)
             audio_duration = word_count / words_per_minute * 60
             # generate silent audio for the duration of the text
             for _ in range(int(audio_duration * 24_000 / 1024)):
@@ -555,10 +566,14 @@ class TTS:
             if metrics is not None:
                 metrics["response_ms"] = (time() - started_at) * 1000
         else:
+            previous_speed = getattr(self.tts_model, 'speed', None)
             try:
+                if speed_override is not None and previous_speed is not None:
+                    self.tts_model.speed = speed_override
                 selected_voice = voice_override if voice_override else self.voice
-                if self.voice_settings is not None:
-                    settings = dict(self.voice_settings)
+                selected_settings = voice_settings_override if voice_settings_override is not None else self.voice_settings
+                if selected_settings is not None:
+                    settings = dict(selected_settings)
                     if voice_override is not None and "voice" in settings:
                         settings["voice"] = voice_override
                     audio = self.tts_model.synthesize_with_settings(text, settings)
@@ -573,6 +588,9 @@ class TTS:
             except Exception as e:
                 log('error', 'TTS synthesis error', e, traceback.format_exc())
                 show_chat_message('error', 'TTS synthesis error:', str(e))
+            finally:
+                if speed_override is not None and previous_speed is not None:
+                    self.tts_model.speed = previous_speed
 
     @observe()
     def _playback_audio_file(self, file_path: str, stream: pyaudio.Stream):
@@ -1362,6 +1380,8 @@ class TTS:
         *,
         context: str = "speech",
         voice: str | None = None,
+        voice_settings: dict[str, Any] | None = None,
+        speed: float | None = None,
         postprocessing: CharacterTTSPostprocessingConfig | None = None,
         postprocessing_layers: list[CharacterTTSPostprocessingConfig | None] | None = None,
         on_start: Callable[[], None] | None = None,
@@ -1374,6 +1394,8 @@ class TTS:
                 "text": text,
                 "context": context,
                 "voice": voice,
+                "voice_settings": dict(voice_settings) if voice_settings is not None else None,
+                "speed": speed,
                 "postprocessing": postprocessing,
                 "postprocessing_layers": postprocessing_layers,
                 "on_start": on_start,

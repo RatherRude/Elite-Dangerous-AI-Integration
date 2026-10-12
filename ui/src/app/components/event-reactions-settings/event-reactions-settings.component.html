@@ -1,6 +1,37 @@
 @if (activeCharacter) {
     <div class="event-reactions">
-        <h2>Event reactions for character "{{ activeCharacter.name || 'Unknown' }}"</h2>
+        <div class="reaction-character-header">
+            <h2>Event reactions for character</h2>
+            <mat-form-field appearance="outline" class="reaction-character-select" subscriptSizing="dynamic">
+                <mat-label>Active character</mat-label>
+                <mat-select [value]="selectedCharacterIndex" (selectionChange)="selectReactionCharacter($event.value)">
+                    <mat-select-trigger>{{ activeCharacter.name || 'Unknown' }}</mat-select-trigger>
+                    @for (entry of activeCrewCharacters; track entry.index) {
+                        <mat-option [value]="entry.index">
+                            <span class="reaction-character-option">
+                                <span>{{ entry.character.name || 'Unknown' }}</span>
+                                <span class="reaction-counts" aria-label="Character event reaction counts">
+                                    <span><mat-icon>volume_up</mat-icon>{{ getReactionCounts(entry.character).on }}</span>
+                                    <span><mat-icon>visibility</mat-icon>{{ getReactionCounts(entry.character).off }}</span>
+                                    <span><mat-icon>close</mat-icon>{{ getReactionCounts(entry.character).hidden }}</span>
+                                </span>
+                            </span>
+                        </mat-option>
+                    }
+                </mat-select>
+            </mat-form-field>
+            <span class="reaction-counts" aria-label="Selected character event reaction counts">
+                <span matTooltip="Events this character reacts to">
+                    <mat-icon>volume_up</mat-icon>{{ getReactionCounts(activeCharacter).on }}
+                </span>
+                <span matTooltip="Events this character can see but does not react to">
+                    <mat-icon>visibility</mat-icon>{{ getReactionCounts(activeCharacter).off }}
+                </span>
+                <span matTooltip="Events hidden from this character">
+                    <mat-icon>close</mat-icon>{{ getReactionCounts(activeCharacter).hidden }}
+                </span>
+            </span>
+        </div>
 
         <mat-slide-toggle
             [ngModel]="getCharacterProperty('event_reaction_enabled_var', false)"

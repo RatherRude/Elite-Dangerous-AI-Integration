@@ -412,6 +412,7 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
   }
 
   public getDisplayName(msg: ChatMessage): string {
+    if (msg.display_name) return msg.display_name;
     if (msg.role?.toLowerCase() === "plugin") {
       return msg.plugin_event_name === "EdCoPilotEvent" ? "EDCoPilot" : msg.plugin_event_name || "plugin";
     }

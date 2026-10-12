@@ -27,6 +27,7 @@ import {
     CharacterService,
     ConfigWithCharacters,
     Character,
+    PluginCharacter,
     CharacterTTSFilterConfig,
     CharacterTTSDistortionConfig,
     CharacterTTSChorusConfig,
@@ -42,6 +43,8 @@ import {MatSlideToggle} from "@angular/material/slide-toggle";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { ChatService } from "../../services/chat.service";
 import { SettingsGridComponent } from "../settings-grid/settings-grid.component";
+import { CrewRosterComponent } from "../crew-roster/crew-roster.component";
+import { AvatarService } from "../../services/avatar.service";
 
 import { ModelProviderDefinition, providerVoiceDisplayValue, SettingsGrid } from "../../services/plugin-settings";
 
@@ -108,12 +111,14 @@ interface LowHighPassPresetOption {
         MatSlideToggle,
         MatExpansionModule,
         SettingsGridComponent,
+        CrewRosterComponent,
     ],
     templateUrl: "./character-settings.component.html",
     styleUrl: "./character-settings.component.scss",
 })
 export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
     @ViewChild("characterOverview") private characterOverview?: ElementRef<HTMLElement>;
+    @ViewChild(CrewRosterComponent) private crewRoster?: CrewRosterComponent;
     @ViewChildren("avatarPreviewSvg") private avatarPreviewSvgElements?: QueryList<ElementRef<HTMLDivElement>>;
     private readonly svgStateClasses = ["listening", "speaking", "thinking", "acting"];
     config: ConfigWithCharacters | null = null;
@@ -121,10 +126,21 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
     characterSubscription: Subscription;
     private avatarMimeSubscription: Subscription;
     private pluginProvidersSubscription: Subscription;
+    private pluginCharactersSubscription: Subscription;
+    pluginCharacters: PluginCharacter[] = [];
+    editingPluginCharacter: PluginCharacter | null = null;
     private avatarPreviewSvgElementsSubscription?: Subscription;
     activeCharacter: Character | null = null;
     pluginTTSProviders: ModelProviderDefinition[] = [];
     selectedCharacterIndex: number | null = null;
+    hoveredCharacterIndex: number | null = null;
+    modifyingCrewRoster = false;
+    editCharacterIndex: number | null = null;
+    private returnToRosterManager = false;
+    private editAvatarUrl: string | null = null;
+    private editAvatarMime: string | null = null;
+    private editAvatarReference: string | null | undefined;
+    private editAvatarLoadSeq = 0;
     editMode = false;
     showVoiceSettings = false;
     initializing: boolean = true;
@@ -214,27 +230,54 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
         private dialog: MatDialog,
         private sanitizer: DomSanitizer,
         private chatService: ChatService,
+        private avatarService: AvatarService,
     ) {
         this.configSubscription = this.configService.config$.subscribe(
             (config) => {
                 this.config = config as ConfigWithCharacters;
                 this.selectedCharacterIndex = config?.active_character_index ?? null;
+                if (this.editCharacterIndex !== null) {
+                    const character = this.config?.characters[this.editCharacterIndex];
+                    if (character) {
+                        this.activeCharacter = character;
+                        void this.loadEditingAvatar();
+                    } else {
+                        this.finishEditing();
+                    }
+                }
             },
         );
         this.characterSubscription = this.characterService.character$.subscribe(
             (character) => {
-                this.activeCharacter = character;
-                this.refreshAvatarPreviewSvg();
+                if (this.editCharacterIndex === null && !this.editingPluginCharacter) {
+                    this.activeCharacter = character;
+                    this.refreshAvatarPreviewSvg();
+                }
             }
         );
         this.pluginProvidersSubscription = this.configService.plugin_model_providers$.subscribe(
             providers => this.pluginTTSProviders = providers.filter(provider => provider.kind === "tts"),
         );
+        this.pluginCharactersSubscription = this.configService.pluginCharacters$.subscribe(characters => {
+            this.pluginCharacters = characters;
+            if (this.editingPluginCharacter) {
+                const updated = characters.find(p => p.plugin_guid === this.editingPluginCharacter?.plugin_guid);
+                if (!updated || !updated.active) {
+                    this.finishEditing();
+                } else {
+                    this.editingPluginCharacter = updated;
+                    this.activeCharacter = updated.character as Character;
+                    void this.loadEditingAvatar();
+                }
+            }
+        });
         this.avatarMimeSubscription = combineLatest([this.characterService.avatarUrl$, this.characterService.avatarMime$]).subscribe(
             ([avatarUrl, mime]) => {
                 this.avatarUrlPrimary = avatarUrl;
                 this.avatarMimePrimary = mime ?? this.characterService.getAvatarMime();
-                this.refreshAvatarPreviewSvg();
+                if (this.editCharacterIndex === null && !this.editingPluginCharacter) {
+                    this.refreshAvatarPreviewSvg();
+                }
             },
         );
     }
@@ -258,10 +301,12 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
             this.avatarMimeSubscription.unsubscribe();
         }
         this.pluginProvidersSubscription.unsubscribe();
+        this.pluginCharactersSubscription.unsubscribe();
         if (this.avatarPreviewSvgElementsSubscription) {
             this.avatarPreviewSvgElementsSubscription.unsubscribe();
         }
         clearInterval(this.avatarPreviewInterval);
+        this.clearEditingAvatar();
     }
 
     get selectedTtsProvider(): ModelProviderDefinition | null {
@@ -269,6 +314,27 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
         return this.pluginTTSProviders.find(
             candidate => selected === `plugin:${candidate.plugin_guid}:${candidate.id}`,
         ) ?? null;
+    }
+
+    get hasMultipleActiveCrew(): boolean {
+        const indices = new Set([this.config?.active_character_index, ...(this.config?.active_characters ?? [])]);
+        const regularCrew = [...indices].filter(index => index !== undefined && !!this.config?.characters[index]).length;
+        return regularCrew + this.pluginCharacters.filter(p => p.active).length > 1;
+    }
+
+    get currentCharacterIndex(): number | null {
+        return this.editCharacterIndex ?? this.selectedCharacterIndex;
+    }
+
+    get overviewCharacter(): Character | null {
+        if (
+            this.hasMultipleActiveCrew
+            && this.hoveredCharacterIndex !== null
+            && this.config?.active_characters.includes(this.hoveredCharacterIndex)
+        ) {
+            return this.config.characters[this.hoveredCharacterIndex] ?? this.activeCharacter;
+        }
+        return this.activeCharacter;
     }
 
     get selectedTtsProviderRef(): string | null {
@@ -317,7 +383,7 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
             ...(voiceSettings[providerRef] ?? {}),
             [fieldKey]: value,
         };
-        await this.characterService.setCharacterProperty("tts_voice_settings", voiceSettings);
+        await this.setCharacterProperty("tts_voice_settings", voiceSettings);
     }
 
     createVoiceGetValueFn(): (fieldKey: string, defaultValue: any) => any {
@@ -346,7 +412,7 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
     }
 
     private refreshAvatarPreviewSvg(): void {
-        const url = this.avatarUrlPrimary ?? this.characterService.getAvatarUrl();
+        const url = this.getAvatarUrl();
         if (!this.avatarPreviewUsesInlineSvg || !url) {
             this.avatarSvgFetchSeq += 1;
             this.sanitizedAvatarPreviewSvg = null;
@@ -360,7 +426,7 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
         try {
             const res = await fetch(url);
             const text = await res.text();
-            if (seq !== this.avatarSvgFetchSeq || url !== (this.avatarUrlPrimary ?? this.characterService.getAvatarUrl()) || !this.avatarPreviewUsesInlineSvg) {
+            if (seq !== this.avatarSvgFetchSeq || url !== this.getAvatarUrl() || !this.avatarPreviewUsesInlineSvg) {
                 return;
             }
             const safe = this.stripScriptsFromSvg(this.syncSvgRootClass(text, this.avatarPreviewStateClass));
@@ -410,10 +476,10 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
 
     /** PNG/WebP sprite sheet preview uses 200% + clip; SVG is one graphic. */
     get avatarPreviewUsesSpriteSheet(): boolean {
-        if (!this.activeCharacter?.avatar) {
+        if (!this.activeCharacter) {
             return false;
         }
-        const mime = this.avatarMimePrimary;
+        const mime = this.editMode ? this.editAvatarMime : this.avatarMimePrimary;
         if (!mime) {
             return true;
         }
@@ -427,8 +493,8 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
 
     // Modify applySettingsFromPreset to work with the new approach
     applySettingsFromPreset(preset: string): void {
-        if (!this.activeCharacter) return;
-        if (!this.selectedCharacterIndex) return;
+        if (!this.activeCharacter || this.editingPluginCharacter) return;
+        if (this.currentCharacterIndex === null) return;
         console.log("Applying settings from preset:", preset);
 
         const changes = CharacterPresets[preset];
@@ -443,7 +509,7 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
 
         newChar.character = this.buildCharacterPrompt(newChar);
 
-        this.characterService.updateCharacter(this.selectedCharacterIndex, newChar)
+        void this.updateCurrentCharacter(newChar);
     }
 
     
@@ -451,7 +517,10 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
         propName: T,
         value: Character[T],
     ): Promise<void> {
-        return this.characterService.setCharacterProperty(propName, value);
+        if (!this.activeCharacter) return;
+        const character = structuredClone(this.activeCharacter);
+        character[propName] = value;
+        await this.updateCurrentCharacter(character);
     }
 
     public async setCharacterPropertyAndUpdatePrompt<T extends keyof Character>(
@@ -462,9 +531,26 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
 
         const char = structuredClone(this.activeCharacter);
         char[propName] = value;
-        const newPrompt = this.buildCharacterPrompt(char);
-        await this.characterService.setCharacterProperty(propName, value);
-        await this.characterService.setCharacterProperty('character', newPrompt);
+        char.character = this.buildCharacterPrompt(char);
+        await this.updateCurrentCharacter(char);
+    }
+
+    private async updateCurrentCharacter(character: Character): Promise<void> {
+        if (this.editingPluginCharacter) {
+            this.activeCharacter = character;
+            void this.loadEditingAvatar();
+            await this.configService.updatePluginCharacter(this.editingPluginCharacter.plugin_guid, {
+                ...character, tts_postprocessing: character.tts_postprocessing ?? {},
+            });
+            return;
+        }
+        const index = this.currentCharacterIndex;
+        if (index === null) return;
+        this.activeCharacter = character;
+        if (this.editCharacterIndex !== null) {
+            void this.loadEditingAvatar();
+        }
+        await this.characterService.updateCharacter(index, character);
     }
 
     private hasEnabledEffect(
@@ -981,6 +1067,31 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
     }
 
     // Character Management Methods
+    editPluginCharacter(plugin: PluginCharacter): void {
+        if (this.editMode || !plugin.active) return;
+        this.hoveredCharacterIndex = null;
+        this.returnToRosterManager = this.modifyingCrewRoster;
+        this.modifyingCrewRoster = false;
+        this.editingPluginCharacter = plugin;
+        this.editCharacterIndex = null;
+        this.activeCharacter = structuredClone(plugin.character) as Character;
+        this.localCharacterCopy = structuredClone(this.activeCharacter);
+        this.showVoiceSettings = true;
+        this.editMode = true;
+        void this.loadEditingAvatar();
+    }
+
+    createPluginCharacterGetValueFn(): (key: string, defaultValue: any) => any {
+        return (key, defaultValue) => (this.activeCharacter as any)?.[key] ?? defaultValue;
+    }
+
+    createPluginCharacterSetValueFn(): (key: string, value: any) => void {
+        return (key, value) => {
+            if (!this.activeCharacter || !this.editingPluginCharacter) return;
+            void this.updateCurrentCharacter({ ...this.activeCharacter, [key]: value });
+        };
+    }
+
     onCharacterSelect(index: number) {
         if (!this.config) return;
 
@@ -1005,20 +1116,27 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
         }
     }
 
-    toggleEditMode() {
+    toggleEditMode(index: number | null = null) {
         if (!this.config) return;
-        if (this.selectedCharacterIndex === null) return;
+        const targetIndex = index ?? this.selectedCharacterIndex;
+        if (targetIndex === null || targetIndex === 0 || !this.config.characters[targetIndex]) return;
 
         // If not in edit mode, enter edit mode
         if (!this.editMode) {
+            this.hoveredCharacterIndex = null;
+            this.returnToRosterManager = this.modifyingCrewRoster;
+            this.modifyingCrewRoster = false;
+            this.editCharacterIndex = targetIndex;
+            this.activeCharacter = this.config.characters[targetIndex];
             // Store a copy of the current character state before entering edit mode
             this.localCharacterCopy = JSON.parse(
                 JSON.stringify(
-                    this.config.characters[this.selectedCharacterIndex],
+                    this.config.characters[targetIndex],
                 ),
             );
             this.showVoiceSettings = false;
             this.editMode = true;
+            void this.loadEditingAvatar();
         } else {
             // If already in edit mode, exit with confirmation for unsaved changes
             this.confirmationDialog.openConfirmationDialog({
@@ -1040,38 +1158,62 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
     // Helper method to save characters
     public saveCharacters() {
         if (!this.config || !this.config.characters) return;
-        if (this.selectedCharacterIndex === null) return;
+        if (this.currentCharacterIndex === null && !this.editingPluginCharacter) return;
 
         // actually its all saved already, all we need it to clear the local backup
 
-        this.localCharacterCopy = null;
-        this.showVoiceSettings = false;
-        this.editMode = false;
+        this.finishEditing();
     }
 
     cancelEditMode(): void {
         if (!this.config) return;
-        if (this.selectedCharacterIndex===null) return;
+        if (this.currentCharacterIndex===null && !this.editingPluginCharacter) return;
 
         // If we were editing an existing character, restore it from the local copy
         if (
             this.localCharacterCopy
         ) {
             // Update the backend with the restored character
-            this.characterService.updateCharacter(
-                this.selectedCharacterIndex,
-                JSON.parse(
-                    JSON.stringify(this.localCharacterCopy),
-                )
-            );
+            if (this.editingPluginCharacter) {
+                void this.configService.updatePluginCharacter(this.editingPluginCharacter.plugin_guid, structuredClone(this.localCharacterCopy));
+            } else {
+                void this.characterService.updateCharacter(this.currentCharacterIndex!, structuredClone(this.localCharacterCopy));
+            }
         }
 
-        // Clear the local copy
-        this.localCharacterCopy = null;
+        this.finishEditing();
+    }
 
-        // Always exit edit mode
+    private finishEditing(): void {
+        this.localCharacterCopy = null;
+        this.editingPluginCharacter = null;
+        this.editCharacterIndex = null;
         this.showVoiceSettings = false;
         this.editMode = false;
+        this.modifyingCrewRoster = this.returnToRosterManager;
+        this.returnToRosterManager = false;
+        this.activeCharacter = this.characterService.getCurrentCharacter();
+        this.clearEditingAvatar();
+        this.refreshAvatarPreviewSvg();
+    }
+
+    addingStandbyCharacter = false;
+
+    toggleCrewRoster(): void {
+        this.crewRoster?.toggleRosterManager();
+    }
+
+    async addStandbyCharacter(): Promise<void> {
+        if (!this.config || this.addingStandbyCharacter) return;
+        this.addingStandbyCharacter = true;
+        try {
+            await this.characterService.addDefaultCharacter(false);
+        } catch (error) {
+            console.error("Error adding standby character:", error);
+            this.snackBar.open("Error adding character", "OK", { duration: 5000 });
+        } finally {
+            this.addingStandbyCharacter = false;
+        }
     }
 
     // Update addNewCharacter method to properly initialize with the default preset
@@ -1082,32 +1224,48 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
     }
 
     deleteSelectedCharacter(): void {
-        if (!this.config || this.selectedCharacterIndex === null) return;
+        if (this.selectedCharacterIndex === null) return;
+        this.deleteCharacter(this.selectedCharacterIndex);
+    }
 
-        // default cannot be deleted
-        if (this.selectedCharacterIndex === 0) return;
+    deleteCharacter(index: number): void {
+        const character = this.config?.characters[index];
+        if (!character || index === 0) return;
 
         this.confirmationDialog.openConfirmationDialog({
             title: "Delete Character",
-            message: `Are you sure you want to delete "${
-                this.config.characters[this.selectedCharacterIndex].name
-            }"? This action cannot be undone.`,
+            message: `Are you sure you want to delete "${character.name}"? This action cannot be undone.`,
             confirmButtonText: "Delete",
             cancelButtonText: "Cancel",
-        }).subscribe((confirmed) => {
-            if (confirmed && this.config && this.config.characters) {
-                if (this.selectedCharacterIndex === null) return;
-
-                this.characterService.deleteCharacter(this.selectedCharacterIndex);
-
-                // Show success message
-                this.snackBar.open(
-                    `Character deleted successfully`,
-                    "Close",
-                    { duration: 3000 },
-                );
+        }).subscribe(async (confirmed) => {
+            if (!confirmed || this.config?.characters[index]?.name !== character.name) return;
+            try {
+                await this.characterService.deleteCharacter(index);
+                this.snackBar.open("Character deleted successfully", "Close", { duration: 3000 });
+            } catch (error) {
+                console.error("Error deleting character:", error);
+                this.snackBar.open("Error deleting character", "OK", { duration: 5000 });
             }
         });
+    }
+
+    async duplicateStandbyCharacter(index: number): Promise<void> {
+        const character = this.config?.characters[index];
+        if (!character || !this.config) return;
+        const duplicate = structuredClone(character);
+        let name = `${character.name} (Copy)`;
+        let counter = 1;
+        while (this.config.characters.some((entry) => entry.name === name)) {
+            name = `${character.name} (Copy ${++counter})`;
+        }
+        duplicate.name = name;
+        try {
+            await this.characterService.addCharacter(duplicate, false);
+            this.snackBar.open(`Character "${name}" copied to standby`, "OK", { duration: 3000 });
+        } catch (error) {
+            console.error("Error duplicating character:", error);
+            this.snackBar.open("Error duplicating character", "OK", { duration: 5000 });
+        }
     }
 
     // Helper to safely get character property with fallback to default
@@ -1228,14 +1386,55 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
     }
 
     getAvatarUrl(): string {
+        if (this.editMode) {
+            return this.editAvatarUrl || this.editingPluginCharacter?.default_avatar || CharacterService.DEFAULT_AVATAR_URL;
+        }
         return this.characterService.getAvatarUrl();
+    }
+
+    private async loadEditingAvatar(): Promise<void> {
+        if (!this.editMode) return;
+        const reference = this.activeCharacter?.avatar || this.editingPluginCharacter?.default_avatar || null;
+        if (this.editAvatarReference === reference) return;
+        this.clearEditingAvatar();
+        this.editAvatarReference = reference;
+        this.editAvatarMime = CharacterService.DEFAULT_AVATAR_MIME;
+        const seq = this.editAvatarLoadSeq;
+        this.refreshAvatarPreviewSvg();
+        if (!reference) return;
+        try {
+            const avatar = await this.avatarService.getAvatarWithMime(reference);
+            if (seq !== this.editAvatarLoadSeq || !this.editMode) {
+                if (avatar && this.avatarService.isObjectUrl(avatar.url)) URL.revokeObjectURL(avatar.url);
+                return;
+            }
+            this.editAvatarUrl = avatar?.url ?? null;
+            this.editAvatarMime = avatar?.mimeType ?? CharacterService.DEFAULT_AVATAR_MIME;
+            this.refreshAvatarPreviewSvg();
+        } catch {
+            // Keep the default avatar if the character's file is unavailable.
+        }
+    }
+
+    private clearEditingAvatar(): void {
+        this.editAvatarLoadSeq += 1;
+        if (this.editAvatarUrl && this.avatarService.isObjectUrl(this.editAvatarUrl)) {
+            URL.revokeObjectURL(this.editAvatarUrl);
+        }
+        this.editAvatarUrl = null;
+        this.editAvatarMime = null;
+        this.editAvatarReference = undefined;
     }
 
     openAvatarCatalog() {
         const dialogRef = this.dialog.open(AvatarCatalogDialogComponent, {
             width: '53.125rem',
             maxWidth: 'calc(100vw - 2rem)',
-            data: { currentAvatarPath: this.activeCharacter?.avatar }
+            data: {
+                currentAvatarPath: this.activeCharacter?.avatar,
+                ...(this.editingPluginCharacter?.default_avatar
+                    ? { defaultAvatarPath: this.editingPluginCharacter.default_avatar } : {}),
+            }
         });
 
         dialogRef.afterClosed().subscribe((result: AvatarCatalogResult) => {
@@ -1248,7 +1447,7 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
 
     // Enable custom character editor with confirmation
     enableCustomCharacterEditor() {
-        if (!this.activeCharacter) return;
+        if (!this.activeCharacter || this.editingPluginCharacter) return;
 
         const dialogRef = this.confirmationDialog.openConfirmationDialog({
             title: "Enable Custom Prompt",
@@ -1270,7 +1469,7 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
 
     // Randomize character preset
     randomizePreset() {
-        if (!this.activeCharacter) return;
+        if (!this.activeCharacter || this.editingPluginCharacter) return;
 
         // Get all available presets except 'custom'
         const availablePresets = Object.keys(CharacterPresets).filter(

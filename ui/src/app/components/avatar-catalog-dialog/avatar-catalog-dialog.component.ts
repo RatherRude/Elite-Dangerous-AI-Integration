@@ -7,9 +7,11 @@ import { MatCardModule } from '@angular/material/card';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { AvatarService, AvatarData } from '../../services/avatar.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { CharacterService } from '../../services/character.service';
 
 export interface AvatarCatalogDialogData {
   currentAvatarPath?: string;
+  defaultAvatarPath?: string;
 }
 
 export interface AvatarCatalogResult {
@@ -34,16 +36,36 @@ export class AvatarCatalogDialogComponent implements OnInit {
   avatars: AvatarData[] = [];
   avatarUrls: Map<string, string> = new Map();
   uploading = false;
+  defaultAvatarUrl: string;
+  private destroyed = false;
 
   constructor(
     public dialogRef: MatDialogRef<AvatarCatalogDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: AvatarCatalogDialogData,
     private avatarService: AvatarService,
     private snackBar: MatSnackBar
-  ) {}
+  ) {
+    this.defaultAvatarUrl = data.defaultAvatarPath || CharacterService.DEFAULT_AVATAR_URL;
+  }
 
   ngOnInit() {
     this.loadAvatars();
+    void this.loadDefaultAvatar();
+  }
+
+  private async loadDefaultAvatar(): Promise<void> {
+    if (!this.data.defaultAvatarPath) return;
+    try {
+      const url = await this.avatarService.getAvatar(this.data.defaultAvatarPath);
+      if (!url) return;
+      if (this.destroyed) {
+        if (this.avatarService.isObjectUrl(url)) URL.revokeObjectURL(url);
+        return;
+      }
+      this.defaultAvatarUrl = url;
+    } catch (error) {
+      console.error('Error loading default avatar:', error);
+    }
   }
 
   async loadAvatars() {
@@ -136,13 +158,12 @@ export class AvatarCatalogDialogComponent implements OnInit {
   }
 
   setToDefault() {
-    // Return empty string to indicate default avatar should be used
-    this.dialogRef.close({ avatarPath: '' } as AvatarCatalogResult);
+    // Regular characters use an empty reference; plugin defaults retain their own reference.
+    this.dialogRef.close({ avatarPath: this.data.defaultAvatarPath || '' } as AvatarCatalogResult);
   }
 
   isCurrentlyDefault(): boolean {
-    // Current avatar is default if it's empty, null, or undefined
-    return !this.data.currentAvatarPath;
+    return !this.data.currentAvatarPath || this.data.currentAvatarPath === this.data.defaultAvatarPath;
   }
 
   async deleteAvatar(avatarPath: string) {
@@ -177,6 +198,10 @@ export class AvatarCatalogDialogComponent implements OnInit {
   }
 
   ngOnDestroy() {
+    this.destroyed = true;
+    if (this.avatarService.isObjectUrl(this.defaultAvatarUrl)) {
+      URL.revokeObjectURL(this.defaultAvatarUrl);
+    }
     // Clean up all object URLs
     this.avatarUrls.forEach((url) => {
       if (this.avatarService.isObjectUrl(url)) {

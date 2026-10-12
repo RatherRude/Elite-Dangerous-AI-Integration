@@ -3,11 +3,12 @@ import json
 from typing import Any, ClassVar, cast
 
 
-from .PluginSettingDefinitions import PluginSettings, ModelProviderDefinition
+from .PluginSettingDefinitions import PluginSettings, ModelProviderDefinition, SettingsGrid
 
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
+    from .Config import Config
     from .PluginHelper import PluginHelper
     from .Models import LLMModel, STTModel, TTSModel, EmbeddingModel
 
@@ -47,6 +48,29 @@ class PluginBase(ABC):
     """
     The current settings for this plugin.
     """
+
+    character: dict[str, Any] | None = None
+    """Optional presentation/voice character, stored in plugin_data/<guid>/character.json.
+
+    Uses the usual avatar, color and tts_* fields, without personality or event settings.
+    Set an instance dictionary in __init__ to contribute a character.
+    """
+    character_settings_config: list[SettingsGrid] = []
+    """Optional extra controls stored in the plugin character's state."""
+    character_default_avatar: str | None = None
+    """Default avatar reference used by this character's picker and empty avatar state."""
+
+    def initialize_character(self, config: 'Config') -> None:
+        """Seed character defaults/migrate legacy settings before loading persisted state."""
+        pass
+
+    def is_character_active(self) -> bool:
+        """Whether this character appears in the active crew (never selectable)."""
+        return True
+
+    def on_character_changed(self) -> None:
+        """Called after the UI updates this plugin's character."""
+        pass
     
     model_providers: list[ModelProviderDefinition] | None = None
     """

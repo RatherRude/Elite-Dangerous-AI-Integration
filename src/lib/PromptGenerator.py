@@ -2370,6 +2370,12 @@ class PromptGenerator:
         if event_name == "InDockingRange":
             return f"{self.commander_name}'s ship is now close enough to the station to make a docking request."
 
+        if event_name == "VoiceDamaged":
+            return "{self.commander_name}'s voice module has been damaged; your speech output is distorted."
+
+        if event_name == "VoiceRepaired":
+            return "{self.commander_name}'s voice module has been repaired; damage-related speech distortion has cleared."
+
         if event_name == "DockingComputerDocking":
             return f"{self.commander_name}'s ship has initiated automated docking computer"
 
@@ -3190,9 +3196,12 @@ class PromptGenerator:
                 elif backpack_summary:
                     status_entries.append(("Suit Backpack Contents", backpack_summary))
 
+        loadout_info = get_state_dict(projected_states, 'Loadout')
+        voice_health = loadout_info.get('VoiceHealth')
+        if isinstance(voice_health, (int, float)) and voice_health < 0.75:
+            ship_display['Voice Module Damaged'] = 'Yes'
+
         if active_mode == 'Main ship':
-            # Get the ship loadout information
-            loadout_info = get_state_dict(projected_states, 'Loadout')
             if loadout_info:
                 # Create comprehensive ship loadout display focusing only on modules
                 loadout_display = {}

@@ -1,3 +1,47 @@
+.reaction-character-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+
+  h2 {
+    margin: 0;
+  }
+}
+
+.reaction-character-select {
+  width: 260px;
+  max-width: 100%;
+}
+
+.reaction-character-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.reaction-counts {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+
+  > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+  }
+
+  mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+  }
+}
+
 .event-suboption {
   padding-left: 16px;
   margin-top: 8px;

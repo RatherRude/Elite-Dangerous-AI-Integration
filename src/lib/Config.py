@@ -105,6 +105,8 @@ game_events = {
     'DockingComputerUndocking': False,
     'DockingComputerDeactivated': False,
     'InDockingRange': True,
+    'VoiceDamaged': True,
+    'VoiceRepaired': True,
     'NavRoute': False,
     'NavRouteClear': False,
     'CrewLaunchFighter': True,
@@ -845,6 +847,7 @@ class WeaponType(TypedDict):
 
 class Character(TypedDict, total=False):
     name: str
+    color: str
     character: str
     personality_preset: str
     personality_verbosity: int
@@ -889,6 +892,7 @@ class Config(TypedDict):
     commander_name: str
     characters: List[Character]
     active_character_index: int
+    active_characters: List[int]
     llm_provider: str
     agent_llm_provider: str
     agent_llm_max_tries: int
@@ -1571,6 +1575,9 @@ def migrate(data: dict) -> dict:
             mistral_settings.pop('tts_voice', None)
         data['config_version'] = 24
 
+    if data['config_version'] < 25:
+        data['config_version'] = 25
+
     data.pop('tools_var', None)
 
     for key in LEGACY_PROVIDER_SETTING_KEYS:
@@ -1579,7 +1586,30 @@ def migrate(data: dict) -> dict:
     data.setdefault('overlay_standalone_transparent', True)
     data.setdefault('overlay_standalone_background_color', '#000000')
 
-    return data
+    return normalize_active_crew(data)
+
+
+MAX_ACTIVE_CHARACTERS = 3
+
+
+def normalize_active_crew(config: dict) -> dict:
+    """Keep the saved roster valid; it does not change assistant behavior."""
+    characters = config.get('characters', [])
+    raw_crew = config.get('active_characters', [])
+    crew = []
+    for index in raw_crew if isinstance(raw_crew, list) else []:
+        if type(index) is int and 0 <= index < len(characters) and index not in crew:
+            crew.append(index)
+
+    primary = config.get('active_character_index', -1)
+    if type(primary) is not int or not 0 <= primary < len(characters):
+        primary = crew[0] if crew else (0 if characters else -1)
+    config['active_character_index'] = primary
+    config['active_characters'] = (
+        [primary, *[index for index in crew if index != primary]][:MAX_ACTIVE_CHARACTERS]
+        if primary >= 0 else []
+    )
+    return config
 
 
 def merge_config_data(defaults: dict, user: dict):
@@ -1656,6 +1686,7 @@ def getDefaultCharacter(config: Config) -> Character:
     )
     return Character({
         "name": 'Default',
+        "color": '#00bcd4',
         "character": "Keep your responses extremely brief and minimal. Maintain a professional and serious tone in all responses. Stick to factual information. You are COVAS:NEXT (Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal) - professional, efficient, and no-nonsense. Provides essential information without unnecessary elaboration. Focuses on factual data and operational status. 'Destination reached.' 'Fuel level acceptable.' Clean, precise communication. Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS:NEXT. Always respond in English regardless of the language spoken to you. Balance emotional understanding with factual presentation. Use everyday language that balances casual and professional tones. Project an air of expertise and certainty when providing information. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.",
         "personality_preset": 'default',
         "personality_verbosity": 0,
@@ -1696,10 +1727,11 @@ def getDefaultCharacter(config: Config) -> Character:
 
 def load_config() -> Config:
     defaults: Config = {
-        'config_version': 24,
+        'config_version': 25,
         'commander_name': "",
         'characters': [],
         'active_character_index': 0,  # -1 means using the default legacy character
+        'active_characters': [0],  # Saved roster only; the primary remains the speaking character.
         'api_key': "",
         'vision_var': False,
         'ptt_var': 'voice_activation',
@@ -1804,7 +1836,7 @@ def load_config() -> Config:
                 merged_config = merge_config_data(defaults, data)
                 
                 print(f"Configuration loaded successfully. Commander: {merged_config.get('commander_name')}, Characters: {len(merged_config.get('characters', []))}")
-                return cast(Config, merged_config)  # pyright: ignore[reportInvalidCast]
+                return cast(Config, normalize_active_crew(merged_config))  # pyright: ignore[reportInvalidCast]
             else:
                 print("Empty config file, using defaults")
                 return defaults
@@ -1924,6 +1956,7 @@ class UpdateCharacterRequest(TypedDict):
 
 def update_character(config: Config, data: UpdateCharacterRequest) -> Config:
     old_config = config.copy()
+    previous_crew = normalize_active_crew(config).get('active_characters', [])
     if data.get('operation') == "add":
         # Add a new character
         if "character" in data and data["character"]:
@@ -1938,6 +1971,8 @@ def update_character(config: Config, data: UpdateCharacterRequest) -> Config:
         # Set as active character if requested
         if data.get("set_active", False):
             config["active_character_index"] = len(config["characters"]) - 1
+            if len(previous_crew) <= 1:
+                config['active_characters'] = []
             print(f"Set active character index to {config['active_character_index']}")
     
     elif data.get('operation') == "update":
@@ -1955,6 +1990,10 @@ def update_character(config: Config, data: UpdateCharacterRequest) -> Config:
             if 0 <= index < len(config.get("characters", [])):
                 deleted_name = config["characters"][index].get("name", "unknown")
                 config["characters"].pop(index)
+                config['active_characters'] = [
+                    active_index - 1 if active_index > index else active_index
+                    for active_index in previous_crew if active_index != index
+                ]
                 print(f"Deleted character at index {index}: {deleted_name}")
                 # Adjust active index if needed
                 if config["active_character_index"] == index:
@@ -1970,9 +2009,12 @@ def update_character(config: Config, data: UpdateCharacterRequest) -> Config:
             index = int(data["index"])
             if -1 <= index < len(config.get("characters", [])):
                 config["active_character_index"] = index
+                if len(previous_crew) <= 1:
+                    config['active_characters'] = []
 
     return update_config(old_config, {
         "active_character_index": config["active_character_index"],
+        "active_characters": config.get('active_characters', []),
         "characters": config["characters"]
     })
 
@@ -2034,7 +2076,11 @@ def update_config(config: Config, data: dict) -> Config:
         data["agent_llm_max_tries"] = agent_tries
 
     # Now merge and save as before
-    new_config = cast(Config, {**config, **data})
+    if 'active_character_index' in data and 'active_characters' not in data:
+        # Switching a lone character must not implicitly enable multicrew.
+        if len(config.get('active_characters', [])) <= 1:
+            data['active_characters'] = []
+    new_config = cast(Config, normalize_active_crew({**config, **data}))
     emit_message("config", config=new_config)
     save_config(new_config)
     return new_config

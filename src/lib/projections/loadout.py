@@ -2,7 +2,7 @@ from typing import cast
 
 from typing_extensions import override
 
-from ..Event import Event, GameEvent
+from ..Event import Event, GameEvent, ProjectedEvent
 from ..EventManager import Projection
 from pydantic import BaseModel, Field
 
@@ -55,6 +55,7 @@ class LoadoutState(BaseModel):
     ShipName: str | None = None
     HullValue: int | None = None
     HullHealth: float | None = None
+    VoiceHealth: float | None = None
     ShipIdent: str | None = None
     ModulesValue: int | None = None
     CargoCapacity: int | None = None
@@ -74,12 +75,15 @@ class Loadout(Projection[LoadoutState]):
     StateModel = LoadoutState
 
     @override
-    def process(self, event: Event) -> None:
+    def process(self, event: Event) -> list[ProjectedEvent]:
+        projected_events: list[ProjectedEvent] = []
+
         if isinstance(event, GameEvent) and event.content.get("event") == "Loadout":
             payload = cast(LoadoutEvent, event.content)
             self.state.ShipName = payload.get("ShipName")
             self.state.HullValue = payload.get("HullValue")
             self.state.HullHealth = payload.get("HullHealth")
+            self.state.VoiceHealth = self.state.HullHealth
             self.state.ShipIdent = payload.get("ShipIdent")
             self.state.ModulesValue = payload.get("ModulesValue")
             self.state.CargoCapacity = payload.get("CargoCapacity")
@@ -120,14 +124,27 @@ class Loadout(Projection[LoadoutState]):
             self.state.UnladenMass = payload.get("UnladenMass")
             self.state.Ship = payload.get("Ship")
             self.state.Hot = payload.get("Hot")
-            return
+            return projected_events
 
         if isinstance(event, GameEvent) and event.content.get("event") == "HullDamage":
             payload = cast(HullDamageEvent, event.content)
+
             if payload.get("Fighter") is not True:
                 self.state.HullHealth = payload.get("Health")
-            return
+                if self.state.VoiceHealth >= 0.75 and self.state.HullHealth < 0.75:
+                    projected_events.append(ProjectedEvent(content={"event": "VoiceDamaged"}))
+                self.state.VoiceHealth = self.state.HullHealth
+            return projected_events
+
+        if isinstance(event, GameEvent) and event.content.get("event") in ["RepairDrone", "RebootRepair"]:
+            if self.state.VoiceHealth < 0.75:
+                projected_events.append(ProjectedEvent(content={"event": "VoiceRepaired"}))
+            self.state.VoiceHealth = 1.0
+
+            return projected_events
 
         if isinstance(event, GameEvent) and event.content.get("event") in ["RepairAll", "Died"]:
-            _payload = cast(RepairAllEvent, event.content)
             self.state.HullHealth = 1.0
+            self.state.VoiceHealth = self.state.HullHealth
+
+        return projected_events

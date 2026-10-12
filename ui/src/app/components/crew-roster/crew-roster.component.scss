@@ -1,0 +1,344 @@
+:host {
+  display: block;
+}
+
+.crew-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.crew-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+h3, h4, p {
+  margin: 0;
+}
+
+.crew-subtitle, .crew-notice {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.crew-roster {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 170px));
+  gap: 16px;
+}
+
+.crew-card {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.crew-roster--preview {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: space-evenly;
+  gap: min(16px, 2%);
+  min-width: 0;
+
+  .crew-card {
+    flex: 0 1 170px;
+    max-width: 170px;
+  }
+}
+
+.crew-portrait.crew-new-character {
+  --crew-placeholder-border-color: rgba(255, 255, 255, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-style: dashed;
+  border-color: var(--crew-placeholder-border-color);
+  color: rgba(255, 255, 255, 0.7);
+
+  mat-icon {
+    width: 64px;
+    height: 64px;
+    font-size: 64px;
+  }
+
+  &:hover:not(:disabled), &:focus-visible {
+    --crew-placeholder-border-color: var(--hud-cyan, #00bcd4);
+    color: var(--hud-cyan, #00bcd4);
+    background: rgba(0, 188, 212, 0.08);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+  }
+}
+
+.crew-portrait-shell {
+  position: relative;
+  --crew-caption-height: calc(2.05rem + 14px);
+}
+
+.crew-portrait.crew-new-character .crew-roster-symbol {
+  position: absolute;
+  inset: 0;
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 141.421%;
+    border-top: 2px dashed var(--crew-placeholder-border-color);
+    transform: translate(-50%, -50%) rotate(-45deg);
+    pointer-events: none;
+  }
+
+  mat-icon {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50%;
+    height: 50%;
+    font-size: 64px;
+  }
+
+  .crew-roster-add-icon {
+    top: 8%;
+    left: 8%;
+  }
+
+  .crew-roster-wrench-icon {
+    bottom: 8%;
+    right: 8%;
+  }
+}
+
+.crew-portrait {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  padding: 0;
+  border: 2px solid var(--character-color, #00bcd4);
+  box-sizing: border-box;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: white;
+  text-align: left;
+  font: inherit;
+  transition: box-shadow 0.18s ease;
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  img.crew-image--sprite {
+    width: 200%;
+    height: 200%;
+    object-fit: cover;
+
+    &.listening {
+      transform: translate(0, 0);
+    }
+
+    &.thinking {
+      transform: translate(0, -50%);
+    }
+
+    &.acting {
+      transform: translate(-50%, -50%);
+    }
+
+    &.speaking {
+      transform: translate(-50%, 0);
+    }
+  }
+}
+
+button.crew-portrait:not(:disabled) {
+  cursor: pointer;
+
+  &:hover, &:focus-visible {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--hud-cyan, #00bcd4);
+    outline-offset: 3px;
+  }
+}
+
+.crew-card--standby .crew-portrait img {
+  opacity: 0.75;
+}
+
+.crew-primary-star {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  font-size: 26px;
+  color: #ffd54f;
+  text-shadow: 0 1px 8px black;
+}
+
+.crew-caption {
+  position: absolute;
+  z-index: 3;
+  inset: auto 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  height: var(--crew-caption-height);
+  box-sizing: border-box;
+  padding: 6px 10px;
+  justify-content: flex-end;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+  pointer-events: none;
+}
+
+.crew-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crew-voice {
+  font-size: 0.78rem;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.75);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crew-edit-button, .crew-set-primary-button, .crew-copy-button, .crew-delete-button {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(0, 0, 0, 0.65);
+  color: white;
+
+  &:hover:not(:disabled), &:focus-visible {
+    background: var(--hud-cyan, #00bcd4);
+    color: black;
+  }
+}
+
+.crew-set-primary-button {
+  left: 6px;
+  right: auto;
+  color: #ffd54f;
+}
+
+.crew-edit-button--standby, .crew-copy-button, .crew-delete-button {
+  position: absolute;
+  z-index: 4;
+  top: auto;
+  bottom: 6px;
+}
+
+.crew-copy-button {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+}
+
+.crew-delete-button {
+  left: 6px;
+  right: auto;
+}
+
+.crew-standby-action, .crew-add-action {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  height: calc(50% - 2px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 2px;
+  border: none;
+  border-radius: 0 0 10px 10px;
+  background: rgba(0, 0, 0, 0.65);
+  color: white;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.18s ease, box-shadow 0.18s ease;
+
+  mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+  }
+
+  &:hover:not(:disabled), &:focus-visible {
+    background: color-mix(in srgb, var(--hud-cyan, #00bcd4) 35%, rgba(0, 0, 0, 0.8));
+    box-shadow: inset 0 0 0 2px var(--hud-cyan, #00bcd4);
+    outline: none;
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+}
+
+.crew-standby-action {
+  box-sizing: border-box;
+  padding: 0;
+}
+
+.crew-add-action {
+  top: 2px;
+  bottom: auto;
+  border-radius: 10px 10px 0 0;
+}
+
+.crew-avatar-control {
+  z-index: 2;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.crew-portrait-shell:hover .crew-avatar-control,
+.crew-portrait-shell:has(:focus-visible) .crew-avatar-control {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.crew-portrait-shell:hover .crew-avatar-control:disabled,
+.crew-portrait-shell:has(:focus-visible) .crew-avatar-control:disabled {
+  opacity: 0.45;
+}
+
+.crew-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crew-portrait, .crew-avatar-control {
+    transition: none;
+  }
+}

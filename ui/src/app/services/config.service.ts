@@ -3,6 +3,12 @@ import { BehaviorSubject, filter, Observable } from "rxjs";
 import { BaseCommand, type BaseMessage, TauriService } from "./tauri.service";
 import { ModelProviderDefinition, PluginModelProvidersMessage, PluginSettings, PluginSettingsMessage } from "./plugin-settings";
 import { ScreenInfo } from "../models/screen-info";
+import type { PluginCharacter } from "./character.service";
+
+export interface PluginCharactersMessage extends BaseMessage {
+    type: "plugin_characters";
+    characters: PluginCharacter[];
+}
 
 export interface ConfigMessage extends BaseMessage {
     type: "config";
@@ -77,6 +83,7 @@ export interface Config {
     // Stored characters
     characters: unknown[];
     active_character_index: number;
+    active_characters: number[];
     // Other config settings
     llm_provider: string;
     agent_llm_provider: string;
@@ -176,6 +183,8 @@ export class ConfigService {
     >([]);
     public plugin_model_providers$ = this.plugin_model_providers_subject
         .asObservable();
+    private pluginCharactersSubject = new BehaviorSubject<PluginCharacter[]>([]);
+    public pluginCharacters$ = this.pluginCharactersSubject.asObservable();
 
     constructor(private tauriService: TauriService) {
         // Subscribe to config messages from the TauriService
@@ -188,15 +197,17 @@ export class ConfigService {
                 | SystemInfoMessage
                 | PluginSettingsMessage
                 | PluginModelProvidersMessage
+                | PluginCharactersMessage
                 | KeybindsMessages =>
                 message.type === "config" ||
                 message.type === "running_config" ||
                 message.type === "system" ||
                 message.type === "plugin_settings_configs" ||
                 message.type === "plugin_model_providers" ||
+                message.type === "plugin_characters" ||
                 message.type === "keybinds"
             ),
-        ).subscribe((message: ConfigMessage | RunningConfigMessage | SystemInfoMessage | PluginSettingsMessage | PluginModelProvidersMessage | KeybindsMessages) => {
+        ).subscribe((message: ConfigMessage | RunningConfigMessage | SystemInfoMessage | PluginSettingsMessage | PluginModelProvidersMessage | PluginCharactersMessage | KeybindsMessages) => {
             if (message.type === "config") {
                 this.configSubject.next(message.config);
             } else if (message.type === "running_config") {
@@ -224,6 +235,8 @@ export class ConfigService {
                 this.plugin_model_providers_subject.next(message.providers);
             } else if (message.type === "keybinds") {
                 this.keybinds_subject.next(message);
+            } else if (message.type === "plugin_characters") {
+                this.pluginCharactersSubject.next(message.characters);
             }
         });
     }
@@ -303,6 +316,15 @@ export class ConfigService {
             key,
         };
         await this.tauriService.send_command(message);
+    }
+
+    public async updatePluginCharacter(pluginGuid: string, character: PluginCharacter['character']): Promise<void> {
+        await this.tauriService.send_command({
+            type: 'change_plugin_character',
+            timestamp: new Date().toISOString(),
+            plugin_guid: pluginGuid,
+            character,
+        });
     }
 
     public getPluginSetting(key: string): any | null {

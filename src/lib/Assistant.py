@@ -191,7 +191,7 @@ class Assistant:
         character = self._get_active_character() or {}
         flags = current_status.get("flags", {}) if isinstance(current_status, dict) else {}
         flags2 = current_status.get("flags2", {}) if isinstance(current_status, dict) else {}
-        hull_health = loadout.get("HullHealth") if isinstance(loadout, dict) else None
+        voice_health = loadout.get("VoiceHealth") if isinstance(loadout, dict) else None
         damage_effects_enabled = bool(character.get("tts_environment_damage_effects_var", True))
         helmet_effects_enabled = bool(character.get("tts_environment_helmet_effects_var", True))
         srv_effects_enabled = bool(character.get("tts_environment_srv_effects_var", True))
@@ -199,8 +199,8 @@ class Assistant:
         layers: list[CharacterTTSPostprocessingConfig] = []
         if damage_effects_enabled and isinstance(flags, dict) and flags.get("OverHeating"):
             layers.append(TTS_ENVIRONMENT_EFFECTS_OVERHEATING)
-        elif damage_effects_enabled and isinstance(hull_health, (int, float)) and float(hull_health) <= 0.75:
-            layers.append(self._get_scaled_damage_tts_postprocessing(float(hull_health)))
+        elif damage_effects_enabled and isinstance(voice_health, (int, float)) and float(voice_health) <= 0.75:
+            layers.append(self._get_scaled_damage_tts_postprocessing(float(voice_health)))
         if srv_effects_enabled and isinstance(flags, dict) and flags.get("InSRV"):
             layers.append(TTS_ENVIRONMENT_EFFECTS_IN_SRV)
         if helmet_effects_enabled and isinstance(flags2, dict) and flags2.get("OnFoot"):
@@ -209,9 +209,9 @@ class Assistant:
 
     def _get_scaled_damage_tts_postprocessing(
         self,
-        hull_health: float,
+        voice_health: float,
     ) -> CharacterTTSPostprocessingConfig:
-        intensity = 1.0 - max(0.0, min(1.0, hull_health))
+        intensity = 1.0 - max(0.0, min(1.0, voice_health))
         scaled = copy.deepcopy(TTS_ENVIRONMENT_EFFECTS_OVERHEATING)
         effects = scaled.get("effects", {})
 

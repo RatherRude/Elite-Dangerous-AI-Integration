@@ -1,0 +1,162 @@
+<section class="crew-section" [attr.aria-labelledby]="!previewOnly && showManager ? 'crew-roster-title' : null"
+         [attr.aria-label]="previewOnly || !showManager ? 'Active crew' : null">
+    @if (!previewOnly && showManager) {
+        <div class="crew-header">
+            @if (showManager) {
+                <div>
+                    <h3 id="crew-roster-title">Active Crew</h3>
+                    <div class="crew-subtitle">{{ activeIndices.length }} / {{ maxActiveCharacters }} active crew, {{ standbyEntries.length }} standby</div>
+                </div>
+            }
+        </div>
+    }
+    @if (hasMultipleActiveCrew || showManager) {
+        <div class="crew-roster" [class.crew-roster--preview]="previewOnly" aria-label="Active crew">
+            @for (entry of activeEntries; track entry.index) {
+                <div class="crew-card" [class.crew-card--primary]="isPrimary(entry.index)"
+                     [style.--character-color]="entry.character.color || '#00bcd4'">
+                    <div class="crew-portrait-shell"
+                         (mouseenter)="setHoveredCharacter(entry.index)"
+                         (mouseleave)="setHoveredCharacter(null)">
+                        <button type="button" class="crew-portrait"
+                                [disabled]="saving"
+                                [attr.aria-label]="entry.character.name + (entry.plugin ? ', plugin character' : (previewOnly ? ', preview character info' : (isPrimary(entry.index) ? ', primary character' : ', make primary character')))"
+                                [attr.aria-pressed]="isPrimary(entry.index)"
+                                (focus)="setFocusedCharacter(entry.index)"
+                                (blur)="setFocusedCharacter(null)"
+                                (click)="selectPrimary(entry.index)">
+                            <img [src]="getAvatarUrl(entry.character)" alt=""
+                                 [class.listening]="avatarPreviewState === 'listening'"
+                                 [class.thinking]="avatarPreviewState === 'thinking'"
+                                 [class.acting]="avatarPreviewState === 'acting'"
+                                 [class.speaking]="avatarPreviewState === 'speaking'"
+                                 [class.crew-image--sprite]="usesSpriteSheet(entry.character)">
+                            @if (isPrimary(entry.index)) {
+                                <span class="crew-primary-star" aria-hidden="true">★</span>
+                            }
+                            <span class="crew-caption">
+                                <span class="crew-name">{{ entry.character.name }}</span>
+                                <span class="crew-voice">{{ getVoiceDisplay(entry.character) }}</span>
+                            </span>
+                        </button>
+                        @if (!previewOnly && !entry.plugin && !isPrimary(entry.index)) {
+                            <button mat-icon-button type="button" class="crew-set-primary-button crew-avatar-control"
+                                    [disabled]="saving"
+                                    [attr.aria-label]="'Make ' + entry.character.name + ' primary'"
+                                    title="Make primary character"
+                                    (focus)="setFocusedCharacter(entry.index)"
+                                    (blur)="setFocusedCharacter(null)"
+                                    (click)="selectPrimary(entry.index)">
+                                <mat-icon>star_border</mat-icon>
+                            </button>
+                        }
+                        @if (!previewOnly) {
+                            <button mat-icon-button type="button" class="crew-edit-button crew-avatar-control"
+                                    [disabled]="saving || entry.index === 0"
+                                    [attr.aria-label]="'Edit ' + entry.character.name"
+                                    [title]="entry.index === 0 ? 'Duplicate Default to customize it' : 'Edit character'"
+                                    (click)="editEntry(entry)">
+                                <mat-icon>edit</mat-icon>
+                            </button>
+                        }
+                        @if (showManager && !previewOnly && !entry.plugin) {
+                            <button type="button" class="crew-standby-action crew-avatar-control"
+                                    [disabled]="saving || isPrimary(entry.index)"
+                                    [attr.aria-label]="'Move ' + entry.character.name + ' to standby'"
+                                    [title]="isPrimary(entry.index) ? 'Choose another primary before moving this character to standby' : 'Move to standby'"
+                                    (click)="setCrewMember(entry.index, false)">
+                                <span>Standby</span>
+                                <mat-icon>arrow_downward</mat-icon>
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+            @if (!previewOnly) {
+                <div class="crew-card crew-card--manage">
+                    <button type="button" class="crew-portrait crew-new-character crew-roster-toggle"
+                            [disabled]="saving" [attr.aria-expanded]="showManager"
+                            aria-controls="standby-roster"
+                            [attr.aria-label]="showManager ? 'Done modifying crew roster' : (crewIsFull ? 'Modify crew roster' : 'Add to crew or modify crew roster')"
+                            [title]="showManager ? 'Done' : (crewIsFull ? 'Modify Crew Roster' : 'Add to Crew or Modify Crew Roster')"
+                            (click)="toggleRosterManager()">
+                        @if (showManager || crewIsFull) {
+                            <mat-icon aria-hidden="true">{{ showManager ? 'done' : 'build' }}</mat-icon>
+                        } @else {
+                            <span class="crew-roster-symbol" aria-hidden="true">
+                                <mat-icon class="crew-roster-add-icon">add</mat-icon>
+                                <mat-icon class="crew-roster-wrench-icon">build</mat-icon>
+                            </span>
+                        }
+                    </button>
+                </div>
+            }
+        </div>
+    }
+    @if (showManager && !previewOnly) {
+        <div id="standby-roster" class="crew-manager">
+            <h4>Standby Roster</h4>
+            <p class="crew-subtitle">Up to {{ maxActiveCharacters }} characters can be active. Hover a portrait for controls: star to make primary, pencil to edit. Changes save automatically.</p>
+            @if (crewIsFull) {
+                <p class="crew-subtitle" role="status">Crew is full. Move a character to standby before adding another.</p>
+            }
+            <div class="crew-roster" aria-label="Standby crew">
+                @for (entry of standbyEntries; track entry.index) {
+                    <div class="crew-card crew-card--standby"
+                         [style.--character-color]="entry.character.color || '#00bcd4'">
+                        <div class="crew-portrait-shell">
+                            <div class="crew-portrait">
+                                <img [src]="getAvatarUrl(entry.character)" alt=""
+                                     [class.listening]="avatarPreviewState === 'listening'"
+                                     [class.thinking]="avatarPreviewState === 'thinking'"
+                                     [class.acting]="avatarPreviewState === 'acting'"
+                                     [class.speaking]="avatarPreviewState === 'speaking'"
+                                     [class.crew-image--sprite]="usesSpriteSheet(entry.character)">
+                                <span class="crew-caption">
+                                    <span class="crew-name">{{ entry.character.name }}</span>
+                                    <span class="crew-voice">{{ getVoiceDisplay(entry.character) }}</span>
+                                </span>
+                            </div>
+                            <button type="button" class="crew-add-action crew-avatar-control"
+                                    [disabled]="saving || crewIsFull"
+                                    [attr.aria-label]="'Add ' + entry.character.name + ' to active crew'"
+                                    [title]="crewIsFull ? 'Active crew is limited to ' + maxActiveCharacters + ' characters' : 'Add to active crew'"
+                                    (click)="setCrewMember(entry.index, true)">
+                                <mat-icon>arrow_upward</mat-icon>
+                                <span>Add to Crew</span>
+                            </button>
+                            <button mat-icon-button type="button" class="crew-delete-button crew-avatar-control"
+                                    [disabled]="saving || entry.index === 0"
+                                    [attr.aria-label]="'Delete ' + entry.character.name"
+                                    [title]="entry.index === 0 ? 'Default cannot be deleted' : 'Delete character'"
+                                    (click)="deleteStandbyCharacter(entry.index)">
+                                <mat-icon>delete</mat-icon>
+                            </button>
+                            <button mat-icon-button type="button" class="crew-copy-button crew-avatar-control"
+                                    [disabled]="saving" [attr.aria-label]="'Copy ' + entry.character.name"
+                                    title="Copy character to standby"
+                                    (click)="duplicateStandbyCharacter(entry.index)">
+                                <mat-icon>content_copy</mat-icon>
+                            </button>
+                            <button mat-icon-button type="button" class="crew-edit-button crew-edit-button--standby crew-avatar-control"
+                                    [disabled]="saving || entry.index === 0"
+                                    [attr.aria-label]="'Edit ' + entry.character.name"
+                                    [title]="entry.index === 0 ? 'Duplicate Default to customize it' : 'Edit character'"
+                                    (click)="editCharacter(entry.index)">
+                                <mat-icon>edit</mat-icon>
+                            </button>
+                        </div>
+                    </div>
+                }
+                <div class="crew-card crew-card--new">
+                    <button type="button" class="crew-portrait crew-new-character"
+                            [disabled]="saving || addingCharacter"
+                            aria-label="Add a new standby character" title="Add a new character"
+                            (click)="addStandbyCharacter()">
+                        <mat-icon aria-hidden="true">add</mat-icon>
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+</section>

@@ -556,6 +556,17 @@
                             }
 
                             @case ('covas') {
+                                @if (hasMultipleActiveCrew && crewOverviewConfig; as crewConfig) {
+                                    <div class="covas-crew-overview">
+                                        <h3>Active Crew</h3>
+                                        <app-crew-roster [config]="crewConfig" [previewOnly]="true"
+                                                         (characterPreviewed)="previewCharacterIndex = $event"></app-crew-roster>
+                                        <div class="covas-crew-info">
+                                            <strong>{{ overviewCharacter?.name || characterName }}</strong>
+                                            <p class="covas-prompt-bubble">{{ characterPrompt }}</p>
+                                        </div>
+                                    </div>
+                                } @else {
                                 <mat-form-field class="covas-character-select">
                                     <mat-label>Active Character</mat-label>
                                     <mat-select [ngModel]="activeCharacterIndex"
@@ -589,6 +600,7 @@
                                     </div>
                                     <p class="covas-prompt-bubble">{{ characterPrompt }}</p>
                                 </div>
+                                }
 
                                 <div class="covas-event-summary">
                                     <span class="minimal-event-stats" aria-label="Character event reaction counts">
