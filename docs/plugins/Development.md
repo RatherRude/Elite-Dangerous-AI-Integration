@@ -41,32 +41,27 @@ Create a new class implementing `PluginBase` like this:
 ```python
 from lib.PluginBase import PluginBase, PluginManifest
 from lib.PluginHelper import PluginHelper
+from lib.PluginSettingDefinitions import PluginSettings, SettingsGrid, ToggleSetting
 
 
 class ExamplePlugin(PluginBase):
     def __init__(self, plugin_manifest: PluginManifest):
         super().__init__(plugin_manifest)
-        prefix = f"plugin.{plugin_manifest.guid}"
-        self.settings_config = {
-            "key": plugin_manifest.guid,
-            "label": f"{prefix}.title",
-            "icon": "settings",
-            "grids": [{
-                "key": "general",
-                "label": f"{prefix}.general",
-                "fields": [{
-                    "key": "my_bool_setting", "label": f"{prefix}.enabled",
-                    "type": "toggle", "readonly": False,
-                    "placeholder": None, "default_value": False,
-                }],
-            }],
-        }
+        self.settings_config = PluginSettings(
+            key="settings", label="@title", icon="settings",
+            grids=[SettingsGrid(
+                key="general", label="@general",
+                fields=[ToggleSetting(
+                    key="my_bool_setting", label="@enabled", type="toggle",
+                    readonly=False, placeholder=None, default_value=False,
+                )],
+            )],
+        )
 
     def get_ui_translations(self):
-        guid = self.plugin_manifest.guid
         return {
-            "en": {"plugin": {guid: {"title": "Example plugin", "general": "General", "enabled": "Enabled"}}},
-            "fr": {"plugin": {guid: {"title": "Plugin d’exemple", "general": "Général", "enabled": "Activé"}}},
+            "en": {"title": "Example plugin", "general": "General", "enabled": "Enabled"},
+            "fr": {"title": "Plugin d’exemple", "general": "Général", "enabled": "Activé"},
         }
 
     def on_chat_start(self, helper: PluginHelper):
@@ -104,27 +99,28 @@ self.publish_settings()
 `get_ui_views()` and `get_ui_settings()` return the latest presentation. See the
 [UI guide](ui-integration.md#lifecycle-and-public-hooks) for their lifecycle.
 
-The existing manager API for a persisted setting is
-`PluginManager.update_plugin_setting(guid, key, value)`. Older plugins reach it
-through the private helper back-reference:
+The public API for a persisted setting is bound to the registered plugin:
 
 ```python
-helper._plugin_manager.update_plugin_setting(
-    plugin_manifest.guid,
-    "status",
-    f"plugin.{plugin_manifest.guid}.importCompleted",
-)
+self.update_setting("status", "@importCompleted")
 ```
 
 The manager persists the value in `config.json`, emits the normal `config` message,
 and calls the plugin's optional `on_settings_changed()` hook. The hook is also called
 when settings are changed from the UI. Plugins should keep durable application data
 in their dedicated `plugin_data/<guid>` directory rather than in plugin settings.
-The helper back-reference is an implementation detail, not a new UI extension
-point. Normal user edits use the existing configuration transport; UI publication
+Setting keys are flat local keys, not configuration paths. The core selects the
+owner from its registration registry and stores the value unchanged; local
+translation references are qualified only when exporting presentation. For
+example, `@importCompleted` becomes `plugin.<registered-guid>.importCompleted`
+in a status paragraph. Normal user edits use the existing configuration transport; UI publication
 must not be used as a substitute for saving a setting or plugin database change.
 
 The `PluginBase` base class has the following methods that can be overridden:
+
+- `on_registered(self)`:
+   Called once after the core assigns the plugin's namespace. Use
+   `self.get_plugin_data_path()` here for configuration-state data initialization.
 
 - `on_chat_start(self, helper: PluginHelper)`:  
    Called when the chat is started. This is where you should register all plugin functionality:
@@ -251,8 +247,10 @@ The `PluginHelper` class provides several methods for interacting with the COVAS
 
 ### Data & Assets
 
-- `helper.get_plugin_data_path(plugin_manifest: PluginManifest) -> str`:  
-   Get the absolute path to your plugin's data directory.
+- `helper.get_plugin_data_path() -> str`:
+   Get the absolute path to the registered plugin's data directory. The same
+   directory is available before Run through `self.get_plugin_data_path()`.
+   The legacy manifest argument is accepted only when it matches the owner.
 
 ### A note on events
 
@@ -276,7 +274,7 @@ To handle custom plugin events, use the `helper.register_event()` method in `on_
 ```python
 def on_chat_start(self, helper: PluginHelper):
     helper.register_event(
-        name=f"{self.plugin_manifest.guid}.value_changed",
+        name="value_changed",
         should_reply_check=lambda event: True,  # or your custom logic
         prompt_generator=lambda event: f"The new value is now {event.plugin_event_content['key']}"
     )
@@ -288,12 +286,17 @@ Then dispatch your custom event using:
 from lib.Event import PluginEvent
 
 helper.dispatch_event(PluginEvent(
-    plugin_event_name=f"{self.plugin_manifest.guid}.value_changed",
+    plugin_event_name="value_changed",
     plugin_event_content={"key": "value"}
 ))
 ```
 
 **Note:** The `dispatch_event()` method validates that the event is of type `PluginEvent` and will raise a `ValueError` if it's not.
+
+The manager supplies a separate bound helper to each plugin. Registration and
+dispatch qualify the local event name with the registered namespace; event
+callbacks receive the local name. Identical local names in different plugins do
+not collide. Plugins must not prefix event names with their manifest GUID.
 
 For further details or questions, [Join our Discord](https://discord.gg/9c58jxVuAT).
 
@@ -313,6 +316,7 @@ Remember to clean up references etc. in `on_chat_stop()`.
 | Function          | Execution time                                                                                                                                                                                                                         |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `__init__`        | The constructor is executed immediately upon loading the entrypoint file. Use this for initialization that doesn't require the `PluginHelper`.                                                                                         |
+| `on_registered()` | Called once with a core-owned namespace and data path, before UI contributions are read. |
 | `settings_config` | Settings may be defined on the instance; the default `get_ui_settings()` exports them during registration/publication. |
 | `settings` | An instance dictionary populated from persisted configuration after construction and refreshed when configuration changes. |
 | `on_chat_start()` | This function is executed when the chat assistant is started.<br>**All registration should happen here:** register actions, projections, sideeffects, custom events, and status generators using the provided `PluginHelper` instance. |

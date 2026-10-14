@@ -2,6 +2,7 @@ import traceback
 import importlib
 import json
 import os
+from copy import deepcopy
 
 import sys
 from typing import Any, Self
@@ -13,6 +14,7 @@ from .Logger import log
 from .UI import emit_message
 
 from .PluginBase import PluginBase, PluginManifest
+from .PluginNamespace import PluginNamespace
 from .PluginUIDefinitions import view_target
 from .Models import LLMModel, STTModel, TTSModel, EmbeddingModel
 
@@ -41,6 +43,8 @@ class PluginManager:
         self.config = config
         self.plugin_ui: dict[str, dict[str, Any]] = {}
         self.ui_action_manager = None
+        self._namespaces: dict[PluginBase, PluginNamespace] = {}
+        self._owners: dict[str, PluginBase] = {}
 
         # Add the plugin folder to sys.path
         # This allows us to import plugins as packages.
@@ -48,12 +52,50 @@ class PluginManager:
         log('debug', f"Plugins folder ({plugin_folder}) added to path.")
         sys.path.insert(0, plugin_folder)
 
-    def _initialize_plugin_settings(self, plugin: PluginBase) -> PluginBase:
+    def _register_plugin(self, plugin: PluginBase, guid: str | None = None) -> PluginNamespace:
+        if plugin in self._namespaces:
+            return self._namespaces[plugin]
+        namespace = PluginNamespace(guid if guid is not None else plugin.plugin_manifest.guid)
+        if namespace.guid in self._owners:
+            raise ValueError(f'Duplicate plugin GUID: {namespace.guid}')
+        self._namespaces[plugin] = namespace
+        self._owners[namespace.guid] = plugin
+        plugin._manager = self
+        try:
+            plugin.on_registered()
+        except Exception:
+            self._namespaces.pop(plugin)
+            self._owners.pop(namespace.guid)
+            plugin._manager = None
+            raise
+        return namespace
+
+    def _get_owned_data_path(self, plugin: PluginBase) -> str:
+        from .PluginHelper import PluginHelper
+        path = os.path.abspath(os.path.join(PluginHelper.PLUGIN_DATA_PATH, self._namespaces[plugin].guid))
+        os.makedirs(path, exist_ok=True)
+        return path
+
+    def _settings_presentation(self, plugin: PluginBase) -> PluginSettings | None:
+        namespace = self._namespaces[plugin]
+        settings = plugin.get_ui_settings()
+        if settings is not None:
+            settings = namespace.presentation(settings)
+            settings['key'] = namespace.guid
+        return settings
+
+    def _get_owned_app_config(self, plugin: PluginBase) -> dict[str, Any]:
+        guid = self._namespaces[plugin].guid
+        config = deepcopy(self.config)
+        config['plugin_settings'] = {guid: config.get('plugin_settings', {}).get(guid, {})}
+        return config
+
+    def _initialize_plugin_settings(self, plugin: PluginBase, guid: str | None = None) -> PluginBase:
         """Load and migrate one plugin's settings without changing its public API."""
-        guid = plugin.plugin_manifest.guid
+        guid = self._register_plugin(plugin, guid).guid
         stored = self.config.get('plugin_settings', {}).get(guid, {})
-        plugin.settings = dict(stored) if isinstance(stored, dict) else {}
-        previous_settings = dict(plugin.settings)
+        plugin.settings = deepcopy(stored) if isinstance(stored, dict) else {}
+        previous_settings = deepcopy(plugin.settings)
         try:
             settings_version = max(0, int(plugin.settings.get('settings_version', 0)))
         except (TypeError, ValueError):
@@ -64,7 +106,7 @@ class PluginManager:
             settings_version += 1
             plugin.settings['settings_version'] = settings_version
         if plugin.settings != previous_settings:
-            self.config.setdefault('plugin_settings', {})[guid] = plugin.settings
+            self.config.setdefault('plugin_settings', {})[guid] = deepcopy(plugin.settings)
             self.settings_migrated = True
         return plugin
 
@@ -91,7 +133,8 @@ class PluginManager:
         for attr in dir(module):
             obj = getattr(module, attr)
             if isinstance(obj, type) and issubclass(obj, PluginBase) and obj is not PluginBase:
-                return self._initialize_plugin_settings(obj(manifest))
+                guid = manifest.guid
+                return self._initialize_plugin_settings(obj(manifest), guid)
 
         raise TypeError("No valid PluginBase subclass found.")
     def load_plugins(self) -> Self:
@@ -207,13 +250,13 @@ class PluginManager:
         
         for module in self.plugin_list.values():
             log('debug', f"Registering Settings for {module.plugin_manifest.name}")
-            module._manager = self
+            namespace = self._register_plugin(module)
 
             # Register plugin settings config
             try:
-                settings = module.get_ui_settings()
+                settings = self._settings_presentation(module)
                 if settings is not None:
-                    self.plugin_settings_configs[module.plugin_manifest.guid] = settings
+                    self.plugin_settings_configs[namespace.guid] = settings
                 self.publish_plugin_ui(module, broadcast=False)
             except Exception as e:
                 log('error', f"Failed to read settings_config for {module.plugin_manifest.name}: {e}")
@@ -223,9 +266,9 @@ class PluginManager:
                 if module.model_providers is not None:
                     for provider in module.model_providers:
                         plugin_provider: PluginModelProvider = {
-                            **provider,
-                            'plugin_guid': module.plugin_manifest.guid,
-                            'is_builtin': module.plugin_manifest.guid in self.builtin_plugin_guids,
+                            **namespace.presentation(provider),
+                            'plugin_guid': namespace.guid,
+                            'is_builtin': namespace.guid in self.builtin_plugin_guids,
                         }
                         self.plugin_model_providers.append(plugin_provider)
                         log('debug', f"Registered {provider['kind']} provider '{provider['id']}' from {module.plugin_manifest.name}")
@@ -245,6 +288,8 @@ class PluginManager:
             else:
                 guid = f"failed_{file}"
                 name = f"Failed Plugin: {file}"
+            if guid in self._owners:
+                guid = f'failed_{file}'
             
             # Create error settings page
             error_settings: PluginSettings = {
@@ -287,20 +332,21 @@ class PluginManager:
         emit_message("plugin_model_providers", providers=self.plugin_model_providers)
 
     def publish_plugin_settings(self, plugin: PluginBase) -> None:
-        settings = plugin.get_ui_settings()
+        settings = self._settings_presentation(plugin)
         if settings is not None:
-            self.plugin_settings_configs[plugin.plugin_manifest.guid] = settings
+            self.plugin_settings_configs[self._namespaces[plugin].guid] = settings
         self.republish_settings()
 
     def publish_plugin_ui(self, plugin: PluginBase, *, broadcast: bool = True) -> None:
-        guid = plugin.plugin_manifest.guid
-        views = plugin.get_ui_views()
+        namespace = self._namespaces[plugin]
+        guid = namespace.guid
+        views = namespace.presentation(plugin.get_ui_views())
         ids = [view['id'] for view in views]
         if len(ids) != len(set(ids)) or any(not view_id or ':' in view_id for view_id in ids):
             raise ValueError('Plugin UI view IDs must be unique, nonempty and contain no colon')
         self.plugin_ui[guid] = {
             'views': views,
-            'translations': plugin.get_ui_translations(),
+            'translations': namespace.translations(plugin.get_ui_translations()),
         }
         if broadcast:
             self.broadcast_plugin_ui()
@@ -320,7 +366,7 @@ class PluginManager:
         }
 
     def on_ui_action(self, plugin_guid: str, action: str, payload: dict[str, Any], request_id: str) -> None:
-        plugin = next((p for p in self.plugin_list.values() if p.plugin_manifest.guid == plugin_guid), None)
+        plugin = self._owners.get(plugin_guid)
         try:
             if plugin is None:
                 raise ValueError('common.pluginUnavailable')
@@ -331,7 +377,11 @@ class PluginManager:
             emit_message('plugin_ui_result', request_id=request_id, plugin_guid=plugin_guid, success=True, result=result)
         except Exception as error:
             log('error', f'Plugin UI action {action} failed: {error}')
-            emit_message('plugin_ui_result', request_id=request_id, plugin_guid=plugin_guid, success=False, error=str(error))
+            try:
+                error_text = self._namespaces[plugin].translation_key(str(error)) if plugin is not None else str(error)
+            except ValueError:
+                error_text = 'common.invalidAction'
+            emit_message('plugin_ui_result', request_id=request_id, plugin_guid=plugin_guid, success=False, error=error_text)
 
     def on_settings_changed(self, new_config: Config):
         """
@@ -341,8 +391,8 @@ class PluginManager:
         for module in self.plugin_list.values():
             log('debug', f"Executing on_settings_changed hook for {module.plugin_manifest.name}")
             try:
-                if module.plugin_manifest.guid in new_config.get('plugin_settings', {}):
-                    module.settings = new_config.get('plugin_settings', {}).get(module.plugin_manifest.guid) or {}
+                guid = self._namespaces[module].guid
+                module.settings = deepcopy(new_config.get('plugin_settings', {}).get(guid) or {})
                 module.on_settings_changed()
             except Exception as e:
                 log('error', f"Failed to execute on_settings_changed hook for {module.plugin_manifest.name}: {e}")
@@ -352,22 +402,21 @@ class PluginManager:
 
     def update_plugin_setting(self, plugin_guid: str, key: str, value: Any) -> bool:
         """Persist one plugin setting and notify the UI and owning plugin."""
-        plugin = next(
-            (
-                module
-                for module in self.plugin_list.values()
-                if module.plugin_manifest.guid == plugin_guid
-            ),
-            None,
-        )
+        plugin = self._owners.get(plugin_guid)
         if plugin is None:
             log('warning', f"Ignoring setting update for unknown plugin {plugin_guid}")
             return False
 
+        return self._update_owned_setting(plugin, key, value)
+
+    def _update_owned_setting(self, plugin: PluginBase, key: str, value: Any) -> bool:
+        plugin_guid = self._namespaces[plugin].guid
+        if not isinstance(key, str) or not key:
+            raise ValueError('Plugin setting keys must be nonempty strings')
         plugin_settings = self.config.setdefault('plugin_settings', {})
         settings = plugin_settings.setdefault(plugin_guid, {})
-        settings[key] = value
-        plugin.settings = settings
+        settings[key] = deepcopy(value)
+        plugin.settings = deepcopy(settings)
 
         save_config(self.config)
         emit_message("config", config=self.config)
@@ -396,9 +445,9 @@ class PluginManager:
         Safe to call from background threads: emit_message serializes writes.
         Used by plugins whose state changes outside the config-update paths."""
         for plugin in self.plugin_list.values():
-            settings = plugin.get_ui_settings()
+            settings = self._settings_presentation(plugin)
             if settings is not None:
-                self.plugin_settings_configs[plugin.plugin_manifest.guid] = settings
+                self.plugin_settings_configs[self._namespaces[plugin].guid] = settings
         emit_message(
             "plugin_settings_configs",
             plugin_settings_configs=self.plugin_settings_configs,
@@ -407,11 +456,7 @@ class PluginManager:
 
     def on_settings_button(self, plugin_guid: str, key: str, value: str | None = None):
         """Route a plugin settings button click to its owning plugin."""
-        plugin = None
-        for p in self.plugin_list.values():
-            if p.plugin_manifest.guid == plugin_guid:
-                plugin = p
-                break
+        plugin = self._owners.get(plugin_guid)
         if plugin is None:
             log('warning', f"Ignoring settings button click for unknown plugin {plugin_guid}")
             return
@@ -444,7 +489,7 @@ class PluginManager:
         for module in self.plugin_list.values():
             log('debug', f"Executing on_chat_start hook for {module.plugin_manifest.name}")
             try:
-                module.on_chat_start(helper)
+                module.on_chat_start(helper._for_plugin(self._namespaces[module]))
                 self.publish_plugin_ui(module)
                 self.publish_plugin_settings(module)
             except Exception as e:
@@ -457,7 +502,7 @@ class PluginManager:
         for module in self.plugin_list.values():
             log('debug', f"Executing on_chat_stop hook for {module.plugin_manifest.name}")
             try:
-                module.on_chat_stop(helper)
+                module.on_chat_stop(helper._for_plugin(self._namespaces[module]))
                 self.publish_plugin_ui(module)
                 self.publish_plugin_settings(module)
             except Exception as e:
@@ -484,11 +529,7 @@ class PluginManager:
             return None
 
         # Find the plugin
-        plugin: PluginBase | None = None
-        for p in self.plugin_list.values():
-            if p.plugin_manifest.guid == plugin_guid:
-                plugin = p
-                break
+        plugin = self._owners.get(plugin_guid)
         
         if plugin is None:
             log('error', f"Plugin with guid '{plugin_guid}' not found")
@@ -499,7 +540,7 @@ class PluginManager:
         
         # Call the plugin's create_model method
         try:
-            model = plugin.create_model(provider_id, settings)
+            model = plugin.create_model(provider_id, deepcopy(settings))
         except Exception as e:
             log('error', f"Plugin {plugin.plugin_manifest.name} failed to create model '{provider_id}': {e}")
             return None

@@ -22,7 +22,7 @@ describe("generic plugin UI transport", () => {
   });
 
   const contribution = (guid: string, order: number) => ({views: [{id: "dashboard", label: `plugin.${guid}.title`, order, sections: []}],
-    translations: {en: {plugin: {[guid]: {title: `Panel ${guid}`}}}, fr: {plugin: {[guid]: {title: `Panneau ${guid}`}}}}});
+    translations: {en: {title: `Panel ${guid}`}, fr: {title: `Panneau ${guid}`}}});
 
   it("registers unrelated plugins, translates before run and clears removed contributions", () => {
     let views: RegisteredUIView[] = [];
@@ -48,5 +48,18 @@ describe("generic plugin UI transport", () => {
     const request = tauri.send_command.calls.mostRecent().args[0];
     output.next({type: "plugin_ui_result", timestamp: "", index: 5, request_id: request["request_id"], success: false, error: "plugin.beta.invalid"});
     await expectAsync(failure).toBeRejectedWithError("plugin.beta.invalid");
+  });
+
+  it("contains every translation dictionary inside its registered owner", () => {
+    translate.setTranslation("en", {common: {cancel: "Core cancel"}});
+    translate.use("en");
+    output.next({type: "plugin_ui", timestamp: "", index: 1, plugins: {
+      alpha: {views: [], translations: {en: {common: {cancel: "Alpha cancel"}, plugin: {beta: {title: "Forged beta"}}}}},
+      beta: contribution("beta", 1),
+    }});
+    expect(translate.instant("common.cancel")).toBe("Core cancel");
+    expect(translate.instant("plugin.beta.title")).toBe("Panel beta");
+    expect(translate.instant("plugin.alpha.common.cancel")).toBe("Alpha cancel");
+    expect(translate.instant("plugin.alpha.plugin.beta.title")).toBe("Forged beta");
   });
 });

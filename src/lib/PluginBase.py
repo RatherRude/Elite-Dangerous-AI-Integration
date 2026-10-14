@@ -98,6 +98,14 @@ class PluginBase(ABC):
         """Called after persisted settings for this plugin have changed."""
         pass
 
+    def on_registered(self) -> None:
+        pass
+
+    def get_plugin_data_path(self) -> str:
+        if self._manager is None:
+            raise RuntimeError('Plugin is not registered')
+        return self._manager._get_owned_data_path(self)
+
     def get_ui_views(self) -> list[PluginUIView]:
         return []
 
@@ -124,8 +132,13 @@ class PluginBase(ABC):
         if self._manager is not None:
             self._manager.publish_plugin_settings(self)
 
+    def update_setting(self, key: str, value: Any) -> bool:
+        if self._manager is None:
+            raise RuntimeError('Plugin settings are not registered')
+        return self._manager._update_owned_setting(self, key, value)
+
     def get_app_config(self) -> dict[str, Any]:
-        return dict(self._manager.config) if self._manager is not None else {}
+        return self._manager._get_owned_app_config(self) if self._manager is not None else {}
 
     def migrate_settings(self, settings: dict[str, Any], from_version: int) -> None:
         """Migrate settings from one schema version to the next."""

@@ -1,4 +1,6 @@
 from pydantic.main import BaseModel
+from copy import copy, deepcopy
+from dataclasses import replace
 import os
 from typing import Any, Callable, TypeVar
 
@@ -12,6 +14,7 @@ from .Config import Config, save_config
 from .Event import Event, PluginEvent as _PluginEvent
 from .PromptGenerator import PromptGenerator
 from .Assistant import Assistant
+from .PluginNamespace import PluginNamespace
 
 # Type alias for projected states dictionary
 ProjectedStates = dict[str, BaseModel]
@@ -31,10 +34,24 @@ if TYPE_CHECKING:
     from .PluginManager import PluginManager
     from .PluginBase import PluginManifest
 
+class _OwnedPluginManager:
+    def __init__(self, manager: 'PluginManager', namespace: PluginNamespace):
+        self.__manager = manager
+        self.__namespace = namespace
+
+    def update_plugin_setting(self, plugin_guid: str, key: str, value: Any) -> bool:
+        if plugin_guid != self.__namespace.guid:
+            raise ValueError('Plugin settings must belong to their owner')
+        return self.__manager.update_plugin_setting(self.__namespace.guid, key, value)
+
+    def republish_settings(self) -> None:
+        self.__manager.republish_settings()
+
+
 class PluginHelper():
     """Contains all built-inservices and managers that can be used by plugins"""
 
-    _plugin_manager: 'PluginManager'
+    _plugin_manager: 'PluginManager | _OwnedPluginManager'
     _assistant: Assistant
     _prompt_generator: PromptGenerator
     _keys: EDKeys
@@ -59,10 +76,23 @@ class PluginHelper():
         self._action_manager = action_manager
         self._config = config
         self._assistant = assistant
+        self._namespace: PluginNamespace | None = None
 
-    def get_plugin_data_path(self, plugin_manifest: 'PluginManifest') -> str:
+    def _for_plugin(self, namespace: PluginNamespace) -> 'PluginHelper':
+        helper = copy(self)
+        helper._namespace = namespace
+        helper._plugin_manager = _OwnedPluginManager(self._plugin_manager, namespace)
+        helper._config = deepcopy(self._config)
+        helper._config['plugin_settings'] = {namespace.guid: helper._config.get('plugin_settings', {}).get(namespace.guid, {})}
+        return helper
+
+    def get_plugin_data_path(self, plugin_manifest: 'PluginManifest | None' = None) -> str:
         """Get a plugin data path, from the plugin data folder"""
-        plugin_data_path = os.path.abspath(os.path.join(self.PLUGIN_DATA_PATH, plugin_manifest.guid))
+        if self._namespace is None:
+            raise RuntimeError('Plugin helper is not bound to a registered plugin')
+        if plugin_manifest is not None and plugin_manifest.guid != self._namespace.guid:
+            raise ValueError('Plugin data paths must belong to their owner')
+        plugin_data_path = os.path.abspath(os.path.join(self.PLUGIN_DATA_PATH, self._namespace.guid))
         if not os.path.exists(plugin_data_path):
             os.makedirs(plugin_data_path, exist_ok=True)
         return plugin_data_path
@@ -110,7 +140,9 @@ class PluginHelper():
         """
         if not isinstance(event, PluginEvent):
             raise ValueError("Event must be of type PluginEvent")
-        self._event_manager.incoming.put(event)
+        if self._namespace is None:
+            raise RuntimeError('Plugin helper is not bound to a registered plugin')
+        self._event_manager.incoming.put(replace(event, plugin_event_name=self._namespace.event_name(event.plugin_event_name)))
 
     def send_key(self, key_name: str, *args, **kwargs):
         """Send a key"""
@@ -123,13 +155,18 @@ class PluginHelper():
         :param should_reply_check: A callable that takes a PluginEvent and returns True if the assistant should reply to it, False otherwise
         :param prompt_generator: A callable that takes a PluginEvent and returns a string prompt to add to the assistant conversation
         """
+        if self._namespace is None:
+            raise RuntimeError('Plugin helper is not bound to a registered plugin')
+        scoped_name = self._namespace.event_name(name)
+        local_name = scoped_name.removeprefix(f'{self._namespace.guid}.')
+
         def _prompt_handler(event: Event) -> str| None:
             if not isinstance(event, PluginEvent):
                 return None
-            if event.plugin_event_name != name:
+            if event.plugin_event_name != scoped_name:
                 return None
             try:
-                response = prompt_generator(event)
+                response = prompt_generator(replace(event, plugin_event_name=local_name))
             except Exception as e:
                 log('error', f"Plugin prompt_generator raised an exception: {e}")
                 return None
@@ -139,10 +176,10 @@ class PluginHelper():
         def _should_reply_check(event: Event, context: dict[str, Any]) -> bool | None:
             if not isinstance(event, PluginEvent):
                 return None
-            if event.plugin_event_name != name:
+            if event.plugin_event_name != scoped_name:
                 return None
             try:
-                return should_reply_check(event)
+                return should_reply_check(replace(event, plugin_event_name=local_name))
             except Exception as e:
                 log('error', f"Plugin should_reply_check raised an exception: {e}")
                 return False

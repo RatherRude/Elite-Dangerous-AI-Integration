@@ -23,13 +23,13 @@ class DashboardPlugin(PluginBase):
         self.settings_config = {'key': guid, 'label': 'Dashboard', 'icon': 'dashboard', 'grids': []}
 
     def get_ui_views(self):
-        return [{'id': 'dashboard', 'label': f'plugin.{self.plugin_manifest.guid}.title', 'sections': [
+        return [{'id': 'dashboard', 'label': '@title', 'sections': [
             {'key': 'overview', 'label': 'Overview', 'content': [{'type': 'text', 'text': {'text': str(self.count)}}]},
             {'key': 'details', 'label': 'Details', 'grids': []},
         ]}]
 
     def get_ui_translations(self):
-        return {lang: {'plugin': {self.plugin_manifest.guid: {'title': title}}}
+        return {lang: {'title': title}
                 for lang, title in [('en', 'Dashboard'), ('fr', 'Tableau de bord')]}
 
     def on_ui_action(self, action, payload):
@@ -70,7 +70,8 @@ def test_plugins_register_same_local_view_id_without_collision_and_publish_trans
     register(manager, 'beta-guid')
     assert set(manager.get_ui_targets()) == {'plugin:alpha-guid:dashboard', 'plugin:beta-guid:dashboard'}
     contributions = next(payload for kind, payload in reversed(emitted) if kind == 'plugin_ui')['plugins']
-    assert contributions['alpha-guid']['translations']['fr']['plugin']['alpha-guid']['title'] == 'Tableau de bord'
+    assert contributions['alpha-guid']['translations']['fr']['title'] == 'Tableau de bord'
+    assert contributions['alpha-guid']['views'][0]['label'] == 'plugin.alpha-guid.title'
     assert manager.config == {'plugin_settings': {}}
 
 

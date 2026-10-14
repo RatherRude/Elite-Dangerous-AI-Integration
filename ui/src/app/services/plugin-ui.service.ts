@@ -31,7 +31,7 @@ export class PluginUIService {
         for (const [guid, contribution] of Object.entries(message["plugins"] ?? {}) as [string, {views: PluginUIView[]; translations: Record<string, object>}][]) {
           for (const [lang, translations] of Object.entries(contribution.translations)) {
             this.languages.add(lang);
-            this.translate.setTranslation(lang, translations, true);
+            this.translate.setTranslation(lang, {plugin: {[guid]: translations}}, true);
           }
           views.push(...contribution.views.map(view => ({...view, pluginGuid: guid, target: `plugin:${guid}:${view.id}`})));
         }

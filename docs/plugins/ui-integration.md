@@ -39,15 +39,24 @@ Plugins are instantiated before the assistant starts. Settings, translations,
 and view definitions are registered during configuration. Runtime services are
 provided only through `on_chat_start(helper)` after **Run**.
 
+At registration, the core validates and freezes a namespace from the loaded
+manifest. Duplicate namespaces are rejected. Settings ownership, translations,
+UI routing, runtime helpers and data directories use this registry rather than
+plugin-supplied ownership fields or later manifest changes. This is API-level
+isolation for in-process Python plugins, not a process sandbox.
+
 | `PluginBase` method | Contract |
 | --- | --- |
+| `on_registered()` | Called once after namespace assignment; initialize configuration-state data using `get_plugin_data_path()`. |
+| `get_plugin_data_path()` | Return the core-owned data directory before or during Run. |
+| `update_setting(key, value)` | Persist a flat local setting in this plugin's section. |
 | `get_ui_views() -> list[PluginUIView]` | Return the current views. The default is an empty list. |
 | `get_ui_settings() -> PluginSettings \| None` | Return the exported settings schema. Defaults to `settings_config`; override to convert internal data to generic presentation. |
 | `get_ui_translations() -> dict[str, dict[str, Any]]` | Return language dictionaries. Defaults to `{}`. |
 | `on_ui_action(action, payload) -> Any` | Handle an interaction and return a JSON-serializable result, or raise an error. |
 | `publish_ui()` | Refresh the plugin's view/translation contribution and broadcast the current UI registry. |
 | `publish_settings()` | Refresh and broadcast settings schemas. |
-| `get_app_config()` | Return a shallow copy of the current application configuration, or `{}` before registration. |
+| `get_app_config()` | Return a detached copy of application configuration with only this plugin's settings section, or `{}` before registration. |
 
 `publish_ui()` and `publish_settings()` are available after settings registration,
 including before Run. Before registration, they do nothing. They broadcast
@@ -112,7 +121,7 @@ A `UIText` supports:
 
 ```python
 {
-    "key": f"plugin.{guid}.missing",
+    "key": "@missing",
     "params": {
         "resource": {"localized": {"en": "Iron", "fr": "Fer"}},
         "count": 2,
@@ -126,21 +135,24 @@ resolved before translation interpolation. For the text itself, a known key wins
 otherwise the renderer tries the current language's `localized` value, its English
 value, then `text`. An unknown key without a fallback remains visible as a key.
 
-Return dictionaries under `plugin.<manifest-guid>` to prevent translation-key
-collisions. For example:
+Use `@local.key` for plugin-owned translation references and return local
+dictionaries. The core qualifies presentation references, including nested
+`UIText` parameters, as `plugin.<registered-guid>.local.key`. It does not rewrite
+literal text, action payloads, setting values or option values. Core keys such as
+`common.cancel` remain available. For example:
 
 ```python
 def get_ui_translations(self):
-    guid = self.plugin_manifest.guid
     return {
-        "en": {"plugin": {guid: {"title": "Dashboard", "missing": "{{resource}}: {{count}} missing"}}},
-        "fr": {"plugin": {guid: {"title": "Tableau de bord", "missing": "{{resource}} : {{count}} manquants"}}},
+        "en": {"title": "Dashboard", "missing": "{{resource}}: {{count}} missing"},
+        "fr": {"title": "Tableau de bord", "missing": "{{resource}} : {{count}} manquants"},
     }
 ```
 
 Ship these translations with the plugin, for example in a JSON file loaded by
 the hook. The manager sends the initial `plugin_ui` contribution before settings.
-The frontend merges translations for each language and clears previous plugin
+The frontend wraps each local dictionary in the owner supplied by the registry,
+then merges translations for each language and clears previous plugin
 contributions when a new registry replaces them or the backend restarts.
 
 Use translated text for UI chrome and status messages. Literal fallbacks are
@@ -165,13 +177,13 @@ settings tabs explicitly:
 
 ```python
 {
-    "key": guid,
-    "label": f"plugin.{guid}.title",
+    "key": "settings",
+    "label": "@title",
     "icon": "dashboard",
     "grids": [...],
     "tabs": [
-        {"key": "general", "label": f"plugin.{guid}.general", "grids": ["options", "status"]},
-        {"key": "library", "label": f"plugin.{guid}.library", "grids": ["import", "items"]},
+        {"key": "general", "label": "@general", "grids": ["options", "status"]},
+        {"key": "library", "label": "@library", "grids": ["import", "items"]},
     ],
 }
 ```
@@ -319,17 +331,16 @@ class DashboardPlugin(PluginBase):
         super().__init__(plugin_manifest)
         self._helper = None
         self._system = ""
-        self._prefix = f"plugin.{plugin_manifest.guid}"
         self.settings_config = {
-            "key": plugin_manifest.guid,
-            "label": f"{self._prefix}.title",
+            "key": "settings",
+            "label": "@title",
             "icon": "dashboard",
             "grids": [{
                 "key": "general",
-                "label": f"{self._prefix}.general",
+                "label": "@general",
                 "fields": [{
                     "key": "refresh",
-                    "label": f"{self._prefix}.refresh",
+                    "label": "@refresh",
                     "type": "button",
                     "readonly": False,
                     "placeholder": None,
@@ -338,43 +349,42 @@ class DashboardPlugin(PluginBase):
             }],
             "tabs": [{
                 "key": "general",
-                "label": f"{self._prefix}.general",
+                "label": "@general",
                 "grids": ["general"],
             }],
         }
 
     def get_ui_translations(self):
-        guid = self.plugin_manifest.guid
         return {
-            "en": {"plugin": {guid: {
+            "en": {
                 "title": "Dashboard", "general": "General", "overview": "Overview",
                 "refresh": "Refresh", "location": "Current system: {{system}}",
                 "unknown": "Unknown", "runtimeRequired": "Start the assistant first.",
-            }}},
-            "fr": {"plugin": {guid: {
+            },
+            "fr": {
                 "title": "Tableau de bord", "general": "Général", "overview": "Vue d’ensemble",
                 "refresh": "Actualiser", "location": "Système actuel : {{system}}",
                 "unknown": "Inconnu", "runtimeRequired": "Démarrez d’abord l’assistant.",
-            }}},
+            },
         }
 
     def get_ui_views(self) -> list[PluginUIView]:
-        system = {"text": self._system} if self._system else {"key": f"{self._prefix}.unknown"}
+        system = {"text": self._system} if self._system else {"key": "@unknown"}
         return [{
             "id": "dashboard",
-            "label": f"{self._prefix}.title",
+            "label": "@title",
             "description": "Shows the current system from existing runtime state.",
             "icon": "dashboard",
             "modes": ["running"],
             "sections": [{
                 "key": "overview",
-                "label": f"{self._prefix}.overview",
+                "label": "@overview",
                 "content": [
                     {"type": "text", "text": {
-                        "key": f"{self._prefix}.location", "params": {"system": system},
+                        "key": "@location", "params": {"system": system},
                     }},
                     {"type": "action", "action": "refresh",
-                     "text": {"key": f"{self._prefix}.refresh"}, "icon": "refresh"},
+                     "text": {"key": "@refresh"}, "icon": "refresh"},
                 ],
             }],
         }]
@@ -411,7 +421,7 @@ class DashboardPlugin(PluginBase):
         if action != "refresh":
             return super().on_ui_action(action, payload)
         if self._helper is None:
-            raise ValueError(f"{self._prefix}.runtimeRequired")
+            raise ValueError("@runtimeRequired")
         self._read_location()
         return {"updated": True}
 ```
@@ -424,30 +434,39 @@ No dashboard-specific changes are needed in the core or frontend.
 
 1. Replace hardcoded main-view imports/tabs with `get_ui_views()` contributions.
 2. Declare settings `tabs` instead of relying on host-side grid-name heuristics.
-3. Supply plugin translations through `get_ui_translations()` and scope keys to its GUID.
+3. Supply local dictionaries through `get_ui_translations()` and use `@local.key` references; the core assigns ownership.
 4. Convert domain list/progress data into `suffix`, `tone`, `count_labels`, and
    generic `details` rather than adding domain fields to the host's settings types.
 5. Generate grouped work content in the plugin rather than interpreting
    field-name prefixes in a shared Angular component.
 6. Use `publish_ui()`, `publish_settings()`, and `helper.get_current_state()`
    instead of mutating manager registries or reading private runtime fields.
-7. Put plugin-specific assistant guidance in its view/action descriptions or
+7. Replace explicit-GUID setting updates with `update_setting(key, value)`;
+   use local event names and parameterless data-path APIs. Move configuration
+   data initialization out of the constructor into `on_registered()`.
+8. Put plugin-specific assistant guidance in its view/action descriptions or
    status generator, then remove such references from built-in actions.
 
 Defaults preserve settings-only plugins and the existing settings button hook.
 The manifest and model-provider contracts are unchanged. Existing button hooks
 that accept only `key` remain supported when no inline-edit value is supplied.
+Legacy fully qualified translation references and dictionaries are accepted only
+for the registered owner. Cross-plugin references and contributions are rejected.
+The settings schema's top-level `key` is overwritten by the core. Legacy helper
+manager setting updates are restricted to the helper's registered owner.
 
 The current contract uses full registry snapshots and synchronous interactions.
 It does not register arbitrary JavaScript/Angular components, define an inter-plugin
-bus, or provide hot installation/unloading. Namespace conventions and Python/
-TypeScript types document the schema; runtime validation currently checks view IDs
-and the default button payload, rather than every nested content field.
+bus, or provide hot installation/unloading. Runtime validation checks namespace
+ownership, translation dictionaries/references, view IDs and the default button
+payload, rather than every nested content field.
 
 ## Validation
 
 Focused regression coverage:
 
+- `test/lib/test_plugin_namespace.py`: registration identity, duplicate namespaces,
+  isolated settings/data paths/events/translations, and local UI error references.
 - `test/lib/test_plugin_ui.py`: two plugins sharing local view IDs, owner routing,
   success/error results, event-driven publication, dynamic navigation, and no plugins.
 - `ui/src/app/services/plugin-ui.service.spec.ts`: translations, registry replacement,
