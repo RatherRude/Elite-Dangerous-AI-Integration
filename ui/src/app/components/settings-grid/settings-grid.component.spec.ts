@@ -116,3 +116,49 @@ describe("nested conditional settings", () => {
         expect(providerVoiceDisplayValue(ref, [provider], stored)).toBe("saved voice");
     });
 });
+
+describe("notification settings", () => {
+    beforeEach(async () => {
+        await TestBed.configureTestingModule({ imports: [SettingsGridComponent, SettingsFieldComponent, NoopAnimationsModule] }).compileComponents();
+    });
+
+    it("renders plugin-provided notification content and level", () => {
+        const fixture = TestBed.createComponent(SettingsFieldComponent);
+        fixture.componentInstance.field = {
+            key: "notice", label: "Plugin notice", type: "notification", level: "warning",
+            content: "Choose a replacement.",
+        } as any;
+        fixture.detectChanges();
+
+        const notification = fixture.nativeElement.querySelector(".notification-field.warning");
+        expect(notification.textContent).toContain("Plugin notice");
+        expect(notification.textContent).toContain("Choose a replacement.");
+    });
+
+    it("lets the plugin condition decide when and where to show a notification", () => {
+        const fixture = TestBed.createComponent(SettingsGridComponent);
+        const values: Record<string, unknown> = { model: "legacy-model" };
+        fixture.componentInstance.grid = {
+            key: "models", label: "Models", fields: [{
+                key: "model", label: "Model", type: "select", default_value: "supported-model",
+                select_options: [{ key: "supported-model", label: "Supported", value: "supported-model", disabled: false }],
+                multi_select: false,
+            }, {
+                key: "legacy-model-notice", type: "condition",
+                condition: { key: "model", operator: "not_in", value: ["supported-model"] },
+                fields: [{
+                    key: "notice", label: null, type: "notification", level: "warning",
+                    content: "Plugin-selected warning.",
+                }],
+            }],
+        } as any;
+        fixture.componentInstance.getValue = (key, fallback) => values[key] ?? fallback;
+        fixture.componentInstance.setValue = (key, value) => { values[key] = value; };
+        fixture.detectChanges();
+        expect(fixture.nativeElement.querySelector(".notification-field")).not.toBeNull();
+
+        values["model"] = "supported-model";
+        fixture.detectChanges();
+        expect(fixture.nativeElement.querySelector(".notification-field")).toBeNull();
+    });
+});

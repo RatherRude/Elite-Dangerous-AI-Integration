@@ -11,6 +11,7 @@ from lib.PluginBase import PluginBase, PluginManifest
 from plugins.ProviderPluginHelpers import (
     api_key as _shared_api_key,
     float_setting,
+    notification,
     number_field,
     paragraph as _paragraph,
     select_field,
@@ -48,14 +49,18 @@ OPENAI_MODELS = {
     "gpt-6-sol": OpenAIModelCapabilities(_EXTENDED, "medium"),
     "gpt-6.1-sol": OpenAIModelCapabilities(_EXTENDED[1:], "medium", temperature=False),
     "gpt-6-astra": OpenAIModelCapabilities(_EXTENDED[1:], "medium", temperature=False),
+    "gpt-5.6-luna": OpenAIModelCapabilities(_EXTENDED, "medium"),
+    "gpt-5.6-terra": OpenAIModelCapabilities(_EXTENDED, "medium"),
+    "gpt-5.6-sol": OpenAIModelCapabilities(_EXTENDED, "medium"),
     "gpt-5.4-mini": OpenAIModelCapabilities(_REASONING, "none", temperature=False),
     "gpt-5.4": OpenAIModelCapabilities(_REASONING, "none"),
+    "gpt-5.4-pro": OpenAIModelCapabilities(("medium", "high", "xhigh"), "medium", temperature=False, fast=False),
 }
 
 
 def selected_model(settings: dict[str, Any], key: str, default: str) -> str:
     value = settings.get(key)
-    return value if isinstance(value, str) and value in OPENAI_MODELS else default
+    return value if isinstance(value, str) and value else default
 
 
 def api_key(settings: dict[str, Any], prefix: str) -> str:
@@ -84,9 +89,21 @@ def condition_field(key: str, setting_key: str, operator: str, value: Any,
             "condition": {"key": setting_key, "operator": operator, "value": value, "default_show": default_show}}
 
 
+def unsupported_model_field(key: str, models: list[str]) -> dict[str, Any]:
+    return condition_field(f"{key}_unsupported", key, "not_in", models, [
+        notification(
+            "This model is not in COVAS:NEXT's recommended OpenAI model list. It will remain active until you select a replacement.",
+            f"{key}_unsupported_notice", level="warning",
+        ),
+    ])
+
+
 def language_fields(prefix: str, model: str, effort: str) -> list[dict[str, Any]]:
     model_key, effort_key = f"{prefix}_model", f"{prefix}_reasoning_effort"
-    fields = [select_field(model_key, "Model", model, list(OPENAI_MODELS))]
+    fields = [
+        select_field(model_key, "Model", model, list(OPENAI_MODELS)),
+        unsupported_model_field(model_key, list(OPENAI_MODELS)),
+    ]
     for name, capabilities in OPENAI_MODELS.items():
         default_effort = selected_effort(None, effort, capabilities)
         reasoning_field = select_field(effort_key, "Reasoning Effort", default_effort, ["default", *capabilities.efforts])
@@ -136,7 +153,9 @@ class OpenAIProviderLLMModel(OpenAIResponsesLLMModel):
 
     @override
     def _prepare_request_params(self, params: dict[str, Any]) -> dict[str, Any]:
-        capabilities = OPENAI_MODELS[self.model_name]
+        capabilities = OPENAI_MODELS.get(self.model_name)
+        if capabilities is None:
+            return params
         effort = self.reasoning_effort
         effective = capabilities.default_effort if effort == "default" else effort
         if not capabilities.temperature or effective != "none":
@@ -216,18 +235,10 @@ class OpenAIPlugin(PluginBase):
             ("vlm", OPENAI_VLM_MODEL, "none"),
         ):
             key = f"{prefix}_model"
-            if key in settings:
-                settings[key] = selected_model(settings, key, default)
             reasoning_key = f"{prefix}_reasoning_effort"
-            if reasoning_key in settings:
-                model = selected_model(settings, key, default)
+            model = selected_model(settings, key, default)
+            if reasoning_key in settings and model in OPENAI_MODELS:
                 settings[reasoning_key] = selected_effort(settings[reasoning_key], effort, OPENAI_MODELS[model])
-        if "stt_model" in settings:
-            settings["stt_model"] = OPENAI_STT_MODEL
-        if "tts_model" in settings:
-            settings["tts_model"] = OPENAI_TTS_MODEL
-        if "embedding_model" in settings and settings["embedding_model"] not in OPENAI_EMBEDDING_MODELS:
-            settings["embedding_model"] = OPENAI_EMBEDDING_MODEL
 
     @override
     def __init__(self, plugin_manifest: PluginManifest):
@@ -241,6 +252,7 @@ class OpenAIPlugin(PluginBase):
                 "settings_config": [{"key": "stt", "label": "OpenAI Speech-to-Text", "fields": [
                     *_account_fields(),
                     select_field("stt_model", "Model", OPENAI_STT_MODEL, [OPENAI_STT_MODEL]),
+                    unsupported_model_field("stt_model", [OPENAI_STT_MODEL]),
                     text_field("stt_language", "Languages (comma-separated codes)", ""),
                     text_field("stt_prompt", "Prompt", ""),
                 ]}],
@@ -250,6 +262,7 @@ class OpenAIPlugin(PluginBase):
                 "settings_config": [{"key": "tts", "label": "OpenAI Text-to-Speech", "fields": [
                     *_account_fields(),
                     select_field("tts_model", "Model", OPENAI_TTS_MODEL, [OPENAI_TTS_MODEL]),
+                    unsupported_model_field("tts_model", [OPENAI_TTS_MODEL]),
                 ]}],
                 "voice_settings_config": [{"key": "voice", "label": "OpenAI Voice", "fields": [
                     select_field("voice", "Voice", "nova", [
@@ -265,6 +278,7 @@ class OpenAIPlugin(PluginBase):
                     *_account_fields(),
                     select_field("embedding_model", "Model", OPENAI_EMBEDDING_MODEL,
                                  OPENAI_EMBEDDING_MODELS),
+                    unsupported_model_field("embedding_model", OPENAI_EMBEDDING_MODELS),
                 ]}],
             },
         ]
@@ -294,12 +308,17 @@ class OpenAIPlugin(PluginBase):
             }
             model, reasoning = defaults[prefix]
             model = selected_model(settings, f"{prefix}_model", model)
+            capabilities = OPENAI_MODELS.get(model)
+            reasoning_effort = (
+                selected_effort(settings.get(f"{prefix}_reasoning_effort"), reasoning, capabilities)
+                if capabilities else string_setting(settings, f"{prefix}_reasoning_effort", reasoning)
+            )
             return OpenAIProviderLLMModel(
                 base_url=OPENAI_API_URL,
                 api_key=api_key(settings, prefix),
                 model_name=model,
                 temperature=float_setting(settings, f"{prefix}_temperature", 1.0),
-                reasoning_effort=selected_effort(settings.get(f"{prefix}_reasoning_effort"), reasoning, OPENAI_MODELS[model]),
+                reasoning_effort=reasoning_effort,
                 verbosity=string_setting(settings, f"{prefix}_verbosity", "low"),
                 service_tier=string_setting(settings, f"{prefix}_service_tier", "default"),
                 provider_name="openai",
@@ -307,7 +326,7 @@ class OpenAIPlugin(PluginBase):
         if provider_id == "stt":
             return OpenAITranscribeModel(
                 OPENAI_API_URL, api_key(settings, "stt"),
-                OPENAI_STT_MODEL,
+                string_setting(settings, "stt_model", OPENAI_STT_MODEL),
                 str(settings.get("stt_language") or "") or None,
                 str(settings.get("stt_prompt") or "") or None,
                 provider_name="openai",
@@ -315,13 +334,12 @@ class OpenAIPlugin(PluginBase):
         if provider_id == "tts":
             return OpenAITTSModel(
                 OPENAI_API_URL, api_key(settings, "tts"),
-                OPENAI_TTS_MODEL,
+                string_setting(settings, "tts_model", OPENAI_TTS_MODEL),
                 provider_name="openai",
             )
         if provider_id == "embedding":
-            model = settings.get("embedding_model")
             return OpenAIEmbeddingModel(
                 OPENAI_API_URL, api_key(settings, "embedding"),
-                model if model in OPENAI_EMBEDDING_MODELS else OPENAI_EMBEDDING_MODEL,
+                string_setting(settings, "embedding_model", OPENAI_EMBEDDING_MODEL),
             )
         raise ValueError(f"Unknown OpenAI model provider: {provider_id}")

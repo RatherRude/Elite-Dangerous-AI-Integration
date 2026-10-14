@@ -259,9 +259,9 @@ def test_default_config_uses_plugins_and_has_no_legacy_provider_settings(monkeyp
 @pytest.mark.parametrize("version", [None, 5, 12, 21])
 def test_legacy_json_config_loads_then_migrates_through_current_provider_plugins(version, monkeypatch, tmp_path) -> None:
     from lib.PluginManager import PluginManager
-    from plugins.OpenAIPlugin import OPENAI_PLUGIN_GUID, OPENAI_LLM_MODEL, OPENAI_STT_MODEL, OpenAIPlugin
+    from plugins.OpenAIPlugin import OPENAI_PLUGIN_GUID, OpenAIPlugin
     from plugins.GoogleAIStudioPlugin import (
-        GOOGLE_AI_STUDIO_PLUGIN_GUID, GOOGLE_AGENT_LLM_MODEL, GOOGLE_VLM_MODEL, GOOGLE_TTS_MODEL, GoogleAIStudioPlugin,
+        GOOGLE_AI_STUDIO_PLUGIN_GUID, GoogleAIStudioPlugin,
     )
 
     third_party = {"settings_version": 9, "token": "keep", "nested": {"enabled": False}}
@@ -309,17 +309,17 @@ def test_legacy_json_config_loads_then_migrates_through_current_provider_plugins
     assert google.settings["settings_version"] == GoogleAIStudioPlugin.settings_schema_version
     assert openai.settings["api_key"] == "openai-secret"
     assert google.settings["api_key"] == "google-secret"
-    assert openai.settings["llm_model"] == OPENAI_LLM_MODEL
+    assert openai.settings["llm_model"] == "gpt-5.4-nano"
     assert openai.settings["llm_temperature"] == 0.0
-    assert openai.settings["stt_model"] == OPENAI_STT_MODEL
+    assert openai.settings["stt_model"] == "gpt-4o-mini-transcribe"
     assert openai.settings["stt_language"] == "en"
     assert openai.settings["stt_prompt"] == "Elite Dangerous"
-    assert google.settings["agent_llm_model"] == GOOGLE_AGENT_LLM_MODEL
+    assert google.settings["agent_llm_model"] == "gemini-3.1-flash-lite-preview"
     assert google.settings["agent_llm_custom_temperature"] is True
-    assert google.settings["vlm_model"] == GOOGLE_VLM_MODEL
+    assert google.settings["vlm_model"] == "gemini-2.5-flash"
     assert google.settings["vlm_temperature"] == 0.0
     assert google.settings["vlm_custom_temperature"] is True
-    assert google.settings["tts_model"] == GOOGLE_TTS_MODEL
+    assert google.settings["tts_model"] == "gemini-3.8-flash-lite-tts"
     assert config["plugin_settings"]["third-party"] == third_party
     assert config["characters"][0]["tts_voice_settings"][config["tts_provider"]] == voice
     assert openai.create_model("llm", openai.settings).client.api_key == "openai-secret"

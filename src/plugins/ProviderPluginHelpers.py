@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, List, Literal, Optional
 
 from lib.Logger import ModelUsageStats
 from lib.Models import OpenAILLMModel
@@ -98,6 +98,24 @@ def paragraph(content: str) -> dict[str, Any]:
         "readonly": True,
         "placeholder": None,
         "content": content,
+    }
+
+
+def notification(
+    content: str,
+    key: str,
+    *,
+    level: Literal["info", "warning", "error"] = "info",
+    label: str | None = None,
+) -> dict[str, Any]:
+    return {
+        "key": key,
+        "label": label,
+        "type": "notification",
+        "readonly": True,
+        "placeholder": None,
+        "content": content,
+        "level": level,
     }
 
 

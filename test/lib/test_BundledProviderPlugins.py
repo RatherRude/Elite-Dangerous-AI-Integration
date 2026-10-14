@@ -9,6 +9,7 @@ from unittest.mock import MagicMock, patch
 import httpx
 import pytest
 import speech_recognition as sr
+from openai import OpenAI
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
 
@@ -31,7 +32,9 @@ from lib.PluginSettingDefinitions import resolve_voice_settings, settings_fields
 from plugins.EdgeTTSPlugin import EDGE_TTS_PLUGIN_GUID, EdgeTTSModel, EdgeTTSPlugin
 from plugins.GoogleAIStudioPlugin import (
     GOOGLE_AI_STUDIO_API_URL,
+    GOOGLE_AI_STUDIO_OPENAI_URL,
     GOOGLE_AI_STUDIO_PLUGIN_GUID,
+    GOOGLE_MODELS,
     GOOGLE_STT_MODEL,
     GOOGLE_TRANSCRIBE_MODEL,
     GOOGLE_TTS_VOICE,
@@ -42,7 +45,7 @@ from plugins.GoogleAIStudioPlugin import (
 )
 from plugins.MistralPlugin import MISTRAL_API_URL, MISTRAL_PLUGIN_GUID, MistralPlugin
 from plugins.OpenAICompatiblePlugin import OPENAI_COMPATIBLE_PLUGIN_GUID, OpenAICompatiblePlugin
-from plugins.OpenAIPlugin import OPENAI_API_URL, OPENAI_PLUGIN_GUID, OpenAIPlugin
+from plugins.OpenAIPlugin import OPENAI_API_URL, OPENAI_MODELS, OPENAI_PLUGIN_GUID, OpenAIPlugin
 from plugins.OpenRouterPlugin import OPENROUTER_API_URL, OPENROUTER_PLUGIN_GUID, OpenRouterPlugin
 from plugins.ProviderPluginHelpers import ToolToggleOpenAILLMModel, api_key
 
@@ -98,7 +101,7 @@ def test_bundled_tts_providers_define_character_scoped_voice_settings() -> None:
 def test_fixed_providers_do_not_expose_or_accept_endpoint_overrides() -> None:
     fixed_providers = (
         (OpenAIPlugin(manifest(OPENAI_PLUGIN_GUID, "OpenAI")), "llm_endpoint", OPENAI_API_URL),
-        (GoogleAIStudioPlugin(manifest(GOOGLE_AI_STUDIO_PLUGIN_GUID, "Google")), "llm_endpoint", GOOGLE_AI_STUDIO_API_URL),
+        (GoogleAIStudioPlugin(manifest(GOOGLE_AI_STUDIO_PLUGIN_GUID, "Google")), "llm_endpoint", GOOGLE_AI_STUDIO_OPENAI_URL),
         (OpenRouterPlugin(manifest(OPENROUTER_PLUGIN_GUID, "OpenRouter")), "llm_endpoint", OPENROUTER_API_URL),
         (MistralPlugin(manifest(MISTRAL_PLUGIN_GUID, "Mistral")), "endpoint", MISTRAL_API_URL),
     )
@@ -165,6 +168,30 @@ def test_google_provider_definitions_and_models() -> None:
 
     detection = plugin.model_providers[0]["api_key_detection"]["provider_selections"]
     assert detection["tts_provider"] == f"plugin:{EDGE_TTS_PLUGIN_GUID}:tts"
+
+
+@pytest.mark.parametrize("plugin_type,guid,cases", [
+    (OpenAIPlugin, OPENAI_PLUGIN_GUID, [
+        ("llm", "llm_model", "gpt-custom"),
+        ("stt", "stt_model", "whisper-custom"),
+        ("tts", "tts_model", "tts-custom"),
+        ("embedding", "embedding_model", "embedding-custom"),
+    ]),
+    (GoogleAIStudioPlugin, GOOGLE_AI_STUDIO_PLUGIN_GUID, [
+        ("llm", "llm_model", "gemini-custom"),
+        ("stt", "stt_model", "gemini-audio-custom"),
+        ("tts", "tts_model", "gemini-tts-custom"),
+        ("embedding", "embedding_model", "gemini-embedding-custom"),
+    ]),
+])
+def test_restricted_providers_continue_using_unlisted_models(plugin_type, guid, cases) -> None:
+    plugin = plugin_type(manifest(guid, "Provider"))
+    for provider_id, setting_key, model_name in cases:
+        model = plugin.create_model(provider_id, {setting_key: model_name})
+        assert model.model_name == model_name
+        if provider_id == "llm":
+            params = capture_llm_request(model, responses=plugin_type is OpenAIPlugin)
+            assert params["model"] == model_name
 
 
 def test_google_transcribe_uses_interactions() -> None:
@@ -358,32 +385,94 @@ def test_curated_language_dropdowns_and_settings_migration() -> None:
             model_field = next(field for field in provider["settings_config"][0]["fields"] if field["key"].endswith("_model"))
             assert model_field["type"] == "select"
             values = [option["value"] for option in model_field["select_options"]]
-            assert not any("codex" in value or "preview" in value or "pro" in value for value in values)
+            assert not any("codex" in value or "preview" in value for value in values)
             assert "gpt-5.4-nano" not in values
             assert not any(value.startswith("gemini-2.5") for value in values)
+            notices = [
+                element for element in provider["settings_config"][0]["fields"]
+                if element["type"] == "condition"
+                and element["condition"]["key"] == model_field["key"]
+                and element["condition"]["operator"] == "not_in"
+            ]
+            assert len(notices) == 1
+            assert notices[0]["condition"]["value"] == values
+            assert notices[0]["fields"][0]["type"] == "notification"
+            assert notices[0]["fields"][0]["level"] == "warning"
+    assert set(OPENAI_MODELS) == {
+        "gpt-6-luna", "gpt-6-sol", "gpt-6.1-sol", "gpt-6-astra",
+        "gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol",
+        "gpt-5.4-mini", "gpt-5.4", "gpt-5.4-pro",
+    }
+    assert set(GOOGLE_MODELS) == {
+        "gemini-4-argon", "gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite",
+        "gemma-4-31b-it", "gemma-4-26b-a4b-it",
+    }
     settings = {"llm_model": "gpt-5.4-nano", "llm_reasoning_effort": "minimal"}
     openai.migrate_settings(settings, 0)
-    assert settings == {"llm_model": "gpt-6-luna", "llm_reasoning_effort": "none"}
+    assert settings == {"llm_model": "gpt-5.4-nano", "llm_reasoning_effort": "minimal"}
     settings = {"llm_model": "gemini-3.1-flash-lite-preview", "llm_reasoning_effort": "none", "llm_temperature": 0.5}
     google.migrate_settings(settings, 0)
-    assert settings["llm_model"] == "gemini-3.5-flash-lite"
-    assert settings["llm_reasoning_effort"] == "minimal"
+    assert settings["llm_model"] == "gemini-3.1-flash-lite-preview"
+    assert settings["llm_reasoning_effort"] == "none"
     assert settings["llm_custom_temperature"] is True
 
 
 def test_google_native_thinking_and_temperature_opt_in() -> None:
     plugin = GoogleAIStudioPlugin(manifest(GOOGLE_AI_STUDIO_PLUGIN_GUID, "Google"))
     params = capture_llm_request(plugin.create_model("llm", {"llm_temperature": 0.2}))
-    assert params["extra_body"] == {"google": {"thinking_config": {"thinking_level": "minimal"}}}
+    assert params["extra_body"] == {
+        "extra_body": {"google": {"thinking_config": {"thinking_level": "minimal"}}}
+    }
     assert "reasoning_effort" not in params and "temperature" not in params
     params = capture_llm_request(plugin.create_model("llm", {
         "llm_model": "gemini-3.8-flash", "llm_reasoning_effort": "minimal",
         "llm_custom_temperature": True, "llm_temperature": 0.5,
     }))
-    assert params["extra_body"]["google"]["thinking_config"]["thinking_level"] == "low"
+    assert params["extra_body"]["extra_body"]["google"]["thinking_config"]["thinking_level"] == "low"
     assert params["temperature"] == 0.5
     params = capture_llm_request(plugin.create_model("llm", {"llm_reasoning_effort": "default"}))
     assert "extra_body" not in params and "reasoning_effort" not in params
+    params = capture_llm_request(plugin.create_model("llm", {
+        "llm_model": "gemini-4-argon", "llm_reasoning_effort": "high",
+        "llm_custom_temperature": True, "llm_temperature": 0.5,
+    }))
+    assert params["model"] == "gemini-4-argon"
+    assert params["extra_body"]["extra_body"]["google"]["thinking_config"]["thinking_level"] == "high"
+    assert "temperature" not in params
+    params = capture_llm_request(plugin.create_model("llm", {
+        "llm_model": "gemma-4-26b-a4b-it", "llm_reasoning_effort": "minimal",
+    }))
+    assert params["model"] == "gemma-4-26b-a4b-it"
+    assert params["extra_body"]["extra_body"]["google"]["thinking_config"]["thinking_level"] == "minimal"
+
+
+def test_google_thinking_config_uses_documented_wire_format() -> None:
+    plugin = GoogleAIStudioPlugin(manifest(GOOGLE_AI_STUDIO_PLUGIN_GUID, "Google"))
+    model = plugin.create_model("llm", {
+        "llm_model": "gemini-3.8-flash", "llm_reasoning_effort": "low",
+    })
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        payload = json.loads(request.content)
+        assert "google" not in payload
+        assert payload["extra_body"] == {
+            "google": {"thinking_config": {"thinking_level": "low"}}
+        }
+        return httpx.Response(200, json={
+            "id": "test", "object": "chat.completion", "created": 0,
+            "model": "gemini-3.8-flash",
+            "choices": [{
+                "index": 0, "finish_reason": "stop",
+                "message": {"role": "assistant", "content": "ok"},
+            }],
+        })
+
+    model.client = OpenAI(
+        api_key="test", base_url=f"{GOOGLE_AI_STUDIO_OPENAI_URL}/",
+        http_client=httpx.Client(transport=httpx.MockTransport(handle)),
+    )
+    text, _, _ = model.generate([{"role": "user", "content": "Hello"}])
+    assert text == "ok"
 
 
 def test_voice_settings_merge_globals_nested_defaults_and_character_overrides() -> None:

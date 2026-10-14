@@ -160,11 +160,11 @@ def test_running_backup_import_applies_and_persists_plugin_migrations(
     settings = imported["plugin_settings"][guid]
     assert settings["settings_version"] == plugin_type.settings_schema_version
     assert settings["api_key"] == "imported-secret"
-    assert settings["llm_model"] == new_model
+    assert settings["llm_model"] == old_model
     assert settings["llm_temperature"] == 0.0
     if plugin_type is GoogleAIStudioPlugin:
         assert settings["llm_custom_temperature"] is True
-        assert settings["llm_reasoning_effort"] == "minimal"
+        assert settings["llm_reasoning_effort"] == "none"
     assert plugin.settings == settings
     assert saved == [imported]
     assert emitted == [("config", {"config": imported})]

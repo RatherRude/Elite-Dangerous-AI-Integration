@@ -13,7 +13,7 @@ export interface SettingsGrid {
     fields: SettingsElement[];
 }
 
-export type SettingsElement = TextSetting | TextAreaSetting | NumericalSetting | ToggleSetting | SelectSetting | ButtonSetting | ParagraphSetting | ErrorSetting | ConditionSetting;
+export type SettingsElement = TextSetting | TextAreaSetting | NumericalSetting | ToggleSetting | SelectSetting | ButtonSetting | ParagraphSetting | NotificationSetting | ErrorSetting | ConditionSetting;
 
 export interface SettingCondition {
     key: string;
@@ -79,13 +79,14 @@ export function voiceSettingsContext(
 export interface SettingBase {
     key: string;
     label: string;
-    type: "paragraph" | "number" | "toggle" | "text" | "textarea" | "select" | "button" | "error";
+    type: "paragraph" | "notification" | "number" | "toggle" | "text" | "textarea" | "select" | "button" | "error";
     readonly: boolean | null;
     placeholder: string | null;
     default_value?: any;
 
     // Paragraph & Error
     content: string;
+    level?: "info" | "warning" | "error";
 
     // Text & Textarea
     max_length: number | null;
@@ -125,6 +126,10 @@ export interface ToggleSetting extends SettingBase {
 export interface ButtonSetting extends SettingBase {}
 
 export interface ParagraphSetting extends SettingBase {}
+
+export interface NotificationSetting extends SettingBase {
+    level: "info" | "warning" | "error";
+}
 
 export interface ErrorSetting extends SettingBase {}
 

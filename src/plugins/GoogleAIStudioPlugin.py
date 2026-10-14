@@ -8,12 +8,13 @@ import speech_recognition as sr
 
 from lib.Models import LLMError, OpenAIEmbeddingModel, OpenAILLMModel, OpenAIMultiModalSTTModel, STTModel, TTSModel
 from lib.PluginBase import PluginBase, PluginManifest
-from plugins.ProviderPluginHelpers import api_key as _shared_api_key, bool_setting, float_setting, number_field, paragraph as _paragraph, select_field, string_setting, textarea_field, text_field, toggle_field
+from plugins.ProviderPluginHelpers import api_key as _shared_api_key, bool_setting, float_setting, notification, number_field, paragraph as _paragraph, select_field, string_setting, textarea_field, text_field, toggle_field
 from plugins.EdgeTTSPlugin import EDGE_TTS_PLUGIN_GUID
 
 
 GOOGLE_AI_STUDIO_PLUGIN_GUID = "51f1df0c-479d-4f0f-a585-57c08d9e1901"
 GOOGLE_AI_STUDIO_API_URL = "https://generativelanguage.googleapis.com/v1beta"
+GOOGLE_AI_STUDIO_OPENAI_URL = f"{GOOGLE_AI_STUDIO_API_URL}/openai"
 GOOGLE_LLM_MODEL = "gemini-3.5-flash-lite"
 GOOGLE_AGENT_LLM_MODEL = "gemini-3.5-flash-lite"
 GOOGLE_VLM_MODEL = "gemini-3.8-flash"
@@ -27,19 +28,24 @@ GOOGLE_EMBEDDING_MODEL = "gemini-embedding-001"
 @dataclass(frozen=True)
 class GoogleModelCapabilities:
     efforts: tuple[str, ...]
+    temperature: bool = True
 
 
 # Gemini 2.5 access is restricted to existing users; previews are omitted.
 # Source: https://ai.google.dev/gemini-api/docs/generate-content/thinking
 GOOGLE_MODELS = {
-    "gemini-3.5-flash-lite": GoogleModelCapabilities(("minimal", "low", "medium", "high")),
+    "gemini-4-argon": GoogleModelCapabilities(("low", "medium", "high"), temperature=False),
     "gemini-3.8-flash": GoogleModelCapabilities(("low", "medium", "high")),
+    "gemini-3.6-flash": GoogleModelCapabilities(("minimal", "low", "medium", "high")),
+    "gemini-3.5-flash-lite": GoogleModelCapabilities(("minimal", "low", "medium", "high")),
+    "gemma-4-31b-it": GoogleModelCapabilities(("minimal", "high")),
+    "gemma-4-26b-a4b-it": GoogleModelCapabilities(("minimal", "high")),
 }
 
 
 def selected_model(settings: dict[str, Any], key: str, default: str) -> str:
     value = settings.get(key)
-    return value if isinstance(value, str) and value in GOOGLE_MODELS else default
+    return value if isinstance(value, str) and value else default
 
 
 def api_key(settings: dict[str, Any], prefix: str) -> str:
@@ -67,9 +73,21 @@ def condition_field(key: str, setting_key: str, operator: str, value: Any,
             "condition": {"key": setting_key, "operator": operator, "value": value, "default_show": default_show}}
 
 
+def unsupported_model_field(key: str, models: list[str]) -> dict[str, Any]:
+    return condition_field(f"{key}_unsupported", key, "not_in", models, [
+        notification(
+            "This model is not in COVAS:NEXT's recommended Google AI Studio model list. It will remain active until you select a replacement.",
+            f"{key}_unsupported_notice", level="warning",
+        ),
+    ])
+
+
 def language_fields(prefix: str, model: str, effort: str) -> list[dict[str, Any]]:
     model_key, effort_key = f"{prefix}_model", f"{prefix}_reasoning_effort"
-    fields = [select_field(model_key, "Model", model, list(GOOGLE_MODELS))]
+    fields = [
+        select_field(model_key, "Model", model, list(GOOGLE_MODELS)),
+        unsupported_model_field(model_key, list(GOOGLE_MODELS)),
+    ]
     for name, capabilities in GOOGLE_MODELS.items():
         default_effort = selected_effort(None, effort, capabilities)
         reasoning_field = select_field(effort_key, "Thinking Level", default_effort, ["default", *capabilities.efforts])
@@ -82,18 +100,19 @@ def language_fields(prefix: str, model: str, effort: str) -> list[dict[str, Any]
         if "minimal" in capabilities.efforts:
             options.append(condition_field(f"{prefix}_{name}_minimal", effort_key, "eq", "minimal",
                            [paragraph("Minimal thinking favors lower latency but does not completely disable reasoning.",
-                                      f"{prefix}_{name}_minimal_hint")], default_show=default_effort == "minimal"))
+                                       f"{prefix}_{name}_minimal_hint")], default_show=default_effort == "minimal"))
+        if capabilities.temperature:
+            options.extend([
+                toggle_field(f"{prefix}_custom_temperature", "Customize temperature", False),
+                condition_field(f"{prefix}_sampling", f"{prefix}_custom_temperature", "eq", True, [
+                    number_field(f"{prefix}_temperature", "Temperature", 1.0, 0.0, 2.0, 0.01),
+                    condition_field(f"{prefix}_temperature_warning", f"{prefix}_temperature", "lt", 1.0,
+                                    [paragraph("Google recommends temperature 1.0. Lower values can cause looping or degraded reasoning.",
+                                               f"{prefix}_temperature_hint")]),
+                ]),
+            ])
         fields.append(condition_field(f"{prefix}_{name}_options", model_key, "eq", name, options,
-                                      default_show=name == model))
-    fields.extend([
-        toggle_field(f"{prefix}_custom_temperature", "Customize temperature", False),
-        condition_field(f"{prefix}_sampling", f"{prefix}_custom_temperature", "eq", True, [
-            number_field(f"{prefix}_temperature", "Temperature", 1.0, 0.0, 2.0, 0.01),
-            condition_field(f"{prefix}_temperature_warning", f"{prefix}_temperature", "lt", 1.0,
-                            [paragraph("Google recommends temperature 1.0. Lower values can cause looping or degraded reasoning.",
-                                       f"{prefix}_temperature_hint")]),
-        ]),
-    ])
+                                       default_show=name == model))
     return fields
 
 
@@ -108,7 +127,11 @@ class GoogleAIStudioLLMModel(OpenAILLMModel):
         if not self.custom_temperature:
             params.pop("temperature", None)
         if self.reasoning_effort and self.reasoning_effort != "default":
-            params["extra_body"] = {"google": {"thinking_config": {"thinking_level": self.reasoning_effort}}}
+            # The SDK consumes the outer extra_body argument; Google expects the
+            # inner extra_body property in the serialized compatibility payload.
+            params["extra_body"] = {
+                "extra_body": {"google": {"thinking_config": {"thinking_level": self.reasoning_effort}}}
+            }
         return params
 
     def _prepare_messages(self, messages: list[dict]) -> list[dict]:
@@ -297,20 +320,12 @@ class GoogleAIStudioPlugin(PluginBase):
             ("vlm", GOOGLE_VLM_MODEL, "low"),
         ):
             key = f"{prefix}_model"
-            if key in settings:
-                settings[key] = selected_model(settings, key, default)
             reasoning_key = f"{prefix}_reasoning_effort"
-            if reasoning_key in settings:
-                model = selected_model(settings, key, default)
+            model = selected_model(settings, key, default)
+            if reasoning_key in settings and model in GOOGLE_MODELS:
                 settings[reasoning_key] = selected_effort(settings[reasoning_key], effort, GOOGLE_MODELS[model])
             if settings.get(f"{prefix}_temperature") not in (None, 1.0, "", "1", "1.0"):
                 settings.setdefault(f"{prefix}_custom_temperature", True)
-        if "stt_model" in settings and settings["stt_model"] not in (GOOGLE_STT_MODEL, GOOGLE_TRANSCRIBE_MODEL):
-            settings["stt_model"] = GOOGLE_STT_MODEL
-        if "tts_model" in settings and settings["tts_model"] not in GOOGLE_TTS_MODELS:
-            settings["tts_model"] = GOOGLE_TTS_MODEL
-        if "embedding_model" in settings:
-            settings["embedding_model"] = GOOGLE_EMBEDDING_MODEL
 
     @override
     def __init__(self, plugin_manifest: PluginManifest):
@@ -334,6 +349,7 @@ class GoogleAIStudioPlugin(PluginBase):
                     *_fields(), select_field("stt_model", "Model", GOOGLE_STT_MODEL, [
                         GOOGLE_STT_MODEL, GOOGLE_TRANSCRIBE_MODEL,
                     ]),
+                    unsupported_model_field("stt_model", [GOOGLE_STT_MODEL, GOOGLE_TRANSCRIBE_MODEL]),
                     condition_field("stt_multimodal", "stt_model", "eq", GOOGLE_STT_MODEL, [
                         text_field("stt_prompt", "Transcription Context", ""),
                         paragraph("Audio is sent to a multimodal model with transcription instructions.", "stt_multimodal_hint"),
@@ -347,6 +363,7 @@ class GoogleAIStudioPlugin(PluginBase):
                 "kind": "tts", "id": "tts", "label": "Google AI Studio", "slots": ["tts"],
                 "settings_config": [{"key": "tts", "label": "Google AI Studio Text-to-Speech", "fields": [
                     *_fields(), select_field("tts_model", "Model", GOOGLE_TTS_MODEL, GOOGLE_TTS_MODELS),
+                    unsupported_model_field("tts_model", GOOGLE_TTS_MODELS),
                 ]}],
                 "voice_settings_config": [{"key": "voice", "label": "Google AI Studio Voice", "fields": [
                     text_field("voice", "Voice", GOOGLE_TTS_VOICE),
@@ -360,6 +377,7 @@ class GoogleAIStudioPlugin(PluginBase):
                 "kind": "embedding", "id": "embedding", "label": "Google AI Studio", "slots": ["embedding"],
                 "settings_config": [{"key": "embedding", "label": "Google AI Studio Embeddings", "fields": [
                     *_fields(), select_field("embedding_model", "Model", GOOGLE_EMBEDDING_MODEL, [GOOGLE_EMBEDDING_MODEL]),
+                    unsupported_model_field("embedding_model", [GOOGLE_EMBEDDING_MODEL]),
                 ]}],
             },
         ])
@@ -387,19 +405,26 @@ class GoogleAIStudioPlugin(PluginBase):
             }
             model, reasoning = defaults[prefix]
             model = selected_model(settings, f"{prefix}_model", model)
+            capabilities = GOOGLE_MODELS.get(model)
+            reasoning_effort = (
+                selected_effort(settings.get(f"{prefix}_reasoning_effort"), reasoning, capabilities)
+                if capabilities else string_setting(settings, f"{prefix}_reasoning_effort", reasoning)
+            )
             return GoogleAIStudioLLMModel(
-                GOOGLE_AI_STUDIO_API_URL, api_key(settings, prefix),
+                GOOGLE_AI_STUDIO_OPENAI_URL, api_key(settings, prefix),
                 model,
                 float_setting(settings, f"{prefix}_temperature", 1.0),
-                reasoning_effort=selected_effort(settings.get(f"{prefix}_reasoning_effort"), reasoning, GOOGLE_MODELS[model]),
-                custom_temperature=bool_setting(settings, f"{prefix}_custom_temperature", False),
+                reasoning_effort=reasoning_effort,
+                custom_temperature=(
+                    bool_setting(settings, f"{prefix}_custom_temperature", False)
+                    if capabilities is None or capabilities.temperature else False
+                ),
                 provider_name="google-ai-studio",
             )
         if provider_id == "stt":
             model = string_setting(settings, "stt_model", GOOGLE_STT_MODEL)
             if model == GOOGLE_TRANSCRIBE_MODEL:
                 return GoogleAIStudioTranscribeModel(api_key(settings, "stt"), model)
-            model = GOOGLE_STT_MODEL
             return OpenAIMultiModalSTTModel(
                 GOOGLE_AI_STUDIO_API_URL, api_key(settings, "stt"),
                 model,
@@ -407,14 +432,13 @@ class GoogleAIStudioPlugin(PluginBase):
                 provider_name="google-ai-studio",
             )
         if provider_id == "tts":
-            model = settings.get("tts_model")
             return GoogleAIStudioTTSModel(
                 api_key(settings, "tts"),
-                model if model in GOOGLE_TTS_MODELS else GOOGLE_TTS_MODEL,
+                string_setting(settings, "tts_model", GOOGLE_TTS_MODEL),
             )
         if provider_id == "embedding":
             return OpenAIEmbeddingModel(
-                GOOGLE_AI_STUDIO_API_URL, api_key(settings, "embedding"),
-                GOOGLE_EMBEDDING_MODEL,
+                GOOGLE_AI_STUDIO_OPENAI_URL, api_key(settings, "embedding"),
+                string_setting(settings, "embedding_model", GOOGLE_EMBEDDING_MODEL),
             )
         raise ValueError(f"Unknown Google AI Studio model provider: {provider_id}")

@@ -1343,29 +1343,11 @@ def migrate(data: dict) -> dict:
     if data['config_version'] < 12:
         data['config_version'] = 12
 
-        if data.get('vision_provider') == 'google-ai-studio' and data.get('vision_model_name') == 'gemini-2.0-flash':
-            data['vision_model_name'] = 'gemini-2.5-flash'
-        if data.get('stt_provider') == 'google-ai-studio' and data.get('stt_model_name') == 'gemini-2.0-flash-lite':
-            data['stt_model_name'] = 'gemini-2.5-flash-lite'
-
     if data['config_version'] < 13:
         data['config_version'] = 13
 
-        if data.get('llm_provider') == 'google-ai-studio':
-            data['llm_model_name'] = 'gemini-3.1-flash-lite-preview'
-        if data.get('agent_llm_provider') == 'google-ai-studio':
-            data['agent_llm_model_name'] = 'gemini-3.1-flash-lite-preview'
-        if data.get('vision_provider') == 'google-ai-studio':
-            data['vision_model_name'] = 'gemini-3.1-flash-lite-preview'
-
     if data['config_version'] < 14:
         data['config_version'] = 14
-
-        if data.get('agent_llm_provider') == 'openai' and data.get('agent_llm_model_name') in ['gpt-4.1-mini', 'gpt-5.4-nano']:
-            data['agent_llm_model_name'] = 'gpt-5.4-mini'
-            data['agent_llm_reasoning_effort'] = 'low'
-        if data.get('vision_provider') == 'openai' and data.get('vision_model_name') == 'gpt-4.1-mini':
-            data['vision_model_name'] = 'gpt-5.4-nano'
             
     if data['config_version'] < 15:
         data['config_version'] = 15

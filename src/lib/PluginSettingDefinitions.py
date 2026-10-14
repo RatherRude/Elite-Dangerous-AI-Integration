@@ -3,7 +3,7 @@ from typing import Any, Iterator, Literal, NotRequired, TypeAlias, TypedDict
 class SettingBase(TypedDict):
     key: str
     label: str | None
-    type: Literal['paragraph', 'text', 'textarea', 'toggle', 'number', 'select', 'button', 'error']
+    type: Literal['paragraph', 'notification', 'text', 'textarea', 'toggle', 'number', 'select', 'button', 'error']
     readonly: bool
     placeholder: str | None
 
@@ -53,6 +53,11 @@ class ParagraphSetting(SettingBase):
     """Used to display a paragraph of text. The label is used as the title."""
     content: str
 
+class NotificationSetting(SettingBase):
+    """Used to display a styled informational, warning, or error notification."""
+    content: str
+    level: Literal['info', 'warning', 'error']
+
 class ErrorSetting(SettingBase):
     """Used to display an error message."""
     content: str
@@ -71,7 +76,7 @@ class ConditionSetting(TypedDict):
     condition: SettingCondition
     fields: list['SettingsElement']
 
-SettingsField: TypeAlias = TextSetting | TextAreaSetting | SelectSetting | NumericalSetting | ToggleSetting | ButtonSetting | ParagraphSetting | ErrorSetting
+SettingsField: TypeAlias = TextSetting | TextAreaSetting | SelectSetting | NumericalSetting | ToggleSetting | ButtonSetting | ParagraphSetting | NotificationSetting | ErrorSetting
 SettingsElement: TypeAlias = SettingsField | ConditionSetting
 
 class SettingsGrid(TypedDict):
