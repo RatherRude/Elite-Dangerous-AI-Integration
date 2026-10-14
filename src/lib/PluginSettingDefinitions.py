@@ -1,11 +1,13 @@
 from typing import Literal, NotRequired, TypedDict
+from .PluginUIDefinitions import UINode
 
 class SettingBase(TypedDict):
     key: str
     label: str | None
-    type: Literal['paragraph', 'text', 'textarea', 'toggle', 'number', 'select', 'button', 'error']
+    type: Literal['paragraph', 'text', 'textarea', 'toggle', 'number', 'select', 'button', 'list', 'filter', 'error']
     readonly: bool
     placeholder: str | None
+    params: NotRequired[dict[str, str | int | float]]
 
 
 class SelectOption(TypedDict):
@@ -26,6 +28,12 @@ class TextSetting(SettingBase):
     default_value: str | None
     max_length: int | None
     min_length: int | None
+
+class FilterSetting(SettingBase):
+    """Used to display a compact live-filter input."""
+    default_value: NotRequired[str | None]
+    max_length: NotRequired[int | None]
+    min_length: NotRequired[int | None]
     hidden: bool
 
 class TextAreaSetting(SettingBase):
@@ -47,7 +55,7 @@ class ToggleSetting(SettingBase):
 
 class ButtonSetting(SettingBase):
     """Used to display a button that invokes the plugin's settings-button hook."""
-    pass
+    icon: NotRequired[str]
 
 class ParagraphSetting(SettingBase):
     """Used to display a paragraph of text. The label is used as the title."""
@@ -57,11 +65,57 @@ class ErrorSetting(SettingBase):
     """Used to display an error message."""
     content: str
 
+class ListAction(TypedDict):
+    """Defines an action button rendered on every row of a list field.
+
+    Clicking it invokes the plugin's settings-button hook with the key
+    ``<action>:<row key>``. With ``inline_edit`` the row title becomes an
+    editable input and the edited value is passed as the hook value.
+    """
+    action: str
+    icon: NotRequired[str]
+    label: NotRequired[str]
+    danger: NotRequired[bool]
+    inline_edit: NotRequired[bool]
+
+class ListRow(TypedDict):
+    """Defines one row of a list field. Rows sharing the same group value are
+    rendered under a common group header."""
+    key: str
+    title: str
+    title_key: NotRequired[str]
+    suffix: NotRequired[str]
+    meta: NotRequired[str]
+    params: NotRequired[dict[str, str | int | float]]
+    group: NotRequired[str]
+    pending: NotRequired[bool]
+    tone: NotRequired[str]
+    details: NotRequired[list[UINode]]
+
+class ListSetting(SettingBase):
+    """Used to display a list of rows, each carrying optional actions."""
+    items: list[ListRow]
+    row_actions: NotRequired[list[ListAction]]
+    count_labels: NotRequired[dict[str, str]]
+
+class GridHeaderAction(TypedDict):
+    """Defines an action button rendered next to a grid header."""
+    key: str
+    icon: NotRequired[str]
+    label: NotRequired[str]
+
+SettingField = TextSetting | TextAreaSetting | SelectSetting | NumericalSetting | ToggleSetting | ButtonSetting | ParagraphSetting | ErrorSetting | ListSetting | FilterSetting
+
+
 class SettingsGrid(TypedDict):
     """Defines a grid of settings for a plugin."""
     key: str
     label: str
-    fields: list[TextSetting | TextAreaSetting | SelectSetting | NumericalSetting | ToggleSetting | ButtonSetting | ParagraphSetting | ErrorSetting]
+    fields: list[SettingField]
+    content: NotRequired[list[UINode]]
+    collapsible: NotRequired[bool]
+    default_collapsed: NotRequired[bool]
+    header_action: NotRequired[GridHeaderAction]
 
 class PluginSettings(TypedDict):
     """Used to define the settings for a plugin."""
@@ -69,6 +123,13 @@ class PluginSettings(TypedDict):
     label: str
     icon: str
     grids: list[SettingsGrid]
+    tabs: NotRequired[list['SettingsTab']]
+
+
+class SettingsTab(TypedDict):
+    key: str
+    label: str
+    grids: list[str]
 
 
 class ApiKeyDetection(TypedDict, total=False):

@@ -4,11 +4,13 @@ from typing import Any, ClassVar, cast
 
 
 from .PluginSettingDefinitions import PluginSettings, ModelProviderDefinition
+from .PluginUIDefinitions import PluginUIView
 
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .PluginHelper import PluginHelper
+    from .PluginManager import PluginManager
     from .Models import LLMModel, STTModel, TTSModel, EmbeddingModel
 
 
@@ -65,6 +67,13 @@ class PluginBase(ABC):
         """
 
         self.plugin_manifest = plugin_manifest
+        # Instance-level dict: the class annotation holds a mutable default
+        # that would otherwise be shared by every plugin instance until the
+        # manager assigns the persisted settings.
+        self.settings: dict[str, Any] = {}
+        # Set by the PluginManager when settings are registered; lets plugins
+        # broadcast UI updates even in config state (before the runtime runs).
+        self._manager: 'PluginManager | None' = None
         
     def on_chat_start(self, helper: 'PluginHelper'):
         """
@@ -78,9 +87,45 @@ class PluginBase(ABC):
         """
         pass
 
-    def on_settings_button(self, key: str):
-        """Handle a click on a button declared in this plugin's settings UI."""
+    def on_settings_button(self, key: str, value: str | None = None):
+        """Handle a click on a button declared in this plugin's settings UI.
+
+        Row actions of list fields pass an optional value (e.g. the new title
+        of an inline-edited row)."""
         pass
+
+    def on_settings_changed(self) -> None:
+        """Called after persisted settings for this plugin have changed."""
+        pass
+
+    def get_ui_views(self) -> list[PluginUIView]:
+        return []
+
+    def get_ui_settings(self) -> PluginSettings | None:
+        return self.settings_config
+
+    def get_ui_translations(self) -> dict[str, dict[str, Any]]:
+        return {}
+
+    def on_ui_action(self, action: str, payload: dict[str, Any]) -> Any:
+        if action == 'settings_button':
+            key = payload.get('key')
+            value = payload.get('value')
+            if not isinstance(key, str) or (value is not None and not isinstance(value, str)):
+                raise ValueError('common.invalidAction')
+            return self.on_settings_button(key) if value is None else self.on_settings_button(key, value)
+        raise ValueError('common.invalidAction')
+
+    def publish_ui(self) -> None:
+        if self._manager is not None:
+            self._manager.publish_plugin_ui(self)
+
+    def publish_settings(self) -> None:
+        if self._manager is not None:
+            self._manager.publish_plugin_settings(self)
+
+    def get_app_config(self) -> dict[str, Any]:
+        return dict(self._manager.config) if self._manager is not None else {}
 
     def migrate_settings(self, settings: dict[str, Any], from_version: int) -> None:
         """Migrate settings from one schema version to the next."""

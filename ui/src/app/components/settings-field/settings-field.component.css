@@ -20,8 +20,19 @@ mat-slide-toggle {
     font-weight: 500;
 }
 
-.paragraph-field p {
+.paragraph-field div {
     margin: 0;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.paragraph-field p {
+    margin: 0 0 4px 0;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.paragraph-field ul {
+    margin: 4px 0;
+    padding-left: 18px;
     color: rgba(255, 255, 255, 0.7);
 }
 
@@ -50,7 +61,191 @@ mat-slide-toggle {
     border-radius: 4px;
 }
 
+button.mat-mdc-outlined-button:not(:disabled) {
+    border-color: var(--color-warning-orange, rgba(255, 152, 0, 0.7));
+    color: var(--color-warning-orange, #ff9800);
+}
+
+button.primary.mat-mdc-outlined-button:not(:disabled) {
+    background: var(--color-warning-orange, #ff9800);
+    border-color: var(--color-warning-orange, #ff9800);
+    --mdc-outlined-button-label-text-color: #fff;
+    --mdc-outlined-button-hover-label-text-color: #fff;
+    color: #fff !important;
+}
+
+button.primary.mat-mdc-outlined-button:hover:not(:disabled) {
+    background: var(--color-warning-orange, #f57c00);
+    color: #fff;
+}
+
 .unknown-field {
     color: #ff9800;
     font-style: italic;
+}
+
+.list-field {
+    margin: 8px 0;
+}
+
+.list-field h4 {
+    margin: 0 0 4px 0;
+    font-weight: 500;
+}
+
+.filter-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 2px 0 10px;
+    padding: 0 10px;
+    height: 26px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 4px;
+    background: transparent;
+    transition: border-color .15s;
+}
+
+.filter-field:focus-within {
+    border-color: rgba(255, 255, 255, 0.38);
+}
+
+.filter-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    flex: none;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.filter-input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: inherit;
+    font-family: inherit;
+    font-size: 0.9em;
+}
+
+.filter-input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.list-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 12px 0 4px 0;
+    padding: 4px 8px;
+    border: none;
+    background: transparent;
+    color: var(--color-primary-blue, #4fc3f7);
+    font-size: 0.95em;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+}
+
+.list-group:hover {
+    background: rgba(79, 195, 247, 0.08);
+}
+
+.list-group.pending,
+.list-row.pending .list-row-title {
+    color: var(--color-warning-orange, #ff9800);
+}
+
+.list-row.pending .list-row-meta {
+    color: rgba(255, 152, 0, 0.75);
+}
+
+.list-row.tone-warning .list-row-title,
+.list-row.tone-warning .list-row-meta { color: #ffb454; }
+.list-row.tone-info .list-row-title,
+.list-row.tone-info .list-row-meta { color: #75baff; }
+.list-row.tone-muted .list-row-title,
+.list-row.tone-muted .list-row-meta { opacity: .65; }
+.list-row.tone-default .list-row-title,
+.list-row.tone-default .list-row-meta { color: #fff; }
+
+.list-group-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    flex: none;
+}
+
+.list-group-count {
+    color: var(--color-text-secondary, rgba(255, 255, 255, 0.6));
+    font-weight: 400;
+}
+
+.list-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+}
+
+.list-row:hover {
+    background-color: rgba(255, 255, 255, 0.04);
+}
+
+.list-row-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.list-row-title {
+    font-weight: 500;
+}
+
+.list-row-meta {
+    font-size: 0.85em;
+    color: var(--color-text-secondary, rgba(255, 255, 255, 0.6));
+}
+
+.list-row-actions {
+    display: flex;
+    gap: 4px;
+    flex: none;
+}
+
+.list-row-actions button.danger {
+    color: #ef5350;
+}
+
+.list-empty {
+    margin: 0;
+    color: var(--color-text-secondary, rgba(255, 255, 255, 0.6));
+}
+
+.list-row.editing {
+    align-items: center;
+}
+
+.rename-input {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: 1px solid var(--color-border, rgba(255, 255, 255, 0.3));
+    border-radius: 4px;
+    color: inherit;
+    padding: 6px 8px;
+    font-family: inherit;
+    font-size: 0.95em;
+}
+
+.rename-input:focus {
+    outline: none;
+    border-color: var(--color-primary-blue, #4fc3f7);
 }

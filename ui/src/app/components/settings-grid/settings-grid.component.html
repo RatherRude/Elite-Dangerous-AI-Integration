@@ -1,22 +1,93 @@
+@if (grid.collapsible) {
+<mat-expansion-panel [expanded]="!grid.default_collapsed">
+    <mat-expansion-panel-header>{{ resolve(grid.label) }}</mat-expansion-panel-header>
+    <div [class]="gridClass">
+        @for (group of fieldGroups(); track $index) {
+            @if (group.kind === "buttons") {
+                <div class="button-row">
+                    @for (field of group.fields; track field.key) {
+                        <app-settings-field
+                            [field]="field"
+                            [primary]="field.key === firstButtonKey()"
+                            [value]="getFieldValue(field)"
+                            [buttonEnabled]="onButtonClick !== undefined"
+                            (valueChange)="onFieldChange(field, $event)"
+                             (buttonClick)="handleButtonClick(field)"
+                             (uiAction)="uiAction.emit($event)"
+                            (listAction)="handleListAction($event)">
+                        </app-settings-field>
+                    }
+                </div>
+            } @else {
+                <app-settings-field
+                    [field]="group.field"
+                    [value]="getFieldValue(group.field)"
+                    [buttonEnabled]="onButtonClick !== undefined"
+                    (valueChange)="onFieldChange(group.field, $event)"
+                     (buttonClick)="handleButtonClick(group.field)"
+                     (uiAction)="uiAction.emit($event)"
+                    (listAction)="handleListAction($event)"
+                    (submitRequested)="handleEnterSubmit()">
+                </app-settings-field>
+            }
+        }
+        <app-plugin-content [nodes]="grid.content ?? []" (action)="uiAction.emit($event)" />
+    </div>
+</mat-expansion-panel>
+} @else {
 <div [class]="gridClass">
-    @switch (headerLevel) {
-        @case ('h2') {
-            <h2>{{ grid.label }}</h2>
+    @if (grid.label || grid.header_action) {
+    <div class="grid-header">
+        @switch (headerLevel) {
+            @case ('h2') {
+                <h2>{{ resolve(grid.label) }}</h2>
+            }
+            @case ('h3') {
+                <h3>{{ resolve(grid.label) }}</h3>
+            }
+            @case ('h4') {
+                <h4>{{ resolve(grid.label) }}</h4>
+            }
         }
-        @case ('h3') {
-            <h3>{{ grid.label }}</h3>
+        @if (grid.header_action && onButtonClick !== undefined) {
+            <button mat-icon-button type="button"
+                    class="grid-header-action"
+                    [attr.aria-label]="resolve(grid.header_action.label)"
+                    (click)="onButtonClick(grid.header_action.key)">
+                <mat-icon>{{ grid.header_action.icon }}</mat-icon>
+            </button>
         }
-        @case ('h4') {
-            <h4>{{ grid.label }}</h4>
+    </div>
+    }
+    @for (group of fieldGroups(); track $index) {
+        @if (group.kind === "buttons") {
+            <div class="button-row">
+                @for (field of group.fields; track field.key) {
+                    <app-settings-field
+                        [field]="field"
+                        [primary]="field.key === firstButtonKey()"
+                        [value]="getFieldValue(field)"
+                        [buttonEnabled]="onButtonClick !== undefined"
+                        (valueChange)="onFieldChange(field, $event)"
+                         (buttonClick)="handleButtonClick(field)"
+                         (uiAction)="uiAction.emit($event)"
+                        (listAction)="handleListAction($event)">
+                    </app-settings-field>
+                }
+            </div>
+        } @else {
+            <app-settings-field
+                [field]="group.field"
+                [value]="getFieldValue(group.field)"
+                [buttonEnabled]="onButtonClick !== undefined"
+                (valueChange)="onFieldChange(group.field, $event)"
+                 (buttonClick)="handleButtonClick(group.field)"
+                 (uiAction)="uiAction.emit($event)"
+                (listAction)="handleListAction($event)"
+                (submitRequested)="handleEnterSubmit()">
+            </app-settings-field>
         }
     }
-    @for (field of grid.fields; track field.key) {
-        <app-settings-field
-            [field]="field"
-            [value]="getFieldValue(field)"
-            [buttonEnabled]="onButtonClick !== undefined"
-            (valueChange)="onFieldChange(field, $event)"
-            (buttonClick)="handleButtonClick(field)">
-        </app-settings-field>
-    }
+    <app-plugin-content [nodes]="grid.content ?? []" (action)="uiAction.emit($event)" />
 </div>
+}

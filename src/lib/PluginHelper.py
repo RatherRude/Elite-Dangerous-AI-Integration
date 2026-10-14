@@ -67,6 +67,9 @@ class PluginHelper():
             os.makedirs(plugin_data_path, exist_ok=True)
         return plugin_data_path
 
+    def get_current_state(self) -> tuple[list[Event], ProjectedStates]:
+        return self._event_manager.get_current_state()
+
     _ActionModelT = TypeVar('_ActionModelT', bound=BaseModel)
 
     def register_action(self, name: str, description: str, parameters: type[_ActionModelT], method: Callable[[_ActionModelT, dict], str], action_type="ship", input_template: Callable[[dict, dict], str]|None=None):
