@@ -153,12 +153,12 @@ use `get_current_state()` instead of reaching into `_event_manager`, and the
 Plugins can register model providers by assigning `self.model_providers` in their constructor. Each provider definition requires `kind`, `id`, `label`, and `settings_config`. The optional `slots` field limits where a provider appears; omitting it preserves the existing kind-based behavior.
 
 ```python
-self.model_providers = [{
-    "kind": "llm",
-    "id": "llm",
-    "label": "Example LLM",
-    "settings_config": [],
-}]
+from typing import Any
+from lib.PluginSettingDefinitions import ModelProviderDefinition
+
+self.model_providers = [ModelProviderDefinition(
+    kind="llm", id="llm", label="Example LLM", settings_config=[],
+)]
 
 def create_model(self, provider_id: str, settings: dict[str, Any]):
     if provider_id == "llm":
@@ -171,22 +171,20 @@ Provider references use `plugin:<plugin-guid>:<provider-id>`. `create_model` rec
 TTS providers may optionally add `voice_settings_config`, using the same `SettingsGrid` format as provider settings. These values are stored per character and provider rather than in the plugin's global settings. Use `voice` as the primary field key when the provider has one; its label and field type may represent a named voice, a description, or a reference-audio path. Providers without a voice concept may omit that field, while an explicit empty list declares that the provider has no character-level voice controls. Omitting `voice_settings_config` entirely retains the legacy `synthesize(text, voice)` behavior.
 
 ```python
-self.model_providers = [{
-    "kind": "tts",
-    "id": "tts",
-    "label": "Example TTS",
-    "settings_config": [],
-    "voice_settings_config": [{
-        "key": "voice",
-        "label": "Voice",
-        "fields": [TextSetting(
-            key="voice",
-            label="Reference audio path",
-            type="text",
-            default_value="",
+from lib.PluginSettingDefinitions import ModelProviderDefinition, SettingsGrid, TextSetting
+
+self.model_providers = [ModelProviderDefinition(
+    kind="tts", id="tts", label="Example TTS", settings_config=[],
+    voice_settings_config=[SettingsGrid(
+        key="voice",
+        label="Voice",
+        fields=[TextSetting(
+            key="voice", label="Reference audio path", type="text",
+            readonly=False, placeholder=None, default_value="",
+            max_length=None, min_length=None,
         )],
-    }],
-}]
+    )],
+)]
 ```
 
 Existing implementations only need `synthesize(text, voice)`. Providers that require additional character voice fields may override `synthesize_with_settings(text, settings)`; its default implementation forwards `settings["voice"]` to `synthesize`.

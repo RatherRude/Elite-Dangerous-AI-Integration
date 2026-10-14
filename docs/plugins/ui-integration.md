@@ -16,7 +16,10 @@ application. Removing the plugin must leave no plugin-specific panel behind.
 
 The framework extends the existing `PluginBase`, `PluginManager`, and
 `PluginHelper` contracts. Views are Python dictionaries serialized to the
-frontend; no separately compiled Angular component is required.
+frontend; no separately compiled Angular component is required. Use the public
+`TypedDict` constructors (`PluginSettings(...)`, `SettingsGrid(...)`,
+`PluginUIView(...)`, `UINode(...)`, etc.) for declarations so type checkers can
+check their fields. These constructors still produce ordinary dictionaries.
 
 Relevant source files:
 
@@ -120,14 +123,16 @@ plugin. The renderer does not inspect domain-specific field names.
 A `UIText` supports:
 
 ```python
-{
-    "key": "@missing",
-    "params": {
-        "resource": {"localized": {"en": "Iron", "fr": "Fer"}},
+from lib.PluginUIDefinitions import UIText
+
+UIText(
+    key="@missing",
+    params={
+        "resource": UIText(localized={"en": "Iron", "fr": "Fer"}),
         "count": 2,
     },
-    "text": "Fallback text",
-}
+    text="Fallback text",
+)
 ```
 
 Parameters may be strings, numbers, or nested `UIText` objects. Nested text is
@@ -176,16 +181,18 @@ The existing grid/field settings UI remains available. Plugins may declare
 settings tabs explicitly:
 
 ```python
-{
-    "key": "settings",
-    "label": "@title",
-    "icon": "dashboard",
-    "grids": [...],
-    "tabs": [
-        {"key": "general", "label": "@general", "grids": ["options", "status"]},
-        {"key": "library", "label": "@library", "grids": ["import", "items"]},
+from lib.PluginSettingDefinitions import PluginSettings, SettingsTab
+
+PluginSettings(
+    key="settings",
+    label="@title",
+    icon="dashboard",
+    grids=grids,
+    tabs=[
+        SettingsTab(key="general", label="@general", grids=["options", "status"]),
+        SettingsTab(key="library", label="@library", grids=["import", "items"]),
     ],
-}
+)
 ```
 
 Without `tabs`, grids retain flat rendering. With `tabs`, the plugin chooses which
@@ -323,7 +330,8 @@ from typing import Any
 from lib.Event import GameEvent
 from lib.PluginBase import PluginBase, PluginManifest
 from lib.PluginHelper import PluginHelper
-from lib.PluginUIDefinitions import PluginUIView
+from lib.PluginSettingDefinitions import ButtonSetting, PluginSettings, SettingsGrid, SettingsTab
+from lib.PluginUIDefinitions import PluginUIView, UINode, UIText, UIViewSection
 
 
 class DashboardPlugin(PluginBase):
@@ -331,28 +339,20 @@ class DashboardPlugin(PluginBase):
         super().__init__(plugin_manifest)
         self._helper = None
         self._system = ""
-        self.settings_config = {
-            "key": "settings",
-            "label": "@title",
-            "icon": "dashboard",
-            "grids": [{
-                "key": "general",
-                "label": "@general",
-                "fields": [{
-                    "key": "refresh",
-                    "label": "@refresh",
-                    "type": "button",
-                    "readonly": False,
-                    "placeholder": None,
-                    "icon": "refresh",
-                }],
-            }],
-            "tabs": [{
-                "key": "general",
-                "label": "@general",
-                "grids": ["general"],
-            }],
-        }
+        self.settings_config = PluginSettings(
+            key="settings",
+            label="@title",
+            icon="dashboard",
+            grids=[SettingsGrid(
+                key="general",
+                label="@general",
+                fields=[ButtonSetting(
+                    key="refresh", label="@refresh", type="button",
+                    readonly=False, placeholder=None, icon="refresh",
+                )],
+            )],
+            tabs=[SettingsTab(key="general", label="@general", grids=["general"])],
+        )
 
     def get_ui_translations(self):
         return {
@@ -369,25 +369,25 @@ class DashboardPlugin(PluginBase):
         }
 
     def get_ui_views(self) -> list[PluginUIView]:
-        system = {"text": self._system} if self._system else {"key": "@unknown"}
-        return [{
-            "id": "dashboard",
-            "label": "@title",
-            "description": "Shows the current system from existing runtime state.",
-            "icon": "dashboard",
-            "modes": ["running"],
-            "sections": [{
-                "key": "overview",
-                "label": "@overview",
-                "content": [
-                    {"type": "text", "text": {
-                        "key": "@location", "params": {"system": system},
-                    }},
-                    {"type": "action", "action": "refresh",
-                     "text": {"key": "@refresh"}, "icon": "refresh"},
+        system = UIText(text=self._system) if self._system else UIText(key="@unknown")
+        return [PluginUIView(
+            id="dashboard",
+            label="@title",
+            description="Shows the current system from existing runtime state.",
+            icon="dashboard",
+            modes=["running"],
+            sections=[UIViewSection(
+                key="overview",
+                label="@overview",
+                content=[
+                    UINode(type="text", text=UIText(
+                        key="@location", params={"system": system},
+                    )),
+                    UINode(type="action", action="refresh",
+                           text=UIText(key="@refresh"), icon="refresh"),
                 ],
-            }],
-        }]
+            )],
+        )]
 
     def _read_location(self):
         if self._helper is None:

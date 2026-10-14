@@ -12,6 +12,8 @@ from lib.Event import GameEvent
 from lib.PluginBase import PluginBase, PluginManifest
 from lib.PluginHelper import PluginHelper
 from lib.PluginManager import PluginManager
+from lib.PluginSettingDefinitions import PluginSettings
+from lib.PluginUIDefinitions import PluginUIView, UINode, UIText, UIViewSection
 from lib.actions import actions_ui
 
 
@@ -20,13 +22,13 @@ class DashboardPlugin(PluginBase):
         super().__init__(PluginManifest(json.dumps({'guid': guid, 'name': 'Dashboard'})))
         self.count = 0
         self.buttons = []
-        self.settings_config = {'key': guid, 'label': 'Dashboard', 'icon': 'dashboard', 'grids': []}
+        self.settings_config = PluginSettings(key=guid, label='Dashboard', icon='dashboard', grids=[])
 
     def get_ui_views(self):
-        return [{'id': 'dashboard', 'label': '@title', 'sections': [
-            {'key': 'overview', 'label': 'Overview', 'content': [{'type': 'text', 'text': {'text': str(self.count)}}]},
-            {'key': 'details', 'label': 'Details', 'grids': []},
-        ]}]
+        return [PluginUIView(id='dashboard', label='@title', sections=[
+            UIViewSection(key='overview', label='Overview', content=[UINode(type='text', text=UIText(text=str(self.count)))]),
+            UIViewSection(key='details', label='Details', grids=[]),
+        ])]
 
     def get_ui_translations(self):
         return {lang: {'title': title}
