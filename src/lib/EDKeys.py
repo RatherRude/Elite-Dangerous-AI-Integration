@@ -18,6 +18,10 @@ from .directinput import (
     ReleaseKey,
     ReleaseMouseButton,
     ScrollMouseWheel,
+    resolve_layout_key_name,
+    LAYOUT_DEPENDENT_KEY_CHARACTERS,
+    LAYOUT_IMPLICIT_MODIFIERS,
+    load_keyboard_layout,
 )
 
 """
@@ -173,6 +177,7 @@ class EDKeys:
         self.collision_candidates = ["CamTranslateRight", "CamTranslateForward"]
 
         self.latest_bindings_file = None
+        self.keyboard_layout = None
         self.latest_bindings_mtime = None
         self.missing_keys = []
         self.unsupported_keys = []
@@ -226,10 +231,20 @@ class EDKeys:
         unsupported_keys = set()
         latest_bindings, _ = self.get_latest_keybinds()
         if not latest_bindings:
+            self.keyboard_layout = None
             self.unsupported_keys = []
             return {}
         bindings_tree = parse(latest_bindings)
         bindings_root = bindings_tree.getroot()
+
+        keyboard_layout = None
+        if platform.system() == "Windows":
+            locale_name = (bindings_root.findtext("KeyboardLayout") or "en-US").strip() or "en-US"
+            try:
+                keyboard_layout = load_keyboard_layout(locale_name)
+            except ValueError as exc:
+                log("error", "Unable to load game keyboard layout; using fixed keymap", exc)
+        self.keyboard_layout = keyboard_layout
 
         for item in bindings_root:
             selected_binding = self._select_binding(item)
@@ -317,14 +332,29 @@ class EDKeys:
             elif modifier.tag == "Hold":
                 hold = True
 
-        binding: dict[str, Any] = {"mods": [self.keymap[mod] for mod in mods]}
+        resolved_mods = [self.keymap[mod] for mod in mods]
 
         if device == "Keyboard":
-            binding["key"] = self.keymap[key]
+            if self.keyboard_layout is not None and key in LAYOUT_DEPENDENT_KEY_CHARACTERS:
+                resolved_key = resolve_layout_key_name(key, self.keyboard_layout)
+                binding = {
+                    "key": resolved_key.scan_code,
+                    "mods": resolved_mods,
+                }
+                for modifier_mask, modifier_name in LAYOUT_IMPLICIT_MODIFIERS.items():
+                    if (
+                        resolved_key.shift_state & modifier_mask
+                        and modifier_name not in mods
+                    ):
+                        binding["mods"].append(self.keymap[modifier_name])
+            else:
+                binding = {"key": self.keymap[key], "mods": resolved_mods}
         elif key in self.mouse_button_map:
+            binding = {"mods": resolved_mods}
             binding["type"] = "mouse_button"
             binding["button"] = self.mouse_button_map[key]
         elif key in self.mouse_wheel_map:
+            binding = {"mods": resolved_mods}
             binding["type"] = "mouse_wheel"
             binding["clicks"] = self.mouse_wheel_map[key]
         else:
