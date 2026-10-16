@@ -172,6 +172,20 @@ their parameters. Literal labels from existing plugins continue to display as-is
 
 ## Settings tabs and lists
 
+Settings may include an optional `header_link: SettingsHeaderLink` contribution.
+It renders a small, right-aligned line above the settings tabs, wrapping on narrow
+windows, and is not rendered in runtime views. `text` and `label` accept local
+translation references; `url` must be an absolute HTTP(S) address. The link opens
+externally through the application's existing external-link handling.
+
+```python
+from lib.PluginSettingDefinitions import SettingsHeaderLink
+
+header_link = SettingsHeaderLink(
+    text="@project.prompt", label="@project.link", url="https://example.org/project",
+)
+```
+
 Settings grids may include optional `content: list[UINode]`, rendered after their
 fields by the same generic content component used in views. Reference that grid
 from both a settings tab and a runtime section to share one presentation across

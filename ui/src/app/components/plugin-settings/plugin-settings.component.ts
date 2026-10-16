@@ -31,6 +31,7 @@ import { SettingsGridComponent } from "../settings-grid/settings-grid.component"
 import { TranslateService } from "@ngx-translate/core";
 import { resolveSettingText } from "../../services/setting-text";
 import { PluginUIService } from "../../services/plugin-ui.service";
+import { SettingsHeaderLinkComponent } from './settings-header-link.component';
 
 @Component({
   selector: "app-plugin-settings",
@@ -54,6 +55,7 @@ import { PluginUIService } from "../../services/plugin-ui.service";
     MatDialogModule,
     MatProgressSpinnerModule,
     SettingsGridComponent,
+    SettingsHeaderLinkComponent,
   ],
   templateUrl: "./plugin-settings.component.html",
   styleUrls: ["../settings-menu/settings-menu.component.scss"],

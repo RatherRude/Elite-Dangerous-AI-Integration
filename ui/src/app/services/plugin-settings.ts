@@ -1,12 +1,19 @@
 import { type BaseMessage } from "./tauri.service";
 import { UINode } from "./plugin-ui";
 
+export interface SettingsHeaderLink {
+    text: string;
+    label: string;
+    url: string;
+}
+
 export interface PluginSettings {
     key: string;
     label: string;
     icon: string;
     grids: SettingsGrid[];
     tabs?: {key: string; label: string; grids: string[]}[];
+    header_link?: SettingsHeaderLink;
 }
 
 export interface GridHeaderAction {

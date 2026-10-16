@@ -14,6 +14,18 @@ from lib.PluginBase import PluginBase, PluginManifest
 from lib.PluginHelper import PluginHelper
 from lib.PluginManager import PluginManager
 from lib.PluginNamespace import PluginNamespace
+from lib.PluginSettingDefinitions import SettingsHeaderLink
+
+
+def test_header_link_scopes_translations_and_preserves_destination():
+    link = SettingsHeaderLink(text='@support.prompt', label='@support.link', url='https://example.org/support')
+    settings = {'header_link': link}
+    exported = PluginNamespace('alpha').presentation(settings)
+    assert exported['header_link'] == {
+        'text': 'plugin.alpha.support.prompt', 'label': 'plugin.alpha.support.link',
+        'url': 'https://example.org/support',
+    }
+    assert link['text'] == '@support.prompt'
 
 
 class LocalPlugin(PluginBase):

@@ -12,6 +12,9 @@
                 </mat-panel-title>
             </mat-expansion-panel-header>
             @if (config) {
+                @if (plugin_settings_config[1].header_link; as link) {
+                    <app-settings-header-link [link]="link" />
+                }
                 @if (getPluginTabs(plugin_settings_config[1]); as tabs) {
                     <mat-tab-group>
                         @for (tab of tabs; track tab.key) {
