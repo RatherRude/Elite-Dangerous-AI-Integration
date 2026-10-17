@@ -23,7 +23,8 @@ import { PluginContentComponent } from "../plugin-content/plugin-content.compone
           @for (grid of grids(section.grids); track grid.key) {
             <app-settings-grid [grid]="grid" [getValue]="getValue" [setValue]="setValue" [onButtonClick]="onButtonClick" [headerLevel]="'h2'" (uiAction)="invoke($event.action, $event.payload)" />
           }
-          <app-plugin-content [nodes]="section.content ?? []" (action)="invoke($event.action, $event.payload)" />
+          <app-plugin-content [nodes]="section.content ?? []" [getValue]="getValue" [setValue]="setValue"
+            [onButtonClick]="onButtonClick" (action)="invoke($event.action, $event.payload)" />
         </mat-tab>
       }
     </mat-tab-group>
@@ -65,10 +66,10 @@ export class PluginViewComponent implements OnDestroy {
   }
 
   readonly getValue = (key: string, defaultValue: unknown): unknown =>
-    this.config.getCurrentConfig()?.plugin_settings?.[this.view.pluginGuid]?.[key] ?? defaultValue;
+    this.plugins.getValue(this.view.pluginGuid, key,
+      this.config.getCurrentConfig()?.plugin_settings?.[this.view.pluginGuid]?.[key] ?? defaultValue);
   readonly setValue = (key: string, value: unknown): void => {
-    const settings = {...this.config.getCurrentConfig()?.plugin_settings?.[this.view.pluginGuid], [key]: value};
-    this.config.setPluginSetting(this.view.pluginGuid, settings).catch(error => this.showError(error));
+    this.plugins.change(this.view.pluginGuid, key, value).catch(error => this.showError(error));
   };
   readonly onButtonClick = (key: string, value?: string): void => this.invoke("settings_button", {key, value});
 

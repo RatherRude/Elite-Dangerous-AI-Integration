@@ -41,7 +41,8 @@ Create a new class implementing `PluginBase` like this:
 ```python
 from lib.PluginBase import PluginBase, PluginManifest
 from lib.PluginHelper import PluginHelper
-from lib.PluginSettingDefinitions import PluginSettings, SettingsGrid, ToggleSetting
+from lib.PluginSettingDefinitions import PluginSettings, SettingsGrid
+from lib.PluginUIDefinitions import Toggle
 
 
 class ExamplePlugin(PluginBase):
@@ -51,7 +52,7 @@ class ExamplePlugin(PluginBase):
             key="settings", label="@title", icon="settings",
             grids=[SettingsGrid(
                 key="general", label="@general",
-                fields=[ToggleSetting(
+                fields=[Toggle(
                     key="my_bool_setting", label="@enabled", type="toggle",
                     readonly=False, placeholder=None, default_value=False,
                 )],
@@ -93,11 +94,15 @@ persisting a configuration change:
 
 ```python
 self.publish_ui()
-self.publish_settings()
 ```
 
 `get_ui_views()` and `get_ui_settings()` return the latest presentation. See the
 [UI guide](ui-integration.md#lifecycle-and-public-hooks) for their lifecycle.
+`publish_ui()` refreshes both contexts, including dynamic options, text and
+progress indicators. `publish_settings()` remains a deprecated alias.
+The shared typed components from `lib.PluginUIDefinitions` work in settings
+`fields` and view `content`. Historical names such as `ToggleSetting` and
+`TextSetting` remain exact aliases at their original import path.
 
 The public API for a persisted setting is bound to the registered plugin:
 
@@ -113,7 +118,13 @@ Setting keys are flat local keys, not configuration paths. The core selects the
 owner from its registration registry and stores the value unchanged; local
 translation references are qualified only when exporting presentation. For
 example, `@importCompleted` becomes `plugin.<registered-guid>.importCompleted`
-in a status paragraph. Normal user edits use the existing configuration transport; UI publication
+in a status paragraph. Normal plugin input edits use the shared
+`on_ui_changed(key, value, state)` callback in both settings and views. Its default
+implementation persists declared settings and calls `on_settings_changed()`,
+preserving existing plugins. Override it to keep search/filter input transient
+or explicitly persist selected preferences with `update_setting()`. The state
+snapshot includes all current inputs; buttons can read it with `get_ui_state()`.
+The historical configuration transport remains supported; UI publication
 must not be used as a substitute for saving a setting or plugin database change.
 
 The `PluginBase` base class has the following methods that can be overridden:
@@ -140,6 +151,9 @@ The `PluginBase` base class has the following methods that can be overridden:
     Row actions use `<action>:<row-key>`; inline edits pass the edited value.
 - `on_settings_changed(self)`:
     Called after configuration changes; refresh derived content as needed.
+- `on_ui_changed(self, key, value, state)`:
+    Called for an input edit in settings or views, with a detached snapshot of
+    current inputs. Delegate to `super()` to retain default settings persistence.
 - `get_ui_views()`, `get_ui_settings()`, `get_ui_translations()`, and `on_ui_action(action, payload)`:
     Optional generic UI contributions and structured interactions. See the
     [UI guide](ui-integration.md) for types and examples.

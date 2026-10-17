@@ -1,6 +1,32 @@
+<div class="ui-node" [class]="'ui-node tone-' + (field.tone ?? 'default')"
+    [class.outlined]="field.outlined" [class.inline]="field.type === 'inline'" [class.section]="field.type === 'section'">
+@if (field.type === 'text' && field.text) {
+    <span>{{ text(field.text) }}</span>
+} @else if (field.type === 'list' && !field.items) {
+    <ul>@for (child of field.children ?? []; track $index) {
+        <li><app-plugin-content [nodes]="[child]" [getValue]="getValue" [setValue]="setValue"
+            [onButtonClick]="onButtonClick" (action)="uiAction.emit($event)" /></li>
+    }</ul>
+} @else {
 @switch (field.type) {
+    @case ('heading') {
+        @if (field.level === 4) { <h4 class="ui-heading">{{ text(field.text) }}</h4> }
+        @else { <h3 class="ui-heading">{{ text(field.text) }}</h3> }
+    }
+    @case ('progress') {
+        <span>{{ text(field.text) }}</span>
+        <mat-progress-bar [value]="percentage()" />
+    }
+    @case ('action') {
+        <button mat-stroked-button [disabled]="field.readonly" (click)="handleClick()">
+            @if (field.icon) { <mat-icon>{{ field.icon }}</mat-icon> }
+            {{ text(field.text) }}
+        </button>
+    }
+    @case ('section') { @if (field.text) { <span>{{ text(field.text) }}</span> } }
+    @case ('inline') { @if (field.text) { <span>{{ text(field.text) }}</span> } }
     @case ('toggle') {
-        <mat-slide-toggle [ngModel]="value"
+        <mat-slide-toggle [ngModel]="value" [disabled]="field.readonly || false"
                         (ngModelChange)="onValueChange($event)">
             {{ resolve(field.label) }}
         </mat-slide-toggle>
@@ -9,8 +35,8 @@
         <button mat-stroked-button type="button"
                 [class.primary]="primary"
                 [attr.aria-label]="resolve(field.label)"
-                [disabled]="field.readonly || !buttonEnabled"
-                (click)="onButtonClick()">
+                [disabled]="field.readonly || (!field.action && !buttonEnabled)"
+                (click)="handleClick()">
             @if (field.icon) {
                 <mat-icon>{{ field.icon }}</mat-icon>
             }
@@ -42,18 +68,18 @@
                 <input matInput type="password"
                     [ngModel]="value"
                     (ngModelChange)="onValueChange($event)"
-                    [readonly]="field.readonly"
+                    [readonly]="field.readonly || false"
                     [placeholder]="resolve(field.placeholder)"
-                    [minlength]="field.min_length"
-                    [maxlength]="field.max_length">
+                    [minlength]="field.min_length ?? null"
+                    [maxlength]="field.max_length ?? null">
             } @else {
                 <input matInput
                     [ngModel]="value"
                     (ngModelChange)="onValueChange($event)"
-                    [readonly]="field.readonly"
+                    [readonly]="field.readonly || false"
                     [placeholder]="resolve(field.placeholder)"
-                    [minlength]="field.min_length"
-                    [maxlength]="field.max_length">
+                    [minlength]="field.min_length ?? null"
+                    [maxlength]="field.max_length ?? null">
             }
         </mat-form-field>
     }
@@ -63,10 +89,10 @@
             <input matInput type="number"
                 [ngModel]="value"
                 (ngModelChange)="onValueChange($event)"
-                [min]="field.min_value"
-                [max]="field.max_value"
+                [min]="field.min_value ?? null"
+                [max]="field.max_value ?? null"
                 [step]="field.step"
-                [readonly]="field.readonly"
+                [readonly]="field.readonly || false"
                 [placeholder]="resolve(field.placeholder)">
         </mat-form-field>
     }
@@ -77,9 +103,9 @@
                 [ngModel]="value"
                 (ngModelChange)="onValueChange($event)"
                 (keydown)="onTextKeydown($event)"
-                [rows]="field.rows"
-                [cols]="field.cols"
-                [readonly]="field.readonly"
+                [rows]="field.rows ?? 2"
+                [cols]="field.cols ?? 20"
+                [readonly]="field.readonly || false"
                 [placeholder]="resolve(field.placeholder)"></textarea>
         </mat-form-field>
     }
@@ -89,10 +115,10 @@
             <input type="text" class="filter-input"
                 [ngModel]="value"
                 (ngModelChange)="onValueChange($event)"
-                [readonly]="field.readonly"
+                [readonly]="field.readonly || false"
                 [placeholder]="resolve(field.placeholder)"
                 [attr.aria-label]="resolve(field.label)"
-                [maxlength]="field.max_length">
+                [maxlength]="field.max_length ?? null">
         </div>
     }
     @case ('select') {
@@ -102,7 +128,7 @@
                 [ngModel]="value"
                 (ngModelChange)="onValueChange($event)"
                 [disabled]="field.readonly || false"
-                [multiple]="field.multi_select">
+                [multiple]="field.multi_select || false">
                 @if (hasUnknownSelectValue()) {
                     <mat-option [value]="value">{{ value }}</mat-option>
                 }
@@ -163,7 +189,8 @@
                             </div>
                         </div>
                     }
-                    <app-plugin-content [nodes]="entry.row.details ?? []"
+                    <app-plugin-content [nodes]="entry.row.details ?? []" [getValue]="getValue" [setValue]="setValue"
+                        [onButtonClick]="onButtonClick"
                         (action)="uiAction.emit($event)" />
                 }
             } @empty {
@@ -175,3 +202,10 @@
         <p class="unknown-field">Unknown field type: {{ field.type }}</p>
     }
 }
+}
+@if (field.type !== 'list' && field.children?.length) {
+    <app-plugin-content [nodes]="field.children ?? []" [getValue]="getValue" [setValue]="setValue"
+        [inline]="field.type === 'inline'"
+        [onButtonClick]="onButtonClick" (action)="uiAction.emit($event)" />
+}
+</div>

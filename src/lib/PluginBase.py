@@ -98,6 +98,24 @@ class PluginBase(ABC):
         """Called after persisted settings for this plugin have changed."""
         pass
 
+    def on_ui_changed(self, key: str, value: Any, state: dict[str, Any]) -> None:
+        """Handle an input edit in settings or a view.
+
+        The default preserves automatic persistence for declared settings.
+        Overrides may keep transient input or explicitly call update_setting().
+        """
+        if self._manager is None:
+            raise RuntimeError('Plugin is not registered')
+        if key in self._manager._setting_input_keys(self):
+            if not self.update_setting(key, value):
+                raise RuntimeError('common.actionError')
+
+    def get_ui_state(self) -> dict[str, Any]:
+        """Return a detached snapshot of all declared input values."""
+        if self._manager is None:
+            raise RuntimeError('Plugin is not registered')
+        return self._manager._get_ui_state(self)
+
     def on_registered(self) -> None:
         pass
 
@@ -129,8 +147,8 @@ class PluginBase(ABC):
             self._manager.publish_plugin_ui(self)
 
     def publish_settings(self) -> None:
-        if self._manager is not None:
-            self._manager.publish_plugin_settings(self)
+        """Deprecated alias for publish_ui()."""
+        self.publish_ui()
 
     def update_setting(self, key: str, value: Any) -> bool:
         if self._manager is None:

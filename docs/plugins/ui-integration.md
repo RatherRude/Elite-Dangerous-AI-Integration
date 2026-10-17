@@ -18,7 +18,7 @@ The framework extends the existing `PluginBase`, `PluginManager`, and
 `PluginHelper` contracts. Views are Python dictionaries serialized to the
 frontend; no separately compiled Angular component is required. Use the public
 `TypedDict` constructors (`PluginSettings(...)`, `SettingsGrid(...)`,
-`PluginUIView(...)`, `UINode(...)`, etc.) for declarations so type checkers can
+`PluginUIView(...)`, `TextInput(...)`, `Button(...)`, `Progress(...)`, etc.) for declarations so type checkers can
 check their fields. These constructors still produce ordinary dictionaries.
 
 Relevant source files:
@@ -26,15 +26,15 @@ Relevant source files:
 | Responsibility | Source |
 | --- | --- |
 | Public hooks | `src/lib/PluginBase.py` |
-| Python view/content types | `src/lib/PluginUIDefinitions.py` |
-| Settings types | `src/lib/PluginSettingDefinitions.py` |
+| Shared Python component types | `src/lib/PluginUIDefinitions.py` |
+| Settings layout, provider types and deprecated component aliases | `src/lib/PluginSettingDefinitions.py` |
 | Registration, publication, interaction routing | `src/lib/PluginManager.py` |
 | Runtime event/action integration | `src/lib/PluginHelper.py` |
 | Command handling before and during Run | `src/Chat.py` |
 | Registered-view navigation | `src/lib/actions/actions_ui.py` |
 | Frontend view/content types | `ui/src/app/services/plugin-ui.ts` |
 | Contributions, translations, request/results | `ui/src/app/services/plugin-ui.service.ts` |
-| View host and content renderer | `ui/src/app/components/plugin-view/`, `plugin-content/` |
+| View host and shared recursive renderer | `ui/src/app/components/plugin-view/`, `settings-field/`, `plugin-content/` |
 
 ## Lifecycle and public hooks
 
@@ -57,8 +57,10 @@ isolation for in-process Python plugins, not a process sandbox.
 | `get_ui_settings() -> PluginSettings \| None` | Return the exported settings schema. Defaults to `settings_config`; override to convert internal data to generic presentation. |
 | `get_ui_translations() -> dict[str, dict[str, Any]]` | Return language dictionaries. Defaults to `{}`. |
 | `on_ui_action(action, payload) -> Any` | Handle an interaction and return a JSON-serializable result, or raise an error. |
-| `publish_ui()` | Refresh the plugin's view/translation contribution and broadcast the current UI registry. |
-| `publish_settings()` | Refresh and broadcast settings schemas. |
+| `on_ui_changed(key, value, state)` | Handle an input edit in either context with a detached snapshot of all current input values. |
+| `get_ui_state()` | Return the same detached input snapshot, including from button/action callbacks. |
+| `publish_ui()` | Refresh and broadcast settings, views, input state, translations and provider settings. |
+| `publish_settings()` | Deprecated alias of `publish_ui()`. |
 | `get_app_config()` | Return a detached copy of application configuration with only this plugin's settings section, or `{}` before registration. |
 
 `publish_ui()` and `publish_settings()` are available after settings registration,
@@ -67,8 +69,8 @@ derived presentation; they do not save it to `config.json` or persist plugin dat
 
 The manager refreshes contributions after runtime start/stop hooks and successful
 UI actions. For asynchronous or event-driven changes, update plugin-owned state
-and explicitly publish the affected views/settings. `on_settings_changed()` can
-also publish views when an edited setting changes their content.
+and call `publish_ui()` once for both contexts. Persisted configuration changes
+also refresh both contexts after `on_settings_changed()`.
 
 Keep contribution getters fast and free of operations such as station searches
 or route calculations. Opening or refreshing a panel should display existing
@@ -99,7 +101,54 @@ Each section has a stable `key`, a translated `label`, and optionally:
 Both may be supplied: the grids render first, followed by content. Missing grid
 references produce no grid. Keep section keys unique and stable for navigation.
 
-## Generic content nodes
+## Shared components
+
+Settings `fields`, grid `content`, view-section `content`, container `children`
+and list-row `details` all accept the same `UIComponent` union and use the same
+recursive renderer. A text input or button does not have to be placed inside a
+settings grid to work in a view; progress and other display components do not
+have to be placed in a separate settings `content` array.
+
+Import new typed constructors from `lib.PluginUIDefinitions`:
+
+| Constructor | `type` | Purpose |
+| --- | --- | --- |
+| `TextInput`, `TextArea`, `NumberInput`, `Toggle`, `Select`, `Filter` | `text`, `textarea`, `number`, `toggle`, `select`, `filter` | Inputs with local keys, labels and typed `default_value` properties. |
+| `Button` | `button` | Calls `on_settings_button(key)` by default, in either context. Set `action` and optional `payload` to call `on_ui_action` instead. |
+| `Paragraph`, `Error` | `paragraph`, `error` | Label and `content`, with optional interpolation `params`. |
+| `Text`, `Heading`, `Section`, `Inline`, `List`, `Progress`, `Action` | See below | Display, layout and structured actions. |
+
+Constructors still require the explicit `type` discriminator, as historical
+settings constructors did. `TextInput(type="text", ...)` is an input;
+`Text(type="text", text=UIText(...))` displays text. `List` can have `items` and
+`row_actions`, or `children` for a bullet list. Input keys are nonempty, flat,
+local names; reusing a key in settings and views deliberately shares its value.
+Use distinct keys for independent inputs.
+
+### Historical aliases
+
+The original import path `lib.PluginSettingDefinitions` remains supported.
+These names are deprecated aliases, not wrappers, and still construct ordinary
+dictionaries with the same properties and behavior:
+
+| Historical name | Shared constructor |
+| --- | --- |
+| `SettingBase` | `InputBase` |
+| `TextSetting` | `TextInput` (including password input through `hidden=True`) |
+| `TextAreaSetting` | `TextArea` |
+| `NumericalSetting` | `NumberInput` |
+| `ToggleSetting` | `Toggle` |
+| `SelectSetting` | `Select` |
+| `ButtonSetting` | `Button` |
+| `ParagraphSetting` | `Paragraph` |
+| `ErrorSetting` | `Error` |
+
+`PluginSettings`, `SettingsGrid`, `SelectOption` and provider definitions retain
+their import paths. The additional `FilterSetting` and `ListSetting` names also
+remain aliases. Existing `settings_config`, `on_settings_changed()` and
+single-argument `on_settings_button(key)` implementations continue to work.
+
+### Display and layout
 
 `UINode` is a recursive presentation structure:
 
@@ -186,8 +235,8 @@ header_link = SettingsHeaderLink(
 )
 ```
 
-Settings grids may include optional `content: list[UINode]`, rendered after their
-fields by the same generic content component used in views. Reference that grid
+Settings grids may include optional `content: list[UIComponent]`, rendered after their
+fields by the same component renderer used in views. Reference that grid
 from both a settings tab and a runtime section to share one presentation across
 lifecycle modes. An empty grid label omits the non-collapsible grid header.
 
@@ -225,6 +274,76 @@ instead carry their own structured payload to `on_ui_action`.
 
 ## UI interactions and transport
 
+### Input callbacks and persistence
+
+All ordinary plugin and model-provider input edits use the reserved `ui_changed`
+action with `payload={"key": "<local input key>", "value": ...}`. The core
+validates that the input is declared and editable, then calls
+`on_ui_changed(key, value, state)` before publishing both contexts. The `state`
+argument includes defaults, persisted settings and the latest transient edits,
+including the current edit. It is constructed by the core, not trusted from a
+client-supplied snapshot. Separate plugins have separate input state. State
+snapshots are detached; mutating a snapshot does not change core input state.
+Character-scoped provider voice settings keep their character persistence path.
+
+The default callback persists inputs declared in exported settings or ordinary
+model-provider settings, then calls the historical `on_settings_changed()` hook.
+Inputs declared only in views are transient by default. Override the callback
+to choose which edits persist, regardless of where an input is rendered:
+
+```python
+def on_ui_changed(self, key, value, state):
+    if key == "search":
+        self.query = state["search"]
+        self.filtered_items = [
+            item for item in self.items if self.query.casefold() in item.casefold()
+        ]
+        # No persistence: the core publishes the filtered presentation on return.
+    elif key == "preferred_item":
+        self.update_setting(key, value)
+    else:
+        super().on_ui_changed(key, value, state)
+```
+
+An override that does not call `super()` owns its persistence policy; UI
+publication alone never saves preferences. Buttons and structured actions can
+read the same current values with `self.get_ui_state()`. The old
+`change_config` and `plugin_settings_button` transports remain accepted.
+Invalid input keys, readonly inputs and callback exceptions produce correlated
+failure results; rejected transient edits are rolled back.
+
+### Dynamic updates
+
+Change plugin-owned presentation data and call `self.publish_ui()` once.
+For example, a `Select` can return fresh `select_options`, a `Text` can return a
+new status message, and a `Progress` can return a new `value`. The publication
+rebuilds both settings and views, along with provider settings and translations,
+without writing configuration. Removed settings or views disappear on the next
+publication. Dynamic publications retain current input values; newer pending
+typing is not replaced by an earlier request's snapshot.
+
+```python
+from lib.PluginUIDefinitions import Select, SelectOption, Progress, UIText
+
+def status_components(self):
+    return [
+        Select(key="preferred_item", type="select", label="Item",
+               default_value=None, multi_select=False,
+               select_options=[
+                   SelectOption(key=item, label=item, value=item, disabled=False)
+                   for item in self.filtered_items
+               ]),
+        Progress(type="progress", value=self.completed, maximum=self.total,
+                 text=UIText(text=self.status)),
+    ]
+```
+
+Return this list from settings `fields` or view-section `content` without
+converting it. In background/event work, update `filtered_items`, `status` or
+`completed`, then publish. Synchronize shared plugin state if work is concurrent.
+
+### Action request/results
+
 The frontend sends:
 
 ```json
@@ -238,7 +357,8 @@ The frontend sends:
 }
 ```
 
-The manager locates the owning plugin by GUID and calls `on_ui_action`. For a
+The manager locates the owning plugin by GUID and calls `on_ui_action` (or
+`on_ui_changed` for an input edit). For a
 successful action, it refreshes paragraph values and UI/settings contributions,
 then emits a correlated result:
 
@@ -344,8 +464,8 @@ from typing import Any
 from lib.Event import GameEvent
 from lib.PluginBase import PluginBase, PluginManifest
 from lib.PluginHelper import PluginHelper
-from lib.PluginSettingDefinitions import ButtonSetting, PluginSettings, SettingsGrid, SettingsTab
-from lib.PluginUIDefinitions import PluginUIView, UINode, UIText, UIViewSection
+from lib.PluginSettingDefinitions import PluginSettings, SettingsGrid, SettingsTab
+from lib.PluginUIDefinitions import Button, PluginUIView, Text, Action, UIText, UIViewSection
 
 
 class DashboardPlugin(PluginBase):
@@ -360,7 +480,7 @@ class DashboardPlugin(PluginBase):
             grids=[SettingsGrid(
                 key="general",
                 label="@general",
-                fields=[ButtonSetting(
+                fields=[Button(
                     key="refresh", label="@refresh", type="button",
                     readonly=False, placeholder=None, icon="refresh",
                 )],
@@ -394,10 +514,10 @@ class DashboardPlugin(PluginBase):
                 key="overview",
                 label="@overview",
                 content=[
-                    UINode(type="text", text=UIText(
+                    Text(type="text", text=UIText(
                         key="@location", params={"system": system},
                     )),
-                    UINode(type="action", action="refresh",
+                    Action(type="action", action="refresh",
                            text=UIText(key="@refresh"), icon="refresh"),
                 ],
             )],
@@ -453,7 +573,7 @@ No dashboard-specific changes are needed in the core or frontend.
    generic `details` rather than adding domain fields to the host's settings types.
 5. Generate grouped work content in the plugin rather than interpreting
    field-name prefixes in a shared Angular component.
-6. Use `publish_ui()`, `publish_settings()`, and `helper.get_current_state()`
+6. Use `publish_ui()` and `helper.get_current_state()`
    instead of mutating manager registries or reading private runtime fields.
 7. Replace explicit-GUID setting updates with `update_setting(key, value)`;
    use local event names and parameterless data-path APIs. Move configuration

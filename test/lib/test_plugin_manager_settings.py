@@ -63,7 +63,7 @@ def test_update_plugin_setting_persists_updates_ui_and_calls_hook(monkeypatch):
     assert plugin.hook_calls == 1
     assert saved == [manager.config]
     assert manager.plugin_settings_configs[plugin.plugin_manifest.guid]["grids"][0]["fields"][0]["content"] == "ready"
-    assert {event for event, _payload in emitted} == {"config", "plugin_settings_configs"}
+    assert {event for event, _payload in emitted} == {"config", "plugin_ui", "plugin_settings_configs", "plugin_model_providers"}
 
 
 def test_update_plugin_setting_rejects_unknown_plugin():
@@ -91,4 +91,4 @@ def test_settings_button_refreshes_plugin_paragraph_values(monkeypatch):
         manager.plugin_settings_configs[plugin.plugin_manifest.guid]["grids"][0]["fields"][0]["content"]
         == "clicked"
     )
-    assert emitted == ["plugin_settings_configs"]
+    assert emitted == ["plugin_ui", "plugin_settings_configs", "plugin_model_providers"]

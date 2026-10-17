@@ -151,20 +151,17 @@ export class PluginSettingsComponent implements OnInit, OnDestroy {
   // Create a getValue function for a specific plugin
   createGetValueFn(pluginGuid: string): (fieldKey: string, defaultValue: any) => any {
     return (fieldKey: string, defaultValue: any) => {
-      return this.config?.plugin_settings?.[pluginGuid]?.[fieldKey] ?? defaultValue;
+      return this.pluginUI.getValue(pluginGuid, fieldKey, this.config?.plugin_settings?.[pluginGuid]?.[fieldKey] ?? defaultValue);
     };
   }
 
   // Create a setValue function for a specific plugin
   createSetValueFn(pluginGuid: string): (fieldKey: string, value: any) => void {
     return (fieldKey: string, value: any) => {
-      if (this.config == null) {
-        return;
-      }
-      this.config.plugin_settings ??= {};
-      this.config.plugin_settings[pluginGuid] ??= {};
-      this.config.plugin_settings[pluginGuid][fieldKey] = value;
-      this.onConfigChange({ plugin_settings: this.config.plugin_settings });
+      this.pluginUI.change(pluginGuid, fieldKey, value).catch(error => {
+        console.error("Error updating plugin input:", error);
+        this.snackBar.open(this.resolve(error.message || 'common.actionError'), undefined, {duration: 5000});
+      });
     };
   }
 
@@ -196,12 +193,6 @@ export class PluginSettingsComponent implements OnInit, OnDestroy {
     fieldKey: string,
     value: any,
   ): void {
-    if (this.config == null) {
-      return;
-    }
-    this.config.plugin_settings ??= {};
-    this.config.plugin_settings[pluginGuid] ??= {};
-    this.config.plugin_settings[pluginGuid][fieldKey] = value;
-    this.onConfigChange({ plugin_settings: this.config.plugin_settings });
+    this.createSetValueFn(pluginGuid)(fieldKey, value);
   }
 }

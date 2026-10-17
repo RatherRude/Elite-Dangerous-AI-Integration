@@ -5,7 +5,7 @@ import os
 from copy import deepcopy
 
 import sys
-from typing import Any, Self
+from typing import Any, Self, TypeGuard
 
 from lib.Config import Config, save_config
 
@@ -15,7 +15,7 @@ from .UI import emit_message
 
 from .PluginBase import PluginBase, PluginManifest
 from .PluginNamespace import PluginNamespace
-from .PluginUIDefinitions import view_target
+from .PluginUIDefinitions import UIComponent, view_target
 from .Models import LLMModel, STTModel, TTSModel, EmbeddingModel
 
 from typing import TYPE_CHECKING
@@ -45,6 +45,7 @@ class PluginManager:
         self.ui_action_manager = None
         self._namespaces: dict[PluginBase, PluginNamespace] = {}
         self._owners: dict[str, PluginBase] = {}
+        self._ui_values: dict[PluginBase, dict[str, Any]] = {}
 
         # Add the plugin folder to sys.path
         # This allows us to import plugins as packages.
@@ -60,12 +61,14 @@ class PluginManager:
             raise ValueError(f'Duplicate plugin GUID: {namespace.guid}')
         self._namespaces[plugin] = namespace
         self._owners[namespace.guid] = plugin
+        self._ui_values[plugin] = {}
         plugin._manager = self
         try:
             plugin.on_registered()
         except Exception:
             self._namespaces.pop(plugin)
             self._owners.pop(namespace.guid)
+            self._ui_values.pop(plugin)
             plugin._manager = None
             raise
         return namespace
@@ -88,7 +91,7 @@ class PluginManager:
         guid = self._namespaces[plugin].guid
         config = deepcopy(self.config)
         config['plugin_settings'] = {guid: config.get('plugin_settings', {}).get(guid, {})}
-        return config
+        return dict(config)
 
     def _initialize_plugin_settings(self, plugin: PluginBase, guid: str | None = None) -> PluginBase:
         """Load and migrate one plugin's settings without changing its public API."""
@@ -265,11 +268,11 @@ class PluginManager:
             try:
                 if module.model_providers is not None:
                     for provider in module.model_providers:
-                        plugin_provider: PluginModelProvider = {
+                        plugin_provider = PluginModelProvider(**{
                             **namespace.presentation(provider),
                             'plugin_guid': namespace.guid,
                             'is_builtin': namespace.guid in self.builtin_plugin_guids,
-                        }
+                        })
                         self.plugin_model_providers.append(plugin_provider)
                         log('debug', f"Registered {provider['kind']} provider '{provider['id']}' from {module.plugin_manifest.name}")
             except Exception as e:
@@ -322,20 +325,9 @@ class PluginManager:
 
         # Broadcast settings configs to UI
         self.broadcast_plugin_ui()
-        emit_message(
-            "plugin_settings_configs",
-            plugin_settings_configs=self.plugin_settings_configs,
-            has_plugin_settings=(len(self.plugin_settings_configs) > 0),
-        )
-        
-        # Broadcast model providers to UI
-        emit_message("plugin_model_providers", providers=self.plugin_model_providers)
 
     def publish_plugin_settings(self, plugin: PluginBase) -> None:
-        settings = self._settings_presentation(plugin)
-        if settings is not None:
-            self.plugin_settings_configs[self._namespaces[plugin].guid] = settings
-        self.republish_settings()
+        self.publish_plugin_ui(plugin)
 
     def publish_plugin_ui(self, plugin: PluginBase, *, broadcast: bool = True) -> None:
         namespace = self._namespaces[plugin]
@@ -344,15 +336,78 @@ class PluginManager:
         ids = [view['id'] for view in views]
         if len(ids) != len(set(ids)) or any(not view_id or ':' in view_id for view_id in ids):
             raise ValueError('Plugin UI view IDs must be unique, nonempty and contain no colon')
+        settings = self._settings_presentation(plugin)
+        if settings is None:
+            self.plugin_settings_configs.pop(guid, None)
+        else:
+            self.plugin_settings_configs[guid] = settings
         self.plugin_ui[guid] = {
             'views': views,
             'translations': namespace.translations(plugin.get_ui_translations()),
+            'state': self._get_ui_state(plugin),
         }
+        for provider in self.plugin_model_providers:
+            if provider['plugin_guid'] == guid:
+                definition = next((item for item in plugin.model_providers or [] if item['id'] == provider['id']), None)
+                if definition is not None:
+                    provider.update(namespace.presentation(definition))
         if broadcast:
             self.broadcast_plugin_ui()
 
+    def _input_fields(self, value: Any) -> dict[str, dict[str, Any]]:
+        fields: dict[str, dict[str, Any]] = {}
+        if isinstance(value, list):
+            for item in value:
+                fields.update(self._input_fields(item))
+        elif isinstance(value, dict):
+            if value.get('type') in {'text', 'textarea', 'toggle', 'number', 'select', 'filter'} and 'text' not in value:
+                key = value.get('key')
+                if not isinstance(key, str) or not key:
+                    raise ValueError('Plugin UI inputs must have nonempty keys')
+                fields[key] = value
+            for key in ('grids', 'fields', 'content', 'sections', 'children', 'items', 'details'):
+                child = value.get(key)
+                if isinstance(child, (list, dict)):
+                    fields.update(self._input_fields(child))
+        return fields
+
+    def _setting_inputs(self, plugin: PluginBase) -> dict[str, dict[str, Any]]:
+        fields = self._input_fields(plugin.get_ui_settings())
+        for provider in plugin.model_providers or []:
+            fields.update(self._input_fields(provider.get('settings_config', [])))
+        return fields
+
+    def _setting_input_keys(self, plugin: PluginBase) -> set[str]:
+        return set(self._setting_inputs(plugin))
+
+    def _get_ui_state(self, plugin: PluginBase) -> dict[str, Any]:
+        settings = self._setting_inputs(plugin)
+        fields = {**settings, **self._input_fields(plugin.get_ui_views())}
+        state = {key: field.get('default_value') for key, field in fields.items()}
+        state.update({key: value for key, value in plugin.settings.items() if key in fields})
+        state.update({key: value for key, value in self._ui_values[plugin].items() if key in fields})
+        return deepcopy(state)
+
+    def _on_ui_changed(self, plugin: PluginBase, payload: dict[str, Any]) -> None:
+        key = payload.get('key')
+        fields = {**self._setting_inputs(plugin), **self._input_fields(plugin.get_ui_views())}
+        if not isinstance(key, str) or key not in fields or 'value' not in payload or fields[key].get('readonly'):
+            raise ValueError('common.invalidAction')
+        value = deepcopy(payload['value'])
+        values = self._ui_values[plugin]
+        previous = deepcopy(values)
+        values[key] = value
+        try:
+            plugin.on_ui_changed(key, deepcopy(value), self._get_ui_state(plugin))
+        except Exception:
+            self._ui_values[plugin] = previous
+            raise
+
     def broadcast_plugin_ui(self) -> None:
         emit_message('plugin_ui', plugins=self.plugin_ui)
+        emit_message('plugin_settings_configs', plugin_settings_configs=self.plugin_settings_configs,
+                     has_plugin_settings=bool(self.plugin_settings_configs))
+        emit_message('plugin_model_providers', providers=self.plugin_model_providers)
         if self.ui_action_manager is not None:
             from .actions.actions_ui import configure_plugin_ui
             configure_plugin_ui(self, self.ui_action_manager)
@@ -370,10 +425,12 @@ class PluginManager:
         try:
             if plugin is None:
                 raise ValueError('common.pluginUnavailable')
-            result = plugin.on_ui_action(action, payload)
+            if action == 'ui_changed':
+                result = self._on_ui_changed(plugin, payload)
+            else:
+                result = plugin.on_ui_action(action, payload)
             self._refresh_plugin_setting_contents(plugin)
             plugin.publish_ui()
-            plugin.publish_settings()
             emit_message('plugin_ui_result', request_id=request_id, plugin_guid=plugin_guid, success=True, result=result)
         except Exception as error:
             log('error', f'Plugin UI action {action} failed: {error}')
@@ -392,7 +449,12 @@ class PluginManager:
             log('debug', f"Executing on_settings_changed hook for {module.plugin_manifest.name}")
             try:
                 guid = self._namespaces[module].guid
+                previous_settings = module.settings
                 module.settings = deepcopy(new_config.get('plugin_settings', {}).get(guid) or {})
+                missing = object()
+                for key in self._get_ui_state(module):
+                    if previous_settings.get(key, missing) != module.settings.get(key, missing):
+                        self._ui_values[module].pop(key, None)
                 module.on_settings_changed()
             except Exception as e:
                 log('error', f"Failed to execute on_settings_changed hook for {module.plugin_manifest.name}: {e}")
@@ -404,7 +466,7 @@ class PluginManager:
         """Persist one plugin setting and notify the UI and owning plugin."""
         plugin = self._owners.get(plugin_guid)
         if plugin is None:
-            log('warning', f"Ignoring setting update for unknown plugin {plugin_guid}")
+            log('warn', f"Ignoring setting update for unknown plugin {plugin_guid}")
             return False
 
         return self._update_owned_setting(plugin, key, value)
@@ -417,6 +479,7 @@ class PluginManager:
         settings = plugin_settings.setdefault(plugin_guid, {})
         settings[key] = deepcopy(value)
         plugin.settings = deepcopy(settings)
+        self._ui_values[plugin].pop(key, None)
 
         save_config(self.config)
         emit_message("config", config=self.config)
@@ -424,7 +487,7 @@ class PluginManager:
         if settings_config is not None:
             for grid in settings_config.get("grids", []):
                 for field in grid.get("fields", []):
-                    if field.get("key") == key and field.get("type") in {"paragraph", "error"}:
+                    if self._is_status_field(field) and field.get("key") == key:
                         field["content"] = str(value)
 
         try:
@@ -433,32 +496,23 @@ class PluginManager:
             log('error', f"Failed to execute on_settings_changed hook for {plugin.plugin_manifest.name}: {e}")
             return False
 
-        if settings_config is not None:
-            # Emit after the hook so plugin-side field mutations made in
-            # on_settings_changed are included in the published snapshot.
-            self.republish_settings()
+        self.publish_plugin_ui(plugin)
         return True
 
     def republish_settings(self) -> None:
-        """Broadcast the current settings configs without persisting anything.
+        """Compatibility entry point publishing all current plugin UI.
 
         Safe to call from background threads: emit_message serializes writes.
         Used by plugins whose state changes outside the config-update paths."""
         for plugin in self.plugin_list.values():
-            settings = self._settings_presentation(plugin)
-            if settings is not None:
-                self.plugin_settings_configs[self._namespaces[plugin].guid] = settings
-        emit_message(
-            "plugin_settings_configs",
-            plugin_settings_configs=self.plugin_settings_configs,
-            has_plugin_settings=(len(self.plugin_settings_configs) > 0),
-        )
+            self.publish_plugin_ui(plugin, broadcast=False)
+        self.broadcast_plugin_ui()
 
     def on_settings_button(self, plugin_guid: str, key: str, value: str | None = None):
         """Route a plugin settings button click to its owning plugin."""
         plugin = self._owners.get(plugin_guid)
         if plugin is None:
-            log('warning', f"Ignoring settings button click for unknown plugin {plugin_guid}")
+            log('warn', f"Ignoring settings button click for unknown plugin {plugin_guid}")
             return
         try:
             if value is None:
@@ -466,9 +520,13 @@ class PluginManager:
             else:
                 plugin.on_settings_button(key, value)
             self._refresh_plugin_setting_contents(plugin)
-            self.republish_settings()
+            self.publish_plugin_ui(plugin)
         except Exception as e:
             log('error', f"Plugin settings button '{key}' raised an exception: {e}")
+
+    @staticmethod
+    def _is_status_field(field: UIComponent) -> TypeGuard[ParagraphSetting | ErrorSetting]:
+        return field.get('type') in {'paragraph', 'error'}
 
     def _refresh_plugin_setting_contents(self, plugin: PluginBase) -> None:
         """Reflect plugin-owned paragraph values after a settings action."""
@@ -477,7 +535,7 @@ class PluginManager:
             return
         for grid in settings_config.get("grids", []):
             for field in grid.get("fields", []):
-                if field.get("type") in {"paragraph", "error"}:
+                if self._is_status_field(field):
                     setting_key = field.get("key")
                     if setting_key in plugin.settings:
                         field["content"] = str(plugin.settings[setting_key])
@@ -491,7 +549,6 @@ class PluginManager:
             try:
                 module.on_chat_start(helper._for_plugin(self._namespaces[module]))
                 self.publish_plugin_ui(module)
-                self.publish_plugin_settings(module)
             except Exception as e:
                 log('error', f"Failed to execute on_chat_start hook for {module.plugin_manifest.name}: {e}")
 
@@ -504,7 +561,6 @@ class PluginManager:
             try:
                 module.on_chat_stop(helper._for_plugin(self._namespaces[module]))
                 self.publish_plugin_ui(module)
-                self.publish_plugin_settings(module)
             except Exception as e:
                 log('error', f"Failed to execute on_chat_stop hook for {module.plugin_manifest.name}: {e}")
 

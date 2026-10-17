@@ -249,3 +249,17 @@ button.primary.mat-mdc-outlined-button:hover:not(:disabled) {
     outline: none;
     border-color: var(--color-primary-blue, #4fc3f7);
 }
+.ui-node { margin: 4px 0; }
+.section { padding: 12px 0; border-bottom: 1px solid rgba(128,128,128,.25); }
+.outlined { border: 1px solid #ffb454; padding: 16px; margin: 16px 0; }
+.ui-heading { text-transform: none; letter-spacing: normal; margin: 0 0 8px; }
+h3.ui-heading { font-size: 1.1rem; }
+h4.ui-heading { font-size: 1rem; }
+ul { margin: 0; padding-left: 22px; }
+.tone-info { color: #75baff; }
+.tone-warning { color: #ffb454; }
+.tone-default { color: #fff; }
+.tone-muted { opacity: .8; font-size: .9rem; }
+.tone-success { color: #75baff; }
+.tone-danger { color: #ff6b6b; }
+mat-progress-bar { margin: 6px 0; }

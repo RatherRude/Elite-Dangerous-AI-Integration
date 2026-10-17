@@ -12,11 +12,15 @@ export class PluginUIService {
   private readonly pending = new Map<string, {resolve: (result: unknown) => void; reject: (error: Error) => void; timer: ReturnType<typeof setTimeout>}>();
   private sequence = 0;
   private languages = new Set<string>();
+  private states: Record<string, Record<string, unknown>> = {};
+  private readonly edits = new Map<string, Map<string, {value: unknown}>>();
 
   constructor(private readonly tauri: TauriService, private readonly translate: TranslateService) {
     tauri.output$.subscribe(message => {
       if (message.type === "ready") {
         this.viewsSubject.next([]);
+        this.states = {};
+        this.edits.clear();
         for (const lang of this.languages) this.translate.setTranslation(lang, TRANSLATIONS[lang] ?? TRANSLATIONS['en']);
         this.languages.clear();
         for (const pending of this.pending.values()) {
@@ -26,15 +30,18 @@ export class PluginUIService {
         this.pending.clear();
       } else if (message.type === "plugin_ui") {
         const views: RegisteredUIView[] = [];
+        const states: Record<string, Record<string, unknown>> = {};
         for (const lang of this.languages) this.translate.setTranslation(lang, TRANSLATIONS[lang] ?? TRANSLATIONS['en']);
         this.languages.clear();
-        for (const [guid, contribution] of Object.entries(message["plugins"] ?? {}) as [string, {views: PluginUIView[]; translations: Record<string, object>}][]) {
+        for (const [guid, contribution] of Object.entries(message["plugins"] ?? {}) as [string, {views: PluginUIView[]; translations: Record<string, object>; state?: Record<string, unknown>}][]) {
+          states[guid] = contribution.state ?? {};
           for (const [lang, translations] of Object.entries(contribution.translations)) {
             this.languages.add(lang);
             this.translate.setTranslation(lang, {plugin: {[guid]: translations}}, true);
           }
           views.push(...contribution.views.map(view => ({...view, pluginGuid: guid, target: `plugin:${guid}:${view.id}`})));
         }
+        this.states = states;
         this.viewsSubject.next(views.sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.target.localeCompare(b.target)));
       } else if (message.type === "plugin_ui_result") {
         const pending = this.pending.get(message["request_id"]);
@@ -45,6 +52,29 @@ export class PluginUIService {
         else pending.reject(new Error(message["error"] || "common.actionError"));
       }
     });
+  }
+
+  getValue(pluginGuid: string, key: string, fallback: unknown): unknown {
+    const edit = this.edits.get(pluginGuid)?.get(key);
+    if (edit) return edit.value;
+    const state = this.states[pluginGuid];
+    return state && Object.prototype.hasOwnProperty.call(state, key) ? state[key] : fallback;
+  }
+
+  async change(pluginGuid: string, key: string, value: unknown): Promise<void> {
+    let edits = this.edits.get(pluginGuid);
+    if (!edits) {
+      edits = new Map();
+      this.edits.set(pluginGuid, edits);
+    }
+    const edit = {value};
+    edits.set(key, edit);
+    try {
+      await this.invoke(pluginGuid, "ui_changed", {key, value});
+    } finally {
+      if (edits.get(key) === edit) edits.delete(key);
+      if (!edits.size && this.edits.get(pluginGuid) === edits) this.edits.delete(pluginGuid);
+    }
   }
 
   invoke(pluginGuid: string, action: string, payload: Record<string, unknown> = {}): Promise<unknown> {

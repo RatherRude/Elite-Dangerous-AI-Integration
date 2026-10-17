@@ -62,11 +62,11 @@ export class SettingsGridComponent {
     @Input() gridClass: string = 'settings-grid';
 
     onFieldChange(field: SettingBase, value: any): void {
-        this.setValue(field.key, value);
+        if (field.key) this.setValue(field.key, value);
     }
 
     getFieldValue(field: SettingBase): any {
-        return this.getValue(field.key, field.default_value);
+        return field.key ? (this.getValue ? this.getValue(field.key, field.default_value) : field.default_value) : undefined;
     }
 
     resolve(value: string | null | undefined): string {
@@ -114,7 +114,7 @@ export class SettingsGridComponent {
     }
 
     handleButtonClick(field: SettingBase): void {
-        this.onButtonClick?.(field.key);
+        if (field.key) this.onButtonClick?.(field.key);
     }
 
     handleListAction(event: { action: string; rowKey: string; value?: string }): void {

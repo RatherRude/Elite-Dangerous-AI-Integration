@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, inject } from "@angular/core";
+import { Component, Input, Output, EventEmitter, inject, forwardRef } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -13,6 +13,7 @@ import { MatProgressBarModule } from "@angular/material/progress-bar";
 import { SettingBase, ListAction, ListRow } from "../../services/plugin-settings";
 import { resolveModuleName, resolveSettingText } from "../../services/setting-text";
 import { PluginContentComponent } from "../plugin-content/plugin-content.component";
+import { UIText } from "../../services/plugin-ui";
 
 /**
  * A reusable component for rendering plugin/provider settings fields.
@@ -32,7 +33,7 @@ import { PluginContentComponent } from "../plugin-content/plugin-content.compone
         MatButtonModule,
         MatIconModule,
         MatProgressBarModule,
-        PluginContentComponent,
+        forwardRef(() => PluginContentComponent),
     ],
     templateUrl: "./settings-field.component.html",
     styleUrl: "./settings-field.component.css",
@@ -52,6 +53,10 @@ export class SettingsFieldComponent {
 
     @Input() buttonEnabled: boolean = true;
     @Input() primary: boolean = false;
+    @Input() getValue: (key: string, fallback: unknown) => unknown = (_key, fallback) => fallback;
+    @Input() setValue: (key: string, value: unknown) => void = (key, value) =>
+        this.uiAction.emit({action: "ui_changed", payload: {key, value}});
+    @Input() onButtonClick?: (key: string, value?: string) => void;
 
     private readonly collapsedGroups = new Set<string>();
 
@@ -67,6 +72,22 @@ export class SettingsFieldComponent {
     editingRowKey: string | null = null;
     editingAction: ListAction | null = null;
     editValue = "";
+
+    text(value?: UIText): string {
+        if (!value) return "";
+        const params = Object.fromEntries(Object.entries(value.params ?? {}).map(([key, param]) =>
+            [key, typeof param === "object" ? this.text(param) : param]));
+        if (value.key) {
+            const translated = this.translate.instant(value.key, params);
+            if (translated !== value.key) return translated;
+            if (!value.text && !value.localized) return value.key;
+        }
+        return value.localized?.[this.translate.currentLang] ?? value.localized?.["en"] ?? value.text ?? "";
+    }
+
+    percentage(): number {
+        return this.field.maximum ? Math.max(0, Math.min(100, (this.field.value ?? 0) / this.field.maximum * 100)) : 0;
+    }
 
     resolve(
         value: string | null | undefined,
@@ -91,8 +112,9 @@ export class SettingsFieldComponent {
         }
     }
 
-    onButtonClick(): void {
-        this.buttonClick.emit();
+    handleClick(): void {
+        if (this.field.action) this.uiAction.emit({action: this.field.action, payload: this.field.payload ?? {}});
+        else this.buttonClick.emit();
     }
 
     hasUnknownSelectValue(): boolean {

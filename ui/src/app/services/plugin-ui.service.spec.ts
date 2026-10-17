@@ -62,4 +62,70 @@ describe("generic plugin UI transport", () => {
     expect(translate.instant("plugin.alpha.common.cancel")).toBe("Alpha cancel");
     expect(translate.instant("plugin.alpha.plugin.beta.title")).toBe("Forged beta");
   });
+
+  it("shares input state, sends edits and accepts authoritative dynamic publications", async () => {
+    output.next({type: "plugin_ui", timestamp: "", index: 1, plugins: {
+      alpha: {...contribution("alpha", 0), state: {search: "", enabled: false, choice: null}},
+      beta: {...contribution("beta", 0), state: {search: "other"}},
+    }});
+    expect(service.getValue("alpha", "enabled", true)).toBeFalse();
+    expect(service.getValue("alpha", "choice", "fallback")).toBeNull();
+    const changed = service.change("alpha", "search", "filter");
+    const command = tauri.send_command.calls.mostRecent().args[0];
+    expect(command).toEqual(jasmine.objectContaining({
+      plugin_guid: "alpha", action: "ui_changed", payload: {key: "search", value: "filter"},
+    }));
+    expect(service.getValue("alpha", "search", "")).toBe("filter");
+    expect(service.getValue("beta", "search", "")).toBe("other");
+    output.next({type: "plugin_ui", timestamp: "", index: 2, plugins: {
+      alpha: {...contribution("alpha", 0), state: {search: "filter", enabled: true}},
+    }});
+    output.next({type: "plugin_ui_result", timestamp: "", index: 3,
+      request_id: command["request_id"], success: true});
+    await changed;
+    expect(service.getValue("alpha", "search", "")).toBe("filter");
+    expect(service.getValue("alpha", "enabled", false)).toBeTrue();
+    expect(service.getValue("beta", "search", "removed")).toBe("removed");
+    output.next({type: "ready", timestamp: "", index: 4});
+    expect(service.getValue("alpha", "search", "reset")).toBe("reset");
+  });
+
+  it("rolls back rejected inputs without losing a different pending edit", async () => {
+    output.next({type: "plugin_ui", timestamp: "", index: 1, plugins: {
+      alpha: {...contribution("alpha", 0), state: {search: "before", enabled: false}},
+    }});
+    const failure = service.change("alpha", "search", "bad");
+    const request = tauri.send_command.calls.mostRecent().args[0];
+    const success = service.change("alpha", "enabled", true);
+    const otherRequest = tauri.send_command.calls.mostRecent().args[0];
+    output.next({type: "plugin_ui_result", timestamp: "", index: 2,
+      request_id: request["request_id"], success: false, error: "Invalid"});
+    await expectAsync(failure).toBeRejectedWithError("Invalid");
+    expect(service.getValue("alpha", "search", "")).toBe("before");
+    expect(service.getValue("alpha", "enabled", false)).toBeTrue();
+    output.next({type: "plugin_ui_result", timestamp: "", index: 3,
+      request_id: otherRequest["request_id"], success: true});
+    await success;
+  });
+
+  it("does not overwrite newer typing when an earlier edit publishes its result", async () => {
+    const first = service.change("alpha", "search", "f");
+    const firstRequest = tauri.send_command.calls.mostRecent().args[0];
+    const second = service.change("alpha", "search", "filter");
+    const secondRequest = tauri.send_command.calls.mostRecent().args[0];
+    output.next({type: "plugin_ui", timestamp: "", index: 1, plugins: {
+      alpha: {...contribution("alpha", 0), state: {search: "f"}},
+    }});
+    output.next({type: "plugin_ui_result", timestamp: "", index: 2,
+      request_id: firstRequest["request_id"], success: true});
+    await first;
+    expect(service.getValue("alpha", "search", "")).toBe("filter");
+    output.next({type: "plugin_ui", timestamp: "", index: 3, plugins: {
+      alpha: {...contribution("alpha", 0), state: {search: "normalized"}},
+    }});
+    output.next({type: "plugin_ui_result", timestamp: "", index: 4,
+      request_id: secondRequest["request_id"], success: true});
+    await second;
+    expect(service.getValue("alpha", "search", "")).toBe("normalized");
+  });
 });
