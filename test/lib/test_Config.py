@@ -362,3 +362,23 @@ def test_very_old_shared_key_config_does_not_require_role_api_key(provider) -> N
     guid = "7f6f8e98-576f-4d1d-9d87-0f8f7f2f3c61" if provider == "openai" else "51f1df0c-479d-4f0f-a585-57c08d9e1901"
     assert migrated["plugin_settings"][guid]["api_key"] == "shared-secret"
     assert migrated["plugin_settings"][guid]["embedding_api_key"] == "shared-secret"
+def test_voice_activation_defaults_and_legacy_word_survive_updates(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    config = ConfigModule.load_config()
+    assert config["ptt_var"] == "voice_activation"
+    assert config["wake_word_name"] == "Simone"
+    assert config["wake_word_timeout"] == 10.0
+    assert config["wake_word_source"] == "main"
+    assert config["wake_word_first_command"] == "retranscribe"
+    updated = ConfigModule.update_config(config, {"ptt_var": "wake_word", "stt_required_word": "old word"})
+    assert updated["stt_required_word"] == "old word"
+    assert ConfigModule.load_config()["ptt_var"] == "wake_word"
+
+
+def test_invalid_voice_config_is_not_persisted(monkeypatch):
+    saved = []
+    monkeypatch.setattr(ConfigModule, "save_config", saved.append)
+    current = {"wake_word_name": "Simone", "wake_word_timeout": 10.0}
+    for change in ({"wake_word_timeout": 0}, {"wake_word_timeout": float("nan")}, {"wake_word_name": "!!!"}):
+        assert ConfigModule.update_config(current, change) is current
+    assert not saved

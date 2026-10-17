@@ -312,6 +312,17 @@ def test_tts_dropped_line_completes_without_speaking(mock_pyaudio):
     assert mock_model.synthesize.call_count == 0
 
 
+def test_control_line_playback_failure_does_not_retry_or_hold_session(mock_pyaudio, monkeypatch):
+    playback = MagicMock(side_effect=RuntimeError("Playback unavailable"))
+    monkeypatch.setattr(TTS, "_playback_one", playback)
+    tts = TTS(MagicMock(spec=OpenAITTSModel))
+    line = tts.say("Oui", retry_on_error=False)
+    line.wait_for_completion()
+    assert line.is_completed()
+    assert tts.read_queue.empty()
+    playback.assert_called_once()
+
+
 def test_postprocess_audio_applies_volume_and_distortion(mock_pyaudio):
     """Test TTS postprocessing reshapes synthesized audio"""
     tts = TTS(

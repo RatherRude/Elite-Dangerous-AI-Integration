@@ -91,7 +91,11 @@ export interface Config {
     // Embedding settings
     embedding_provider: string;
     vision_var: boolean;
-    ptt_var: "voice_activation" | "push_to_talk" | "push_to_mute" | "toggle";
+    ptt_var: "voice_activation" | "push_to_talk" | "push_to_mute" | "toggle" | "wake_word";
+    wake_word_name: string;
+    wake_word_timeout: number;
+    wake_word_source: "main" | "parakeet";
+    wake_word_first_command: "retranscribe" | "reuse";
     ptt_inverted_var: boolean;
     mute_during_response_var: boolean;
     game_actions_var: boolean;

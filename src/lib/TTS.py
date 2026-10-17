@@ -115,7 +115,7 @@ class TTS:
         postprocessing_config: CharacterTTSPostprocessingConfig | None = None,
         output_device: Optional[str] = None,
         output_volume_multiplier: float = 1.0,
-    ):
+    ) -> None:
         self.tts_model = tts_model
         self.voice = voice
         self.voice_settings = dict(voice_settings) if voice_settings is not None else None
@@ -173,6 +173,7 @@ class TTS:
                 "on_start": item.get("on_start"),
                 "on_complete": item.get("on_complete"),
                 "drop_if": item.get("drop_if"),
+                "retry_on_error": item.get("retry_on_error", True),
                 "line": item.get("line"),
             }
         return {
@@ -284,8 +285,9 @@ class TTS:
                                 cast(list[CharacterTTSPostprocessingConfig | None] | None, postprocessing_layers if isinstance(postprocessing_layers, list) else None),
                             )
                     except Exception as e:
-                        self.read_queue.put(item)
-                        requeued = True
+                        if item.get("retry_on_error", True):
+                            self.read_queue.put(item)
+                            requeued = True
                         raise e
                     finally:
                         if isinstance(line, TTSLine) and not requeued:
@@ -1367,6 +1369,7 @@ class TTS:
         on_start: Callable[[], None] | None = None,
         on_complete: Callable[[], None] | None = None,
         drop_if: Callable[[], bool] | None = None,
+        retry_on_error: bool = True,
     ) -> TTSLine:
         line = TTSLine()
         self.read_queue.put(
@@ -1379,6 +1382,7 @@ class TTS:
                 "on_start": on_start,
                 "on_complete": on_complete,
                 "drop_if": drop_if,
+                "retry_on_error": retry_on_error,
                 "line": line,
             },
         )
