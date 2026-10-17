@@ -1,0 +1,50 @@
+{
+  "default_language": "en",
+  "languages": {
+    "en": {
+      "language_names": [
+        "English"
+      ],
+      "invocation_prefixes": [
+        "Hey",
+        "OK",
+        "Okay"
+      ],
+      "closing_phrases": [
+        "that's all",
+        "thats all",
+        "I'm done",
+        "I am done"
+      ],
+      "wake_acknowledgments": [
+        "Yes?",
+        "What is it?"
+      ],
+      "close_acknowledgments": [
+        "All right.",
+        "Very well."
+      ]
+    },
+    "fr": {
+      "language_names": [
+        "French",
+        "Français"
+      ],
+      "invocation_prefixes": [
+        "Dis"
+      ],
+      "closing_phrases": [
+        "ça sera tout",
+        "j'ai terminé"
+      ],
+      "wake_acknowledgments": [
+        "Oui",
+        "Qu'y a-t-il ?"
+      ],
+      "close_acknowledgments": [
+        "d'accord",
+        "très bien"
+      ]
+    }
+  }
+}

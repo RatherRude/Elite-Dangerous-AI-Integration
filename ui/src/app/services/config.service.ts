@@ -3,6 +3,7 @@ import { BehaviorSubject, filter, Observable } from "rxjs";
 import { BaseCommand, type BaseMessage, TauriService } from "./tauri.service";
 import { ModelProviderDefinition, PluginModelProvidersMessage, PluginSettings, PluginSettingsMessage } from "./plugin-settings";
 import { ScreenInfo } from "../models/screen-info";
+import { PluginUIService } from "./plugin-ui.service";
 
 export interface ConfigMessage extends BaseMessage {
     type: "config";
@@ -28,6 +29,7 @@ export interface PluginSettingsButtonMessage extends BaseCommand {
     type: "plugin_settings_button";
     plugin_guid: string;
     key: string;
+    value?: string;
 }
 
 export interface RefreshSystemInfoMessage extends BaseCommand {
@@ -89,7 +91,11 @@ export interface Config {
     // Embedding settings
     embedding_provider: string;
     vision_var: boolean;
-    ptt_var: "voice_activation" | "push_to_talk" | "push_to_mute" | "toggle";
+    ptt_var: "voice_activation" | "push_to_talk" | "push_to_mute" | "toggle" | "wake_word";
+    wake_word_name: string;
+    wake_word_timeout: number;
+    wake_word_source: "main" | "parakeet";
+    wake_word_first_command: "retranscribe" | "reuse";
     ptt_inverted_var: boolean;
     mute_during_response_var: boolean;
     game_actions_var: boolean;
@@ -177,7 +183,7 @@ export class ConfigService {
     public plugin_model_providers$ = this.plugin_model_providers_subject
         .asObservable();
 
-    constructor(private tauriService: TauriService) {
+    constructor(private tauriService: TauriService, private pluginUI: PluginUIService) {
         // Subscribe to config messages from the TauriService
         this.tauriService.output$.pipe(
             filter((
@@ -295,12 +301,13 @@ export class ConfigService {
         await this.tauriService.send_command(message);
     }
 
-    public async clickPluginSettingsButton(pluginGuid: string, key: string): Promise<void> {
+    public async clickPluginSettingsButton(pluginGuid: string, key: string, value?: string): Promise<void> {
         const message: PluginSettingsButtonMessage = {
             type: "plugin_settings_button",
             timestamp: new Date().toISOString(),
             plugin_guid: pluginGuid,
             key,
+            ...(value !== undefined ? { value } : {}),
         };
         await this.tauriService.send_command(message);
     }
@@ -308,6 +315,10 @@ export class ConfigService {
     public getPluginSetting(key: string): any | null {
         const currentConfig = this.getCurrentConfig();
         return currentConfig?.plugin_settings?.[key] ?? null;
+    }
+
+    public getPluginSettingsConfig(pluginGuid: string): PluginSettings | undefined {
+        return this.plugin_settings_message_subject.value?.plugin_settings_configs[pluginGuid];
     }
 
     public getCurrentConfig(): Config | null {

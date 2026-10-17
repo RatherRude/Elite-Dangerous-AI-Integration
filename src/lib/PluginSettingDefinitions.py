@@ -1,67 +1,46 @@
 from typing import Literal, NotRequired, TypedDict
+from .PluginUIDefinitions import (
+    UIComponent, UINode, InputBase, SelectOption, Select, TextInput, Filter,
+    TextArea, NumberInput, Toggle, Button, Paragraph, Error, List, ListAction, ListRow,
+)
 
-class SettingBase(TypedDict):
+# Deprecated compatibility aliases; use PluginUIDefinitions for new components.
+SettingBase = InputBase
+SelectSetting = Select
+TextSetting = TextInput
+TextAreaSetting = TextArea
+NumericalSetting = NumberInput
+ToggleSetting = Toggle
+ButtonSetting = Button
+ParagraphSetting = Paragraph
+ErrorSetting = Error
+ListSetting = List
+FilterSetting = Filter
+
+class GridHeaderAction(TypedDict):
+    """Defines an action button rendered next to a grid header."""
     key: str
-    label: str | None
-    type: Literal['paragraph', 'text', 'textarea', 'toggle', 'number', 'select', 'button', 'error']
-    readonly: bool
-    placeholder: str | None
+    icon: NotRequired[str]
+    label: NotRequired[str]
 
+SettingField = UIComponent
 
-class SelectOption(TypedDict):
-    """Defines an option for a select setting."""
-    key: str
-    label: str
-    value: object | str | int | float | bool
-    disabled: bool
-
-class SelectSetting(SettingBase):
-    """Used to display a select input."""
-    default_value: str | list[str] | None
-    select_options: list[SelectOption] | None
-    multi_select: bool
-
-class TextSetting(SettingBase):
-    """Used to display a text input."""
-    default_value: str | None
-    max_length: int | None
-    min_length: int | None
-    hidden: bool
-
-class TextAreaSetting(SettingBase):
-    """Used to display a textarea."""
-    default_value: str | None
-    rows: int | float | None
-    cols: int | float | None
-
-class NumericalSetting(SettingBase):
-    """Used to display a numerical input."""
-    default_value: int | float | None
-    min_value: int | float | None
-    max_value: int | float | None
-    step: int | float | None
-
-class ToggleSetting(SettingBase):
-    """Used to display a toggle switch."""
-    default_value: bool | None
-
-class ButtonSetting(SettingBase):
-    """Used to display a button that invokes the plugin's settings-button hook."""
-    pass
-
-class ParagraphSetting(SettingBase):
-    """Used to display a paragraph of text. The label is used as the title."""
-    content: str
-
-class ErrorSetting(SettingBase):
-    """Used to display an error message."""
-    content: str
 
 class SettingsGrid(TypedDict):
     """Defines a grid of settings for a plugin."""
     key: str
     label: str
-    fields: list[TextSetting | TextAreaSetting | SelectSetting | NumericalSetting | ToggleSetting | ButtonSetting | ParagraphSetting | ErrorSetting]
+    fields: list[SettingField]
+    content: NotRequired[list[UIComponent]]
+    collapsible: NotRequired[bool]
+    default_collapsed: NotRequired[bool]
+    header_action: NotRequired[GridHeaderAction]
+
+class SettingsHeaderLink(TypedDict):
+    text: str
+    label: str
+    url: str
+
 
 class PluginSettings(TypedDict):
     """Used to define the settings for a plugin."""
@@ -69,6 +48,14 @@ class PluginSettings(TypedDict):
     label: str
     icon: str
     grids: list[SettingsGrid]
+    tabs: NotRequired[list['SettingsTab']]
+    header_link: NotRequired[SettingsHeaderLink]
+
+
+class SettingsTab(TypedDict):
+    key: str
+    label: str
+    grids: list[str]
 
 
 class ApiKeyDetection(TypedDict, total=False):

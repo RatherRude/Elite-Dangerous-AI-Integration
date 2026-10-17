@@ -89,6 +89,7 @@
                         [getValue]="createGetValueFn(provider.plugin_guid)"
                         [setValue]="createSetValueFn(provider.plugin_guid)"
                         [onButtonClick]="createButtonClickFn(provider.plugin_guid)"
+                        (uiAction)="invoke(provider.plugin_guid, $event.action, $event.payload)"
                         [headerLevel]="'h3'"
                         [gridClass]="'plugin-provider-settings'">
                     </app-settings-grid>
@@ -142,6 +143,7 @@
                         [getValue]="createGetValueFn(provider.plugin_guid)"
                         [setValue]="createSetValueFn(provider.plugin_guid)"
                         [onButtonClick]="createButtonClickFn(provider.plugin_guid)"
+                        (uiAction)="invoke(provider.plugin_guid, $event.action, $event.payload)"
                         [headerLevel]="'h3'"
                         [gridClass]="'plugin-provider-settings'">
                     </app-settings-grid>
@@ -210,6 +212,7 @@
                         [getValue]="createGetValueFn(provider.plugin_guid)"
                         [setValue]="createSetValueFn(provider.plugin_guid)"
                         [onButtonClick]="createButtonClickFn(provider.plugin_guid)"
+                        (uiAction)="invoke(provider.plugin_guid, $event.action, $event.payload)"
                         [headerLevel]="'h3'"
                         [gridClass]="'plugin-provider-settings'">
                     </app-settings-grid>
@@ -226,12 +229,13 @@
                         <mat-select [value]="config.ptt_var"
                                     (selectionChange)="onConfigChange({ptt_var: $event.value})">
                             <mat-option value="voice_activation">Voice Detection (Use Headphones)</mat-option>
+                            <mat-option value="wake_word">{{ 'voice.mode' | translate }}</mat-option>
                             <mat-option value="push_to_talk">Push-to-Talk (Recommended)</mat-option>
                             <mat-option value="push_to_mute">Push-to-Mute</mat-option>
                             <mat-option value="toggle">Toggle Mic On/Off</mat-option>
                         </mat-select>
                     </mat-form-field>
-                    @if (config.ptt_var !== 'voice_activation') {
+                    @if (config.ptt_var !== 'voice_activation' && config.ptt_var !== 'wake_word') {
                         <mat-form-field (click)="onAssignPTT($event, 0)">
                             <mat-label>Hotkey 1</mat-label>
                             <input required matInput [value]="assigningPTTIndex === 0 ? 'Press any key...' : config.ptt_key" readonly>
@@ -261,6 +265,10 @@
                     }
                 </div>
 
+                @if (config.ptt_var === 'wake_word') {
+                    <app-voice-activation-settings [config]="config" [providers]="pluginSTTProviders"
+                        (configChange)="onConfigChange($event)"></app-voice-activation-settings>
+                }
                 <div class="sound-devices">
                     <mat-form-field
                         #sttInputDeviceField
@@ -335,6 +343,7 @@
                         [getValue]="createGetValueFn(provider.plugin_guid)"
                         [setValue]="createSetValueFn(provider.plugin_guid)"
                         [onButtonClick]="createButtonClickFn(provider.plugin_guid)"
+                        (uiAction)="invoke(provider.plugin_guid, $event.action, $event.payload)"
                         [headerLevel]="'h3'"
                         [gridClass]="'plugin-provider-settings'">
                     </app-settings-grid>
@@ -434,6 +443,7 @@
                         [getValue]="createGetValueFn(provider.plugin_guid)"
                         [setValue]="createSetValueFn(provider.plugin_guid)"
                         [onButtonClick]="createButtonClickFn(provider.plugin_guid)"
+                        (uiAction)="invoke(provider.plugin_guid, $event.action, $event.payload)"
                         [headerLevel]="'h3'"
                         [gridClass]="'plugin-provider-settings'">
                     </app-settings-grid>
@@ -487,6 +497,7 @@
                         [getValue]="createGetValueFn(provider.plugin_guid)"
                         [setValue]="createSetValueFn(provider.plugin_guid)"
                         [onButtonClick]="createButtonClickFn(provider.plugin_guid)"
+                        (uiAction)="invoke(provider.plugin_guid, $event.action, $event.payload)"
                         [headerLevel]="'h3'"
                         [gridClass]="'plugin-provider-settings'">
                     </app-settings-grid>

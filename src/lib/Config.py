@@ -10,8 +10,9 @@ import sys
 from urllib.parse import urlparse
 
 from .HudColorMatrix import HudColorMatrix
-from .Logger import log
+from .Logger import log, show_chat_message
 from .UI import emit_message
+from .VoiceActivation import voice_config_error
 
 # List of game events categorized (legacy boolean defaults)
 game_events = {
@@ -900,7 +901,11 @@ class Config(TypedDict):
     # Embedding settings
     embedding_provider: str
     vision_var: bool
-    ptt_var: Literal['voice_activation', 'push_to_talk', 'push_to_mute', 'toggle']
+    ptt_var: Literal['voice_activation', 'push_to_talk', 'push_to_mute', 'toggle', 'wake_word']
+    wake_word_name: str
+    wake_word_timeout: float
+    wake_word_source: Literal['main', 'parakeet']
+    wake_word_first_command: Literal['retranscribe', 'reuse']
     ptt_inverted_var: bool
     mute_during_response_var: bool
     game_actions_var: bool
@@ -1703,6 +1708,10 @@ def load_config() -> Config:
         'api_key': "",
         'vision_var': False,
         'ptt_var': 'voice_activation',
+        'wake_word_name': 'Simone',
+        'wake_word_timeout': 10.0,
+        'wake_word_source': 'main',
+        'wake_word_first_command': 'retranscribe',
         'ptt_inverted_var': False,
         'mute_during_response_var': False,
         'game_actions_var': True,
@@ -1914,6 +1923,10 @@ def get_system_info() -> SystemInfo:
 
 
 def validate_config(config: Config) -> Config | None:
+    error = voice_config_error(config)
+    if error:
+        show_chat_message("error", error)
+        return None
     return config
 
 class UpdateCharacterRequest(TypedDict):
@@ -2033,8 +2046,13 @@ def update_config(config: Config, data: dict) -> Config:
             agent_tries = 1
         data["agent_llm_max_tries"] = agent_tries
 
-    # Now merge and save as before
     new_config = cast(Config, {**config, **data})
+    error = voice_config_error(new_config)
+    if error:
+        log("error", error)
+        show_chat_message("error", error)
+        emit_message("config", config=config)
+        return config
     emit_message("config", config=new_config)
     save_config(new_config)
     return new_config

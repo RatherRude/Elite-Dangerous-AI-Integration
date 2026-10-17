@@ -228,3 +228,25 @@ def test_default_config_uses_plugins_and_has_no_legacy_provider_settings(monkeyp
     assert config["embedding_provider"].startswith("plugin:")
     assert "tools_var" not in config
     assert not set(ConfigModule.LEGACY_PROVIDER_SETTING_KEYS).intersection(config)
+
+
+def test_voice_activation_defaults_and_legacy_word_survive_updates(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    config = ConfigModule.load_config()
+    assert config["ptt_var"] == "voice_activation"
+    assert config["wake_word_name"] == "Simone"
+    assert config["wake_word_timeout"] == 10.0
+    assert config["wake_word_source"] == "main"
+    assert config["wake_word_first_command"] == "retranscribe"
+    updated = ConfigModule.update_config(config, {"ptt_var": "wake_word", "stt_required_word": "old word"})
+    assert updated["stt_required_word"] == "old word"
+    assert ConfigModule.load_config()["ptt_var"] == "wake_word"
+
+
+def test_invalid_voice_config_is_not_persisted(monkeypatch):
+    saved = []
+    monkeypatch.setattr(ConfigModule, "save_config", saved.append)
+    current = {"wake_word_name": "Simone", "wake_word_timeout": 10.0}
+    for change in ({"wake_word_timeout": 0}, {"wake_word_timeout": float("nan")}, {"wake_word_name": "!!!"}):
+        assert ConfigModule.update_config(current, change) is current
+    assert not saved

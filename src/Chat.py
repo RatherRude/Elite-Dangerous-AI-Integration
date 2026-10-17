@@ -8,6 +8,7 @@ import json
 import io
 import traceback
 import uuid
+import random
 from datetime import datetime
 from pathlib import Path
 import yaml
@@ -77,8 +78,15 @@ from lib.Event import (
 from lib.Logger import show_chat_message, configure_stdio
 from lib.Projections import registerProjections
 from lib.PromptGenerator import PromptGenerator
-from lib.STT import STT
-from lib.TTS import TTS
+from lib.STT import STT, STTResult
+from lib.TTS import TTS, TTSLine
+from lib.VoiceActivation import (
+    PARAKEET_GUID,
+    PARAKEET_MODEL,
+    PARAKEET_PROVIDER,
+    VoiceActivation,
+    resolve_activation_model,
+)
 from lib.StatusParser import StatusParser
 from lib.EDJournal import *
 from lib.EventManager import EventManager
@@ -128,7 +136,7 @@ def get_model_usage_history_payload(
 
 @final
 class Chat:
-    def __init__(self, config: Config, plugin_manager: PluginManager):
+    def __init__(self, config: Config, plugin_manager: PluginManager) -> None:
         self.config = config  # todo: remove
         self.plugin_manager = plugin_manager
         if self.config["api_key"] == "":
@@ -246,6 +254,9 @@ class Chat:
                 show_chat_message("warning", f"Vision provider is not a registered plugin: {vision_provider}")
 
         log("debug", "Initializing Speech processing...")
+        self._voice_mode_enabled = self.config.get("ptt_var") == "wake_word"
+        if self._voice_mode_enabled:
+            emit_message("voice_activation", state="preparing", name=self.config.get("wake_word_name", "Simone"))
         self.sttModel: STTModel | None = None
         if self.config["stt_provider"] != "none":
             stt_plugin = parse_plugin_provider(self.config["stt_provider"])
@@ -327,10 +338,50 @@ class Chat:
                 self.config.get("output_volume_multiplier", 1.0)
             ),
         )
+        voice_activation = None
+        self._voice_activation_provider = self.config["stt_provider"]
+        self._voice_activation_warning = ""
+        self._last_voice_state: str | None = None
+        self._voice_control_line: TTSLine | None = None
+        if self._voice_mode_enabled and self.sttModel is not None:
+            def create_parakeet() -> STTModel | None:
+                model = self.plugin_manager.create_plugin_model(PARAKEET_GUID, PARAKEET_MODEL, "stt")
+                return model if isinstance(model, STTModel) else None
+
+            activation_model, fallback = resolve_activation_model(
+                self.sttModel,
+                self.config["stt_provider"],
+                self.config.get("wake_word_source", "main"),
+                self.plugin_manager.get_plugin_provider(PARAKEET_GUID, PARAKEET_MODEL) is not None,
+                create_parakeet,
+            )
+            if activation_model is not self.sttModel:
+                self._voice_activation_provider = PARAKEET_PROVIDER
+            if fallback:
+                self._voice_activation_warning = (
+                    "Parakeet is unavailable. Voice activation uses the configured STT provider. "
+                    "If it is remote, standby speech is sent to that service."
+                )
+                show_chat_message("warning", self._voice_activation_warning)
+            voice_activation = VoiceActivation(
+                self.config.get("wake_word_name", "Simone"),
+                self.config.get("wake_word_timeout", 10.0),
+                self.sttModel,
+                activation_model,
+                self.config.get("wake_word_first_command", "retranscribe"),
+                tts_language=(tts_voice_settings or {}).get(
+                    "language", self.ttsModel.language if self.ttsModel is not None else None,
+                ),
+                stt_language=self.sttModel.language,
+                detect_language=self.plugin_manager.detect_language,
+            )
+        elif self._voice_mode_enabled:
+            show_chat_message("error", "Name-triggered dialogue requires an available STT provider.")
         self.stt = STT(
             stt_model=self.sttModel,
             input_device_name=self.config["input_device_name"],
             required_word=self.config["stt_required_word"],
+            voice_activation=voice_activation,
         )
 
         log("debug", "Initializing SystemDatabase...")
@@ -405,6 +456,72 @@ class Chat:
         emit_message("system", system=get_system_info())
         emit_message("states", states=projected_states)
         self.previous_states = copy.deepcopy(projected_states)
+        self._emit_voice_activation(force=True)
+
+    def _emit_voice_activation(self, force: bool = False) -> None:
+        session = self.stt.voice_activation
+        state = session.state if session else ("error" if self._voice_mode_enabled else "disabled")
+        if not force and state == self._last_voice_state:
+            return
+        self._last_voice_state = state
+        emit_message(
+            "voice_activation",
+            state=state,
+            name=session.name if session else self.config.get("wake_word_name", "Simone"),
+            activation_provider=self._voice_activation_provider,
+            warning=self._voice_activation_warning,
+        )
+
+    def _update_voice_activation(self) -> None:
+        session = self.stt.voice_activation
+        if session:
+            if self._voice_control_line is not None and self._voice_control_line.is_completed():
+                self._voice_control_line = None
+                session.finish_control()
+                self.event_manager.add_assistant_complete_event()
+            output_busy = self.tts.get_is_playing()
+            session.tick(
+                busy=(
+                    self.assistant.reply_pending
+                    or self.assistant.is_replying
+                    or self.stt.recording
+                    or self.stt.processing
+                    or not self.stt.resultQueue.empty()
+                    or output_busy
+                    or self._voice_control_line is not None
+                ),
+                output_busy=output_busy,
+            )
+        self._emit_voice_activation()
+
+    def _handle_stt_result(self, result: STTResult) -> None:
+        session = self.stt.voice_activation
+        voice_input = result.voice_input
+        if session:
+            if voice_input is None or not session.accepts(voice_input):
+                return
+            if voice_input.kind != "command":
+                self.tts.abort()
+                phrases = session.phrases.languages[voice_input.language]
+                response = random.choice(
+                    phrases.wake_acknowledgments
+                    if voice_input.kind == "wake"
+                    else phrases.close_acknowledgments
+                )
+                show_chat_message("covas", response)
+                if self.ttsModel is None:
+                    show_chat_message("warning", "Voice acknowledgment is unavailable because TTS is disabled.")
+                    session.finish_control()
+                else:
+                    self._voice_control_line = self.tts.say(
+                        response,
+                        context="voice_activation",
+                        on_start=self.event_manager.add_assistant_speaking,
+                        retry_on_error=False,
+                    )
+                return
+        self.tts.abort()
+        self.event_manager.add_conversation_event("user", result.text)
 
     def on_event(self, event: Event, projected_states: dict[str, Any]):
         for key, value in projected_states.items():
@@ -800,6 +917,7 @@ class Chat:
             log("info", f"Setting automatic voice activation.")
             self.stt.listen_continuous()
         show_chat_message("info", "Voice interface ready.")
+        self._emit_voice_activation(force=True)
 
         show_chat_message("info", "Initializing states...")
         self.event_manager.add_historic_game_events(self.jn.historic_events)
@@ -858,6 +976,14 @@ class Chat:
 
         # Execute plugin helper ready hooks
         self.plugin_manager.on_chat_start(self.plugin_helper)
+        session = self.stt.voice_activation
+        if session is not None and session.automatic_language and not self.plugin_manager.has_language_detector:
+            show_chat_message(
+                "info", "No language detector plugin is active. Voice acknowledgments use the last known "
+                "language or the phrase catalog's default; configured closing phrases can still identify their language.",
+            )
+        from lib.actions.actions_ui import configure_plugin_ui
+        configure_plugin_ui(self.plugin_manager, self.action_manager)
         show_chat_message("info", "Plugins ready.")
 
         # Cue the user that we're ready to go.
@@ -865,6 +991,7 @@ class Chat:
 
         while True:
             try:
+                self._update_voice_activation()
                 status = None
                 # check status file for updates
                 while not self.status_parser.status_queue.empty():
@@ -891,9 +1018,7 @@ class Chat:
 
                 # check STT result queue
                 if not self.stt.resultQueue.empty():
-                    text = self.stt.resultQueue.get().text
-                    self.tts.abort()
-                    self.event_manager.add_conversation_event("user", text)
+                    self._handle_stt_result(self.stt.resultQueue.get())
 
                 # check EDJournal files for updates
                 while not self.jn.events.empty():
@@ -920,6 +1045,8 @@ class Chat:
                 break
 
         # Teardown TTS
+        self.stt.stop()
+        self._emit_voice_activation(force=True)
         self.tts.quit()
 
         # Execute plugin chat stop hooks
@@ -1038,6 +1165,8 @@ def read_stdin(chat: Chat):
                 if isinstance(partial, dict):
                     chat.config = update_config(chat.config, partial)
                     chat.plugin_manager.on_settings_changed(chat.config)
+                    if any(key.startswith("wake_word_") or key == "ptt_var" for key in partial):
+                        show_chat_message("info", "Microphone mode and voice activation changes take effect after restarting the assistant.")
                     if "output_volume_multiplier" in partial:
                         chat.tts.set_output_volume_multiplier(
                             float(chat.config.get("output_volume_multiplier", 1.0))
@@ -1049,8 +1178,17 @@ def read_stdin(chat: Chat):
             if data.get("type") == "plugin_settings_button":
                 plugin_guid = data.get("plugin_guid")
                 key = data.get("key")
+                value = data.get("value")
                 if isinstance(plugin_guid, str) and isinstance(key, str):
-                    chat.plugin_manager.on_settings_button(plugin_guid, key)
+                    chat.plugin_manager.on_settings_button(
+                        plugin_guid, key, value if isinstance(value, str) else None
+                    )
+            if data.get('type') == 'plugin_ui_action':
+                chat.plugin_manager.on_ui_action(
+                    str(data.get('plugin_guid', '')), str(data.get('action', '')),
+                    data.get('payload') if isinstance(data.get('payload'), dict) else {},
+                    str(data.get('request_id', '')),
+                )
             if data.get("type") == "query_memories":
                 query = data.get("query", "")
                 top_k = data.get("top_k", 5)
@@ -1279,8 +1417,17 @@ if __name__ == "__main__":
                 if data.get("type") == "plugin_settings_button":
                     plugin_guid = data.get("plugin_guid")
                     key = data.get("key")
+                    value = data.get("value")
                     if isinstance(plugin_guid, str) and isinstance(key, str):
-                        plugin_manager.on_settings_button(plugin_guid, key)        
+                        plugin_manager.on_settings_button(
+                            plugin_guid, key, value if isinstance(value, str) else None
+                        )
+                if data.get('type') == 'plugin_ui_action':
+                    plugin_manager.on_ui_action(
+                        str(data.get('plugin_guid', '')), str(data.get('action', '')),
+                        data.get('payload') if isinstance(data.get('payload'), dict) else {},
+                        str(data.get('request_id', '')),
+                    )
                 if data.get("type") == "enable_remote_tracing":
                     from lib.Logger import enable_remote_tracing
 
