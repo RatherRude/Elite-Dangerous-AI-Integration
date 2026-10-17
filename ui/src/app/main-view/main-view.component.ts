@@ -32,6 +32,7 @@ import { PluginViewComponent } from "../components/plugin-view/plugin-view.compo
 import { PluginUIService } from "../services/plugin-ui.service";
 import { RegisteredUIView } from "../services/plugin-ui";
 import { TranslateModule } from "@ngx-translate/core";
+import { VoiceActivationStatusComponent } from "../components/voice-activation-status/voice-activation-status.component";
 
 @Component({
     selector: "app-main-view",
@@ -58,6 +59,7 @@ import { TranslateModule } from "@ngx-translate/core";
         ActionsContainerComponent,
         PluginViewComponent,
         TranslateModule,
+        VoiceActivationStatusComponent,
     ],
     templateUrl: "./main-view.component.html",
     styleUrl: "./main-view.component.css",

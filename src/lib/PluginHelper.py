@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from .PluginBase import PluginManifest
 
 class _OwnedPluginManager:
-    def __init__(self, manager: 'PluginManager', namespace: PluginNamespace):
+    def __init__(self, manager: 'PluginManager', namespace: PluginNamespace) -> None:
         self.__manager = manager
         self.__namespace = namespace
 
@@ -46,6 +46,11 @@ class _OwnedPluginManager:
 
     def republish_settings(self) -> None:
         self.__manager.republish_settings()
+
+    def register_language_detector(self, plugin_guid: str, detector: Callable[[str], str | None]) -> None:
+        if plugin_guid != self.__namespace.guid:
+            raise ValueError('Language detectors must belong to their owner')
+        self.__manager.register_language_detector(plugin_guid, detector)
 
 
 class PluginHelper():
@@ -65,7 +70,7 @@ class PluginHelper():
     PLUGIN_DATA_PATH: str = "plugin_data"
 
     def __init__(self, plugin_manager: 'PluginManager', prompt_generator: PromptGenerator, config: Config, action_manager: ActionManager, event_manager: EventManager, llm_model: LLMModel, vision_model: LLMModel | None,
-                     system_db: SystemDatabase, ed_keys: EDKeys, assistant: Assistant):
+                     system_db: SystemDatabase, ed_keys: EDKeys, assistant: Assistant) -> None:
         self._plugin_manager = plugin_manager
         self._prompt_generator = prompt_generator
         self._keys = ed_keys
@@ -99,6 +104,12 @@ class PluginHelper():
 
     def get_current_state(self) -> tuple[list[Event], ProjectedStates]:
         return self._event_manager.get_current_state()
+
+    def register_language_detector(self, detector: Callable[[str], str | None]) -> None:
+        """Register a local text-language detector for this assistant run."""
+        if self._namespace is None:
+            raise RuntimeError('Plugin helper is not bound to a registered plugin')
+        self._plugin_manager.register_language_detector(self._namespace.guid, detector)
 
     _ActionModelT = TypeVar('_ActionModelT', bound=BaseModel)
 

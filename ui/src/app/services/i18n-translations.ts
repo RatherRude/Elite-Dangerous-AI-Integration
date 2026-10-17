@@ -1,5 +1,25 @@
 export const TRANSLATIONS: Record<string, object> = {
   "en": {
+    "voice": {
+      "mode": "Name-triggered Dialogue",
+      "replacesRequiredWord": "Replaces the required-word filter: say the name to open a dialogue, then speak without repeating it.",
+      "name": "Activation name", "timeout": "Inactivity timeout (seconds)",
+      "invalidName": "Enter a name containing a letter or number.", "invalidTimeout": "Enter a finite number greater than zero.",
+      "source": "Activation transcription", "mainSource": "Use the main STT provider", "parakeetSource": "Parakeet (local, optional)",
+      "firstCommand": "First command in the invocation", "retranscribe": "Retranscribe with main STT", "reuse": "Reuse local Parakeet text",
+      "local": "Standby and command transcription are local with Parakeet. The LLM and TTS may still use remote services.",
+      "hybrid": "Standby speech is transcribed locally by Parakeet. Accepted commands use the main STT provider:",
+      "fallback": "Parakeet is unavailable. Activation falls back to the main STT provider. If it is remote, standby speech is sent to that service:",
+      "mainPrivacy": "Activation uses the main STT provider. If it is remote, every detected phrase is sent to it, even in standby:",
+      "retranscribeHelp": "An invocation containing a command is transcribed twice: by Parakeet, then by the main STT. Calling the name alone does not require a second transcription.",
+      "reuseHelp": "The first command uses Parakeet text without a second transcription. Following commands use the main STT.",
+      "singleRecognition": "Parakeet is already the main STT: one model instance and one transcription per phrase, including the invocation.",
+      "available": "Parakeet is installed. Select it for activation only or as your main STT to keep standby transcription local.",
+      "install": "For local standby transcription, install the optional Parakeet plugin. No additional installation is required to use your current STT.",
+      "pluginLink": "Parakeet installation",
+      "usage": "Say \"Simone\", \"Hey, Simone\" or \"OK, Simone\", with or without a command. Close with \"that's all\", \"I'm done\", \"ça sera tout\" or \"j'ai terminé\". The timeout starts after the response finishes. Short voice acknowledgments are in French. Microphone mode changes require restarting the assistant.",
+      "state": { "preparing": "Preparing", "standby": "Standby", "active": "Dialogue active", "error": "Speech recognition error" }
+    },
     "common": { "cancel": "Cancel", "confirm": "Confirm", "actionError": "Could not complete the action.", "invalidAction": "Invalid plugin action or parameters.", "pluginUnavailable": "This plugin is unavailable.", "itemsOne": "{{count}} item", "itemsMany": "{{count}} items" },
     "module": {
       "powerplant": "Power Plant", "engine": "Thrusters", "enginefast": "Enhanced Performance Thrusters", "hyperdrive": "Frame Shift Drive (FSD)", "hyperdriveovercharge": "Frame Shift Drive (Supercruise Overcharge)", "lifesupport": "Life Support", "powerdistributor": "Power Distributor", "sensors": "Sensors", "fueltank": "Fuel Tank",
@@ -12,6 +32,26 @@ export const TRANSLATIONS: Record<string, object> = {
     }
   },
   "fr": {
+    "voice": {
+      "mode": "Dialogue par prénom",
+      "replacesRequiredWord": "Remplace le mot obligatoire : prononcez le prénom pour ouvrir un dialogue, puis parlez sans le répéter.",
+      "name": "Prénom d'activation", "timeout": "Délai d'inactivité (secondes)",
+      "invalidName": "Saisissez un prénom contenant une lettre ou un chiffre.", "invalidTimeout": "Saisissez un nombre fini strictement positif.",
+      "source": "Transcription de l'appel", "mainSource": "Utiliser le STT principal", "parakeetSource": "Parakeet (local, optionnel)",
+      "firstCommand": "Première commande dans l'appel", "retranscribe": "Retranscrire avec le STT principal", "reuse": "Réutiliser le texte local Parakeet",
+      "local": "La transcription de veille et des commandes est locale avec Parakeet. Le LLM et la synthèse vocale peuvent rester distants.",
+      "hybrid": "La veille est transcrite localement par Parakeet. Les commandes acceptées utilisent le STT principal :",
+      "fallback": "Parakeet est indisponible. L'activation utilise le STT principal. S'il est distant, les paroles de veille sont envoyées à ce service :",
+      "mainPrivacy": "L'activation utilise le STT principal. S'il est distant, chaque phrase détectée lui est envoyée, même en veille :",
+      "retranscribeHelp": "Un appel contenant une commande est transcrit deux fois : par Parakeet, puis par le STT principal. Un appel du prénom seul n'exige pas de seconde transcription.",
+      "reuseHelp": "La première commande utilise le texte Parakeet sans seconde transcription. Les commandes suivantes utilisent le STT principal.",
+      "singleRecognition": "Parakeet est déjà le STT principal : une seule instance et une seule transcription par phrase, y compris pour l'appel.",
+      "available": "Parakeet est installé. Choisissez-le pour l'activation seule ou comme STT principal pour garder la transcription de veille locale.",
+      "install": "Pour une transcription de veille locale, installez le plugin Parakeet optionnel. Votre STT actuel reste utilisable sans installation supplémentaire.",
+      "pluginLink": "Installation de Parakeet",
+      "usage": "Dites « Simone », « Dis, Simone », « Hey, Simone » ou « OK, Simone », avec ou sans commande. Terminez par « ça sera tout » ou « j'ai terminé ». Le délai démarre après la fin de la réponse. Les changements de mode micro nécessitent un redémarrage de l'assistant.",
+      "state": { "preparing": "Préparation", "standby": "Veille", "active": "Dialogue actif", "error": "Erreur de reconnaissance vocale" }
+    },
     "common": { "cancel": "Annuler", "confirm": "Confirmer", "actionError": "Impossible d’effectuer cette action.", "invalidAction": "Action ou paramètres du plugin invalides.", "pluginUnavailable": "Ce plugin est indisponible.", "itemsOne": "{{count}} élément", "itemsMany": "{{count}} éléments" },
     "module": {
       "powerplant": "Générateur", "engine": "Propulseurs", "enginefast": "Propulseurs à performances améliorées", "hyperdrive": "Réacteur FSD", "hyperdriveovercharge": "Réacteur FSD (Surcharge Supercruise)", "lifesupport": "Système de survie", "powerdistributor": "Répartiteur de puissance", "sensors": "Capteurs", "fueltank": "Réservoir de carburant",

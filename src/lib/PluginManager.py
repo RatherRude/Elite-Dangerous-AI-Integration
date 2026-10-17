@@ -2,10 +2,11 @@ import traceback
 import importlib
 import json
 import os
+import re
 from copy import deepcopy
 
 import sys
-from typing import Any, Self, TypeGuard
+from typing import Any, Callable, Self, TypeGuard
 
 from lib.Config import Config, save_config
 
@@ -31,7 +32,7 @@ class PluginModelProvider(ModelProviderDefinition):
 
 class PluginManager:
     # Constructor
-    def __init__(self, config: Config):
+    def __init__(self, config: Config) -> None:
         self.plugin_list: dict[str, 'PluginBase'] = {}
         self.plugin_settings_configs: dict[str, PluginSettings] = {}
         self.plugin_model_providers: list[PluginModelProvider] = []
@@ -46,6 +47,7 @@ class PluginManager:
         self._namespaces: dict[PluginBase, PluginNamespace] = {}
         self._owners: dict[str, PluginBase] = {}
         self._ui_values: dict[PluginBase, dict[str, Any]] = {}
+        self._language_detector: tuple[str, Callable[[str], str | None]] | None = None
 
         # Add the plugin folder to sys.path
         # This allows us to import plugins as packages.
@@ -544,12 +546,15 @@ class PluginManager:
         """
         Executed when the chat is started, and will call the on_chat_start hook for each plugin.
         """
+        self._language_detector = None
         for module in self.plugin_list.values():
             log('debug', f"Executing on_chat_start hook for {module.plugin_manifest.name}")
             try:
                 module.on_chat_start(helper._for_plugin(self._namespaces[module]))
                 self.publish_plugin_ui(module)
             except Exception as e:
+                if self._language_detector is not None and self._language_detector[0] == self._namespaces[module].guid:
+                    self._language_detector = None
                 log('error', f"Failed to execute on_chat_start hook for {module.plugin_manifest.name}: {e}")
 
     def on_chat_stop(self, helper: 'PluginHelper'):
@@ -563,6 +568,34 @@ class PluginManager:
                 self.publish_plugin_ui(module)
             except Exception as e:
                 log('error', f"Failed to execute on_chat_stop hook for {module.plugin_manifest.name}: {e}")
+        self._language_detector = None
+
+    def register_language_detector(
+        self, plugin_guid: str, detector: Callable[[str], str | None],
+    ) -> None:
+        if plugin_guid not in self._owners:
+            raise ValueError("Language detectors must belong to a registered plugin.")
+        if not callable(detector):
+            raise ValueError("A language detector must be callable.")
+        if self._language_detector is not None and self._language_detector[0] != plugin_guid:
+            raise ValueError("Only one language detector plugin can be active.")
+        self._language_detector = (plugin_guid, detector)
+
+    @property
+    def has_language_detector(self) -> bool:
+        return self._language_detector is not None
+
+    def detect_language(self, text: str) -> str | None:
+        registered = self._language_detector
+        if registered is None:
+            return None
+        language = registered[1](text)
+        if language is not None and (
+            not isinstance(language, str) or not re.fullmatch(r"[a-z]{2}", language)
+        ):
+            raise ValueError(f"Language detector '{registered[0]}' must return a lowercase "
+                             "two-letter language code or None.")
+        return language
 
     def create_plugin_model(self, plugin_guid: str, provider_id: str, expected_kind: str) -> LLMModel | STTModel | TTSModel | EmbeddingModel | None:
         """

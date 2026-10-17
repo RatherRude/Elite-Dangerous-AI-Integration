@@ -47,6 +47,8 @@ import { ScreenInfo } from "../../models/screen-info";
 import QRCode from "qrcode";
 import { FontScaleService } from "../../services/font-scale.service";
 import { PluginUIService } from "../../services/plugin-ui.service";
+import { VoiceActivationSettingsComponent } from "../voice-activation-settings/voice-activation-settings.component";
+import { TranslateModule } from "@ngx-translate/core";
 
 export type AdvancedSettingsFocusTarget =
     | "commander-name"
@@ -88,6 +90,8 @@ type AdvancedSettingsPanel = "commander" | "llm" | "agent-llm" | "stt" | "tts" |
         SettingsGridComponent,
         MatSliderModule,
         MatTooltipModule,
+        VoiceActivationSettingsComponent,
+        TranslateModule,
     ],
     templateUrl: "./advanced-settings.component.html",
     styleUrl: "./advanced-settings.component.css",
