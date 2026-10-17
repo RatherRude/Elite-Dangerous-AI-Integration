@@ -286,8 +286,8 @@ app-chat-container.small {
 ::ng-deep app-fleet-carrier-card h4,
 ::ng-deep app-settings-menu h1,
 ::ng-deep app-settings-menu h2,
-::ng-deep app-settings-menu h3,
-::ng-deep app-settings-menu h4 {
+::ng-deep app-settings-menu h3:not(.ui-heading),
+::ng-deep app-settings-menu h4:not(.ui-heading) {
   color: var(--hud-orange) !important;
   /*text-shadow: var(--hud-glow);*/
 }

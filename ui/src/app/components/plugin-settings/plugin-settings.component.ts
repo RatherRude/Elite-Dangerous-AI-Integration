@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from "@angular/core";
+import { Component, OnDestroy, OnInit, inject } from "@angular/core";
 import { MatCardModule } from "@angular/material/card";
 import { MatTabsModule } from "@angular/material/tabs";
 import { MatIconModule } from "@angular/material/icon";
@@ -28,6 +28,10 @@ import {
   SettingsGrid,
 } from "../../services/plugin-settings";
 import { SettingsGridComponent } from "../settings-grid/settings-grid.component";
+import { TranslateService } from "@ngx-translate/core";
+import { resolveSettingText } from "../../services/setting-text";
+import { PluginUIService } from "../../services/plugin-ui.service";
+import { SettingsHeaderLinkComponent } from './settings-header-link.component';
 
 @Component({
   selector: "app-plugin-settings",
@@ -51,11 +55,13 @@ import { SettingsGridComponent } from "../settings-grid/settings-grid.component"
     MatDialogModule,
     MatProgressSpinnerModule,
     SettingsGridComponent,
+    SettingsHeaderLinkComponent,
   ],
   templateUrl: "./plugin-settings.component.html",
   styleUrls: ["../settings-menu/settings-menu.component.scss"],
 })
 export class PluginSettingsComponent implements OnInit, OnDestroy {
+  private readonly translate = inject(TranslateService);
   config: Config | null = null;
   private configSubscription?: Subscription;
   private plugin_settings_message_subscription?: Subscription;
@@ -63,11 +69,21 @@ export class PluginSettingsComponent implements OnInit, OnDestroy {
   // Plugin settings
   plugin_settings_configs: [string, PluginSettings][] = [];
 
+  resolve(value: string | null | undefined): string {
+    return resolveSettingText(this.translate, value);
+  }
+
+  getPluginTabs(plugin: PluginSettings): { key: string; label: string; grids: SettingsGrid[] }[] | null {
+    if (!plugin.tabs?.length) return null;
+    return plugin.tabs.map(tab => ({...tab, grids: tab.grids.flatMap(key => plugin.grids.filter(grid => grid.key === key))}));
+  }
+
   constructor(
     private configService: ConfigService,
     private snackBar: MatSnackBar,
     private dialog: MatDialog,
     private confirmationDialog: ConfirmationDialogService,
+    private pluginUI: PluginUIService,
   ) {}
 
   ngOnInit() {
@@ -135,30 +151,31 @@ export class PluginSettingsComponent implements OnInit, OnDestroy {
   // Create a getValue function for a specific plugin
   createGetValueFn(pluginGuid: string): (fieldKey: string, defaultValue: any) => any {
     return (fieldKey: string, defaultValue: any) => {
-      return this.config?.plugin_settings?.[pluginGuid]?.[fieldKey] ?? defaultValue;
+      return this.pluginUI.getValue(pluginGuid, fieldKey, this.config?.plugin_settings?.[pluginGuid]?.[fieldKey] ?? defaultValue);
     };
   }
 
   // Create a setValue function for a specific plugin
   createSetValueFn(pluginGuid: string): (fieldKey: string, value: any) => void {
     return (fieldKey: string, value: any) => {
-      if (this.config == null) {
-        return;
-      }
-      this.config.plugin_settings ??= {};
-      this.config.plugin_settings[pluginGuid] ??= {};
-      this.config.plugin_settings[pluginGuid][fieldKey] = value;
-      this.onConfigChange({ plugin_settings: this.config.plugin_settings });
+      this.pluginUI.change(pluginGuid, fieldKey, value).catch(error => {
+        console.error("Error updating plugin input:", error);
+        this.snackBar.open(this.resolve(error.message || 'common.actionError'), undefined, {duration: 5000});
+      });
     };
   }
 
-  createButtonClickFn(pluginGuid: string): (fieldKey: string) => void {
-    return (fieldKey: string) => {
-      this.configService.clickPluginSettingsButton(pluginGuid, fieldKey).catch((error) => {
-        console.error("Error handling plugin settings button click:", error);
-        this.snackBar.open("Error handling plugin button click", "OK", { duration: 5000 });
-      });
+  createButtonClickFn(pluginGuid: string): (fieldKey: string, value?: string) => void {
+    return (fieldKey: string, value?: string) => {
+      this.invoke(pluginGuid, "settings_button", {key: fieldKey, value});
     };
+  }
+
+  invoke(pluginGuid: string, action: string, payload: Record<string, unknown>): void {
+      this.pluginUI.invoke(pluginGuid, action, payload).catch((error) => {
+        console.error("Error handling plugin settings button click:", error);
+        this.snackBar.open(this.resolve(error.message || 'common.actionError'), undefined, { duration: 5000 });
+      });
   }
 
   // Legacy methods kept for backward compatibility
@@ -176,12 +193,6 @@ export class PluginSettingsComponent implements OnInit, OnDestroy {
     fieldKey: string,
     value: any,
   ): void {
-    if (this.config == null) {
-      return;
-    }
-    this.config.plugin_settings ??= {};
-    this.config.plugin_settings[pluginGuid] ??= {};
-    this.config.plugin_settings[pluginGuid][fieldKey] = value;
-    this.onConfigChange({ plugin_settings: this.config.plugin_settings });
+    this.createSetValueFn(pluginGuid)(fieldKey, value);
   }
 }
