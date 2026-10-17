@@ -41,6 +41,7 @@ from lib.Config import (
     reset_game_events,
 )
 from lib.PluginManager import PluginManager
+from lib.PluginSettingDefinitions import resolve_voice_settings
 from lib.ActionManager import ActionManager
 
 
@@ -279,46 +280,24 @@ class Chat:
                 else:
                     self.ttsModel = cast(TTSModel, model)
                     provider = self.plugin_manager.get_plugin_provider(tts_plugin[0], tts_plugin[1])
-                    grids = provider.get("voice_settings_config") if provider else None
-                    if grids is not None:
-                        fields = [field for grid in grids for field in grid["fields"]]
-                        defaults = {
-                            field["key"]: field.get("default_value")
-                            for field in fields
-                            if "default_value" in field
-                        }
-                        stored = self.character.get("tts_voice_settings", {}).get(
-                            self.config["tts_provider"], {}
-                        )
-                        declared_keys = {field["key"] for field in fields}
-                        stored = {
-                            key: value
-                            for key, value in stored.items()
-                            if key in declared_keys
-                        } if isinstance(stored, dict) else {}
-                        tts_voice_settings = {
-                            **defaults,
-                            **stored,
-                        }
-                        if any(field["key"] == "voice" for field in fields):
-                            tts_voice_settings.setdefault("voice", self.character["tts_voice"])
-                        if any(field["key"] == "instructions" for field in fields):
-                            tts_voice_settings.setdefault("instructions", self.character["tts_prompt"])
+                    grids = provider.get("voice_settings_config", []) if provider else []
+                    stored = self.character.get("tts_voice_settings", {}).get(
+                        self.config["tts_provider"], {}
+                    )
+                    tts_voice_settings = resolve_voice_settings(
+                        grids, self.config.get("plugin_settings", {}).get(tts_plugin[0], {}),
+                        stored if isinstance(stored, dict) else {},
+                    )
             else:
                 show_chat_message("warning", f"TTS provider is not a registered plugin: {self.config['tts_provider']}")
 
         if self.ttsModel is not None:
             if hasattr(self.ttsModel, "speed"):
                 self.ttsModel.speed = float(self.character["tts_speed"])
-            if tts_voice_settings is None and hasattr(self.ttsModel, "voice_instructions"):
-                self.ttsModel.voice_instructions = self.character["tts_prompt"] or None
 
         self.tts = TTS(
             tts_model=self.ttsModel,
-            voice=str(
-                (tts_voice_settings or {}).get("voice")
-                or self.character["tts_voice"]
-            ),
+            voice=str((tts_voice_settings or {}).get("voice") or ""),
             voice_settings=tts_voice_settings,
             speed=float(self.character["tts_speed"]),
             postprocessing_config=self.character.get("tts_postprocessing"),

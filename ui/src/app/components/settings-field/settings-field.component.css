@@ -54,3 +54,35 @@ mat-slide-toggle {
     color: #ff9800;
     font-style: italic;
 }
+
+.notification-field {
+    margin: 8px 0 16px;
+    padding: 10px 12px;
+    border-radius: 4px;
+}
+
+.notification-field p {
+    margin: 0;
+}
+
+.notification-field strong + p {
+    margin-top: 4px;
+}
+
+.notification-field.info {
+    color: #bbdefb;
+    background: rgba(33, 150, 243, 0.12);
+    border: 1px solid rgba(33, 150, 243, 0.55);
+}
+
+.notification-field.warning {
+    color: #ffe0b2;
+    background: rgba(255, 152, 0, 0.12);
+    border: 1px solid rgba(255, 152, 0, 0.55);
+}
+
+.notification-field.error {
+    color: #ffcdd2;
+    background: rgba(244, 67, 54, 0.12);
+    border: 1px solid rgba(244, 67, 54, 0.55);
+}

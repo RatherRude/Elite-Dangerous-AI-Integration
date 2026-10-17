@@ -28,7 +28,7 @@ import { MatSliderModule } from "@angular/material/slider";
 import { MatDialog } from "@angular/material/dialog";
 import { ScreenInfo } from "../../models/screen-info";
 import { Character, CharacterService } from "../../services/character.service";
-import { filterProvidersForSlot, llmProviderSummary, modelProviderLabel, ModelProviderDefinition, providerVoiceSettingsValues, ProviderSlot } from "../../services/plugin-settings";
+import { filterProvidersForSlot, llmProviderSummary, modelProviderLabel, ModelProviderDefinition, providerVoiceDisplayValue, ProviderSlot } from "../../services/plugin-settings";
 import { ApiKeyDetectionService } from "../../services/api-key-detection.service";
 import { ConfirmationDialogComponent } from "../confirmation-dialog/confirmation-dialog.component";
 import { ChatService } from "../../services/chat.service";
@@ -181,13 +181,13 @@ export class GeneralSettingsComponent implements OnDestroy {
 
     async onTtsProviderChange(providerRef: string): Promise<void> {
         await this.onConfigChange({ tts_provider: providerRef });
-        const character = this.characterService.getCurrentCharacter();
-        const voiceSettings = providerVoiceSettingsValues(
-            providerRef, this.pluginTTSProviders, character?.tts_voice_settings,
+    }
+
+    getCharacterVoiceDisplay(character: Character): string | undefined {
+        return providerVoiceDisplayValue(
+            this.config?.tts_provider ?? "", this.pluginTTSProviders,
+            character.tts_voice_settings, this.config?.plugin_settings,
         );
-        if (voiceSettings) {
-            await this.characterService.setTtsProviderVoiceSettings(providerRef, voiceSettings);
-        }
     }
 
     ngOnDestroy() {
@@ -446,15 +446,6 @@ export class GeneralSettingsComponent implements OnDestroy {
         const result = this.apiKeyDetectionService.buildUpdate(apiKey, this.config, this.pluginModelProviders);
         this.apiKeyType = result.label;
         await this.onConfigChange(result.update);
-        if (typeof result.update.tts_provider === "string") {
-            const character = this.characterService.getCurrentCharacter();
-            const voiceSettings = providerVoiceSettingsValues(
-                result.update.tts_provider, this.pluginTTSProviders, character?.tts_voice_settings,
-            );
-            if (voiceSettings) {
-                await this.characterService.setTtsProviderVoiceSettings(result.update.tts_provider, voiceSettings);
-            }
-        }
     }
 
     async onAssignPTT(e: Event, index: number) {

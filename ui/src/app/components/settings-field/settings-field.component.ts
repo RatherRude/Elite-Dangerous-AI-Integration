@@ -62,4 +62,5 @@ export class SettingsFieldComponent {
             && this.value !== null
             && !this.field.select_options?.some(option => option.value === this.value);
     }
+
 }

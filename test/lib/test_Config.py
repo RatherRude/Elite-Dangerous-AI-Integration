@@ -1,6 +1,9 @@
 import ast
+from copy import deepcopy
+import json
 from pathlib import Path
 import sys
+import pytest
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
@@ -52,7 +55,7 @@ def test_migrate_removes_tools_var_and_migrates_providers() -> None:
     assert migrated["llm_provider"] == "plugin:7f6f8e98-576f-4d1d-9d87-0f8f7f2f3c61:llm"
     assert migrated["tts_provider"] == "plugin:e2d57ec0-56f5-45de-88ed-621d4a28d7b5:tts"
     settings = migrated["plugin_settings"]["7f6f8e98-576f-4d1d-9d87-0f8f7f2f3c61"]
-    assert settings["api_key"] == "secret"
+    assert settings["api_key"] == "override"
     assert settings["llm_model"] == "custom-model"
     assert settings["llm_endpoint"] == "https://example.test/v1"
     assert settings["llm_api_key"] == "override"
@@ -107,6 +110,29 @@ def test_migrate_character_voice_settings_for_selected_provider() -> None:
         provider: {"voice": "en_diana_happy", "instructions": "Sound calm."},
     }
     assert "tts_voice" not in migrated["plugin_settings"]["d17f20f6-2514-4a1f-9e54-2a3c089f5c2b"]
+    assert "tts_voice" not in character
+    assert "tts_prompt" not in character
+
+
+def test_current_character_does_not_remigrate_legacy_voice_to_new_provider() -> None:
+    stored = {"plugin:old:tts": {"voice": "old-voice", "instructions": "old style"}}
+    migrated = migrate({
+        "config_version": 24,
+        "tts_provider": "plugin:new:tts",
+        "characters": [{"tts_voice": "old-voice", "tts_prompt": "old style", "tts_voice_settings": stored}],
+    })
+    assert migrated["characters"] == [{"tts_voice_settings": stored}]
+    assert migrate(deepcopy(migrated)) == migrated
+
+
+def test_new_character_inherits_provider_defaults_without_voice_overrides() -> None:
+    character = ConfigModule.getDefaultCharacter({
+        "tts_provider": "plugin:new:tts", "active_character_index": 0,
+        "characters": [{"tts_voice": "old-voice", "tts_voice_settings": {"plugin:old:tts": {"voice": "old-voice"}}}],
+    })
+    assert character["tts_voice_settings"] == {}
+    assert "tts_voice" not in character
+    assert "tts_prompt" not in character
 
 
 def test_character_voice_settings_survive_default_merge() -> None:
@@ -228,3 +254,111 @@ def test_default_config_uses_plugins_and_has_no_legacy_provider_settings(monkeyp
     assert config["embedding_provider"].startswith("plugin:")
     assert "tools_var" not in config
     assert not set(ConfigModule.LEGACY_PROVIDER_SETTING_KEYS).intersection(config)
+
+
+@pytest.mark.parametrize("version", [None, 5, 12, 21])
+def test_legacy_json_config_loads_then_migrates_through_current_provider_plugins(version, monkeypatch, tmp_path) -> None:
+    from lib.PluginManager import PluginManager
+    from plugins.OpenAIPlugin import OPENAI_PLUGIN_GUID, OpenAIPlugin
+    from plugins.GoogleAIStudioPlugin import (
+        GOOGLE_AI_STUDIO_PLUGIN_GUID, GoogleAIStudioPlugin,
+    )
+
+    third_party = {"settings_version": 9, "token": "keep", "nested": {"enabled": False}}
+    legacy = {
+        "commander_name": "Legacy Commander",
+        "characters": [{"name": "Default", "tts_voice": "Kore", "tts_prompt": "Warm and calm."}],
+        "llm_provider": "openai", "llm_model_name": "gpt-5.4-nano", "llm_api_key": "openai-secret",
+        "llm_endpoint": "https://api.openai.com/v1", "llm_temperature": 0.0, "llm_reasoning_effort": "none",
+        "agent_llm_provider": "google-ai-studio", "agent_llm_model_name": "gemini-3.1-flash-lite-preview",
+        "agent_llm_api_key": "google-secret", "agent_llm_temperature": 0.35, "agent_llm_reasoning_effort": "low",
+        "vision_provider": "google-ai-studio", "vision_model_name": "gemini-2.5-flash",
+        "vision_api_key": "google-secret", "vision_temperature": 0.0, "vision_reasoning_effort": "low",
+        "stt_provider": "openai", "stt_model_name": "gpt-4o-mini-transcribe", "stt_api_key": "openai-secret",
+        "stt_language": "en", "stt_custom_prompt": "Elite Dangerous",
+        "tts_provider": "google-ai-studio", "tts_model_name": "gemini-3.8-flash-lite-tts", "tts_api_key": "google-secret",
+        "embedding_provider": "openai", "embedding_model_name": "text-embedding-3-large",
+        "embedding_api_key": "openai-secret", "plugin_settings": {"third-party": deepcopy(third_party)},
+    }
+    if version is not None:
+        legacy["config_version"] = version
+        legacy["active_character_index"] = 0
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(ConfigModule, "get_default_input_device_name", lambda: "input")
+    monkeypatch.setattr(ConfigModule, "get_default_output_device_name", lambda: "output")
+    (tmp_path / "config.json").write_text(json.dumps(legacy), encoding="utf-8")
+    config = ConfigModule.load_config()
+
+    assert config["config_version"] == 24
+    assert not set(ConfigModule.LEGACY_PROVIDER_SETTING_KEYS).intersection(config)
+    assert config["llm_provider"] == f"plugin:{OPENAI_PLUGIN_GUID}:llm"
+    assert config["agent_llm_provider"] == f"plugin:{GOOGLE_AI_STUDIO_PLUGIN_GUID}:agent-llm"
+    assert config["vision_provider"] == f"plugin:{GOOGLE_AI_STUDIO_PLUGIN_GUID}:vlm"
+    assert config["tts_provider"] == f"plugin:{GOOGLE_AI_STUDIO_PLUGIN_GUID}:tts"
+    assert "settings_version" not in config["plugin_settings"][OPENAI_PLUGIN_GUID]
+    assert "settings_version" not in config["plugin_settings"][GOOGLE_AI_STUDIO_PLUGIN_GUID]
+    assert config["plugin_settings"]["third-party"] == third_party
+    voice = config["characters"][0]["tts_voice_settings"][config["tts_provider"]]
+    assert voice == {"voice": "Kore", "instructions": "Warm and calm."}
+
+    manager = PluginManager(config)
+    manager.load_default_plugins()
+    openai = manager.plugin_list[OPENAI_PLUGIN_GUID]
+    google = manager.plugin_list[GOOGLE_AI_STUDIO_PLUGIN_GUID]
+    assert openai.settings["settings_version"] == OpenAIPlugin.settings_schema_version
+    assert google.settings["settings_version"] == GoogleAIStudioPlugin.settings_schema_version
+    assert openai.settings["api_key"] == "openai-secret"
+    assert google.settings["api_key"] == "google-secret"
+    assert openai.settings["llm_model"] == "gpt-5.4-nano"
+    assert openai.settings["llm_temperature"] == 0.0
+    assert openai.settings["stt_model"] == "gpt-4o-mini-transcribe"
+    assert openai.settings["stt_language"] == "en"
+    assert openai.settings["stt_prompt"] == "Elite Dangerous"
+    assert google.settings["agent_llm_model"] == "gemini-3.1-flash-lite-preview"
+    assert google.settings["agent_llm_custom_temperature"] is True
+    assert google.settings["vlm_model"] == "gemini-2.5-flash"
+    assert google.settings["vlm_temperature"] == 0.0
+    assert google.settings["vlm_custom_temperature"] is True
+    assert google.settings["tts_model"] == "gemini-3.8-flash-lite-tts"
+    assert config["plugin_settings"]["third-party"] == third_party
+    assert config["characters"][0]["tts_voice_settings"][config["tts_provider"]] == voice
+    assert openai.create_model("llm", openai.settings).client.api_key == "openai-secret"
+    assert google.create_model("agent-llm", google.settings).client.api_key == "google-secret"
+
+    # Save and reload the fully migrated result: neither migration stage repeats.
+    ConfigModule.save_config(config)
+    saved = deepcopy(config)
+    reloaded = ConfigModule.load_config()
+    second_manager = PluginManager(reloaded)
+    second_manager.load_default_plugins()
+    assert reloaded == saved
+    assert second_manager.settings_migrated is False
+
+
+def test_legacy_handoff_preserves_existing_plugin_values_and_version() -> None:
+    guid = "7f6f8e98-576f-4d1d-9d87-0f8f7f2f3c61"
+    existing = {"settings_version": 2, "api_key": "plugin-key", "llm_model": "gpt-6-sol", "llm_temperature": 0.8}
+    migrated = migrate({
+        "config_version": 21, "api_key": "old-key", "llm_provider": "openai",
+        "llm_model_name": "gpt-5.4-nano", "llm_temperature": 0.0,
+        "plugin_settings": {guid: deepcopy(existing)},
+    })
+    assert migrated["plugin_settings"][guid] == existing
+
+
+def test_current_config_keeps_vision_plugin_selection_when_disabled() -> None:
+    provider = "plugin:51f1df0c-479d-4f0f-a585-57c08d9e1901:vlm"
+    migrated = migrate({"config_version": 24, "vision_var": False, "vision_provider": provider})
+    assert migrated["vision_provider"] == provider
+    legacy = migrate({"config_version": 21, "vision_var": False, "vision_provider": "google-ai-studio"})
+    assert legacy["vision_provider"] == "none"
+
+
+@pytest.mark.parametrize("provider", ["openai", "google-ai-studio"])
+def test_very_old_shared_key_config_does_not_require_role_api_key(provider) -> None:
+    migrated = migrate({
+        "config_version": 5, "api_key": "shared-secret", "llm_provider": provider, "characters": [],
+    })
+    guid = "7f6f8e98-576f-4d1d-9d87-0f8f7f2f3c61" if provider == "openai" else "51f1df0c-479d-4f0f-a585-57c08d9e1901"
+    assert migrated["plugin_settings"][guid]["api_key"] == "shared-secret"
+    assert migrated["plugin_settings"][guid]["embedding_api_key"] == "shared-secret"

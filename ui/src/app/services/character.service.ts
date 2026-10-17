@@ -87,10 +87,8 @@ export interface Character {
     personality_knowledge_pop_culture: boolean;
     personality_knowledge_scifi: boolean;
     personality_knowledge_history: boolean;
-    tts_voice: string;
     tts_voice_settings?: Record<string, Record<string, any>>;
     tts_speed: string;
-    tts_prompt: string;
     tts_postprocessing?: CharacterTTSPostprocessingConfig;
     tts_environment_damage_effects_var: boolean;
     tts_environment_helmet_effects_var: boolean;
