@@ -26,6 +26,16 @@ If you are using Voice Activation, the AI gets interrupted when Voice is detecte
 
 Generally yes, but there are a few places that are currently english-only. The AI can understand and speak multiple languages, but due to some additionally process for numbers they might not be read correctly. Additionally, the AI tends to fall back to english sometimes, due to most of the game-events being in english. This can usually be fixed by reminding the AI of the language you want to use.
 
+## Edge TTS reports "failed to init decoder", "no audio", or a stream timeout. What should I do?
+
+Edge TTS sends MP3 audio over the internet. The message `('failed to init decoder', -103)` means the audio decoder could not open the stream; it does not by itself identify the cause. An empty response, a failed request, or invalid MP3 data can lead to this message.
+
+- Update to the latest application version, which fixes MP3 stream buffering and reports the underlying Edge request or timeout error instead of hiding it behind a decoder error.
+- An HTTP 403 error can also indicate an outdated Edge TTS client. Source installations need the current dependencies from `requirements.txt` (including `edge_tts==7.3.1`, which supports the updated service token protocol).
+- Check your internet connection and whether a firewall, VPN, or proxy is blocking the Edge TTS service.
+- Try another [Edge TTS voice](./40_edgeTTSVoices.md), such as `en-US-AvaMultilingualNeural` or `fr-FR-DeniseNeural`.
+- If Edge TTS remains unavailable, temporarily select another TTS provider. When reporting the issue, include the full error and the application log from `%appdata%\com.covas-next.ui\logs`.
+
 ## I paid money for the OpenAI API, but the AI is still not working. What should I do?
 
 OpenAI sometimes needs a few minutes to process your payment. If you are still having issues after a few minutes, please check your OpenAI account for any issues. If you are still having issues, please get in touch with us.
