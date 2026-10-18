@@ -1,96 +1,211 @@
+<div class="ui-node" [class]="'ui-node tone-' + (field.tone ?? 'default')"
+    [class.outlined]="field.outlined" [class.inline]="field.type === 'inline'" [class.section]="field.type === 'section'">
+@if (field.type === 'text' && field.text) {
+    <span>{{ text(field.text) }}</span>
+} @else if (field.type === 'list' && !field.items) {
+    <ul>@for (child of field.children ?? []; track $index) {
+        <li><app-plugin-content [nodes]="[child]" [getValue]="getValue" [setValue]="setValue"
+            [onButtonClick]="onButtonClick" (action)="uiAction.emit($event)" /></li>
+    }</ul>
+} @else {
 @switch (field.type) {
+    @case ('heading') {
+        @if (field.level === 4) { <h4 class="ui-heading">{{ text(field.text) }}</h4> }
+        @else { <h3 class="ui-heading">{{ text(field.text) }}</h3> }
+    }
+    @case ('progress') {
+        <span>{{ text(field.text) }}</span>
+        <mat-progress-bar [value]="percentage()" />
+    }
+    @case ('action') {
+        <button mat-stroked-button [disabled]="field.readonly" (click)="handleClick()">
+            @if (field.icon) { <mat-icon>{{ field.icon }}</mat-icon> }
+            {{ text(field.text) }}
+        </button>
+    }
+    @case ('section') { @if (field.text) { <span>{{ text(field.text) }}</span> } }
+    @case ('inline') { @if (field.text) { <span>{{ text(field.text) }}</span> } }
     @case ('toggle') {
-        <mat-slide-toggle [ngModel]="value"
+        <mat-slide-toggle [ngModel]="value" [disabled]="field.readonly || false"
                         (ngModelChange)="onValueChange($event)">
-            {{ field.label }}
+            {{ resolve(field.label) }}
         </mat-slide-toggle>
     }
     @case ('button') {
-        <button mat-stroked-button type="button" [disabled]="field.readonly || !buttonEnabled" (click)="onButtonClick()">
-            {{ field.label }}
+        <button mat-stroked-button type="button"
+                [class.primary]="primary"
+                [attr.aria-label]="resolve(field.label)"
+                [disabled]="field.readonly || (!field.action && !buttonEnabled)"
+                (click)="handleClick()">
+            @if (field.icon) {
+                <mat-icon>{{ field.icon }}</mat-icon>
+            }
+            @if (!field.icon) {
+                {{ resolve(field.label) }}
+            }
         </button>
     }
     @case ('paragraph') {
         <div class="paragraph-field">
-            @if (field.label) {
-                <h4>{{ field.label }}</h4>
+            @if (resolve(field.label)) {
+                <h4>{{ resolve(field.label) }}</h4>
             }
-            <p [innerHTML]="field.content"></p>
+            <div [innerHTML]="resolve(field.content, field.params)"></div>
         </div>
     }
     @case ('error') {
         <div class="error-field">
-            @if (field.label) {
-                <h4>{{ field.label }}</h4>
+            @if (resolve(field.label)) {
+                <h4>{{ resolve(field.label) }}</h4>
             }
-            <pre>{{ field.content }}</pre>
+            <pre>{{ resolve(field.content, field.params) }}</pre>
         </div>
     }
     @case ('text') {
         <mat-form-field>
-            <mat-label>{{ field.label }}</mat-label>
+            <mat-label>{{ resolve(field.label) }}</mat-label>
             @if (field.hidden) {
                 <input matInput type="password"
                     [ngModel]="value"
                     (ngModelChange)="onValueChange($event)"
-                    [readonly]="field.readonly"
-                    [placeholder]="field.placeholder || ''"
-                    [minlength]="field.min_length"
-                    [maxlength]="field.max_length">
+                    [readonly]="field.readonly || false"
+                    [placeholder]="resolve(field.placeholder)"
+                    [minlength]="field.min_length ?? null"
+                    [maxlength]="field.max_length ?? null">
             } @else {
                 <input matInput
                     [ngModel]="value"
                     (ngModelChange)="onValueChange($event)"
-                    [readonly]="field.readonly"
-                    [placeholder]="field.placeholder || ''"
-                    [minlength]="field.min_length"
-                    [maxlength]="field.max_length">
+                    [readonly]="field.readonly || false"
+                    [placeholder]="resolve(field.placeholder)"
+                    [minlength]="field.min_length ?? null"
+                    [maxlength]="field.max_length ?? null">
             }
         </mat-form-field>
     }
     @case ('number') {
         <mat-form-field>
-            <mat-label>{{ field.label }}</mat-label>
+            <mat-label>{{ resolve(field.label) }}</mat-label>
             <input matInput type="number"
                 [ngModel]="value"
                 (ngModelChange)="onValueChange($event)"
-                [min]="field.min_value"
-                [max]="field.max_value"
+                [min]="field.min_value ?? null"
+                [max]="field.max_value ?? null"
                 [step]="field.step"
-                [readonly]="field.readonly"
-                [placeholder]="field.placeholder || ''">
+                [readonly]="field.readonly || false"
+                [placeholder]="resolve(field.placeholder)">
         </mat-form-field>
     }
     @case ('textarea') {
         <mat-form-field>
-            <mat-label>{{ field.label }}</mat-label>
+            <mat-label>{{ resolve(field.label) }}</mat-label>
             <textarea matInput
                 [ngModel]="value"
                 (ngModelChange)="onValueChange($event)"
-                [rows]="field.rows"
-                [cols]="field.cols"
-                [readonly]="field.readonly"
-                [placeholder]="field.placeholder || ''"></textarea>
+                (keydown)="onTextKeydown($event)"
+                [rows]="field.rows ?? 2"
+                [cols]="field.cols ?? 20"
+                [readonly]="field.readonly || false"
+                [placeholder]="resolve(field.placeholder)"></textarea>
         </mat-form-field>
+    }
+    @case ('filter') {
+        <div class="filter-field">
+            <mat-icon class="filter-icon">search</mat-icon>
+            <input type="text" class="filter-input"
+                [ngModel]="value"
+                (ngModelChange)="onValueChange($event)"
+                [readonly]="field.readonly || false"
+                [placeholder]="resolve(field.placeholder)"
+                [attr.aria-label]="resolve(field.label)"
+                [maxlength]="field.max_length ?? null">
+        </div>
     }
     @case ('select') {
         <mat-form-field>
-            <mat-label>{{ field.label }}</mat-label>
+            <mat-label>{{ resolve(field.label) }}</mat-label>
             <mat-select
                 [ngModel]="value"
                 (ngModelChange)="onValueChange($event)"
                 [disabled]="field.readonly || false"
-                [multiple]="field.multi_select">
+                [multiple]="field.multi_select || false">
                 @if (hasUnknownSelectValue()) {
                     <mat-option [value]="value">{{ value }}</mat-option>
                 }
                 @for (option of field.select_options; track option.key) {
-                    <mat-option [value]="option.value" [disabled]="option.disabled">{{ option.label }}</mat-option>
+                    <mat-option [value]="option.value" [disabled]="option.disabled">{{ optionLabel(option) }}</mat-option>
                 }
             </mat-select>
         </mat-form-field>
+    }
+    @case ('list') {
+        <div class="list-field">
+            @if (resolve(field.label)) {
+                <h4>{{ resolve(field.label) }}</h4>
+            }
+            @for (entry of rowsWithGroups(field.items); track entry.row.key) {
+                @if (entry.header) {
+                    <button class="list-group" [class.pending]="entry.groupPending" type="button" (click)="toggleGroup(entry.header)">
+                        <mat-icon class="list-group-icon">{{ isGroupCollapsed(entry.header) ? 'keyboard_arrow_right' : 'keyboard_arrow_down' }}</mat-icon>
+                        <span>{{ resolve(entry.header) }}</span>
+                        <span class="list-group-count">{{ groupCountLabel(entry) }}</span>
+                    </button>
+                }
+                @if (!isGroupCollapsed(entry.row.group)) {
+                    @if (editingRowKey === entry.row.key) {
+                        <div class="list-row editing">
+                            <input matInput type="text"
+                                   class="rename-input"
+                                   [(ngModel)]="editValue"
+                                   [attr.aria-label]="resolve(editingAction?.label)"
+                                   (keyup.enter)="confirmRowEdit(entry.row)"
+                                   (keyup.escape)="cancelRowEdit()">
+                            <div class="list-row-actions">
+                                <button mat-icon-button type="button" [attr.aria-label]="resolve('common.confirm')" (click)="confirmRowEdit(entry.row)">
+                                    <mat-icon>check</mat-icon>
+                                </button>
+                                <button mat-icon-button type="button" [attr.aria-label]="resolve('common.cancel')" (click)="cancelRowEdit()">
+                                    <mat-icon>close</mat-icon>
+                                </button>
+                            </div>
+                        </div>
+                    } @else {
+                        <div class="list-row" [class.pending]="entry.row.pending" [class.tone-warning]="entry.row.tone === 'warning'" [class.tone-info]="entry.row.tone === 'info'" [class.tone-muted]="entry.row.tone === 'muted'" [class.tone-default]="entry.row.tone === 'default'">
+                            <div class="list-row-text">
+                        <span class="list-row-title">{{ rowTitle(entry.row) }}</span>
+                        @if (entry.row.meta) {
+                            <span class="list-row-meta">{{ resolve(entry.row.meta, entry.row.params) }}</span>
+                        }
+                            </div>
+                            <div class="list-row-actions">
+                                @for (action of field.row_actions; track action.action) {
+                                    <button mat-icon-button type="button"
+                                            [attr.aria-label]="resolve(action.label)"
+                                            [class.danger]="action.danger"
+                                            (click)="onListAction(action, entry.row)">
+                                        <mat-icon>{{ action.icon }}</mat-icon>
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                    <app-plugin-content [nodes]="entry.row.details ?? []" [getValue]="getValue" [setValue]="setValue"
+                        [onButtonClick]="onButtonClick"
+                        (action)="uiAction.emit($event)" />
+                }
+            } @empty {
+                <p class="list-empty">{{ resolve(field.placeholder) }}</p>
+            }
+        </div>
     }
     @default {
         <p class="unknown-field">Unknown field type: {{ field.type }}</p>
     }
 }
+}
+@if (field.type !== 'list' && field.children?.length) {
+    <app-plugin-content [nodes]="field.children ?? []" [getValue]="getValue" [setValue]="setValue"
+        [inline]="field.type === 'inline'"
+        [onButtonClick]="onButtonClick" (action)="uiAction.emit($event)" />
+}
+</div>

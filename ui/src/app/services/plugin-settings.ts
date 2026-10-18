@@ -1,80 +1,50 @@
 import { type BaseMessage } from "./tauri.service";
+import { UINode, UIComponent } from "./plugin-ui";
+export type { SelectOption, ListRow, ListAction } from "./plugin-ui";
+
+export interface SettingsHeaderLink {
+    text: string;
+    label: string;
+    url: string;
+}
 
 export interface PluginSettings {
     key: string;
     label: string;
     icon: string;
     grids: SettingsGrid[];
+    tabs?: {key: string; label: string; grids: string[]}[];
+    header_link?: SettingsHeaderLink;
+}
+
+export interface GridHeaderAction {
+    key: string;
+    label?: string;
+    icon?: string;
 }
 
 export interface SettingsGrid {
     key: string;
     label: string;
-    fields: (TextSetting | TextAreaSetting | NumericalSetting | ToggleSetting | SelectSetting | ButtonSetting | ParagraphSetting | ErrorSetting)[];
+    collapsible?: boolean;
+    default_collapsed?: boolean;
+    header_action?: GridHeaderAction;
+    content?: UINode[];
+    fields: (TextSetting | TextAreaSetting | NumericalSetting | ToggleSetting | SelectSetting | ButtonSetting | ParagraphSetting | ErrorSetting | ListSetting | FilterSetting)[];
 }
 
-export interface SettingBase {
-    key: string;
-    label: string;
-    type: "paragraph" | "number" | "toggle" | "text" | "textarea" | "select" | "button" | "error";
-    readonly: boolean | null;
-    placeholder: string | null;
-    default_value?: any;
-
-    // Paragraph & Error
-    content: string;
-
-    // Text & Textarea
-    max_length: number | null;
-    min_length: number | null;
-    hidden: boolean | null;
-
-    // Textarea
-    rows: number | null;
-    cols: number | null;
-
-    // Numbers
-    min_value: number | null;
-    max_value: number | null;
-    step: number | null;
-
-    // Select
-    select_options: SelectOption[];
-    multi_select: boolean;
-}
-
-export interface TextSetting extends SettingBase {
-    default_value: string | null;
-}
-
-export interface TextAreaSetting extends SettingBase {
-    default_value: string | string[] | null;
-}
-
-export interface NumericalSetting extends SettingBase {
-    default_value: number | null;
-}
-
-export interface ToggleSetting extends SettingBase {
-    default_value: boolean | null;
-}
-
-export interface ButtonSetting extends SettingBase {}
-
-export interface ParagraphSetting extends SettingBase {}
-
-export interface ErrorSetting extends SettingBase {}
-
-export interface SelectSetting extends SettingBase {
-    default_value: string | string[] | null;
-}
-
-export interface SelectOption {
-    key: string;
-    label: string;
-    value: object | string | number | boolean;
-    disabled: boolean;
-}
+// Deprecated names retained for existing consumers.
+export type SettingBase = UIComponent;
+export type TextSetting = UIComponent;
+export type FilterSetting = UIComponent;
+export type TextAreaSetting = UIComponent;
+export type NumericalSetting = UIComponent;
+export type ToggleSetting = UIComponent;
+export type ButtonSetting = UIComponent;
+export type ParagraphSetting = UIComponent;
+export type ErrorSetting = UIComponent;
+export type ListSetting = UIComponent;
+export type SelectSetting = UIComponent;
 
 export interface PluginSettingsMap {
     [plugin_guid: string]: PluginSettings;
@@ -183,8 +153,8 @@ export function llmProviderSummary(
         providerRef === `plugin:${p.plugin_guid}:${p.id}`
     );
     const modelField = provider?.settings_config.flatMap(grid => grid.fields)
-        .find(field => field.label === "Model" || field.key === "model" || field.key.endsWith("_model"));
-    const configured = provider && modelField ? pluginSettings[provider.plugin_guid]?.[modelField.key] : undefined;
+        .find(field => field.label === "Model" || field.key === "model" || field.key?.endsWith("_model"));
+    const configured = provider && modelField?.key ? pluginSettings[provider.plugin_guid]?.[modelField.key] : undefined;
     const model = typeof configured === "string" && configured.trim() ? configured.trim() : modelField?.default_value;
     return typeof model === "string" && model.trim() ? `${label} - ${model.trim()}` : label;
 }

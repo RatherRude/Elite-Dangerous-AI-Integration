@@ -7,6 +7,28 @@ from ..Projections import get_state_dict, ProjectedStates
 from typing import Optional
 
 event_manager: Optional[EventManager] = None
+plugin_manager = None
+
+
+def configure_plugin_ui(manager, action_manager):
+    global plugin_manager
+    plugin_manager = manager
+    manager.ui_action_manager = action_manager
+    targets = manager.get_ui_targets()
+    tool = action_manager.actions['showUI']['tool']
+    tool['function']['parameters']['properties']['tab']['enum'] = [
+        'chat', 'status', 'navigation', 'storage', 'station', 'tasks', 'logbook', 'search', 'actions', *targets,
+    ]
+    tool['function']['parameters']['properties']['submenu']['enum'] = sorted({
+        'location', 'list', 'route', 'colonisation', 'cargo', 'carriers', 'materials',
+        'raw material', 'manufactured material', 'encoded material', 'locker', 'engineers',
+        'blueprints', 'modules', 'ships', 'missions', 'quests', 'community-goals',
+        *(section['key'] for view in targets.values() for section in view['sections']),
+    })
+    descriptions = '; '.join(f"{target}: {view.get('description', view['label'])} ({', '.join(section['key'] for section in view['sections'])})" for target, view in targets.items())
+    tool['function']['parameters']['properties']['tab']['description'] = (
+        'Built-in application panels and registered plugin views. ' + descriptions
+    )
 
 # Checking status projection to exit game actions early if not applicable
 def checkStatus(projected_states: ProjectedStates, blocked_status_dict: dict[str, bool]):
@@ -34,12 +56,16 @@ def show_ui(obj, projected_states):
     }
     if submenu:
         submenu = material_submenu_aliases.get(submenu, submenu)
-    valid_tabs = {"chat", "status", "navigation", "storage", "station", "tasks", "logbook", "search"}
+    valid_tabs = {"chat", "status", "navigation", "storage", "station", "tasks", "logbook", "search", "actions"}
+    targets = plugin_manager.get_ui_targets() if plugin_manager is not None else {}
+    valid_tabs.update(targets)
     valid_submenus = {
         "navigation": {"location", "list", "route"},
         "storage": {"colonisation", "cargo", "carriers", "materials", "raw material", "manufactured material", "encoded material", "locker", "engineers", "blueprints", "modules", "ships"},
         "tasks": {"missions", "quests", "community-goals"},
     }
+    for target, view in targets.items():
+        valid_submenus[target] = {section['key'] for section in view['sections']}
 
     if tab not in valid_tabs:
         raise Exception(f"Unknown tab '{tab}'. Expected one of: {', '.join(sorted(valid_tabs))}.")
@@ -76,13 +102,16 @@ def scroll_ui(obj, projected_states):
 
 
 def register_ui_actions(actionManager: ActionManager, eventManager: EventManager):
-    global event_manager
+    global event_manager, plugin_manager
     event_manager = eventManager
+    plugin_manager = None
 
     # Single parameterized UI action
     actionManager.registerAction(
         'showUI',
-        "Display a specific tab to the user via UI",
+        "Display an existing tab to the user via UI. This only changes the visible panel; "
+        "it does not calculate or prepare routes, search stations, or plot navigation. "
+        "Use the relevant registered operation to prepare data before displaying it.",
         {
             "type": "object",
             "properties": {
