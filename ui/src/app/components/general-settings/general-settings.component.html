@@ -561,7 +561,7 @@
                                     <mat-select [ngModel]="activeCharacterIndex"
                                                 (ngModelChange)="onCharacterSelect($event)">
                                         @for (character of characterList; track $index) {
-                                            <mat-option [value]="$index">{{ character.name || ('Character ' + ($index + 1)) }}{{ character.tts_voice ? ' [' + character.tts_voice + ']' : '' }}</mat-option>
+                                            <mat-option [value]="$index">{{ character.name || ('Character ' + ($index + 1)) }}{{ getCharacterVoiceDisplay(character) ? ' [' + getCharacterVoiceDisplay(character) + ']' : '' }}</mat-option>
                                         }
                                     </mat-select>
                                 </mat-form-field>

@@ -13,7 +13,7 @@ from lib.PluginSettingDefinitions import (
     SettingsGrid, 
     ToggleSetting, 
     ParagraphSetting,
-    ModelProviderDefinition, TextSetting
+    ModelProviderDefinition, TextSetting, resolve_voice_settings
 )
 from lib.Logger import log, show_chat_message
 from lib.PluginBase import PluginBase, PluginManifest
@@ -527,15 +527,24 @@ class EDCoPilotPlugin(PluginBase):
 
         config = self._helper._config
         tts_provider = config.get('tts_provider')
+        provider = None
+        plugin_settings = {}
+        if isinstance(tts_provider, str) and tts_provider.startswith('plugin:'):
+            _, plugin_guid, provider_id = tts_provider.split(':', 2)
+            provider = self._helper._plugin_manager.get_plugin_provider(plugin_guid, provider_id)
+            plugin_settings = config.get('plugin_settings', {}).get(plugin_guid, {})
 
         def character_voice(character: dict[str, Any]):
             if self.is_edcopilot_dominant():
                 return None
             provider_settings = character.get('tts_voice_settings', {}).get(tts_provider, {})
-            if isinstance(provider_settings, dict) and 'voice' in provider_settings:
-                voice = provider_settings['voice']
-                return voice if isinstance(voice, str) and voice else None
-            return character.get('tts_voice')
+            settings = resolve_voice_settings(
+                provider.get('voice_settings_config', []) if provider else [],
+                plugin_settings,
+                provider_settings if isinstance(provider_settings, dict) else {},
+            )
+            voice = settings.get('voice')
+            return voice if isinstance(voice, str) and voice else None
 
         read_commentary = self.settings.get("read_commentary", False)
         voice = self.settings.get("voice") or None

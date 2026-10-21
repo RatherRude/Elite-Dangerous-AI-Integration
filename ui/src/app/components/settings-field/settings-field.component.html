@@ -18,6 +18,15 @@
             <p [innerHTML]="field.content"></p>
         </div>
     }
+    @case ('notification') {
+        <div class="notification-field" [class]="'notification-field ' + (field.level || 'info')"
+            [attr.role]="field.level === 'warning' || field.level === 'error' ? 'alert' : 'status'">
+            @if (field.label) {
+                <strong>{{ field.label }}</strong>
+            }
+            <p [innerHTML]="field.content"></p>
+        </div>
+    }
     @case ('error') {
         <div class="error-field">
             @if (field.label) {
