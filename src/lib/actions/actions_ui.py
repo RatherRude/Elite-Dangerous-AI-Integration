@@ -82,7 +82,7 @@ def register_ui_actions(actionManager: ActionManager, eventManager: EventManager
     # Single parameterized UI action
     actionManager.registerAction(
         'showUI',
-        "Display a specific tab to the user via UI",
+        "Show a COVAS interface tab or submenu, such as ship status, navigation, cargo, materials, missions, station information, or the logbook.",
         {
             "type": "object",
             "properties": {
@@ -131,7 +131,7 @@ def register_ui_actions(actionManager: ActionManager, eventManager: EventManager
     )
     actionManager.registerAction(
         'scrollUI',
-        "Scroll the currently displayed UI tab",
+        "Scroll the currently displayed COVAS interface up or down, or jump to the top or bottom.",
         {
             "type": "object",
             "properties": {
