@@ -102,7 +102,7 @@ export class CrewRosterComponent implements OnChanges, OnDestroy {
 
     getVoiceDisplay(character: Character): string {
         return providerVoiceDisplayValue(
-            this.config.tts_provider, this.providers, character.tts_voice_settings, character.tts_voice,
+            this.config.tts_provider, this.providers, character.tts_voice_settings, this.config.plugin_settings,
         ) || "No voice selected";
     }
 

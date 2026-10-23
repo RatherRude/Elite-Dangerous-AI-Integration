@@ -14,7 +14,9 @@ from lib.PluginSettingDefinitions import (
     SettingsGrid, 
     ToggleSetting, 
     ParagraphSetting,
-    ModelProviderDefinition
+    ModelProviderDefinition,
+    resolve_voice_settings,
+    settings_fields,
 )
 from lib.Logger import log, show_chat_message
 from lib.PluginBase import PluginBase, PluginManifest
@@ -454,17 +456,17 @@ class EDCoPilotPlugin(PluginBase):
         grids = provider.get('voice_settings_config') if provider else None
         if grids is None:
             return None
-        fields = [field for grid in grids for field in grid['fields']]
-        settings = {field['key']: field['default_value'] for field in fields if 'default_value' in field}
+        fields = [field for grid in grids for field in settings_fields(grid['fields'])]
         stored = character.get('tts_voice_settings', {}).get(provider_ref, {})
         stored = stored if isinstance(stored, dict) else {}
         keys = {field['key'] for field in fields}
-        settings.update({key: value for key, value in stored.items() if key in keys})
-        if 'voice' in keys and character.get('tts_voice') and 'voice' not in stored:
-            settings['voice'] = character['tts_voice']
-        if 'instructions' in keys and character.get('tts_prompt') and 'instructions' not in stored:
-            settings['instructions'] = character['tts_prompt']
-        return settings
+        overrides = {key: value for key, value in stored.items() if key in keys and value is not None}
+        if 'voice' in keys and character.get('tts_voice') and 'voice' not in overrides:
+            overrides['voice'] = character['tts_voice']
+        if 'instructions' in keys and character.get('tts_prompt') and 'instructions' not in overrides:
+            overrides['instructions'] = character['tts_prompt']
+        plugin_settings = self._helper._config.get('plugin_settings', {}).get(parts[1], {})
+        return resolve_voice_settings(grids, plugin_settings, overrides)
 
     def create_model(self, provider_id: str, settings: dict[str, Any]) -> LLMModel | STTModel | TTSModel | EmbeddingModel:
         """Create a model instance for the given provider."""

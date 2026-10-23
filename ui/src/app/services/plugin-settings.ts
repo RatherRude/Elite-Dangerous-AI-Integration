@@ -10,19 +10,83 @@ export interface PluginSettings {
 export interface SettingsGrid {
     key: string;
     label: string;
-    fields: (TextSetting | TextAreaSetting | NumericalSetting | ToggleSetting | SelectSetting | ButtonSetting | ParagraphSetting | ErrorSetting)[];
+    fields: SettingsElement[];
+}
+
+export type SettingsElement = TextSetting | TextAreaSetting | NumericalSetting | ToggleSetting | SelectSetting | ButtonSetting | ParagraphSetting | NotificationSetting | ErrorSetting | ConditionSetting;
+
+export interface SettingCondition {
+    key: string;
+    operator: "eq" | "neq" | "gt" | "geq" | "lt" | "leq" | "in" | "not_in" | "contains" | "not_contains" | "is_set" | "is_unset";
+    value?: unknown;
+    default_show?: boolean;
+}
+
+export interface ConditionSetting {
+    key: string;
+    type: "condition";
+    condition: SettingCondition;
+    fields: SettingsElement[];
+}
+
+/** All actual fields, including hidden descendants; containers have no stored value. */
+export function settingsFields(elements: SettingsElement[]): SettingBase[] {
+    return elements.flatMap(element => element.type === "condition"
+        ? settingsFields(element.fields) : [element]);
+}
+
+export function matchesSettingCondition(condition: SettingCondition, actual: unknown): boolean {
+    const unset = actual === undefined || actual === null;
+    if (condition.operator === "is_set") return !unset;
+    if (condition.operator === "is_unset") return unset;
+    if (actual === undefined || actual === null) return condition.default_show ?? false;
+    const expected = condition.value;
+    switch (condition.operator) {
+        case "eq": return actual === expected;
+        case "neq": return actual !== expected;
+        case "gt": case "geq": case "lt": case "leq":
+            if (typeof actual !== "number" || typeof expected !== "number"
+                || !Number.isFinite(actual) || !Number.isFinite(expected)) return false;
+            switch (condition.operator) {
+                case "gt": return actual > expected;
+                case "geq": return actual >= expected;
+                case "lt": return actual < expected;
+                case "leq": return actual <= expected;
+            }
+        case "in": case "not_in":
+            if (!Array.isArray(expected)) return false;
+            return condition.operator === "in" ? expected.includes(actual) : !expected.includes(actual);
+        case "contains": case "not_contains": {
+            if (!Array.isArray(actual) && !(typeof actual === "string" && typeof expected === "string")) return false;
+            const contains = Array.isArray(actual) ? actual.includes(expected) : (actual as string).includes(expected as string);
+            return condition.operator === "contains" ? contains : !contains;
+        }
+        default: return false;
+    }
+}
+
+/** Voice conditions can reference global keys; character values win on collisions. */
+export function voiceSettingsContext(
+    pluginSettings: Record<string, any> | undefined,
+    characterSettings: Record<string, any> | undefined,
+): Record<string, any> {
+    const setValues = (settings: Record<string, any> | undefined) => Object.fromEntries(
+        Object.entries(settings ?? {}).filter(([, value]) => value !== undefined && value !== null),
+    );
+    return { ...setValues(pluginSettings), ...setValues(characterSettings) };
 }
 
 export interface SettingBase {
     key: string;
     label: string;
-    type: "paragraph" | "number" | "toggle" | "text" | "textarea" | "select" | "button" | "error";
+    type: "paragraph" | "notification" | "number" | "toggle" | "text" | "textarea" | "select" | "button" | "error";
     readonly: boolean | null;
     placeholder: string | null;
     default_value?: any;
 
     // Paragraph & Error
     content: string;
+    level?: "info" | "warning" | "error";
 
     // Text & Textarea
     max_length: number | null;
@@ -63,6 +127,10 @@ export interface ButtonSetting extends SettingBase {}
 
 export interface ParagraphSetting extends SettingBase {}
 
+export interface NotificationSetting extends SettingBase {
+    level: "info" | "warning" | "error";
+}
+
 export interface ErrorSetting extends SettingBase {}
 
 export interface SelectSetting extends SettingBase {
@@ -99,53 +167,44 @@ export function providerVoiceSettingsValues(
     providerRef: string,
     providers: ModelProviderDefinition[],
     voiceSettings: Record<string, Record<string, any>> | undefined,
+    pluginSettings?: Record<string, Record<string, any>>,
 ): Record<string, any> | undefined {
     const provider = providers.find(
         candidate => providerRef === `plugin:${candidate.plugin_guid}:${candidate.id}`,
     );
-    if (!provider || provider.voice_settings_config === undefined) return undefined;
+    if (!provider) return undefined;
 
     const defaults = Object.fromEntries(
-        provider.voice_settings_config
-            .flatMap(grid => grid.fields)
+        (provider.voice_settings_config ?? [])
+            .flatMap(grid => settingsFields(grid.fields))
             .filter(field => field.default_value !== undefined)
             .map(field => [field.key, field.default_value]),
     );
-    const declaredKeys = new Set(
-        provider.voice_settings_config.flatMap(grid => grid.fields).map(field => field.key),
-    );
-    const stored = Object.fromEntries(
-        Object.entries(voiceSettings?.[providerRef] ?? {})
-            .filter(([key]) => declaredKeys.has(key)),
-    );
-    return { ...defaults, ...stored };
+    return {
+        ...defaults,
+        ...voiceSettingsContext(pluginSettings?.[provider.plugin_guid], voiceSettings?.[providerRef]),
+    };
 }
 
 export function providerVoiceDisplayValue(
     providerRef: string,
     providers: ModelProviderDefinition[],
     voiceSettings: Record<string, Record<string, any>> | undefined,
-    legacyFallback: string,
+    pluginSettings?: Record<string, Record<string, any>>,
 ): string | undefined {
     const provider = providers.find(
         candidate => providerRef === `plugin:${candidate.plugin_guid}:${candidate.id}`,
     );
-    if (!provider || provider.voice_settings_config === undefined) return legacyFallback || undefined;
+    if (!provider) return undefined;
 
-    const voiceField = provider.voice_settings_config
-        .flatMap(grid => grid.fields)
+    const voiceField = provider.voice_settings_config?.flatMap(grid => settingsFields(grid.fields))
         .find(field => field.key === "voice");
-    if (!voiceField) return undefined;
+    if (provider.voice_settings_config !== undefined && !voiceField) return undefined;
 
-    const stored = voiceSettings?.[providerRef];
-    const value = stored && Object.prototype.hasOwnProperty.call(stored, "voice")
-        ? stored["voice"]
-        : Object.prototype.hasOwnProperty.call(voiceField, "default_value")
-            ? voiceField.default_value
-            : legacyFallback;
+    const value = providerVoiceSettingsValues(providerRef, providers, voiceSettings, pluginSettings)?.["voice"];
     if (value === undefined || value === null || value === "") return undefined;
 
-    if (voiceField.type === "select") {
+    if (voiceField?.type === "select") {
         const option = voiceField.select_options?.find(candidate => candidate.value === value);
         if (option) return option.label;
     }
@@ -182,7 +241,7 @@ export function llmProviderSummary(
         (!p.slots || p.slots.includes(slot)) &&
         providerRef === `plugin:${p.plugin_guid}:${p.id}`
     );
-    const modelField = provider?.settings_config.flatMap(grid => grid.fields)
+    const modelField = provider?.settings_config.flatMap(grid => settingsFields(grid.fields))
         .find(field => field.label === "Model" || field.key === "model" || field.key.endsWith("_model"));
     const configured = provider && modelField ? pluginSettings[provider.plugin_guid]?.[modelField.key] : undefined;
     const model = typeof configured === "string" && configured.trim() ? configured.trim() : modelField?.default_value;

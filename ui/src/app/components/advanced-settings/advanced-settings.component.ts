@@ -35,7 +35,7 @@ import {
     MatExpansionPanelHeader,
     MatExpansionPanelTitle,
 } from "@angular/material/expansion";
-import { filterProvidersForSlot, modelProviderLabel, ModelProviderDefinition, providerVoiceSettingsValues, ProviderSlot, SettingsGrid } from "../../services/plugin-settings";
+import { filterProvidersForSlot, modelProviderLabel, ModelProviderDefinition, ProviderSlot, SettingsGrid } from "../../services/plugin-settings";
 import { ApiKeyDetectionService } from "../../services/api-key-detection.service";
 import { SettingsGridComponent } from "../settings-grid/settings-grid.component";
 import { MatDialog } from "@angular/material/dialog";
@@ -416,13 +416,6 @@ export class AdvancedSettingsComponent implements OnDestroy {
 
     async onTtsProviderChange(providerRef: string): Promise<void> {
         await this.onConfigChange({ tts_provider: providerRef });
-        const character = this.characterService.getCurrentCharacter();
-        const voiceSettings = providerVoiceSettingsValues(
-            providerRef, this.pluginTTSProviders, character?.tts_voice_settings,
-        );
-        if (voiceSettings) {
-            await this.characterService.setTtsProviderVoiceSettings(providerRef, voiceSettings);
-        }
     }
 
     async onApiKeyChange(apiKey: string) {
@@ -430,15 +423,6 @@ export class AdvancedSettingsComponent implements OnDestroy {
         const result = this.apiKeyDetectionService.buildUpdate(apiKey, this.config, this.pluginModelProviders);
         this.apiKeyType = result.label;
         await this.onConfigChange(result.update);
-        if (typeof result.update.tts_provider === "string") {
-            const character = this.characterService.getCurrentCharacter();
-            const voiceSettings = providerVoiceSettingsValues(
-                result.update.tts_provider, this.pluginTTSProviders, character?.tts_voice_settings,
-            );
-            if (voiceSettings) {
-                await this.characterService.setTtsProviderVoiceSettings(result.update.tts_provider, voiceSettings);
-            }
-        }
     }
 
     async onAssignPTT(e: Event, index: number) {

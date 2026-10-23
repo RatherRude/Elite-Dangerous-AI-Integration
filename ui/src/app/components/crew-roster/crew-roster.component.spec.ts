@@ -36,11 +36,22 @@ describe("CrewRosterComponent", () => {
         }).compileComponents();
         fixture = TestBed.createComponent(CrewRosterComponent);
         component = fixture.componentInstance;
+        providers$.next([{
+            plugin_guid: "voice-plugin", id: "tts", kind: "tts",
+            voice_settings_config: [{ key: "voice", fields: [{
+                key: "voice", type: "text", default_value: "default-voice",
+            }] }],
+        } as ModelProviderDefinition]);
         fixture.componentRef.setInput("config", {
-            characters: [{ name: "COVAS", tts_voice: "alloy" }, { name: "Nyx", tts_voice: "nova" }, { name: "Orion", tts_voice: "echo" }],
+            characters: [
+                { name: "COVAS", tts_voice_settings: { "plugin:voice-plugin:tts": { voice: "alloy" } } },
+                { name: "Nyx", tts_voice_settings: { "plugin:voice-plugin:tts": { voice: "nova" } } },
+                { name: "Orion", tts_voice_settings: { "plugin:voice-plugin:tts": { voice: "echo" } } },
+            ],
+            tts_provider: "plugin:voice-plugin:tts",
             active_character_index: 0,
             active_characters: [0, 1],
-        } as ConfigWithCharacters);
+        } as unknown as ConfigWithCharacters);
         fixture.detectChanges();
     });
 
@@ -129,6 +140,33 @@ describe("CrewRosterComponent", () => {
         });
         fixture.detectChanges();
         expect(fixture.nativeElement.querySelector(".crew-voice").textContent).toBe("Sample Voice");
+    });
+
+    it("inherits global provider voices without overriding character choices", () => {
+        fixture.componentRef.setInput("config", {
+            ...component.config,
+            plugin_settings: { "voice-plugin": { voice: "global-voice" } },
+            characters: component.config.characters.map((character, index) => index === 0
+                ? { ...character, tts_voice_settings: {} } : character),
+        });
+        fixture.detectChanges();
+        const voices = fixture.nativeElement.querySelectorAll(".crew-voice");
+        expect(voices[0].textContent).toBe("global-voice");
+        expect(voices[1].textContent).toBe("nova");
+    });
+
+    it("does not reuse another provider's voice when the selected provider changes", () => {
+        providers$.next([{
+            plugin_guid: "other-plugin", id: "tts", kind: "tts",
+            voice_settings_config: [{ key: "voice", fields: [{
+                key: "voice", type: "text", default_value: "other-default",
+            }] }],
+        } as ModelProviderDefinition]);
+        fixture.componentRef.setInput("config", {
+            ...component.config, tts_provider: "plugin:other-plugin:tts",
+        });
+        fixture.detectChanges();
+        expect(fixture.nativeElement.querySelector(".crew-voice").textContent).toBe("other-default");
     });
 
     it("prevents adding a fourth active character and disables Add to Crew", async () => {
