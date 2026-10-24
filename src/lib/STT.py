@@ -1,7 +1,7 @@
 import queue
 import threading
 import traceback
-from time import sleep, time
+from time import sleep, time, perf_counter
 from typing import Literal, final
 
 import pyaudio
@@ -16,8 +16,11 @@ from .Logger import (
     log_stt_usage,
     observe,
     show_chat_message,
+    log_audio_pipeline_error,
 )
-from .Models import STTModel, LLMError
+from .Models import STTModel
+from .ModelUsage import ModelUsageStats
+from .Errors import LLMError, error_kind
 
 
 @final
@@ -72,10 +75,11 @@ class STT:
         """
         # print('Running STT in PTT mode')
         log('debug', 'listen_once_thread start')
-        source = self._get_microphone()
-        self.recording = True
+        source = None
         text = None
         try:
+            source = self._get_microphone()
+            self.recording = True
             timestamp = time()
             frames = []
             while self.listening:
@@ -83,12 +87,19 @@ class STT:
                 if len(buffer) == 0: break  # reached end of the stream
                 frames.append(buffer)
             source.close()
+            source = None
 
             audio_raw = b''.join(frames)
             audio_data = sr.AudioData(audio_raw, self.rate, self.sample_width)
             text = self._transcribe(audio_data)
+        except Exception as exc:
+            log_audio_pipeline_error("stt", "capture", "audio_device")
+            log("error", "Speech capture failed", exc)
+            show_chat_message("error", "Speech capture failed:", str(exc))
         finally:
             self.recording = False
+            if source is not None:
+                source.close()
         
         if text:
             self.resultQueue.put(STTResult(text, audio_data, timestamp))
@@ -108,6 +119,7 @@ class STT:
                 self._listen_continuous_loop()
             except Exception as e:
                 self.recording = False
+                log_audio_pipeline_error("stt", "capture", "audio_device")
                 log('error', 'An error occurred during speech recognition', e, traceback.format_exc())
                 show_chat_message('error', 'Speech recognition error:', e)
                 sleep(backoff)
@@ -222,20 +234,29 @@ class STT:
 
 
         text = None
-        start_time = time()
+        start_time = perf_counter()
         
         try:
-            text = self.stt_model.transcribe(audio)
-        except LLMError as e:
-            log('error', 'STT Error:', e)
+            result = self.stt_model.transcribe_with_usage(audio)
+            text = result.text
+        except Exception as e:
+            usage = e.usage if isinstance(e, LLMError) and e.usage else ModelUsageStats.unknown()
+            log_stt_usage("speech", model_usage=usage, status="error", error_kind=error_kind(e),
+                          operation_ms=(perf_counter() - start_time) * 1000,
+                          audio_usage=AudioUsageStats(input_audio_duration_ms=audio_length * 1000))
+            log('error', 'STT Error:', e, traceback.format_exc())
             show_chat_message('error', 'STT Error:', str(e))
             return ''
-        except Exception as e:
-            log('error', 'STT Error:', e, traceback.format_exc())
-            return ''
 
-        end_time = time()
+        end_time = perf_counter()
         log('debug', f'Response time STT', end_time - start_time)
+
+        log_stt_usage(
+            "speech", model_usage=result.usage, operation_ms=(end_time - start_time) * 1000,
+            latency_usage=LatencyUsageStats(response_ms=result.usage.response_ms),
+            audio_usage=AudioUsageStats(input_audio_duration_ms=audio_length * 1000),
+            text_usage=TextUsageStats(output_chars=len(text or "")),
+        )
 
         filter = ['', 'COVAS, give me a status update... and throw in something inspiring, would you?']
         if not text or text.strip() in filter:
@@ -243,15 +264,6 @@ class STT:
         
         if self.required_word and self.required_word.lower() not in text.lower():
             return ''
-
-        log_stt_usage(
-            "speech",
-            provider=getattr(self.stt_model, "provider_name", None),
-            model_name=getattr(self.stt_model, "model_name", None),
-            latency_usage=LatencyUsageStats(response_ms=(end_time - start_time) * 1000),
-            audio_usage=AudioUsageStats(input_audio_duration_ms=audio_length * 1000),
-            text_usage=TextUsageStats(output_chars=len(text)),
-        )
 
         # print("transcription received", text)
         return text

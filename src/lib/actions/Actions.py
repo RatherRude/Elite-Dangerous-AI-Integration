@@ -13,13 +13,14 @@ from .Plotter import Plotter
 from .actions_ui import register_ui_actions
 from .actions_genui import register_genui_actions
 
-from ..Logger import log, show_chat_message
+from ..Logger import log, show_chat_message, PromptUsageStats
+from ..Errors import ToolError
 from ..Screenshot import get_windows_game_window_handle, screenshot_game_window, set_game_window_active
 from ..EDKeys import EDKeys
 from ..EventManager import EventManager
 from ..ActionManager import ActionManager
 from ..PromptGenerator import PromptGenerator
-from ..Models import LLMModel, EmbeddingModel
+from ..Models import LLMModel, EmbeddingModel, generate_with_usage
 from ..Projections import get_state_dict, ProjectedStates
 from ..HudColorMatrix import HudColorMatrix
 
@@ -53,7 +54,7 @@ def checkStatus(projected_states: ProjectedStates, blocked_status_dict: dict[str
                 flags = status_dict.get(flag_group, {})
                 if flags and blocked_status in flags:
                     if flags[blocked_status] == expected_value:
-                        raise Exception(f"Action not possible due to {'not ' if not expected_value else ''}being in a state of {blocked_status}!")
+                        raise ToolError(f"Action not possible due to {'not ' if not expected_value else ''}being in a state of {blocked_status}!", kind="unsupported")
 
 
 # Define functions for each action
@@ -91,6 +92,7 @@ def fire_weapons(args, projected_states):
                 target_subsystem({'subsystem': target_submodule}, projected_states)
             except Exception as e:
                 log('warn', f'Failed to target submodule {target_submodule}: {str(e)}')
+                raise
 
         # Use weapon's default action settings if not overridden in args
         if 'action' not in args:
@@ -172,7 +174,7 @@ def fire_weapons(args, projected_states):
         return f"Stopped firing {weapon_desc}."
 
     else:
-        return f"Invalid action '{action}'. Use: fire, start, or stop."
+        raise ToolError(f"Invalid action '{action}'. Use: fire, start, or stop.", kind="invalid_arguments")
 
 
 def set_speed(args, projected_states):
@@ -210,7 +212,7 @@ def manage_power_distribution(args, projected_states):
     message = ""
 
     if not balance_power and len(power_categories) != len(pips):
-        return "ERROR: Number of pips does not match number of power categories."
+        raise ToolError("Number of pips does not match number of power categories.", kind="invalid_arguments")
 
     setGameWindowActive()
 
@@ -348,7 +350,7 @@ def cycle_fire_group(args, projected_states):
     elif firegroup_ask == initial_firegroup:
         return f"Fire group {chr(65 + firegroup_ask)} was already selected. No changes."
     elif firegroup_ask > 7:  # max allowed is up to H which is 7 starting with A=0
-        return f"Cannot switch to Firegroup {firegroup_ask} as it does not exist."
+        raise ToolError(f"Cannot switch to Firegroup {firegroup_ask} as it does not exist.", kind="not_found")
     else:
         for loop in range(abs(firegroup_ask - initial_firegroup)):
             if firegroup_ask > initial_firegroup:
@@ -363,7 +365,7 @@ def cycle_fire_group(args, projected_states):
         new_firegroup = status_event.FireGroup if status_event else None
     except TimeoutError:
         # handles case where we cycle back round to zero
-        return "Failed to cycle to requested fire group. Please ensure it exists."
+        raise ToolError("Failed to cycle to requested fire group. Please ensure it exists.", kind="not_found")
 
     return f"Fire group {chr(65 + new_firegroup) if new_firegroup is not None else '?'} is now selected."
 
@@ -391,7 +393,7 @@ def engine_boost(args, projected_states, qol: bool = False):
                 3,
             )
         except TimeoutError:
-            return "Engine boost skipped because supercruise did not end within 3 seconds."
+            raise ToolError("Supercruise did not end within 3 seconds.", kind="timeout")
 
     checkStatus(projected_states, {'Docked': True, 'Landed': True, 'Supercruise': True})
     setGameWindowActive()
@@ -506,7 +508,7 @@ def galaxy_map_open_or_close(args, projected_states, galaxymap_key="GalaxyMapOpe
         try:
             event_manager.wait_for_condition('CurrentStatus', lambda s: s.GuiFocus == "GalaxyMap", 5)
         except TimeoutError:
-            return "Galaxy map can not be opened currently, the current GUI needs to be closed first"
+            raise ToolError("Galaxy map can not be opened currently, the current GUI needs to be closed first", kind="unsupported")
 
     return "Galaxy map opened"
 
@@ -548,7 +550,7 @@ def system_map_open_or_close(args, projected_states, sys_map_key='SystemMapOpen'
         try:
             event_manager.wait_for_condition('CurrentStatus', lambda s: s.GuiFocus == "SystemMap", 4)
         except TimeoutError:
-            return "System map can not be opened currently, the current GUI needs to be closed first"
+            raise ToolError("System map can not be opened currently, the current GUI needs to be closed first", kind="unsupported")
 
     return "System map opened"
 
@@ -588,7 +590,7 @@ def launch_slf(args, projected_states):
             10,
         )
     except TimeoutError:
-        return 'Failed to launch SLF.'
+        raise ToolError('Failed to launch SLF.', kind="execution_error")
     return f'SLF {vehicle_number} launched.'
 
 
@@ -612,7 +614,7 @@ def deploy_srv(args, projected_states):
     try:
         event_manager.wait_for_condition('CurrentStatus', lambda s: s.flags.InSRV, 20)
     except TimeoutError:
-        return 'Failed to deploy SRV.'
+        raise ToolError('Failed to deploy SRV.', kind="execution_error")
     return 'SRV deployed.'
 
 
@@ -630,7 +632,7 @@ def dock_srv(args, projected_states):
     try:
         event_manager.wait_for_condition('CurrentStatus', lambda s: s.flags.InMainShip, 20)
     except TimeoutError:
-        return 'Failed to dock SRV.'
+        raise ToolError('Failed to dock SRV.', kind="execution_error")
     return 'SRV docked.'
 
 
@@ -650,7 +652,7 @@ def disembark(args, projected_states):
     try:
         event_manager.wait_for_condition('CurrentStatus', lambda s: s.flags2 is not None and s.flags2.OnFoot, 20)
     except TimeoutError:
-        return 'Failed to disembark.'
+        raise ToolError('Failed to disembark.', kind="execution_error")
     return 'Disembarked.'
 
 
@@ -664,7 +666,7 @@ def embark(args, projected_states):
     try:
         event_manager.wait_for_condition('CurrentStatus', lambda s: s.flags.InSRV or s.flags.InMainShip, 10)
     except TimeoutError:
-        return 'Failed to embark.'
+        raise ToolError('Failed to embark.', kind="execution_error")
     return 'Embarked.'
 
 def eject_all_cargo(args, projected_states):
@@ -734,7 +736,7 @@ def fsd_jump(args, projected_states):
 def next_system_in_route(args, projected_states):
     nav_info = get_state_dict(projected_states, 'NavInfo')
     if not nav_info.get('NextJumpTarget'):
-        return "cannot target next system in route as no navigation route is currently set"
+        raise ToolError("Cannot target next system in route as no navigation route is currently set", kind="not_found")
 
     setGameWindowActive()
     keys.send('TargetNextRouteSystem')
@@ -994,7 +996,7 @@ def fire_weapons_buggy(args, projected_states):
         return f"Stopped firing {weapon_desc}."
 
     else:
-        return f"Invalid action '{action}'. Use: fire, start, or stop."
+        raise ToolError(f"Invalid action '{action}'. Use: fire, start, or stop.", kind="invalid_arguments")
 
 
 def buggy_primary_fire(args, projected_states):
@@ -1046,7 +1048,7 @@ def headlights_buggy(args, projected_states):
         desired_mode = state_to_mode.get(desired_state.lower())
 
         if desired_mode is None:
-            return f"Invalid desired state '{desired_state}'. Valid options: off, low, high, toggle"
+            raise ToolError(f"Invalid desired state '{desired_state}'. Valid options: off, low, high, toggle", kind="invalid_arguments")
 
         # Calculate number of key presses needed (cycling: off->low->high->off...)
         key_presses = (desired_mode - current_mode) % 3
@@ -1100,7 +1102,7 @@ def manage_power_distribution_buggy(args, projected_states):
     message = ""
 
     if not balance_power and len(power_categories) != len(pips):
-        return "ERROR: Number of pips does not match number of power categories."
+        raise ToolError("Number of pips does not match number of power categories.", kind="invalid_arguments")
 
     setGameWindowActive()
 
@@ -1397,10 +1399,10 @@ def send_message(obj, projected_states):
 
 def get_visuals(obj, projected_states):
     image = screenshot()
-    if not image: return "Unable to take screenshot."
-    if not vision_model: return "Vision not enabled."
+    if not image: raise ToolError("Unable to take screenshot.", kind="execution_error")
+    if not vision_model: raise ToolError("Vision not enabled.", kind="unsupported")
 
-    response_text, _, _ = vision_model.generate(
+    response_text, _, _ = generate_with_usage(vision_model, "vision", PromptUsageStats(),
         messages=format_image(image, obj.get("query")),
     )
 

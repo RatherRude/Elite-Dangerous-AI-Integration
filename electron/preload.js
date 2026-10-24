@@ -31,6 +31,7 @@ ipcRenderer.on('window-close', (e) => {
 });
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  runtimeRole: process.argv.includes('--covas-primary-renderer') ? 'primary_desktop' : 'overlay',
   onStdout: (callback) => stdoutCallback = callback,
   onStderr: (callback) => stderrCallback = callback,
   onBackendLifecycle: (callback) => backendLifecycleCallback = callback,

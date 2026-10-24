@@ -24,6 +24,7 @@ from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.exporter.otlp.proto.http._log_exporter import OTLPLogExporter
 
 from .UI import emit_message, send_message
+from .ModelUsage import ModelUsageStats
 
 
 def configure_stdio() -> None:
@@ -320,23 +321,6 @@ class CacheUsageStats:
     llm_calls_added: int = 0
 
 
-@dataclass
-class ModelUsageStats:
-    """Token-level API usage as reported by the model provider."""
-
-    input_tokens: int = 0
-    output_tokens: int = 0
-    total_tokens: int = 0
-    cached_tokens: int = 0
-    reasoning_tokens: int | None = None
-    provider: str | None = None
-    model_name: str | None = None
-    response_ms: float | None = None
-    time_to_first_token_ms: float | None = None
-    output_chars: int | None = None
-    retry_attempts: int = 0
-
-
 def _to_usage_payload_dict(value: Any) -> dict[str, Any] | None:
     if value is None:
         return None
@@ -368,7 +352,11 @@ def _persist_and_send_usage(
     except Exception as exc:
         log("error", "Failed to persist model usage:", exc)
 
-    send_message(message)
+    try:
+        send_message(message)
+    except Exception:
+        # Usage reporting must never change a model/tool result or hide its error.
+        pass
 
 
 def _build_usage_message(
@@ -407,26 +395,41 @@ def _build_usage_message(
     return message
 
 
+def _best_effort_usage(func):
+    @wraps(func)
+    def emit(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception:
+            # Telemetry is secondary to the operation result, including on shutdown.
+            return None
+    return emit
+
+
+@_best_effort_usage
 def log_llm_usage(
     context: str,
     model_usage: ModelUsageStats,
     prompt_usage: PromptUsageStats,
     llm_model: Any | None = None,
     response_text: str | None = None,
+    *, status: str = "success", error_kind: str = "none", operation_ms: float | None = None,
 ) -> None:
     timestamp = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-    provider = _normalize_optional_string(getattr(llm_model, "provider_name", None))
-    if provider is None:
-        provider = _normalize_optional_string(model_usage.provider)
-    model_name = _normalize_optional_string(getattr(llm_model, "model_name", None))
-    if model_name is None:
-        model_name = _normalize_optional_string(model_usage.model_name)
+    provider = _normalize_optional_string(model_usage.provider)
+    model_name = _normalize_optional_string(model_usage.model_name)
+    # Deprecated explicit argument remains a fallback for legacy plugin callers.
+    # Application handlers use stats; returned identity always takes precedence.
+    if llm_model is not None:
+        provider = provider or _normalize_optional_string(getattr(llm_model, "provider_name", None))
+        model_name = model_name or _normalize_optional_string(getattr(llm_model, "model_name", None))
     model_usage_data = {
         "input_tokens": model_usage.input_tokens,
         "output_tokens": model_usage.output_tokens,
         "total_tokens": model_usage.total_tokens,
         "cached_tokens": model_usage.cached_tokens,
         "reasoning_tokens": model_usage.reasoning_tokens,
+        "reasoning_tokens_in_output": model_usage.reasoning_tokens_in_output,
         "retry_attempts": model_usage.retry_attempts,
     }
     if provider is not None:
@@ -462,15 +465,18 @@ def log_llm_usage(
         latency_usage=latency_usage,
         text_usage=text_usage,
     )
-
+    _add_outcome(message, model_usage, status, error_kind, operation_ms)
     _persist_and_send_usage(usage_kind="llm", message=message)
 
 
+@_best_effort_usage
 def log_stt_usage(
     context: str,
     *,
-    provider: str | None,
-    model_name: str | None,
+    provider: str | None = None,
+    model_name: str | None = None,
+    model_usage: ModelUsageStats | None = None,
+    status: str = "success", error_kind: str = "none", operation_ms: float | None = None,
     latency_usage: LatencyUsageStats | None = None,
     audio_usage: AudioUsageStats | None = None,
     text_usage: TextUsageStats | None = None,
@@ -480,21 +486,25 @@ def log_stt_usage(
         message_type="stt_usage",
         timestamp=timestamp,
         context=context,
-        provider=provider,
-        model_name=model_name,
+        provider=model_usage.provider if model_usage else provider,
+        model_name=model_usage.model_name if model_usage else model_name,
         latency_usage=_to_usage_payload_dict(latency_usage),
         audio_usage=_to_usage_payload_dict(audio_usage),
         text_usage=_to_usage_payload_dict(text_usage),
     )
 
+    _add_outcome(message, model_usage, status, error_kind, operation_ms)
     _persist_and_send_usage(usage_kind="stt", message=message)
 
 
+@_best_effort_usage
 def log_tts_usage(
     context: str,
     *,
-    provider: str | None,
-    model_name: str | None,
+    provider: str | None = None,
+    model_name: str | None = None,
+    model_usage: ModelUsageStats | None = None,
+    status: str = "success", error_kind: str = "none", operation_ms: float | None = None,
     latency_usage: LatencyUsageStats | None = None,
     audio_usage: AudioUsageStats | None = None,
     text_usage: TextUsageStats | None = None,
@@ -504,14 +514,47 @@ def log_tts_usage(
         message_type="tts_usage",
         timestamp=timestamp,
         context=context,
-        provider=provider,
-        model_name=model_name,
+        provider=model_usage.provider if model_usage else provider,
+        model_name=model_usage.model_name if model_usage else model_name,
         latency_usage=_to_usage_payload_dict(latency_usage),
         audio_usage=_to_usage_payload_dict(audio_usage),
         text_usage=_to_usage_payload_dict(text_usage),
     )
 
+    _add_outcome(message, model_usage, status, error_kind, operation_ms)
     _persist_and_send_usage(usage_kind="tts", message=message)
+
+
+def _add_outcome(message: dict[str, Any], usage: ModelUsageStats | None,
+                 status: str, kind: str, operation_ms: float | None) -> None:
+    message.update(schema_version=3, status=status,
+                   error_kind="none" if status in ("success", "cancelled") else kind)
+    if operation_ms is not None:
+        message["operation_ms"] = operation_ms
+    if usage:
+        if message["type"] == "tts_usage" and usage.num_underruns is not None:
+            message["num_underruns"] = usage.num_underruns
+        for field, value in (("output_voice", usage.voice_name), ("input_language", usage.input_language),
+                             ("output_language", usage.output_language)):
+            if value:
+                message[field] = value
+
+
+@_best_effort_usage
+def log_tool_usage(*, tool_name: str, tool_type: str, source: str, status: str,
+                   duration_ms: float | None, error_kind: str = "none") -> None:
+    """A closed payload: never serialize an action, exception, or arbitrary kwargs."""
+    send_message({"type": "tool_usage", "schema_version": 1, "tool_name": tool_name,
+                  "tool_type": tool_type, "source": source, "status": status,
+                  "duration_ms": duration_ms,
+                  "error_kind": error_kind})
+
+
+@_best_effort_usage
+def log_audio_pipeline_error(usage_kind: str, stage: str, kind: str) -> None:
+    send_message({"type": "audio_pipeline_error", "schema_version": 1,
+                  "usage_kind": usage_kind, "stage": stage,
+                  "error_kind": kind})
 
 
 def log_action_cache_usage(

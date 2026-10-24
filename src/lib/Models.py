@@ -6,18 +6,29 @@ import json
 import speech_recognition as sr
 import soundfile as sf
 import numpy as np
-from time import time
 from uuid import uuid4
+from contextvars import ContextVar, copy_context
+from dataclasses import replace
+from time import perf_counter
 from openai.types.audio.speech_create_params import SpeechCreateParams
 from openai import OpenAI, APIStatusError
 from openai.types.chat import ChatCompletion, ChatCompletionMessageFunctionToolCall, ChatCompletionMessageToolCall
 from openai.types import CreateEmbeddingResponse
 from .Logger import log, ModelUsageStats
+from .ModelUsage import TranscriptionResult, SynthesisResult
+from .Errors import ModelError, LLMError, error_kind
 
-class LLMError(Exception):
-    def __init__(self, message: str, original_error: Exception | None = None):
-        super().__init__(message)
-        self.original_error = original_error
+
+def _legacy_usage(model, **metadata) -> ModelUsageStats:
+    """Only the legacy API bridge infers identity from model attributes."""
+    def optional_string(name):
+        try:
+            value = getattr(model, name, None)
+            return value if isinstance(value, str) else None
+        except Exception:
+            return None
+    return ModelUsageStats.unknown(provider=optional_string("provider_name"),
+                                   model_name=optional_string("model_name"), **metadata)
 
 class LLMModel(ABC):
     model_name: str
@@ -26,6 +37,23 @@ class LLMModel(ABC):
     def __init__(self, model_name: str, provider_name: str | None = None):
         self.model_name = model_name
         self.provider_name = provider_name
+
+    def generate_with_usage(self, *args, **kwargs):
+        """Additive handler entrypoint: never replace a plugin's legacy generate()."""
+        fallback = _legacy_usage(self)
+        try:
+            text, tools, usage = self.generate(*args, **kwargs)
+            # Preserve provider-reported identity; fill only missing legacy fields.
+            if usage.provider is None or usage.model_name is None:
+                usage = replace(usage, provider=usage.provider or fallback.provider,
+                                model_name=usage.model_name or fallback.model_name)
+            return text, tools, usage
+        except LLMError as exc:
+            if exc.usage is None:
+                exc.usage = fallback
+            raise
+        except Exception as exc:
+            raise ModelError(str(exc), exc, usage=fallback) from exc
 
     @abstractmethod
     def generate(self, messages: List[dict], tools: Optional[List[dict]] = None, tool_choice: Optional[Any] = None) -> tuple[str | None, List[Any] | None, ModelUsageStats]:
@@ -158,44 +186,36 @@ def _normalize_tools_for_chat_template(tools: list[dict]) -> list[dict[str, Any]
         normalized_tools.append(_normalize_tool_schema(normalized_tool))
     return normalized_tools
 
-def _get_reasoning_tokens(usage: Any) -> int | None:
+def _get_reasoning_usage(usage: Any) -> tuple[int | None, bool | None]:
+    def count(value):
+        return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else None
+    input_tokens = count(getattr(usage, "input_tokens", getattr(usage, "prompt_tokens", None)))
+    output_tokens = count(getattr(usage, "output_tokens", getattr(usage, "completion_tokens", None)))
+    total_tokens = count(getattr(usage, "total_tokens", None))
     for details_name in ("output_tokens_details", "completion_tokens_details"):
         details = getattr(usage, details_name, None)
         if details is None:
             continue
 
-        reasoning_tokens = getattr(details, "reasoning_tokens", None)
+        reasoning_tokens = count(getattr(details, "reasoning_tokens", None))
         if reasoning_tokens is not None:
-            return int(reasoning_tokens)
+            included = None
+            if input_tokens is not None and output_tokens is not None and total_tokens is not None:
+                if total_tokens == input_tokens + output_tokens:
+                    included = True
+                elif total_tokens == input_tokens + output_tokens + reasoning_tokens:
+                    included = False
+            return reasoning_tokens, included
+    if input_tokens is not None and output_tokens is not None and total_tokens is not None:
+        difference = total_tokens - input_tokens - output_tokens
+        if difference > 0:
+            return difference, False
+    # Equal totals do not prove zero hidden reasoning when the breakdown is absent.
+    return None, None
 
-    prompt_tokens = getattr(usage, "prompt_tokens", None)
-    completion_tokens = getattr(usage, "completion_tokens", None)
-    total_tokens = getattr(usage, "total_tokens", None)
-    if (
-        prompt_tokens is not None
-        and completion_tokens is not None
-        and total_tokens is not None
-    ):
-        fallback_reasoning_tokens = (
-            int(total_tokens) - int(prompt_tokens) - int(completion_tokens)
-        )
-        if fallback_reasoning_tokens >= 0:
-            return fallback_reasoning_tokens
 
-    input_tokens = getattr(usage, "input_tokens", None)
-    output_tokens = getattr(usage, "output_tokens", None)
-    if (
-        input_tokens is not None
-        and output_tokens is not None
-        and total_tokens is not None
-    ):
-        fallback_reasoning_tokens = (
-            int(total_tokens) - int(input_tokens) - int(output_tokens)
-        )
-        if fallback_reasoning_tokens >= 0:
-            return fallback_reasoning_tokens
-
-    return None
+def _get_reasoning_tokens(usage: Any) -> int | None:
+    return _get_reasoning_usage(usage)[0]
 
 class OpenAILLMModel(LLMModel):
     def __init__(self, base_url: str, api_key: str, model_name: str, temperature: float, reasoning_effort: Optional[str] = None, extra_body: Optional[dict] = None, extra_headers: Optional[dict] = None, provider_name: str | None = None):
@@ -218,7 +238,7 @@ class OpenAILLMModel(LLMModel):
         return params
 
     def generate(self, messages: List[dict], tools: Optional[List[dict]] = None, tool_choice: Optional[Any] = None) -> tuple[str | None, List[Any] | None, ModelUsageStats]:
-        started_at = time()
+        started_at = perf_counter()
         kwargs = {}
         request_messages = self._prepare_messages(messages)
         # Special handling for specific models or providers if needed
@@ -268,40 +288,22 @@ class OpenAILLMModel(LLMModel):
         except Exception as e:
             raise LLMError(f'LLM Error: {str(e)}', e)
 
-        if not isinstance(completion, ChatCompletion) or hasattr(completion, 'error'):
+        if not isinstance(completion, ChatCompletion) or getattr(completion, 'error', None):
             log("debug", "LLM completion error:", completion)
-            raise LLMError("LLM error: No valid completion received")
+            raise LLMError("LLM error: No valid completion received", kind="invalid_response")
         
         if not completion.choices:
             log("debug", "LLM completion has no choices:", completion)
-            return (
-                None,
-                None,
-                ModelUsageStats(
-                    provider=self.provider_name,
-                    model_name=self.model_name,
-                    response_ms=(time() - started_at) * 1000,
-                    retry_attempts=retry_attempts,
-                ),
-            ) # Treated as "..."
+            raise ModelError("LLM completion has no choices", kind="invalid_response")
 
         if not hasattr(completion.choices[0], 'message') or not completion.choices[0].message:
             log("debug", "LLM completion choice has no message:", completion)
-            return (
-                None,
-                None,
-                ModelUsageStats(
-                    provider=self.provider_name,
-                    model_name=self.model_name,
-                    response_ms=(time() - started_at) * 1000,
-                    retry_attempts=retry_attempts,
-                ),
-            ) # Treated as "..."
+            raise ModelError("LLM completion choice has no message", kind="invalid_response")
 
-        usage_metadata = ModelUsageStats(
+        usage_metadata = ModelUsageStats.unknown(
             provider=self.provider_name,
-            model_name=self.model_name,
-            response_ms=(time() - started_at) * 1000,
+            model_name=getattr(completion, "model", None) or self.model_name,
+            response_ms=(perf_counter() - started_at) * 1000,
             retry_attempts=retry_attempts,
         )
         if hasattr(completion, 'usage') and completion.usage:
@@ -311,7 +313,7 @@ class OpenAILLMModel(LLMModel):
             usage_metadata.total_tokens = completion.usage.total_tokens
             if hasattr(completion.usage, 'prompt_tokens_details') and completion.usage.prompt_tokens_details:
                 usage_metadata.cached_tokens = getattr(completion.usage.prompt_tokens_details, 'cached_tokens', 0)
-            usage_metadata.reasoning_tokens = _get_reasoning_tokens(completion.usage)
+            usage_metadata.reasoning_tokens, usage_metadata.reasoning_tokens_in_output = _get_reasoning_usage(completion.usage)
         
         response_text = None
         if hasattr(completion.choices[0].message, 'content'):
@@ -554,7 +556,7 @@ class OpenAIResponsesLLMModel(LLMModel):
         return params
 
     def generate(self, messages: List[dict], tools: Optional[List[dict]] = None, tool_choice: Optional[Any] = None) -> tuple[str | None, List[Any] | None, ModelUsageStats]:
-        started_at = time()
+        started_at = perf_counter()
         params: dict[str, Any] = {
             "model": self.model_name,
             "input": self._convert_messages(messages),
@@ -599,12 +601,12 @@ class OpenAIResponsesLLMModel(LLMModel):
 
         if getattr(response, "error", None):
             log("debug", "LLM response error:", response)
-            raise LLMError("LLM error: No valid response received")
+            raise LLMError("LLM error: No valid response received", kind="invalid_response")
 
-        usage_metadata = ModelUsageStats(
+        usage_metadata = ModelUsageStats.unknown(
             provider=self.provider_name,
-            model_name=self.model_name,
-            response_ms=(time() - started_at) * 1000,
+            model_name=getattr(response, "model", None) or self.model_name,
+            response_ms=(perf_counter() - started_at) * 1000,
             retry_attempts=retry_attempts,
         )
         if hasattr(response, 'usage') and response.usage:
@@ -614,7 +616,7 @@ class OpenAIResponsesLLMModel(LLMModel):
             usage_metadata.total_tokens = getattr(response.usage, "total_tokens", 0)
             if hasattr(response.usage, "input_tokens_details") and response.usage.input_tokens_details:
                 usage_metadata.cached_tokens = getattr(response.usage.input_tokens_details, "cached_tokens", 0)
-            usage_metadata.reasoning_tokens = _get_reasoning_tokens(response.usage)
+            usage_metadata.reasoning_tokens, usage_metadata.reasoning_tokens_in_output = _get_reasoning_usage(response.usage)
 
         response_text = getattr(response, "output_text", None) or None
         response_actions = self._extract_tool_calls(response)
@@ -665,12 +667,40 @@ class STTModel(ABC):
     def transcribe(self, audio: sr.AudioData) -> str:
         pass
 
+    def transcribe_with_usage(self, audio: sr.AudioData) -> TranscriptionResult:
+        """Legacy bridge; plugins can override to report resolved identity/usage."""
+        usage = _legacy_usage(self)
+        started = perf_counter()
+        try:
+            text = self.transcribe(audio)
+            if not isinstance(text, str):
+                raise ModelError("Provider returned an invalid transcription", kind="invalid_response", usage=usage)
+            usage.response_ms = (perf_counter() - started) * 1000
+            return TranscriptionResult(text, usage)
+        except LLMError as exc:
+            if exc.usage is None:
+                exc.usage = usage
+            raise
+        except Exception as exc:
+            raise ModelError(str(exc), exc, usage=usage) from exc
+
 class OpenAISTTModel(STTModel):
     def __init__(self, base_url: str, api_key: str, model_name: str, language: Optional[str] = None, prompt: Optional[str] = None, provider_name: str | None = None):
         super().__init__(model_name, provider_name=provider_name)
         self.client = OpenAI(base_url=base_url, api_key=api_key)
         self.language = language
         self.prompt = prompt
+
+    def transcribe_with_usage(self, audio: sr.AudioData) -> TranscriptionResult:
+        try:
+            result = super().transcribe_with_usage(audio)
+            if hasattr(self, "language"):
+                result.usage.input_language = self.language or "auto"
+            return result
+        except LLMError as exc:
+            if exc.usage and hasattr(self, "language"):
+                exc.usage.input_language = self.language or "auto"
+            raise
 
     def _prepare_request_params(self, params: dict[str, Any]) -> dict[str, Any]:
         return params
@@ -796,14 +826,93 @@ class TTSModel(ABC):
         """Synthesize with character-scoped provider settings while preserving legacy models."""
         return self.synthesize(text, str(settings.get("voice") or ""))
 
+    def synthesis_usage(self, settings: dict[str, Any]) -> ModelUsageStats:
+        """Override when the provider resolves defaults or synthesis languages."""
+        return _legacy_usage(self, voice_name=str(settings.get("voice") or "") or None)
+
+    def synthesize_voice_with_usage(self, text: str, voice: str) -> SynthesisResult:
+        """Preserve the old voice-only dispatch when character settings are absent."""
+        if type(self).synthesize_with_usage is not TTSModel.synthesize_with_usage:
+            return self.synthesize_with_usage(text, {"voice": voice})
+        usage = self.synthesis_usage({"voice": voice})
+        return self._synthesis_result(usage, lambda: self.synthesize(text, voice))
+
+    def synthesize_with_usage(self, text: str, settings: dict[str, Any]) -> SynthesisResult:
+        usage = self.synthesis_usage(settings)
+        return self._synthesis_result(usage, lambda: self.synthesize_with_settings(text, settings))
+
+    def _synthesis_result(self, usage: ModelUsageStats, create_stream) -> SynthesisResult:
+        def audio():
+            started = perf_counter()
+            stream = None
+            received_audio = False
+            try:
+                stream = iter(create_stream())
+                for chunk in stream:
+                    received_audio = received_audio or bool(chunk)
+                    if usage.time_to_first_byte_ms is None:
+                        usage.time_to_first_byte_ms = (perf_counter() - started) * 1000
+                    yield chunk
+                if not received_audio and usage.is_provider_operation:
+                    raise ModelError("Provider returned no audio", kind="invalid_response", usage=usage)
+                usage.response_ms = (perf_counter() - started) * 1000
+            except LLMError as exc:
+                if exc.usage is None:
+                    exc.usage = usage
+                raise
+            except Exception as exc:
+                raise ModelError(str(exc), exc, usage=usage) from exc
+            finally:
+                close = getattr(stream, "close", None)
+                if close:
+                    close()
+        return SynthesisResult(audio(), usage)
+
+
+def generate_with_usage(model: LLMModel, context: str, prompt_usage: Any, **kwargs):
+    """One caller-owned terminal event, including failures, for a logical LLM call."""
+    from .Logger import log_llm_usage
+    started = perf_counter()
+    try:
+        text, tools, usage = model.generate_with_usage(**kwargs) if isinstance(model, LLMModel) else model.generate(**kwargs)
+    except Exception as exc:
+        usage = exc.usage if isinstance(exc, LLMError) and exc.usage else ModelUsageStats.unknown()
+        log_llm_usage(context, usage, prompt_usage, status="error", error_kind=error_kind(exc),
+                      operation_ms=(perf_counter() - started) * 1000)
+        raise
+    log_llm_usage(context, usage, prompt_usage, response_text=text,
+                  operation_ms=(perf_counter() - started) * 1000)
+    return text, tools, usage
+
+_INSTRUCTIONS_UNSET = object()
+
+
 class OpenAITTSModel(TTSModel):
     def __init__(self, base_url: str, api_key: str, model_name: str, speed: float = 1.0, voice_instructions: str | None = None, provider_name: str | None = None):
         super().__init__(model_name, provider_name=provider_name)
         self.client = OpenAI(base_url=base_url, api_key=api_key)
         self.speed = speed
+        self._voice_instruction_context = ContextVar("tts_voice_instructions", default=_INSTRUCTIONS_UNSET)
         self.voice_instructions = voice_instructions
 
+    @property
+    def voice_instructions(self) -> str | None:
+        variable = getattr(self, "_voice_instruction_context", None)
+        value = variable.get() if variable is not None else _INSTRUCTIONS_UNSET
+        return self.__dict__.get("voice_instructions") if value is _INSTRUCTIONS_UNSET else value
+
+    @voice_instructions.setter
+    def voice_instructions(self, value: str | None) -> None:
+        variable = getattr(self, "_voice_instruction_context", None)
+        if variable is not None and variable.get() is not _INSTRUCTIONS_UNSET:
+            variable.set(value)
+        else:
+            self.__dict__["voice_instructions"] = value
+
     def synthesize(self, text: str, voice: str) -> Iterable[bytes]:
+        yield from self._synthesize(text, voice, self.voice_instructions)
+
+    def _synthesize(self, text: str, voice: str, instructions: str | None) -> Iterable[bytes]:
         try:
             kwargs: SpeechCreateParams = {
                 "model": self.model_name,
@@ -812,8 +921,8 @@ class OpenAITTSModel(TTSModel):
                 "response_format": "pcm",
                 "speed": self.speed
             }
-            if self.voice_instructions and self.model_name == "gpt-4o-mini-tts":
-                kwargs["instructions"] = self.voice_instructions
+            if instructions and self.model_name == "gpt-4o-mini-tts":
+                kwargs["instructions"] = instructions
             
             with self.client.audio.speech.with_streaming_response.create(**kwargs) as response:
                 for chunk in response.iter_bytes(1024):
@@ -831,10 +940,24 @@ class OpenAITTSModel(TTSModel):
             raise LLMError(f'TTS {e.response.reason_phrase}: {message}', e)
 
     def synthesize_with_settings(self, text: str, settings: dict[str, Any]) -> Iterable[bytes]:
-        previous_instructions = self.voice_instructions
         instructions = settings.get("instructions")
-        self.voice_instructions = str(instructions) if instructions else None
+        # Drive every next()/close() in its own context so legacy synthesize()
+        # overrides still dispatch dynamically, without mutating shared defaults
+        # or leaking one request's instructions into another interleaved stream.
+        variable = getattr(self, "_voice_instruction_context", None)
+        if variable is None:
+            variable = self._voice_instruction_context = ContextVar("tts_voice_instructions", default=_INSTRUCTIONS_UNSET)
+        context = copy_context()
+        context.run(variable.set, str(instructions) if instructions else None)
+        stream = context.run(lambda: iter(self.synthesize(text, str(settings.get("voice") or ""))))
         try:
-            yield from self.synthesize(text, str(settings.get("voice") or ""))
+            while True:
+                try:
+                    chunk = context.run(next, stream)
+                except StopIteration:
+                    return
+                yield chunk
         finally:
-            self.voice_instructions = previous_instructions
+            close = getattr(stream, "close", None)
+            if close:
+                context.run(close)

@@ -920,7 +920,7 @@ class Chat:
                 "arguments": json.dumps(arguments or {}),
             },
         )
-        self.assistant.execute_actions([tool_call], projected_states)
+        self.assistant.execute_actions([tool_call], projected_states, source="ui")
 
     def _resolve_quest_audio_file_path(self, file_name: str) -> Path | None:
         normalized_name = file_name.replace("\\", "/")
