@@ -8,13 +8,12 @@ from openai.types.chat import ChatCompletion, ChatCompletionMessageToolCall
 from time import time
 
 from pydantic import BaseModel
-from .Models import LLMModel, EmbeddingModel, LLMError
+from .Models import LLMModel, EmbeddingModel, LLMError, generate_with_usage
 from .Logger import (
     CacheUsageStats,
     PromptUsageStats,
     log,
     log_action_cache_usage,
-    log_llm_usage,
     observe,
     show_chat_message,
 )
@@ -84,7 +83,7 @@ class Assistant:
                     (self.config.get("qol_autoscan", False) or self.config.get("qol_autobrake", False))):
                 if self.config.get("qol_autobrake"):
                     speed_args = {"speed": "Zero", "qol": True}
-                    set_speed(speed_args, projected_states)
+                    self.action_manager.run_direct("setSpeed", set_speed, speed_args, projected_states)
 
                 if self.config.get("qol_autoscan"):
                     fire_args = {
@@ -94,7 +93,7 @@ class Assistant:
                         "discoveryFiregroup": self.config.get("discovery_firegroup_var", 1),
                         "qol": True
                     }
-                    fire_weapons(fire_args, projected_states)
+                    self.action_manager.run_direct("fireWeapons", fire_weapons, fire_args, projected_states)
             # if isinstance(event, ProjectedEvent) and event.content.get('event') == 'CarrierJumpCooldownComplete':
             #     log('debug', 'here could be a carrer jump')
 
@@ -105,7 +104,12 @@ class Assistant:
         try:
             if (isinstance(event, GameEvent) and event.content.get('event') == 'SupercruiseDestinationDrop' and
                     'MarketID' in event.content and self.config.get('qol_autoboost', False)):
-                Thread(target=engine_boost, args=({}, projected_states, True), daemon=True).start()
+                def auto_boost():
+                    try:
+                        self.action_manager.run_direct("engineBoost", engine_boost, {}, projected_states, True)
+                    except Exception as exc:
+                        log("error", "Auto boost failed", exc)
+                Thread(target=auto_boost, daemon=True).start()
         except Exception as e:
             log('error', 'Auto boost on SupercruiseDestinationDrop failed', e, traceback.format_exc())
 
@@ -115,7 +119,7 @@ class Assistant:
                     self.config.get("vision_provider", '') != 'none') and self.config['characters'][0].get('event_reactions', {}).get('Screenshot') == 'on':
 
                 visual_args = {"query": "Describe what you see in the game."}
-                visual_result = get_visuals(visual_args, projected_states)
+                visual_result = self.action_manager.run_direct("getVisuals", get_visuals, visual_args, projected_states)
 
                 request = [{"id": "auto-screenshot-1", "type": "function", "function": {"name": "getVisuals", "arguments": json.dumps(visual_args)}}]
                 results = [{"tool_call_id": "auto-screenshot-1", "role": "tool", "name": "getVisuals", "content": visual_result}]
@@ -756,15 +760,14 @@ class Assistant:
             )
             user_prompt = "Summarize the following events into short concise notes for long-term memory storage:\n<conversation>\n" + (chat_text) + "\n</conversation>"
 
-            response_text, _, model_usage = self.llmModel.generate(
+            prompt_usage = PromptUsageStats(system_chars=len(system_prompt), memory_chars=len(user_prompt))
+            response_text, _, model_usage = generate_with_usage(self.llmModel, "memory_create", prompt_usage,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
                 ],
             )
 
-            prompt_usage = PromptUsageStats(system_chars=len(system_prompt), memory_chars=len(user_prompt))
-            log_llm_usage("memory_create", model_usage=model_usage, prompt_usage=prompt_usage, llm_model=self.llmModel)
 
             (model_name, embedding) = self.embeddingModel.create_embedding(response_text or "")
 
@@ -783,27 +786,25 @@ class Assistant:
 
 
     @observe()
-    def execute_actions(self, actions: list[ChatCompletionMessageToolCall], projected_states: ProjectedStates):
+    def execute_actions(self, actions: list[ChatCompletionMessageToolCall], projected_states: ProjectedStates, *, source: str = "llm"):
         action_descriptions: list[str | None] = []
         action_results: list[Any] = []
         for action in actions:
-            action_input_desc = self.action_manager.getActionDesc(action, projected_states)
-            action_descriptions.append(action_input_desc)
-            if action_input_desc:
-                spoken_action_desc = (
-                    "Searching"
-                    if self.config.get("mute_search", False) and action.function.name == "web_search_agent"
-                    else action_input_desc
-                )
-                self.tts.say(
-                    spoken_action_desc,
-                    context="assistant_acting",
-                    postprocessing_layers=self._get_tts_postprocessing_layers(projected_states),
-                )
+            action_input_desc = None
+            def describe(description):
+                nonlocal action_input_desc
+                action_input_desc = description
+                if description:
+                    self.tts.say(
+                        "Searching" if self.config.get("mute_search", False) and action.function.name == "web_search_agent" else description,
+                        context="assistant_acting",
+                        postprocessing_layers=self._get_tts_postprocessing_layers(projected_states),
+                    )
             action_result = self.action_manager.runAction(
                 action,
                 projected_states,
                 processing_callback=self.event_manager.add_tool_processing,
+                source=source, description_callback=describe,
             )
             action_results.append(action_result)
 
@@ -826,13 +827,12 @@ class Assistant:
         # confirm the action by sending the user input to the model without any context
 
         try:
-            _, response_actions, model_usage = self.llmModel.generate(
+            prompt_usage = PromptUsageStats(system_chars=len(prompt[0].get('content', '') or ""), conversation_chars=len(user_input))
+            _, response_actions, model_usage = generate_with_usage(self.llmModel, "action_verification", prompt_usage,
                 messages=[prompt[0]] + [{"role": "user", "content": user_input}],
                 tools=tools
             )
 
-            prompt_usage = PromptUsageStats(system_chars=len(prompt[0].get('content', '') or ""), conversation_chars=len(user_input))
-            log_llm_usage("action_verification", model_usage=model_usage, prompt_usage=prompt_usage, llm_model=self.llmModel)
             
             if response_actions:
                 self.action_manager.confirm_action_in_cache(user_input, response_actions[0], tools)
@@ -925,12 +925,11 @@ class Assistant:
                 start_time = time()
                     
                 try:
-                    response_text, response_actions, model_usage = self.llmModel.generate(
+                    response_text, response_actions, model_usage = generate_with_usage(self.llmModel, "assistant", prompt_usage,
                         messages=prompt,
                         tools=tool_list,  # pyright: ignore[reportArgumentType]
                     )
 
-                    log_llm_usage("assistant", model_usage=model_usage, prompt_usage=prompt_usage, llm_model=self.llmModel)
 
                     if not response_text and not response_actions:
                         response_text = "..."
@@ -954,7 +953,7 @@ class Assistant:
 
             if response_actions:
                 self.event_manager.add_assistant_acting(processed_at=max_conversation_processed)
-                self.execute_actions(response_actions, projected_states)
+                self.execute_actions(response_actions, projected_states, source="cache" if predicted_actions else "llm")
 
                 if not predicted_actions and self.config["use_action_cache_var"] and tool_list:
                     if len(response_actions) == 1 and len(user_input):

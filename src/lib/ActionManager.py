@@ -3,13 +3,15 @@ from collections.abc import Iterator
 import json
 import random
 from typing import Any, Callable, Literal
+from time import perf_counter
 
 from openai.types.chat import ChatCompletionMessageFunctionToolCall
 from pydantic import BaseModel
 
 
 from .Database import KeyValueStore
-from .Logger import log
+from .Logger import log, log_tool_usage
+from .Errors import ToolError, error_kind
 import traceback
 
 # Type alias for projected states dictionary
@@ -90,34 +92,56 @@ class ActionManager:
         tool_call: ChatCompletionMessageFunctionToolCall,
         projected_states: ProjectedStates,
         processing_callback: Callable[[str, str, object], None] | None = None,
+        *, source: str = "llm",
+        description_callback: Callable[[str | None], None] | None = None,
+        _descriptor: dict | None = None,
     ):
         """get function response and fetch matching python function, then call function using arguments provided"""
-        function_result = None
-
         function_name = tool_call.function.name
-        function_descriptor = self.actions.get(function_name)
-        if function_descriptor:
-            function_to_call = function_descriptor.get("method")
-            function_args = json.loads(tool_call.function.arguments if tool_call.function.arguments else "null")
-
+        function_descriptor = _descriptor or self.actions.get(function_name)
+        started = None
+        status, kind = "success", "none"
+        try:
+            if function_descriptor is None:
+                raise ToolError(f"Function {function_name} does not exist!", kind="unknown_tool")
             try:
-                function_result = function_to_call(function_args, projected_states)
-                if isinstance(function_result, Iterator):
-                    final_result: Any = None
+                arguments = json.loads(tool_call.function.arguments or "null")
+                if arguments is not None and not isinstance(arguments, dict):
+                    raise ValueError("Tool arguments must be an object")
+            except (ValueError, TypeError) as exc:
+                raise ToolError("Invalid tool arguments", exc, kind="invalid_arguments") from exc
+            try:
+                description = self.getActionDesc(tool_call, projected_states)
+            except (TypeError, ValueError, KeyError) as exc:
+                raise ToolError("Invalid tool arguments for description", exc, kind="invalid_arguments") from exc
+            if description_callback:
+                description_callback(description)
+            function_to_call = function_descriptor["method"]
+            function_args = arguments
+            started = perf_counter()
+            function_result = function_to_call(function_args, projected_states)
+            if isinstance(function_result, Iterator):
+                iterator = function_result
+                try:
                     while True:
                         try:
-                            processing_result = next(function_result)
+                            processing_result = next(iterator)
                         except StopIteration as stop:
-                            final_result = stop.value
+                            function_result = stop.value
                             break
                         if processing_callback:
                             processing_callback(tool_call.id, function_name, processing_result)
-                    function_result = final_result
-            except Exception as e:
-                log("debug", "An error occurred during function:", e, traceback.format_exc())
-                function_result = "ERROR: " + repr(e)
-        else:
-            function_result = f"ERROR: Function {function_name} does not exist!"
+                finally:
+                    close = getattr(iterator, "close", None)
+                    if close:
+                        close()
+        except Exception as exc:
+            status, kind = "error", error_kind(exc, "execution_error")
+            log("debug", "An error occurred during function:", exc, traceback.format_exc())
+            function_result = "ERROR: " + repr(exc)
+        finally:
+            self._report(function_name, source, status, kind, started,
+                         function_descriptor.get("type") if function_descriptor else None)
 
         return {
             "tool_call_id": tool_call.id,
@@ -125,6 +149,38 @@ class ActionManager:
             "name": function_name,
             "content": function_result,
         }
+
+    def get_action_type(self, function_name: str) -> str:
+        value = self.actions.get(function_name, {}).get("type", "unknown")
+        return "multi_mode" if isinstance(value, list) else str(value)
+
+    def _report(self, name: str, source: str, status: str, kind: str, started: float | None, tool_type=None):
+        try:
+            log_tool_usage(tool_name=name, tool_type="multi_mode" if isinstance(tool_type, list) else tool_type or self.get_action_type(name), source=source,
+                           status=status, error_kind=kind,
+                           duration_ms=(perf_counter() - started) * 1000 if started is not None else None)
+        except Exception:
+            # Instrumentation must not alter action outcomes.
+            pass
+
+    @classmethod
+    def run_internal(cls, tool_call, method: Callable | None, projected_states):
+        """Agent-internal tools share dispatch/outcomes without global registration."""
+        manager = cls.__new__(cls)
+        return manager.runAction(tool_call, projected_states, source="llm",
+                                 _descriptor={"method": method, "type": "web"} if method else None)
+
+    def run_direct(self, name: str, method: Callable, *args, **kwargs):
+        """Observe automatic calls without changing their permission/return semantics."""
+        started = perf_counter()
+        status, kind = "success", "none"
+        try:
+            return method(*args, **kwargs)
+        except Exception as exc:
+            status, kind = "error", error_kind(exc, "execution_error")
+            raise
+        finally:
+            self._report(name, "auto", status, kind, started)
 
     # register function
     def registerAction(

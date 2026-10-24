@@ -11,8 +11,9 @@ from ..PromptGenerator import PromptGenerator
 from .data import *
 from ..ActionManager import ActionManager
 from ..EventManager import EventManager
-from ..Logger import log, PromptUsageStats, log_llm_usage
-from ..Models import LLMModel, EmbeddingModel
+from ..Logger import log, PromptUsageStats
+from ..Models import LLMModel, EmbeddingModel, generate_with_usage
+from ..Errors import ToolError, LLMError, error_kind
 from ..Projections import get_state_dict, ProjectedStates
 
 llm_model: LLMModel = cast(LLMModel, None)
@@ -111,7 +112,7 @@ def web_search_agent(
     Uses an agentic loop to answer a web-related query by calling various internal tools.
     """
     if not llm_model:
-        return "LLM model not configured."
+        raise ToolError("LLM model not configured.", kind="unsupported")
     
     query = obj.get('query')
     if not query:
@@ -384,18 +385,12 @@ def web_search_agent(
                     "content": "Maximum number of iterations reached. Please provide the best possible answer based on the information gathered so far."
                 })
 
-            response_text, tool_calls, model_usage = llm_model.generate(
+            prompt_usage = PromptUsageStats(web_search_chars=sum(len(m.get('content', '')) for m in messages if isinstance(m.get('content'), str)))
+            response_text, tool_calls, model_usage = generate_with_usage(llm_model, "web_search", prompt_usage,
                 messages=messages,
                 tools=tools if iter < max_loops - 1 else [],
                 tool_choice="auto",
             )
-
-            # Prompt usage: count assistant + tool loop prompt content as web_search context.
-            try:
-                prompt_usage = PromptUsageStats(web_search_chars=sum(len(str(m.get('content', ''))) for m in messages if isinstance(m.get('content'), str)))
-                log_llm_usage("web_search", model_usage=model_usage, prompt_usage=prompt_usage, llm_model=llm_model)
-            except Exception:
-                pass
 
             if tool_calls:
                 messages.append({
@@ -421,21 +416,7 @@ def web_search_agent(
                         "arguments": function_args,
                     }
                     function_to_call = available_functions.get(function_name)
-                    if not function_to_call:
-                        function_response = f"Error: function {function_name} does not exist."
-                    elif function_args_error:
-                        log('error', f"Error parsing function arguments for {function_name}: {function_args_error}")
-                        print(function_name, "error:", function_args_error, file=sys.stderr, flush=True)
-                        function_response = f"Error executing function {function_name}: {function_args_error}"
-                    else:
-                        try:
-                            print(function_name, "request:", function_args, file=sys.stderr, flush=True)
-                            # All tool functions expect (obj, projected_states)
-                            function_response = function_to_call(function_args, projected_states)
-                        except Exception as e:
-                            log('error', f"Error calling function {function_name}: {e}", traceback.format_exc())
-                            print(function_name, "error:", e, traceback.format_exc(), file=sys.stderr, flush=True)
-                            function_response = f"Error executing function {function_name}: {e}"
+                    function_response = ActionManager.run_internal(tool_call, function_to_call, projected_states)["content"]
 
                     print(function_name, "result:", str(function_response), file=sys.stderr, flush=True)
                     function_response_text = str(function_response)
@@ -462,14 +443,9 @@ def web_search_agent(
 
         except Exception as e:
             log('error', f"An error occurred in the agentic loop: {e}", traceback.format_exc())
-            error_type = type(e).__name__
-            return (
-                "Web search failed while "
-                f"{phase} on iteration {iter + 1} for query '{query}'. "
-                f"{error_type}: {e}"
-            )
+            raise
 
-    return "The request could not be completed within the allowed number of steps."
+    raise ToolError("The request could not be completed within the allowed number of steps.", kind="execution_error")
 
 def web_search(obj, projected_states):
     res = yield from web_search_agent(
@@ -500,18 +476,13 @@ def get_galnet_news(obj, projected_states):
                 }
                 articles.append(article)
 
-            response_text, _, model_usage = llm_model.generate(
+            prompt_usage = PromptUsageStats(web_search_chars=len(str(articles)) + len(str(obj.get('query', ''))))
+            response_text, _, model_usage = generate_with_usage(llm_model, "galnet", prompt_usage,
                 messages=[{
                     "role": "user",
                     "content": f"Analyze the following list of news articles, either answer the given inquiry or create a short summary that includes all named entities: {articles}\nInquiry: {obj.get('query')}"
                 }],
             )
-
-            try:
-                prompt_usage = PromptUsageStats(web_search_chars=len(str(articles)) + len(str(obj.get('query', ''))))
-                log_llm_usage("galnet", model_usage=model_usage, prompt_usage=prompt_usage, llm_model=llm_model)
-            except Exception:
-                pass
 
             return response_text
 
@@ -519,7 +490,9 @@ def get_galnet_news(obj, projected_states):
 
     except Exception as e:
         log('error', e, traceback.format_exc())
-        return format_web_request_error("news feed", e)
+        if isinstance(e, LLMError):
+            raise
+        raise ToolError(format_web_request_error("news feed", e), e, kind=error_kind(e)) from e
 
 def get_stored_ship_modules(obj, projected_states):
     stored_modules = get_state_dict(projected_states, 'StoredModules')
@@ -1854,7 +1827,7 @@ def remember_memories(obj, projected_states):
     # Create embedding for the query and search the vector store
     if not embedding_model:
         log('warn', 'Embeddings model not configured, cannot search memories.')
-        return 'Unable to search memories, please configure the embedding model.'
+        raise ToolError('Unable to search memories, please configure the embedding model.', kind="unsupported")
 
     (model_name, embedding) = embedding_model.create_embedding(query)
 
@@ -2223,7 +2196,7 @@ def station_finder(obj, projected_states):
         return f'Here is a list of stations: {json.dumps(filtered_data)}'
     except Exception as e:
         log('error', e, traceback.format_exc())
-        return format_web_request_error("station finder", e, response)
+        raise ToolError(format_web_request_error("station finder", e, response), e, kind=error_kind(e)) from e
 
 
 def prepare_system_request(obj, projected_states):# Helper function for fuzzy matching
@@ -2415,7 +2388,7 @@ def system_finder(obj, projected_states):
 
     except Exception as e:
         log('error', e, traceback.format_exc())
-        return format_web_request_error("system finder", e, response)
+        raise ToolError(format_web_request_error("system finder", e, response), e, kind=error_kind(e)) from e
 
 
 def prepare_body_request(obj, projected_states):
@@ -2686,7 +2659,7 @@ def body_finder(obj, projected_states):
 
     except Exception as e:
         log('error', e, traceback.format_exc())
-        return format_web_request_error("body finder", e, response)
+        raise ToolError(format_web_request_error("body finder", e, response), e, kind=error_kind(e)) from e
 
 
 def register_web_actions(actionManager: ActionManager, eventManager: EventManager, 

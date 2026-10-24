@@ -223,6 +223,9 @@ class GoogleAIStudioTranscribeModel(STTModel):
 
 
 class GoogleAIStudioTTSModel(TTSModel):
+    def synthesis_usage(self, settings: dict[str, Any]):
+        return super().synthesis_usage({**settings, "voice": settings.get("voice") or GOOGLE_TTS_VOICE})
+
     def __init__(self, api_key: str, model_name: str):
         super().__init__(model_name, provider_name="google-ai-studio")
         self.client = httpx.Client(

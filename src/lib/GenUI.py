@@ -3,7 +3,7 @@ import requests
 import quickjs
 from typing import Optional, Dict, Tuple, Any, Literal
 from .Database import CodeStore
-from .Logger import PromptUsageStats, log_llm_usage, log, observe
+from .Logger import PromptUsageStats, log, observe
 
 # --- SYSTEM PROMPT ---
 SYSTEM_PROMPT = """
@@ -536,14 +536,14 @@ class GenUIAgent:
         Call the LLM using the project's LLMModel abstraction.
         Returns (text_response, tool_calls)
         """
-        response, tools, model_usage = self.llm_model.generate(
+        from .Models import generate_with_usage
+        prompt_usage = PromptUsageStats(genui_chars=sum(len(str(m.get('content', ''))) for m in messages if isinstance(m.get('content'), str)))
+        response, tools, model_usage = generate_with_usage(self.llm_model, "genui", prompt_usage,
             messages=messages, 
             tools=tools if tools else [], 
             tool_choice="auto" if tools else None
         )
 
-        prompt_usage = PromptUsageStats(genui_chars=sum(len(str(m.get('content', ''))) for m in messages if isinstance(m.get('content'), str)))
-        log_llm_usage("genui", model_usage=model_usage, prompt_usage=prompt_usage, llm_model=self.llm_model)
         return response, tools
 
     @observe()

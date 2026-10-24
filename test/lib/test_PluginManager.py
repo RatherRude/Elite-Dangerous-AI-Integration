@@ -303,7 +303,11 @@ def test_metadata_free_third_party_provider_contract_remains_compatible() -> Non
 
     assert isinstance(openai_compatible, OpenAILLMModel)
     assert isinstance(stt, CompatibleSTT) and stt.transcribe(None) == "transcribed"
+    assert stt.transcribe_with_usage(None).text == "transcribed"
     assert isinstance(tts, CompatibleTTS) and b"nova:hello" == b"".join(tts.synthesize("hello", "nova"))
+    assert b"".join(tts.synthesize_with_usage("hello", {"voice": "nova"}).audio_stream) == b"nova:hello"
+    assert b"".join(tts.synthesize_voice_with_usage("hello", "nova").audio_stream) == b"nova:hello"
+    assert model.generate_with_usage([{"role": "user", "content": "hello"}])[0] == "plugin:hello"
     assert isinstance(embedding, CompatibleEmbedding)
     assert embedding.create_embedding("hello") == ("compatible-embedding", [5.0])
 
@@ -333,6 +337,13 @@ def test_unchanged_elevenlabs_plugin_loads_creates_and_executes_tts() -> None:
     model._client = MagicMock()  # type: ignore[attr-defined]
     model._client.text_to_speech.stream.return_value = [b"first", b"second"]  # type: ignore[attr-defined]
     assert b"".join(model.synthesize("hello", "voice-id")) == b"firstsecond"
+    result = model.synthesize_with_usage("hello", {"voice": "voice-id"})
+    assert b"".join(result.audio_stream) == b"firstsecond"
+    assert result.usage.voice_name == "voice-id"
+    assert result.usage.model_name == "elevenlabs-tts"
+    model._client.text_to_speech.stream.reset_mock()  # type: ignore[attr-defined]
+    voice_result = model.synthesize_voice_with_usage("hello", "voice-id")
+    assert b"".join(voice_result.audio_stream) == b"firstsecond"
     model._client.text_to_speech.stream.assert_called_once_with(  # type: ignore[attr-defined]
         text="hello",
         voice_id="voice-id",
@@ -345,3 +356,17 @@ def test_unchanged_elevenlabs_plugin_loads_creates_and_executes_tts() -> None:
             "use_speaker_boost": True,
         },
     )
+
+    # Exercise the unchanged STT implementation through the application's new
+    # adapter as well, rather than only verifying the old direct method.
+    stt = manager.create_plugin_model(manifest.guid, "elevenlabs-stt", "stt")
+    assert isinstance(stt, STTModel)
+    stt._client = MagicMock()  # type: ignore[attr-defined]
+    stt._client.speech_to_text.convert.return_value.text = " transcript "  # type: ignore[attr-defined]
+    audio = MagicMock()
+    audio.get_wav_data.return_value = b"wav"
+    transcription = stt.transcribe_with_usage(audio)
+    assert transcription.text == "transcript"
+    assert transcription.usage.model_name == "elevenlabs-stt"
+    assert transcription.usage.input_tokens is None
+    audio.get_wav_data.assert_called_once_with(convert_rate=16000, convert_width=2)

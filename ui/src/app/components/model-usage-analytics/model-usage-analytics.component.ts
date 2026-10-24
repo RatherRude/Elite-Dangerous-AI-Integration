@@ -419,6 +419,8 @@ export class ModelUsageAnalyticsComponent implements OnInit {
     private buildSummaryCards(rows: ModelUsageRecord[]): SummaryCard[] {
         const cards: SummaryCard[] = [];
         const requestRows = rows.filter((row) => row.messageType !== "action_cache_usage");
+        cards.push({ label: "Operation outcomes", value: `${requestRows.filter(row => row.status === "error").length} errors`,
+            detail: `${requestRows.filter(row => row.status === "success").length} succeeded · ${requestRows.filter(row => row.status === "cancelled").length} cancelled · ${requestRows.filter(row => row.status === "unknown").length} legacy/unknown`, tone: "rose" });
         const llmRows = rows.filter((row) => row.usageKind === "llm");
         const llmRequestRows = llmRows.filter(
             (row) => row.messageType !== "action_cache_usage",
@@ -457,10 +459,10 @@ export class ModelUsageAnalyticsComponent implements OnInit {
             (sum, row) => sum + row.promptUsage.totalChars,
             0,
         );
-        const responseLatencies = rows
+        const responseLatencies = rows.filter(row => row.status === "success" || row.status === "unknown")
             .map((row) => row.latencyUsage.responseMs)
             .filter((value): value is number => value !== null);
-        const firstByteLatencies = rows
+        const firstByteLatencies = rows.filter(row => row.status === "success" || row.status === "unknown")
             .map((row) => row.latencyUsage.timeToFirstByteMs)
             .filter((value): value is number => value !== null);
         const inputAudioDurationMs = rows.reduce(
@@ -484,9 +486,10 @@ export class ModelUsageAnalyticsComponent implements OnInit {
             0,
         );
 
+        const reportedTokenCalls = llmRequestRows.filter(row => row.tokenUsage.hasReportedTotal).length;
         const avgTokens =
-            llmRequestRows.length > 0
-                ? Math.round(totalTokens / llmRequestRows.length)
+            reportedTokenCalls > 0
+                ? Math.round(totalTokens / reportedTokenCalls)
                 : 0;
 
         cards.push({
@@ -494,7 +497,7 @@ export class ModelUsageAnalyticsComponent implements OnInit {
             value: this.formatCompactNumber(requestRows.length),
             detail:
                 totalTokens > 0
-                    ? `${this.formatCompactNumber(avgTokens)} avg tokens per call`
+                    ? `${this.formatCompactNumber(avgTokens)} avg tokens per reported LLM call`
                     : "persisted usage rows",
             tone: "amber",
         });
@@ -759,7 +762,7 @@ export class ModelUsageAnalyticsComponent implements OnInit {
 
             bucket.cachedInputTokens += row.tokenUsage.cachedTokens;
             bucket.liveInputTokens += row.tokenUsage.liveInputTokens;
-            bucket.thinkingOutputTokens += row.tokenUsage.reasoningTokens;
+            bucket.thinkingOutputTokens += row.tokenUsage.stackedReasoningTokens;
             bucket.visibleOutputTokens += row.tokenUsage.visibleOutputTokens;
             bucket.totalTokens += row.tokenUsage.totalTokens;
             bucket.totalChars += row.promptUsage.totalChars;
@@ -954,6 +957,7 @@ export class ModelUsageAnalyticsComponent implements OnInit {
         const groups = new Map<string, number>();
 
         for (const row of rows) {
+            if (row.messageType === "action_cache_usage") continue;
             groups.set(row.usageKind, (groups.get(row.usageKind) ?? 0) + 1);
         }
 

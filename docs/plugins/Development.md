@@ -1,5 +1,63 @@
 # Plugin development for COVAS:NEXT
 
+## Model usage and failure contract
+
+Provider implementations report **the model and voice actually used** through request-local usage stats. The application does not reconstruct this metadata from plugin configuration. These types are public:
+
+```python
+from lib.ModelUsage import ModelUsageStats, TranscriptionResult, SynthesisResult
+from lib.Errors import ModelError, ToolError
+```
+
+- LLM `generate(...)` keeps returning `(text, tool_calls, ModelUsageStats)`.
+- The application uses the additive `generate_with_usage(...)` bridge. Calling a plugin's legacy `generate(...)` directly still calls its original implementation and preserves its exception behavior.
+- STT `transcribe_with_usage(audio)` returns `TranscriptionResult(text, usage)`.
+- TTS `synthesize_with_usage(text, settings)` returns `SynthesisResult(audio_stream, usage)`. Audio is still mono, 24 kHz, signed 16-bit PCM as required by `TTSModel`.
+- Create a **new stats object for every invocation**. Set `provider`, `model_name`, and, for TTS, `voice_name` after resolving defaults and overrides. `input_language` / `output_language` are optional: report only known values. Never put credentials, endpoints, prompts, or voice instructions in usage stats.
+- `model_name` is the canonical served model ID, not a UI catalog selection or local model-file path. New/namespaced IDs are retained by telemetry without a catalog update, subject to identifier validation and the shared grouping budget.
+- Report `reasoning_tokens=0` only when zero is known. Use `None` when the breakdown is unavailable. Set `reasoning_tokens_in_output=False` when output excludes reasoning. Call/latency dimensions use these reported counts to classify reasoning output and effective generated-output size; they do not infer usage from configured reasoning effort.
+- `ModelUsageStats()` retains the old zero defaults and positional field order so legacy code can accumulate counts with `+=`. For new code, use `ModelUsageStats.unknown(provider=..., model_name=...)` or explicit `None` for unreported amounts; this avoids claiming zero usage on failure. Set `reasoning_tokens_in_output=True` when reasoning is included in reported output tokens. Update known partial stats as streaming proceeds; do not use a model-wide `last_usage` property.
+- Set `is_provider_operation=False` only for synthetic/no-provider implementations (for example, silent timing audio delegated to another speech application). Such streams do not enter model usage/error-rate metrics.
+- Raise `ModelError(message, cause, kind="timeout", usage=usage)` for failure, including failure before returning a result or during stream iteration. A worker thread must pass failures back to its consumer; throwing only in the background thread is insufficient.
+- The STT/TTS/LLM operation handler emits and persists one terminal outcome. Providers must not independently emit the same usage event or export metrics. Ordinary exceptions remain supported, but a typed error preserves model identity and a useful category.
+- Close underlying responses/iterators in `finally`. Early consumer cancellation is not a provider failure. Exhausting a failed stream as if it succeeded, or returning empty text to hide an error, violates the contract. Legitimately empty transcription/no-results output is allowed.
+
+For example, a streaming provider can implement:
+
+```python
+def synthesize_with_usage(self, text, settings):
+    voice = settings.get("voice") or self.default_voice
+    usage = ModelUsageStats.unknown(provider="example", model_name=self.model_name,
+                                    voice_name=voice)
+
+    def audio():
+        try:
+            with self.client.stream(text=text, voice=voice) as response:
+                for chunk in response:
+                    yield chunk
+        except TimeoutError as exc:
+            raise ModelError("Speech provider timed out", exc,
+                             kind="timeout", usage=usage) from exc
+
+    return SynthesisResult(audio(), usage)
+
+# Retain the legacy entrypoint when defining a new provider class.
+def synthesize(self, text, voice):
+    return self.synthesize_with_usage(text, {"voice": voice}).audio_stream
+```
+
+Existing STT/TTS implementations remain usable through base-class adapters for `transcribe` and `synthesize_with_settings`/`synthesize`. Providers whose existing implementation already resolves identity correctly can override `synthesis_usage(settings)` to supply stats and reuse the base streaming/error adapter. Providers resolving model/voice dynamically should implement the usage-aware entrypoint directly. `lib.Logger.ModelUsageStats` and `lib.Models.LLMError` remain compatibility imports.
+
+The old abstract `generate`, `transcribe`, and `synthesize` entrypoints remain part of their base-class contracts; usage-aware methods are additive. When no character settings are supplied, the application uses `synthesize_voice_with_usage(text, voice)`, preserving the old voice-only dispatch and model defaults. With settings, it uses `synthesize_with_usage(text, settings)`, which preserves `synthesize_with_settings` overrides. An explicit provider override of `synthesize_with_usage` is honored in either path. OpenAI-derived providers' `synthesize` overrides remain active, including request-scoped `voice_instructions`.
+
+These bridges preserve supported legacy runtime calls; they cannot infer a served model, internally resolved fallback voice, or language that a legacy provider never reports. Richer telemetry requires the provider to adopt the stats API. The deprecated explicit `llm_model` argument to `log_llm_usage` still fills missing identity for legacy callers; it never overrides identity supplied in stats. `ModelError` is a subclass of the named legacy `LLMError`, so old `except LLMError` handlers also catch new typed failures.
+
+Tools follow the same failure convention: **raise**, rather than returning an `ERROR:` string. `ActionManager` catches lookup/preparation/execution/generator failures, reports one tool outcome, and creates the normal model-facing tool result. Use `ToolError("Useful message", kind="invalid_arguments")` for an expected validation failure. Do not emit another `tool_usage` inside a tool. A provider exception can propagate through a tool: it is one model failure and one containing tool failure, not two of either.
+
+Built-in error kinds are `invalid_arguments`, `unknown_tool`, `authentication`, `permission_denied`, `rate_limit`, `quota_exceeded`, `timeout`, `connection`, `provider_unavailable`, `invalid_response`, `unsupported`, `not_found`, `audio_device`, `execution_error`, `internal`, and `unknown`. Explicit plugin-specific kinds and audio stages are preserved; detailed exception messages/causes stay out of metric labels. Tool names/types, provider/model IDs, contexts, voices and languages are exported as supplied without a client-side catalog or cardinality merging. Missing/blank/non-string metadata uses `unknown`; unregistered tool calls retain their attempted name with `error_kind="unknown_tool"`. Ingestion/cardinality policy belongs server-side. The former raw telemetry dialogs have been removed; see [the UI visibility inventory](../advanced/telemetry-ui-inventory.md) for current display coverage.
+
+`ModelUsageStats.num_underruns` is optional playback-consumer metadata. Leave it unset in providers: the host fills it when it observes TTS playback, and includes it in the normal terminal usage record. Zero means observed playback without underruns; `None` means unobserved. STT/TTS real-time factor is derived from the handler's operation duration and the same call's audio duration; providers do not emit a separate RTF event.
+
 Do you want to build a plugin, to expand on COVAS' features? This page will help you get started.
 
 ## Prerequisites
