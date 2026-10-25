@@ -45,7 +45,21 @@
     "Key_RightBracket": "]",
     "Key_BackSlash": "\\",
     "Key_Equals": "=",
-    "Key_Minus": "-"
+    "Key_Minus": "-",
+    "Key_Underline": "_",
+    "Key_Ampersand": "&",
+    "Key_DoubleQuote": "\"",
+    "Key_LeftParenthesis": "(",
+    "Key_RightParenthesis": ")",
+    "Key_Circumflex": "^",
+    "Key_Dollar": "$",
+    "Key_Asterisk": "*",
+    "Key_ExclamationPoint": "!",
+    "Key_SuperscriptTwo": "\u00b2",
+    "Key_Colon": ":",
+    "Key_LessThan": "<",
+    "Key_GreaterThan": ">",
+    "Key_Grave": "`"
   },
   "implicit_modifiers": {
     "1": "Key_LeftShift",

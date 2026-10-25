@@ -19,7 +19,7 @@ from .directinput import (
     ReleaseMouseButton,
     ScrollMouseWheel,
     resolve_layout_key_name,
-    LAYOUT_DEPENDENT_KEY_CHARACTERS,
+    get_layout_key_character,
     LAYOUT_IMPLICIT_MODIFIERS,
     load_keyboard_layout,
 )
@@ -254,15 +254,9 @@ class EDKeys:
             binding: None | dict[str, Any] = None
             try:
                 binding = self._prepare_binding(selected_binding)
-            except KeyError:
+            except KeyError as exc:
                 unsupported_keys.add(item.tag)
-                print(
-                    "Unrecognised key '"
-                    + (json.dumps(binding) if binding else "?")
-                    + "' for bind '"
-                    + item.tag
-                    + "'"
-                )
+                log("error", f"Unrecognised key for bind {item.tag!r}", exc)
             if binding is not None:
                 direct_input_keys[item.tag] = binding
 
@@ -335,18 +329,29 @@ class EDKeys:
         resolved_mods = [self.keymap[mod] for mod in mods]
 
         if device == "Keyboard":
-            if self.keyboard_layout is not None and key in LAYOUT_DEPENDENT_KEY_CHARACTERS:
+            character = get_layout_key_character(key)
+            if self.keyboard_layout is not None and character is not None:
                 resolved_key = resolve_layout_key_name(key, self.keyboard_layout)
                 binding = {
                     "key": resolved_key.scan_code,
                     "mods": resolved_mods,
                 }
+                implicit_shift_state = resolved_key.shift_state
+                if "Key_RightAlt" in mods and (implicit_shift_state & 0x06) == 0x06:
+                    # Windows reports AltGr as Ctrl+Alt; the binding already supplies it.
+                    implicit_shift_state &= ~0x06
                 for modifier_mask, modifier_name in LAYOUT_IMPLICIT_MODIFIERS.items():
                     if (
-                        resolved_key.shift_state & modifier_mask
+                        implicit_shift_state & modifier_mask
                         and modifier_name not in mods
                     ):
                         binding["mods"].append(self.keymap[modifier_name])
+            elif (
+                platform.system() != "Windows"
+                and key not in self.keymap
+                and character is not None
+            ):
+                binding = {"key": character, "mods": resolved_mods}
             else:
                 binding = {"key": self.keymap[key], "mods": resolved_mods}
         elif key in self.mouse_button_map:

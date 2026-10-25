@@ -106,12 +106,23 @@ def resolve_layout_character(character: str, layout: int) -> LayoutResolvedKey:
     return LayoutResolvedKey(virtual_key, scan_code, shift_state)
 
 
+def get_layout_key_character(key_name: str) -> str | None:
+    """Decode named keys and literal characters such as Elite's localized Key_* names."""
+    character = LAYOUT_DEPENDENT_KEY_CHARACTERS.get(key_name)
+    if character is not None:
+        return character
+    if key_name.startswith("Key_"):
+        character = key_name.removeprefix("Key_")
+        if len(character) == 1 and character.isprintable():
+            return character
+    return None
+
+
 def resolve_layout_key_name(key_name: str, layout: int) -> LayoutResolvedKey:
     """Resolve a supported Elite Dangerous key name using the game's Windows layout."""
-    try:
-        character = LAYOUT_DEPENDENT_KEY_CHARACTERS[key_name]
-    except KeyError as exc:
-        raise ValueError(f"{key_name} is not a layout-dependent key.") from exc
+    character = get_layout_key_character(key_name)
+    if character is None:
+        raise ValueError(f"{key_name} is not a layout-dependent key.")
     return resolve_layout_character(character, layout)
 
 WINDOWS_MOUSE_BUTTONS = {
