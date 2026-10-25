@@ -66,6 +66,11 @@ modules:
         export ELECTRON_OZONE_PLATFORM_HINT="${ELECTRON_OZONE_PLATFORM_HINT:-x11}"
         export OZONE_PLATFORM="${OZONE_PLATFORM:-x11}"
         export GDK_BACKEND="${GDK_BACKEND:-x11}"
+        # The OpenXR loader needs its bundled libjsoncpp before the native addon is loaded.
+        prebuilt_dir="/app/bin/resources/app.asar.unpacked/node_modules/@covas-labs/electron-vr-prebuilt-linux-x64"
+        if [ -f "$prebuilt_dir/vr_bridge.node" ]; then
+          export LD_LIBRARY_PATH="$prebuilt_dir${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+        fi
 
         # The host OpenXR loader cannot discover layers in Flatpak's private XDG_DATA_HOME.
         host_layer_dir="$HOME/.local/share/openxr/1/api_layers/implicit.d"
