@@ -1,9 +1,55 @@
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, call
 import os
 from xml.etree.ElementTree import fromstring
 from src.lib.EDKeys import EDKeys
 from src.lib import directinput
+
+AZERTY_SYMBOL_KEYS = {
+    "Key_Ampersand": ("&", 0x02, 0),
+    "Key_\u00e9": ("\u00e9", 0x03, 0),
+    "Key_DoubleQuote": ('"', 0x04, 0),
+    "Key_Apostrophe": ("'", 0x05, 0),
+    "Key_LeftParenthesis": ("(", 0x06, 0),
+    "Key_Minus": ("-", 0x07, 0),
+    "Key_\u00e8": ("\u00e8", 0x08, 0),
+    "Key_Underline": ("_", 0x09, 0),
+    "Key_\u00e7": ("\u00e7", 0x0A, 0),
+    "Key_\u00e0": ("\u00e0", 0x0B, 0),
+    "Key_Equals": ("=", 0x0D, 0),
+    "Key_RightParenthesis": (")", 0x0C, 0),
+    "Key_Dollar": ("$", 0x1B, 0),
+    "Key_Asterisk": ("*", 0x2B, 0),
+    "Key_\u00f9": ("\u00f9", 0x28, 0),
+    "Key_Circumflex": ("^", 0x1A, 0),
+    "Key_ExclamationPoint": ("!", 0x35, 0),
+    "Key_SuperscriptTwo": ("\u00b2", 0x29, 0),
+    "Key_\u00a8": ("\u00a8", 0x1A, 1),
+    "Key_\u00a3": ("\u00a3", 0x1B, 1),
+    "Key_\u00b5": ("\u00b5", 0x2B, 1),
+    "Key_%": ("%", 0x28, 1),
+    "Key_\u00a7": ("\u00a7", 0x35, 1),
+    "Key_Slash": ("/", 0x34, 1),
+    "Key_+": ("+", 0x0D, 1),
+    "Key_\u00b0": ("\u00b0", 0x0C, 1),
+    "Key_Comma": (",", 0x32, 0),
+    "Key_SemiColon": (";", 0x33, 0),
+    "Key_Colon": (":", 0x34, 0),
+    "Key_LessThan": ("<", 0x56, 0),
+    "Key_GreaterThan": (">", 0x56, 1),
+    "Key_~": ("~", 0x03, 6),
+    "Key_#": ("#", 0x04, 6),
+    "Key_{": ("{", 0x05, 6),
+    "Key_LeftBracket": ("[", 0x06, 6),
+    "Key_|": ("|", 0x07, 6),
+    "Key_Grave": ("`", 0x08, 6),
+    "Key_BackSlash": ("\\", 0x09, 6),
+    "Key_@": ("@", 0x0B, 6),
+    "Key_RightBracket": ("]", 0x0C, 6),
+    "Key_}": ("}", 0x0D, 6),
+    "Key_\u20ac": ("\u20ac", 0x12, 6),
+    **{f"Key_{digit}": (digit, scan, 1) for scan, digit in enumerate("1234567890", 2)},
+}
 
 @pytest.fixture(autouse=True)
 def disable_bindings_watcher(monkeypatch):
@@ -95,6 +141,223 @@ def binds_file(tmp_path):
     os.makedirs(binds_path.parent)
     binds_path.write_text(content)
     return str(tmp_path)
+
+
+@pytest.fixture
+def azerty_speed_bindings(tmp_path):
+    bindings = [
+        ("SetSpeedZero", "Key_Minus", "-", 0x36, 7),
+        ("SetSpeed25", "Key_\u00e8", "\u00e8", 0x37, 8),
+        ("SetSpeed50", "Key_Underline", "_", 0x38, 9),
+        ("SetSpeed75", "Key_\u00e7", "\u00e7", 0x39, 10),
+        ("SetSpeed100", "Key_\u00e0", "\u00e0", 0x30, 11),
+    ]
+    content = '<Root><KeyboardLayout>fr-FR</KeyboardLayout>'
+    for action, key_name, _, _, _ in bindings:
+        content += f"""
+        <{action}>
+            <Primary Device="Keyboard" Key="{key_name}">
+                <Modifier Device="Keyboard" Key="Key_LeftShift" />
+            </Primary>
+            <Secondary Device="{{NoDevice}}" Key="" />
+        </{action}>
+        """
+    content += "</Root>"
+    path = tmp_path / "Options" / "Bindings" / "Custom.4.2.binds"
+    path.parent.mkdir(parents=True)
+    path.write_text(content, encoding="utf-8")
+    return str(tmp_path), bindings
+
+
+def test_azerty_speed_bindings_load_and_send_on_windows(
+    mock_directinput, azerty_speed_bindings, monkeypatch
+):
+    appdata_path, bindings = azerty_speed_bindings
+    user32 = MagicMock()
+    virtual_keys = {character: vk for _, _, character, vk, _ in bindings}
+    scan_codes = {vk: scan for _, _, _, vk, scan in bindings}
+    user32.VkKeyScanExW.side_effect = lambda char, layout: virtual_keys[char]
+    user32.MapVirtualKeyExW.side_effect = lambda vk, mode, layout: scan_codes[vk]
+    monkeypatch.setattr(directinput, "_windows_user32", lambda: user32)
+    monkeypatch.setattr("src.lib.EDKeys.load_keyboard_layout", lambda locale: 0x040C)
+    monkeypatch.setattr(
+        "src.lib.EDKeys.resolve_layout_key_name", directinput.resolve_layout_key_name
+    )
+    monkeypatch.setattr("src.lib.EDKeys.sleep", lambda _: None)
+    emit_message = MagicMock()
+    monkeypatch.setattr("src.lib.EDKeys.emit_message", emit_message)
+
+    keys = EDKeys(appdata_path)
+
+    assert keys.unsupported_keys == []
+    assert emit_message.call_args.kwargs["unsupported"] == []
+    for action, _, character, vk, scan_code in bindings:
+        assert action not in keys.missing_keys
+        assert keys.keys[action] == {"key": scan_code, "mods": [42]}
+        mock_directinput["PressKey"].reset_mock()
+        mock_directinput["ReleaseKey"].reset_mock()
+
+        keys.send(action)
+
+        assert mock_directinput["PressKey"].call_args_list == [call(42), call(scan_code)]
+        assert mock_directinput["ReleaseKey"].call_args_list == [call(scan_code), call(42)]
+        user32.VkKeyScanExW.assert_any_call(character, 0x040C)
+        user32.MapVirtualKeyExW.assert_any_call(vk, 0, 0x040C)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Requires native Windows keyboard layout APIs")
+def test_azerty_speed_bindings_resolve_with_native_french_layout(
+    mock_directinput, azerty_speed_bindings, monkeypatch
+):
+    appdata_path, bindings = azerty_speed_bindings
+    monkeypatch.setattr("src.lib.EDKeys.load_keyboard_layout", directinput.load_keyboard_layout)
+    monkeypatch.setattr(
+        "src.lib.EDKeys.resolve_layout_key_name", directinput.resolve_layout_key_name
+    )
+
+    keys = EDKeys(appdata_path)
+
+    assert keys.unsupported_keys == []
+    for action, _, _, _, scan_code in bindings:
+        assert keys.keys[action] == {"key": scan_code, "mods": [42]}
+
+
+@pytest.mark.parametrize("system", ["Linux", "Darwin"])
+def test_azerty_speed_bindings_load_on_pynput(
+    mock_directinput, azerty_speed_bindings, monkeypatch, system
+):
+    appdata_path, bindings = azerty_speed_bindings
+    monkeypatch.setattr("platform.system", lambda: system)
+    load_layout = MagicMock()
+    monkeypatch.setattr("src.lib.EDKeys.load_keyboard_layout", load_layout)
+
+    keys = EDKeys(appdata_path)
+
+    assert keys.unsupported_keys == []
+    for action, _, character, _, _ in bindings:
+        assert action not in keys.missing_keys
+        assert keys.keys[action] == {
+            "key": character,
+            "mods": [keys.keymap["Key_LeftShift"]],
+        }
+    load_layout.assert_not_called()
+
+
+@pytest.mark.parametrize("failure", ["character", "scancode"])
+def test_unresolvable_localized_keys_are_reported_as_unsupported(
+    mock_directinput, azerty_speed_bindings, monkeypatch, failure
+):
+    appdata_path, bindings = azerty_speed_bindings
+    user32 = MagicMock()
+    user32.VkKeyScanExW.return_value = -1 if failure == "character" else 0x37
+    user32.MapVirtualKeyExW.return_value = 0
+    monkeypatch.setattr(directinput, "_windows_user32", lambda: user32)
+    monkeypatch.setattr(
+        "src.lib.EDKeys.resolve_layout_key_name", directinput.resolve_layout_key_name
+    )
+    log = MagicMock()
+    monkeypatch.setattr("src.lib.EDKeys.log", log)
+
+    keys = EDKeys(appdata_path)
+
+    assert keys.unsupported_keys == sorted(action for action, _, _, _, _ in bindings)
+    assert keys.keys == {}
+    assert any(
+        args[0] == "error" and "SetSpeed25" in args[1] and "\u00e8" in str(args[2])
+        for args, _ in log.call_args_list
+    )
+
+
+@pytest.mark.parametrize("explicit_shift", [False, True])
+def test_azerty_symbol_bindings_preserve_physical_keys_and_modifiers(
+    mock_directinput, tmp_path, monkeypatch, explicit_shift
+):
+    virtual_keys = {
+        character: vk for vk, (character, _, _) in enumerate(AZERTY_SYMBOL_KEYS.values(), 1)
+    }
+    scan_codes = {
+        virtual_keys[character]: scan for character, scan, _ in AZERTY_SYMBOL_KEYS.values()
+    }
+    shift_states = {
+        character: shift for character, _, shift in AZERTY_SYMBOL_KEYS.values()
+    }
+    user32 = MagicMock()
+    user32.VkKeyScanExW.side_effect = (
+        lambda char, layout: virtual_keys[char] | (shift_states[char] << 8)
+    )
+    user32.MapVirtualKeyExW.side_effect = lambda vk, mode, layout: scan_codes[vk]
+    monkeypatch.setattr(directinput, "_windows_user32", lambda: user32)
+    monkeypatch.setattr(
+        "src.lib.EDKeys.resolve_layout_key_name", directinput.resolve_layout_key_name
+    )
+    keys = EDKeys(str(tmp_path))
+    keys.keyboard_layout = 0x040C
+
+    for key_name, (_, scan_code, shift_state) in AZERTY_SYMBOL_KEYS.items():
+        binding = fromstring('<Primary Device="Keyboard" />')
+        binding.set("Key", key_name)
+        if explicit_shift:
+            binding.append(fromstring('<Modifier Device="Keyboard" Key="Key_LeftShift" />'))
+
+        expected_mods = [42] if explicit_shift or shift_state == 1 else []
+        if shift_state == 6:
+            expected_mods.extend([29, 56])
+        assert keys._prepare_binding(binding) == {
+            "key": scan_code,
+            "mods": expected_mods,
+        }, key_name
+
+
+@pytest.mark.parametrize("explicit_shift", [False, True])
+@pytest.mark.parametrize("shift_state", [6, 7])
+def test_windows_layout_preserves_explicit_altgr(
+    mock_directinput, tmp_path, monkeypatch, explicit_shift, shift_state
+):
+    monkeypatch.setattr(
+        "src.lib.EDKeys.resolve_layout_key_name",
+        lambda key_name, layout: directinput.LayoutResolvedKey(0x30, 0x0B, shift_state),
+    )
+    keys = EDKeys(str(tmp_path))
+    keys.keyboard_layout = 0x040C
+    binding = fromstring(
+        '<Primary Device="Keyboard" Key="Key_@">'
+        '<Modifier Device="Keyboard" Key="Key_RightAlt" />'
+        '</Primary>'
+    )
+    if explicit_shift:
+        binding.append(fromstring('<Modifier Device="Keyboard" Key="Key_LeftShift" />'))
+
+    expected_mods = [184]
+    if explicit_shift or shift_state & 1:
+        expected_mods.append(42)
+    assert keys._prepare_binding(binding) == {"key": 0x0B, "mods": expected_mods}
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Requires native Windows keyboard layout APIs")
+def test_azerty_symbols_resolve_with_native_french_layout():
+    layout = directinput.load_keyboard_layout("fr-FR")
+
+    for key_name, (character, scan_code, shift_state) in AZERTY_SYMBOL_KEYS.items():
+        for name in (key_name, f"Key_{character}"):
+            resolved = directinput.resolve_layout_key_name(name, layout)
+
+            assert (resolved.scan_code, resolved.shift_state) == (
+                scan_code, shift_state
+            ), name
+
+
+@pytest.mark.parametrize("system", ["Linux", "Darwin"])
+def test_azerty_symbols_load_as_characters_on_pynput(
+    mock_directinput, tmp_path, monkeypatch, system
+):
+    monkeypatch.setattr("platform.system", lambda: system)
+    keys = EDKeys(str(tmp_path))
+
+    for key_name, (character, _, _) in AZERTY_SYMBOL_KEYS.items():
+        binding = fromstring('<Primary Device="Keyboard" />')
+        binding.set("Key", key_name)
+
+        assert keys._prepare_binding(binding) == {"key": character, "mods": []}, key_name
 
 
 def test_get_bindings_loads_valid_keys(mock_directinput, binds_file):
@@ -248,7 +511,46 @@ def test_layout_dependent_key_names_cover_map_punctuation():
         "Key_BackSlash": "\\",
         "Key_Equals": "=",
         "Key_Minus": "-",
+        "Key_Underline": "_",
+        "Key_Ampersand": "&",
+        "Key_DoubleQuote": '"',
+        "Key_LeftParenthesis": "(",
+        "Key_RightParenthesis": ")",
+        "Key_Circumflex": "^",
+        "Key_Dollar": "$",
+        "Key_Asterisk": "*",
+        "Key_ExclamationPoint": "!",
+        "Key_SuperscriptTwo": "\u00b2",
+        "Key_Colon": ":",
+        "Key_LessThan": "<",
+        "Key_GreaterThan": ">",
+        "Key_Grave": "`",
     }
+
+
+@pytest.mark.parametrize(
+    "key_name, character",
+    [
+        ("Key_A", "a"),
+        ("Key_Comma", ","),
+        ("Key_Underline", "_"),
+        ("Key_\u00e8", "\u00e8"),
+        ("Key_\u00e7", "\u00e7"),
+        ("Key_\u00e0", "\u00e0"),
+        ("Key_\u00e9", "\u00e9"),
+        ("Key_\u00b2", "\u00b2"),
+        ("Key_)", ")"),
+    ],
+)
+def test_layout_key_character_supports_named_and_localized_keys(key_name, character):
+    assert directinput.get_layout_key_character(key_name) == character
+
+
+@pytest.mark.parametrize("key_name", ["Key_Invalid", "Key_LeftShift", "Key_", "Key_\n", "\u00e8"])
+def test_layout_key_character_rejects_unknown_names(key_name):
+    assert directinput.get_layout_key_character(key_name) is None
+    with pytest.raises(ValueError, match="not a layout-dependent key"):
+        directinput.resolve_layout_key_name(key_name, 0x040C)
 
 
 def test_resolve_layout_character_uses_game_layout(monkeypatch):
@@ -410,6 +712,10 @@ def test_load_game_keyboard_layout_without_requesting_activation(monkeypatch, lo
         ("Key_Comma", ",", 0xBC, 0x32),
         ("Key_A", "a", 0x41, 0x10),
         ("Key_Z", "z", 0x5A, 0x15),
+        ("Key_\u00e8", "\u00e8", 0x37, 0x08),
+        ("Key_Underline", "_", 0x38, 0x09),
+        ("Key_\u00e7", "\u00e7", 0x39, 0x0A),
+        ("Key_\u00e0", "\u00e0", 0x30, 0x0B),
     ],
 )
 def test_character_resolution_uses_explicit_game_layout(monkeypatch, key_name, character, key_info, scan_code):
