@@ -469,6 +469,18 @@
                                     }
                                     @if (keybindsData.unsupported.length > 0) {
                                         <p class="preflight-helper-text"><strong>Unsupported:</strong> {{ keybindsData.unsupported.join(', ') }}</p>
+                                        @if (keybindsData.unresolved_keys?.length) {
+                                            <div class="preflight-issue-section">
+                                                <strong>Unresolved keyboard mappings:</strong>
+                                                <ul>
+                                                    @for (issue of keybindsData.unresolved_keys; track $index) {
+                                                        <li>{{ issue.action }}: {{ issue.role }} <code>{{ issue.key }}</code>
+                                                            ({{ issue.layout || 'unknown' }}, {{ issue.platform }}) — {{ issue.reason }}</li>
+                                                    }
+                                                </ul>
+                                                <p class="preflight-helper-text">Include these details in a keyboard mapping bug report. Full details are available in Actions settings.</p>
+                                            </div>
+                                        }
                                     }
 
                                     @if (enabledActionTypes.length > 0) {

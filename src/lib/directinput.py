@@ -49,6 +49,7 @@ LAYOUT_DEPENDENT_KEY_CHARACTERS: dict[str, str] = _layout_keymap["characters"]
 LAYOUT_IMPLICIT_MODIFIERS: dict[int, str] = {
     int(mask): key_name for mask, key_name in _layout_keymap["implicit_modifiers"].items()
 }
+LAYOUT_MODIFIER_EQUIVALENTS: dict[str, list[str]] = _layout_keymap["modifier_equivalents"]
 
 
 def _windows_user32():
