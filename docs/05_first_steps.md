@@ -27,7 +27,9 @@ Certain keyboard bindings are required for the AI to trigger game actions. In th
 
 Localized key names from Elite Dangerous, such as `Key_è`, `Key_ç`, `Key_à`, and `Key_Underline`, are supported, as are named symbols such as `Key_Ampersand`, `Key_Circumflex`, `Key_Dollar`, `Key_ExclamationPoint`, and `Key_SuperscriptTwo`. On Windows, these keys are resolved using the `KeyboardLayout` declared in the game's `.binds` file. This covers the French AZERTY number row and symbols, including shifted symbols such as `¨`, `£`, `µ`, `%`, `§`, `/`, `+`, and `°`. Explicit modifiers are preserved: for example, `Key_è` with `Key_LeftShift` presses the French AZERTY `è/7` key with Shift; there is no need to change the binding to `Key_7`. Dead keys such as `^` and `¨` are sent as physical key presses rather than composed text.
 
-Characters requiring AltGr, such as `@`, `#`, `{`, `}`, `|`, `\`, and `€`, are also resolved on Windows. Windows reports implicit AltGr as Ctrl+Alt. If the binding already specifies `Key_RightAlt`, that modifier is preserved without adding a second Ctrl+Alt combination.
+Only the modifiers explicitly recorded in the `.binds` entry are sent, in their saved order. Left and right Shift, Control, and Alt remain distinct; `Key_RightAlt` is never replaced with Ctrl+Alt. Windows is used to find the physical key's scan code, not to generate a text-entry combination.
+
+If Windows reports that a key name requires Shift, Control, or Alt to produce its character, the **Actions** settings show a keyboard mapping warning. The physical key remains available with only its explicit game modifiers. This can indicate an unexpected key name or a layout mismatch. When reporting it, include the action, key name, game layout, and modifier details shown in the warning. Keys that cannot resolve at all appear separately as unsupported bindings.
 
 For a full list of actions and their required keyboard buttons, see the [Actions](./20_actions.md) page.
 

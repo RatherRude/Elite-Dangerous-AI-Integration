@@ -81,6 +81,30 @@
             </div>
         }
         
+        @if (keybindsData?.mapping_warnings?.length) {
+            <div class="keybind-warning-box">
+                <div class="keybind-warning-section">
+                    <div class="keybind-warning-header">
+                        <mat-icon>warning</mat-icon>
+                        <strong>Keyboard Mapping Warnings ({{ keybindsData?.mapping_warnings?.length }})</strong>
+                    </div>
+                    <div class="keybind-warning-content">
+                        <p>These keys resolved to physical scan codes, but Windows reported unexpected text-entry modifiers.
+                            Bindings remain available and only the explicit game modifiers are sent.
+                            Include these details when <a href="https://github.com/RatherRude/Elite-Dangerous-AI-Integration/issues/new" target="_blank" rel="noopener noreferrer">reporting a keyboard mapping issue</a>.</p>
+                        <ul>
+                            @for (issue of keybindsData?.mapping_warnings; track $index) {
+                                <li><strong>{{ issue.action }}</strong> ({{ issue.binding }}): {{ issue.role }}
+                                    <code>{{ issue.key }}</code> — character “{{ issue.character }}”,
+                                    layout {{ issue.layout || 'unknown' }}, {{ issue.platform }}.
+                                    Explicit modifiers: {{ issue.modifiers.join(', ') || 'none' }}. {{ issue.reason }}</li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        }
+
         <mat-slide-toggle [ngModel]="config.tools_var && config.game_actions_var"
                           (ngModelChange)="onConfigChange({game_actions_var: $event})"
                           [disabled]="!config.tools_var">

@@ -452,7 +452,11 @@
                                     </div>
 
                                     @if (actionsReady) {
-                                        <p class="preflight-helper-text">Ready. All required game action keybinds are available, supported, and conflict-free.</p>
+                                        @if (keybindsData.mapping_warnings?.length) {
+                                            <p class="preflight-helper-text">Bindings are available, but some keyboard mappings need verification.</p>
+                                        } @else {
+                                            <p class="preflight-helper-text">Ready. All required game action keybinds are available, supported, and conflict-free.</p>
+                                        }
                                     }
                                     @if (keybindsData.missing.length > 0) {
                                         <p class="preflight-helper-text"><strong>Missing:</strong> {{ keybindsData.missing.join(', ') }}</p>
@@ -481,6 +485,19 @@
                                                 <p class="preflight-helper-text">Include these details in a keyboard mapping bug report. Full details are available in Actions settings.</p>
                                             </div>
                                         }
+                                    }
+
+                                    @if (keybindsData.mapping_warnings?.length) {
+                                        <div class="preflight-issue-section">
+                                            <strong>Keyboard mapping warnings:</strong>
+                                            <ul>
+                                                @for (issue of keybindsData.mapping_warnings; track $index) {
+                                                    <li>{{ issue.action }}: {{ issue.role }} <code>{{ issue.key }}</code>
+                                                        ({{ issue.layout || 'unknown' }}, {{ issue.platform }}) — {{ issue.reason }}</li>
+                                                }
+                                            </ul>
+                                            <p class="preflight-helper-text">Full details for bug reports are available in Actions settings.</p>
+                                        </div>
                                     }
 
                                     @if (enabledActionTypes.length > 0) {
