@@ -778,3 +778,125 @@ def test_unavailable_game_keyboard_layout_uses_fixed_keymap(mock_directinput, bi
 
     assert keys.keys['SecondaryFire'] == {'key': 30, 'mods': [42]}
     resolve_key.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "modifier, shift_state, scan_code",
+    [
+        ("Key_LeftShift", 1, 42),
+        ("Key_RightShift", 1, 54),
+        ("Key_LeftControl", 2, 29),
+        ("Key_RightControl", 2, 157),
+        ("Key_LeftAlt", 4, 56),
+        ("Key_RightAlt", 4, 184),
+    ],
+)
+def test_implicit_modifiers_accept_either_explicit_side(mock_directinput, binds_file, monkeypatch, modifier, shift_state, scan_code):
+    keys = EDKeys(binds_file)
+    monkeypatch.setattr(
+        "src.lib.EDKeys.resolve_layout_key_name",
+        lambda key, layout: directinput.LayoutResolvedKey(0x38, 0x09, shift_state),
+    )
+    binding = fromstring(
+        f'<Primary Device="Keyboard" Key="Key_Underline">'
+        f'<Modifier Device="Keyboard" Key="{modifier}" /></Primary>'
+    )
+
+    assert keys._prepare_binding(binding) == {"key": 0x09, "mods": [scan_code]}
+
+
+@pytest.mark.parametrize("device, key", [("Keyboard", "Key_A"), ("Mouse", "Mouse_1")])
+@pytest.mark.parametrize("modifier, character, shift_state", [("Key_è", "è", 0), ("Key_1", "1", 1)])
+def test_localized_modifiers_resolve_and_send_before_main_key(mock_directinput, binds_file, monkeypatch, device, key, modifier, character, shift_state):
+    keys = EDKeys(binds_file)
+    user32 = MagicMock()
+    user32.VkKeyScanExW.side_effect = lambda char, layout: (shift_state << 8) | 0x37 if char == character else 0x41
+    user32.MapVirtualKeyExW.side_effect = lambda vk, mode, layout: 0x08 if vk == 0x37 else 0x1E
+    monkeypatch.setattr(directinput, "_windows_user32", lambda: user32)
+    monkeypatch.setattr("src.lib.EDKeys.resolve_layout_key_name", directinput.resolve_layout_key_name)
+    monkeypatch.setattr("src.lib.EDKeys.sleep", lambda _: None)
+    binding = fromstring(
+        f'<Primary Device="{device}" Key="{key}">'
+        f'<Modifier Device="Keyboard" Key="{modifier}" /></Primary>'
+    )
+    keys.keys["TestLocalizedModifier"] = keys._prepare_binding(binding)
+
+    keys.send("TestLocalizedModifier")
+
+    expected_mods = ([42] if shift_state else []) + [0x08]
+    assert keys.keys["TestLocalizedModifier"]["mods"] == expected_mods
+    expected_presses = expected_mods + ([0x1E] if device == "Keyboard" else [])
+    assert mock_directinput["PressKey"].call_args_list == [call(code) for code in expected_presses]
+    user32.VkKeyScanExW.assert_any_call(character, keys.keyboard_layout)
+    if device == "Mouse":
+        mock_directinput["PressMouseButton"].assert_called_once_with("left")
+
+
+def test_explicit_right_shift_precedes_localized_modifier_and_is_not_duplicated(mock_directinput, binds_file, monkeypatch):
+    keys = EDKeys(binds_file)
+    monkeypatch.setattr(
+        "src.lib.EDKeys.resolve_layout_key_name",
+        lambda key, layout: directinput.LayoutResolvedKey(0, 2 if key == "Key_1" else 30, 1),
+    )
+    binding = fromstring(
+        '<Primary Device="Keyboard" Key="Key_A">'
+        '<Modifier Device="Keyboard" Key="Key_1" />'
+        '<Modifier Device="Keyboard" Key="Key_RightShift" /></Primary>'
+    )
+
+    assert keys._prepare_binding(binding) == {"key": 30, "mods": [54, 2]}
+
+
+@pytest.mark.parametrize("system", ["Linux", "Darwin"])
+def test_localized_modifiers_use_pynput_characters(mock_directinput, binds_file, monkeypatch, system):
+    monkeypatch.setattr("platform.system", lambda: system)
+    keys = EDKeys(binds_file)
+    binding = fromstring(
+        '<Primary Device="Keyboard" Key="Key_A">'
+        '<Modifier Device="Keyboard" Key="Key_è" /></Primary>'
+    )
+
+    assert keys._prepare_binding(binding) == {"key": keys.keymap["Key_A"], "mods": ["è"]}
+
+
+@pytest.mark.parametrize("role, key_name", [("key", "Key_UnknownSymbol"), ("key", "Key_ü"), ("modifier", "Key_è")])
+def test_unresolved_key_report_identifies_action_key_layout_and_role(mock_directinput, tmp_path, monkeypatch, role, key_name):
+    path = tmp_path / "Options" / "Bindings" / "Custom.4.2.binds"
+    path.parent.mkdir(parents=True)
+    failed_key = key_name if role == "key" else "Key_A"
+    modifier = f'<Modifier Device="Keyboard" Key="{key_name}" />' if role == "modifier" else ''
+    path.write_text(
+        f'<Root><KeyboardLayout>fr-FR</KeyboardLayout><SetSpeed25>'
+        f'<Primary Device="Keyboard" Key="{failed_key}">{modifier}</Primary>'
+        '</SetSpeed25></Root>', encoding="utf-8",
+    )
+    user32 = MagicMock()
+    user32.VkKeyScanExW.return_value = -1
+    monkeypatch.setattr(directinput, "_windows_user32", lambda: user32)
+    monkeypatch.setattr("src.lib.EDKeys.resolve_layout_key_name", directinput.resolve_layout_key_name)
+    emit_message = MagicMock()
+    monkeypatch.setattr("src.lib.EDKeys.emit_message", emit_message)
+
+    keys = EDKeys(str(tmp_path))
+
+    assert keys.keys == {}
+    assert keys.unsupported_keys == ["SetSpeed25"]
+    issue, = emit_message.call_args.kwargs["unresolved_keys"]
+    assert issue == {
+        "action": "SetSpeed25", "binding": "Primary", "key": key_name, "role": role,
+        "character": directinput.get_layout_key_character(key_name),
+        "layout": "fr-FR", "platform": "Windows",
+        "modifiers": [key_name] if role == "modifier" else [],
+        "reason": issue["reason"],
+    }
+    assert key_name in issue["reason"] or issue["character"] in issue["reason"]
+
+    path.write_text('<Root><KeyboardLayout>fr-FR</KeyboardLayout><SetSpeed25><Primary Device="Keyboard" Key="Key_Space" /></SetSpeed25></Root>')
+    keys.keys = keys.get_bindings()
+    keys.check_keybind_issues()
+    assert keys.unsupported_keys == []
+    assert emit_message.call_args.kwargs["unresolved_keys"] == []
+    path.unlink()
+    keys.keys = keys.get_bindings()
+    keys.check_keybind_issues()
+    assert emit_message.call_args.kwargs["unresolved_keys"] == []
