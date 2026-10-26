@@ -46,10 +46,6 @@ with open(get_asset_path("keymap_windows_layout.json"), encoding="utf-8") as fil
     _layout_keymap = json.load(file)
 
 LAYOUT_DEPENDENT_KEY_CHARACTERS: dict[str, str] = _layout_keymap["characters"]
-LAYOUT_IMPLICIT_MODIFIERS: dict[int, str] = {
-    int(mask): key_name for mask, key_name in _layout_keymap["implicit_modifiers"].items()
-}
-LAYOUT_MODIFIER_EQUIVALENTS: dict[str, list[str]] = _layout_keymap["modifier_equivalents"]
 
 
 def _windows_user32():
@@ -221,13 +217,8 @@ def PressKey(keyCode: int | str):
 
 
 def PressKeyLayoutAware(character: str, layout: int):
-    """Press a character using its game-layout-resolved scancode."""
+    """Press the physical key for a character; modifiers must be sent explicitly."""
     resolved = resolve_layout_character(character, layout)
-    if resolved.shift_state:
-        raise ValueError(
-            f"Character {character!r} requires implicit modifiers "
-            f"(shift state {resolved.shift_state}); send them explicitly."
-        )
     PressKey(resolved.scan_code)
 
 def ReleaseKey(keyCode: int | str):
