@@ -191,6 +191,7 @@ def test_azerty_speed_bindings_load_and_send_on_windows(
 
     assert keys.unsupported_keys == []
     assert emit_message.call_args.kwargs["unsupported"] == []
+    assert keys.mapping_warnings == []
     for action, _, character, vk, scan_code in bindings:
         assert action not in keys.missing_keys
         assert keys.keys[action] == {"key": scan_code, "mods": [42]}
@@ -299,9 +300,7 @@ def test_azerty_symbol_bindings_preserve_physical_keys_and_modifiers(
         if explicit_shift:
             binding.append(fromstring('<Modifier Device="Keyboard" Key="Key_LeftShift" />'))
 
-        expected_mods = [42] if explicit_shift or shift_state == 1 else []
-        if shift_state == 6:
-            expected_mods.extend([29, 56])
+        expected_mods = [42] if explicit_shift else []
         assert keys._prepare_binding(binding) == {
             "key": scan_code,
             "mods": expected_mods,
@@ -328,7 +327,7 @@ def test_windows_layout_preserves_explicit_altgr(
         binding.append(fromstring('<Modifier Device="Keyboard" Key="Key_LeftShift" />'))
 
     expected_mods = [184]
-    if explicit_shift or shift_state & 1:
+    if explicit_shift:
         expected_mods.append(42)
     assert keys._prepare_binding(binding) == {"key": 0x0B, "mods": expected_mods}
 
@@ -656,7 +655,7 @@ def test_windows_layout_resolves_alphabetic_keys(
     assert binding == {"key": 0x1E, "mods": []}
 
 
-def test_windows_layout_adds_implicit_shift_modifier(mock_directinput, binds_file, monkeypatch):
+def test_windows_layout_does_not_inject_text_entry_modifiers(mock_directinput, binds_file, monkeypatch):
     monkeypatch.setattr(
         "src.lib.EDKeys.resolve_layout_key_name",
         lambda key_name, layout: directinput.LayoutResolvedKey(
@@ -674,7 +673,7 @@ def test_windows_layout_adds_implicit_shift_modifier(mock_directinput, binds_fil
         )
     )
 
-    assert binding == {"key": 0x27, "mods": [42]}
+    assert binding == {"key": 0x27, "mods": []}
 
 
 def test_linux_bindings_use_pynput_characters_for_active_layout(
@@ -749,7 +748,7 @@ def test_bindings_use_and_reload_game_keyboard_layout(mock_directinput, binds_fi
 
     keys = EDKeys(binds_file)
     assert keys.keys['SecondaryFire'] == {'key': 0x10, 'mods': [42]}
-    assert keys.keys['CycleNextTarget'] == {'key': 0x10, 'mods': [42]}
+    assert keys.keys['CycleNextTarget'] == {'key': 0x10, 'mods': []}
     resolve_key.assert_any_call("Key_A", 0x040C)
 
     with open(path, "w") as file:
@@ -791,7 +790,7 @@ def test_unavailable_game_keyboard_layout_uses_fixed_keymap(mock_directinput, bi
         ("Key_RightAlt", 4, 184),
     ],
 )
-def test_implicit_modifiers_accept_either_explicit_side(mock_directinput, binds_file, monkeypatch, modifier, shift_state, scan_code):
+def test_explicit_modifier_sides_are_preserved_without_adding_modifiers(mock_directinput, binds_file, monkeypatch, modifier, shift_state, scan_code):
     keys = EDKeys(binds_file)
     monkeypatch.setattr(
         "src.lib.EDKeys.resolve_layout_key_name",
@@ -823,7 +822,7 @@ def test_localized_modifiers_resolve_and_send_before_main_key(mock_directinput, 
 
     keys.send("TestLocalizedModifier")
 
-    expected_mods = ([42] if shift_state else []) + [0x08]
+    expected_mods = [0x08]
     assert keys.keys["TestLocalizedModifier"]["mods"] == expected_mods
     expected_presses = expected_mods + ([0x1E] if device == "Keyboard" else [])
     assert mock_directinput["PressKey"].call_args_list == [call(code) for code in expected_presses]
@@ -832,7 +831,7 @@ def test_localized_modifiers_resolve_and_send_before_main_key(mock_directinput, 
         mock_directinput["PressMouseButton"].assert_called_once_with("left")
 
 
-def test_explicit_right_shift_precedes_localized_modifier_and_is_not_duplicated(mock_directinput, binds_file, monkeypatch):
+def test_explicit_modifier_order_is_preserved(mock_directinput, binds_file, monkeypatch):
     keys = EDKeys(binds_file)
     monkeypatch.setattr(
         "src.lib.EDKeys.resolve_layout_key_name",
@@ -844,7 +843,7 @@ def test_explicit_right_shift_precedes_localized_modifier_and_is_not_duplicated(
         '<Modifier Device="Keyboard" Key="Key_RightShift" /></Primary>'
     )
 
-    assert keys._prepare_binding(binding) == {"key": 30, "mods": [54, 2]}
+    assert keys._prepare_binding(binding) == {"key": 30, "mods": [2, 54]}
 
 
 @pytest.mark.parametrize("system", ["Linux", "Darwin"])
@@ -900,3 +899,80 @@ def test_unresolved_key_report_identifies_action_key_layout_and_role(mock_direct
     keys.keys = keys.get_bindings()
     keys.check_keybind_issues()
     assert emit_message.call_args.kwargs["unresolved_keys"] == []
+
+
+@pytest.mark.parametrize("shift_state", [1, 2, 4, 6, 7])
+@pytest.mark.parametrize("role", ["key", "modifier"])
+def test_native_text_entry_modifiers_are_reported_without_changing_bindings(mock_directinput, tmp_path, monkeypatch, shift_state, role):
+    path = tmp_path / "Options" / "Bindings" / "Custom.4.2.binds"
+    path.parent.mkdir(parents=True)
+    key = "Key_7" if role == "key" else "Key_Space"
+    mods = ["Key_RightControl", "Key_RightShift", "Key_LeftShift", "Key_RightAlt"]
+    if role == "modifier":
+        mods.insert(1, "Key_7")
+    modifier_xml = ''.join(f'<Modifier Device="Keyboard" Key="{mod}" />' for mod in mods)
+    path.write_text(
+        '<Root><KeyboardLayout>fr-FR</KeyboardLayout><SetSpeed25>'
+        f'<Primary Device="Keyboard" Key="{key}">{modifier_xml}</Primary>'
+        '</SetSpeed25></Root>', encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        "src.lib.EDKeys.resolve_layout_key_name",
+        lambda key_name, layout: directinput.LayoutResolvedKey(0x37, 0x08, shift_state),
+    )
+    monkeypatch.setattr("src.lib.EDKeys.sleep", lambda _: None)
+    emit_message = MagicMock()
+    monkeypatch.setattr("src.lib.EDKeys.emit_message", emit_message)
+
+    keys = EDKeys(str(tmp_path))
+    expected_mods = [157, 54, 42, 184]
+    if role == "modifier":
+        expected_mods.insert(1, 0x08)
+    expected_key = 0x08 if role == "key" else 57
+    assert keys.keys["SetSpeed25"] == {"key": expected_key, "mods": expected_mods}
+    assert keys.unsupported_keys == []
+    assert keys.unresolved_keys == []
+    warning, = emit_message.call_args.kwargs["mapping_warnings"]
+    assert warning["action"] == "SetSpeed25"
+    assert warning["binding"] == "Primary"
+    assert warning["key"] == "Key_7"
+    assert warning["character"] == "7"
+    assert warning["role"] == role
+    assert warning["layout"] == "fr-FR"
+    assert warning["native_shift_state"] == shift_state
+    assert warning["modifiers"] == mods
+    assert "Only the explicit .binds modifiers" in warning["reason"]
+
+    keys.send("SetSpeed25")
+    assert mock_directinput["PressKey"].call_args_list == [call(code) for code in expected_mods + [expected_key]]
+    assert mock_directinput["ReleaseKey"].call_args_list == [call(code) for code in [expected_key] + expected_mods]
+
+    # Reloading a corrected binding, or removing the file, clears stale warnings.
+    path.write_text('<Root><SetSpeed25><Primary Device="Keyboard" Key="Key_Space" /></SetSpeed25></Root>')
+    keys.keys = keys.get_bindings()
+    keys.check_keybind_issues()
+    assert emit_message.call_args.kwargs["mapping_warnings"] == []
+    path.unlink()
+    keys.keys = keys.get_bindings()
+    keys.check_keybind_issues()
+    assert emit_message.call_args.kwargs["mapping_warnings"] == []
+
+
+@pytest.mark.parametrize("shift_state", [1, 2, 4, 6, 7])
+def test_no_explicit_modifiers_means_no_modifier_keypresses(mock_directinput, binds_file, monkeypatch, shift_state):
+    keys = EDKeys(binds_file)
+    monkeypatch.setattr("src.lib.EDKeys.sleep", lambda _: None)
+    monkeypatch.setattr(
+        "src.lib.EDKeys.resolve_layout_key_name",
+        lambda key, layout: directinput.LayoutResolvedKey(0x37, 0x08, shift_state),
+    )
+    warnings = []
+    keys.keys["TestNoModifiers"] = keys._prepare_binding(
+        fromstring('<Primary Device="Keyboard" Key="Key_7" />'), warnings,
+    )
+
+    keys.send("TestNoModifiers")
+
+    mock_directinput["PressKey"].assert_called_once_with(0x08)
+    mock_directinput["ReleaseKey"].assert_called_once_with(0x08)
+    assert warnings[0]["native_shift_state"] == shift_state
