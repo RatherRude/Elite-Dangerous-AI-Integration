@@ -16,7 +16,6 @@ finish-args:
   # File access
   - --filesystem=home:rw
   - --filesystem=/tmp:rw
-  - --filesystem=xdg-run/electron-vr:create
   # Devices access
   - --device=dri # OpenGL
   #- --device=input # Not supported in flatpak-builder 1.4 (default on ubuntu 24.04) 
