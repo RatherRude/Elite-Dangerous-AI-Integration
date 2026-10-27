@@ -1,5 +1,6 @@
-import { app, BrowserWindow, dialog, ipcMain, protocol, net, screen, shell, systemPreferences } from 'electron';
+import { app, BrowserWindow, clipboard, dialog, ipcMain, protocol, net, screen, shell, systemPreferences } from 'electron';
 import { spawn } from 'child_process';
+import { createRequire } from 'node:module';
 import http from 'node:http';
 import crypto from 'node:crypto';
 import os from 'node:os';
@@ -11,6 +12,9 @@ import contextMenu from 'electron-context-menu';
 import pino from 'pino';
 import { WebSocketServer } from 'ws';
 import {VROverlay} from '@covas-labs/electron-vr';
+import { describeVrStatus } from './vr-status.js';
+import { createGameProbe } from './vr-game-probe.js';
+import { assessRestart, buildVrDiagnostics, createFrameHealthTracker, createSceneTracker } from './vr-diagnostics.js';
 import {
   configure as configureNativeOverlay,
   displayToOverlayRect,
@@ -37,6 +41,21 @@ const redactedConfigLineMarkers = [
 ];
 let loggerShuttingDown = false;
 let remoteInterface = null;
+let activeVrOverlay = null;
+const detectEliteProcess = createGameProbe();
+const sampleFrameHealth = createFrameHealthTracker();
+const reconcileGameScene = createSceneTracker();
+const integrationChangePath = path.join(app.getPath('userData'), 'vr-integration-change.json');
+let integrationChange = null;
+try {
+  const saved = JSON.parse(fs.readFileSync(integrationChangePath, 'utf8'));
+  if (Number.isFinite(saved.changedAt) && ['install', 'enable', 'disable', 'uninstall'].includes(saved.action)) integrationChange = saved;
+} catch { /* No integration change has been recorded yet. */ }
+let electronVrVersion = 'unknown';
+try {
+  const entry = createRequire(import.meta.url).resolve('@covas-labs/electron-vr');
+  electronVrVersion = JSON.parse(fs.readFileSync(path.resolve(path.dirname(entry), '../package.json'), 'utf8')).version;
+} catch { /* Keep diagnostics usable if package metadata is unavailable. */ }
 
 // electron-vr needs shared image transport for efficient offscreen texture forwarding.
 app.commandLine.appendSwitch('enable-features', 'SharedImages');
@@ -247,14 +266,20 @@ async function getOverlayRuntimeInfo() {
   }
 
   try {
-    const compatibility = await VROverlay.getCompatibilityReport();
+    const gameProcess = await detectEliteProcess();
+    const compatibility = reconcileGameScene(await VROverlay.getCompatibilityReport(), gameProcess);
     const runtimeInfo = compatibility.diagnostics;
+    const productState = toProductVRState(compatibility, gameProcess);
     return {
       ...runtimeInfo,
       packageInstalled: true,
       available: compatibility.launch.canStartNow,
       hasRealVRRuntime: compatibility.isRealVrBackend,
-      compatibility: toProductVRState(compatibility),
+      compatibility: productState,
+      vrDiagnostics: buildVrDiagnostics({
+        info: runtimeInfo, probe: gameProcess, integrationChange,
+        health: productState.frameHealth, appVersion: app.getVersion(), packageVersion: electronVrVersion,
+      }),
       desktopOverlay,
     };
   } catch (error) {
@@ -278,21 +303,24 @@ async function getOverlayRuntimeInfo() {
   }
 }
 
-function toProductVRState(report) {
+function toProductVRState(report, gameProcess = { running: false, available: false }) {
+  const restartRequired = assessRestart(report.diagnostics, gameProcess, integrationChange);
   return {
     launch: report.launch,
     readiness: report.readiness,
-    backendLabel: report.backendLabel,
-    summary: report.summary,
+    backendLabel: report.readiness === 'waiting-for-host' ? 'VR game scene detection' : report.backendLabel,
+    summary: describeVrStatus(report, { probe: gameProcess, restartRequired }),
+    frameHealth: sampleFrameHealth(report.diagnostics, { overlayInitialized: Boolean(activeVrOverlay) }),
     canRenderOverlay: report.canRenderOverlay,
     isRealVrBackend: report.isRealVrBackend,
-    requiresOpenXRAppRestart: report.requiresOpenXRAppRestart,
+    requiresOpenXRAppRestart: restartRequired,
     compatibleHostGraphicsApis: report.compatibleHostGraphicsApis,
     features: report.features,
     recommendedAction: report.recommendedAction,
     integrationInstalled: report.apiLayer?.installed ?? false,
     integrationEnabled: report.apiLayer?.enabled ?? false,
-    connectedApplication: report.diagnostics.openxrHostApplicationName || '',
+    connectedApplication: report.diagnostics.openxrHostApplicationName ||
+      (report.diagnostics.openvrSceneProcessId ? report.diagnostics.openvrSceneApplicationName || '' : ''),
     issues: report.issues.map(({ code, severity, title, message, action }) => ({
       code,
       severity,
@@ -325,7 +353,8 @@ function toVrIntegrationError(action, error) {
 
 async function getVrCompatibilityState() {
   try {
-    return toProductVRState(await VROverlay.getCompatibilityReport());
+    const probe = await detectEliteProcess();
+    return toProductVRState(reconcileGameScene(await VROverlay.getCompatibilityReport(), probe), probe);
   } catch (error) {
     logger.warn({ err: error }, 'VR compatibility probe failed');
     throw new Error('VR support could not be checked. Try again or repair the COVAS:NEXT installation.');
@@ -334,10 +363,22 @@ async function getVrCompatibilityState() {
 
 async function runVrIntegrationAction(action) {
   try {
+    const before = await VROverlay.getCompatibilityReport();
     if (action === 'install') await VROverlay.installOpenXRApiLayer();
     if (action === 'enable') await VROverlay.enableOpenXRApiLayer();
     if (action === 'disable') await VROverlay.disableOpenXRApiLayer();
     if (action === 'uninstall') await VROverlay.uninstallOpenXRApiLayer();
+    const status = before.apiLayer;
+    const changed = action === 'install' ? !status?.installed || !status.enabled || status.requiresUpdate
+      : action === 'enable' ? !status?.enabled
+      : action === 'disable' ? Boolean(status?.enabled) : Boolean(status?.installed);
+    if (changed) {
+      integrationChange = { action, changedAt: Date.now() };
+      try {
+        await fsPromises.mkdir(path.dirname(integrationChangePath), { recursive: true });
+        await fsPromises.writeFile(integrationChangePath, JSON.stringify(integrationChange));
+      } catch (error) { logger.warn({ err: error }, 'Could not persist VR integration change time'); }
+    }
   } catch (error) {
     throw toVrIntegrationError(action, error);
   }
@@ -948,6 +989,7 @@ async function createVrOverlayWindow(opts) {
       : refreshedCompatibility.launch.message);
   }
 
+  activeVrOverlay = vrOverlay;
   return {
     kind: 'vr',
     window: overlayWindow,
@@ -1015,6 +1057,7 @@ async function createManagedOverlay(opts) {
     } catch (error) {
       try {
         vrOverlay.controller.destroy();
+        if (activeVrOverlay === vrOverlay.controller) activeVrOverlay = null;
       } catch (cleanupError) {
         logger.warn('Failed to clean up VR overlay after desktop overlay initialization failed:', cleanupError);
       }
@@ -1061,6 +1104,7 @@ function disposeOverlay(overlay, backend, closeWindow = true) {
     backend.detachWindow(window);
   }
   if (overlay.controller) {
+    if (activeVrOverlay === overlay.controller) activeVrOverlay = null;
     try {
       overlay.controller.destroy();
     } catch (error) {
@@ -1407,6 +1451,10 @@ app.whenReady().then(async ()=>{
   ipcMain.handle('get_remote_interface_state', async () => getRemoteInterfaceState());
   ipcMain.handle('get_remote_interface_bind_addresses', async () => getRemoteInterfaceBindAddresses());
   ipcMain.handle('get_overlay_runtime_info', async () => getOverlayRuntimeInfo());
+  ipcMain.handle('copy_vr_diagnostics', async () => {
+    const info = await getOverlayRuntimeInfo();
+    clipboard.writeText(JSON.stringify(info.vrDiagnostics ?? { error: info.error, sampledAt: new Date().toISOString() }, null, 2));
+  });
   ipcMain.handle('get_vr_compatibility_state', async () => getVrCompatibilityState());
   ipcMain.handle('vr_integration_action', async (_event, action) => {
     if (!['install', 'enable', 'disable', 'uninstall'].includes(action)) {

@@ -604,19 +604,17 @@
 
                 <div class="overlay-secondary-controls">
                     @if (config.overlay_mode === 'vr' || config.overlay_mode === 'both') {
-                        <div class="vr-compatibility-card" [class.vr-compatibility-ready]="overlayCompatibility?.launch?.wouldWorkNow">
+                        <div class="vr-compatibility-card" [class.vr-compatibility-ready]="overlayCompatibility?.launch?.wouldWorkNow || overlayCompatibility?.readiness === 'waiting-for-host'">
                             <div>
                                 <strong>{{ overlayCompatibility?.backendLabel || 'VR overlay' }}</strong>
                                 <p>{{ overlayRuntimeSummary }}</p>
-                                @if (overlayCompatibility?.connectedApplication) {
-                                    <p>Connected to {{ overlayCompatibility?.connectedApplication }}.</p>
-                                }
-                                @if (overlayCompatibility?.requiresOpenXRAppRestart) {
-                                    <p>Restart any running VR applications for this change to take effect.</p>
+                                @if (overlayCompatibility?.frameHealth; as health) {
+                                    <p><strong>Overlay delivery:</strong> {{ health.message }}</p>
                                 }
                             </div>
                             <div class="vr-compatibility-actions">
                                 <button mat-stroked-button type="button" [disabled]="isVrIntegrationBusy" (click)="refreshOverlayRuntimeInfo()">Check again</button>
+                                <button mat-stroked-button type="button" (click)="copyVrDiagnostics()">Copy VR diagnostics</button>
                                 @if (overlayCompatibility?.recommendedAction === 'install-openxr-api-layer') {
                                     <button mat-stroked-button type="button" [disabled]="isVrIntegrationBusy" (click)="installVrIntegration()">Enable integration</button>
                                 }
