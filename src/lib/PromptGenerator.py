@@ -2829,7 +2829,7 @@ class PromptGenerator:
                 if service in {"Market", "Outfitting", "Shipyard", "Black Market", "Interstellar Factors Contact"}
             ]
 
-        government = station.get("government", "")
+        government = station.get("government") or ""
         if "engineer" in government.strip().casefold():
             normalized["services"].append("Engineer")
         material_trader = station.get("materialTrader")
