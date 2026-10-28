@@ -599,12 +599,18 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
   }
 
   getShipHealth(): string {
-    const hull = this.currentStatus?.Hull;
-    return hull ? `${(hull * 100).toFixed(0)}%` : '100%';
+    const range = this.getShipHealthRange();
+    return range ? `${range[0]}%-${range[1]}%` : 'Unknown';
   }
 
-  getShipHealthPercentage(): number {
-    return (this.currentStatus?.Hull || 1) * 100;
+  getShipHealthRange(): [number, number] | null {
+    const hull = this.loadout?.HullHealth;
+    if (typeof hull !== 'number' || !Number.isFinite(hull) || hull < 0 || hull > 1) {
+      return null;
+    }
+    // Hull damage is only journaled when crossing 20-percentage-point steps.
+    const lower = Math.min(80, Math.floor(hull * 5) * 20);
+    return [lower, lower + 20];
   }
 
   getFuelAmount(): string {
