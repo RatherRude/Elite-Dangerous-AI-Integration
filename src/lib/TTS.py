@@ -8,7 +8,7 @@ from collections import deque
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
-from time import sleep, time
+from time import sleep, time, perf_counter
 from typing import Any, Callable, Generator, Optional, cast, final
 import wave
 
@@ -34,6 +34,9 @@ from .Config import (
 from .Logger import log, observe, show_chat_message
 from .Logger import AudioUsageStats, LatencyUsageStats, TextUsageStats, log_tts_usage
 from .Models import TTSModel, OpenAITTSModel
+from .ModelUsage import ModelUsageStats
+from .Errors import ModelError, LLMError, AudioPipelineError, error_kind
+from .Logger import log_audio_pipeline_error
 
 
 class TTSLine:
@@ -221,6 +224,8 @@ class TTS:
             try:
                 self._playback_loop()
             except Exception as e:
+                log_audio_pipeline_error("tts", e.stage if isinstance(e, AudioPipelineError) else "playback",
+                                         e.kind if isinstance(e, AudioPipelineError) else "audio_device")
                 log('error', 'An error occurred during speech synthesis', e, traceback.format_exc())
                 show_chat_message('error', 'An error occurred during speech synthesis:', e)
                 sleep(backoff)
@@ -237,9 +242,16 @@ class TTS:
             output=True,
             output_device_index=output_index  
         )
+        try:
+            self._playback_stream(stream)
+        finally:
+            stream.close()
+
+    def _playback_stream(self, stream):
         while True:
             self.is_aborted = False
             stream.start_stream()
+            self._empty_output_buffer_available = stream.get_write_available()
             while not self.is_aborted:
                 if not self.read_queue.empty():
                     self._is_playing = True
@@ -259,7 +271,6 @@ class TTS:
                         if isinstance(line, TTSLine):
                             line.mark_completed()
                         continue
-                    requeued = False
                     try:
                         if isinstance(line, TTSLine):
                             line.mark_speaking()
@@ -283,12 +294,16 @@ class TTS:
                                 cast(CharacterTTSPostprocessingConfig | None, postprocessing if isinstance(postprocessing, dict) else None),
                                 cast(list[CharacterTTSPostprocessingConfig | None] | None, postprocessing_layers if isinstance(postprocessing_layers, list) else None),
                             )
-                    except Exception as e:
-                        self.read_queue.put(item)
-                        requeued = True
-                        raise e
+                    except LLMError as e:
+                        # The provider operation was already reported by _stream_audio.
+                        log('error', 'TTS synthesis failed', e)
+                        show_chat_message('error', 'TTS synthesis error:', str(e))
+                    except Exception:
+                        # Drop this item, unblock its waiter, and reopen the device.
+                        # Replaying a partially spoken item indefinitely is not recovery.
+                        raise
                     finally:
-                        if isinstance(line, TTSLine) and not requeued:
+                        if isinstance(line, TTSLine):
                             line.mark_completed()
                         if callable(on_complete):
                             try:
@@ -315,13 +330,12 @@ class TTS:
         # Fix numberformatting for different providers
         text = re.sub(r"\d+(,\d{3})*(\.\d+)?", self._number_to_text, text)
         text = strip_markdown.strip_markdown(text)
-        # print('reading:', text)
-        start_time = time()
-        first_byte_time = None
-        total_audio_bytes = 0
         first_chunk = True
         underflow_count = 0
-        empty_buffer_available = stream.get_write_available()
+        num_underruns = 0
+        empty_buffer_available = getattr(self, "_empty_output_buffer_available", None)
+        if empty_buffer_available is None:
+            empty_buffer_available = stream.get_write_available()
         self._reset_postprocessing_state()
         postprocessing = self._get_effective_postprocessing_config(
             postprocessing_override,
@@ -330,58 +344,60 @@ class TTS:
         stream_metrics: dict[str, float | None] = {
             "response_ms": None,
             "time_to_first_byte_ms": None,
+            "num_underruns": None,
         }
-        audio_stream = self._stream_audio(text, voice_override, stream_metrics)
+        deferred_usage: dict[str, Any] = {}
+        provider_stream = self._stream_audio(text, voice_override, stream_metrics, context,
+                                             _deferred_usage=deferred_usage)
+        audio_stream = provider_stream
         if postprocessing:
-            audio_stream = self._postprocess_audio(audio_stream, postprocessing)
+            audio_stream = self._observed_postprocess(audio_stream, postprocessing)
 
-        for chunk in audio_stream:
-            total_audio_bytes += len(chunk)
-            if first_byte_time is None:
-                first_byte_time = time()
-                log('debug', f'Response time TTS', first_byte_time - start_time)
-            if self.is_aborted:
-                break
-            try:
-                if not first_chunk:
-                    available = stream.get_write_available()
-                    # log('debug', 'tts write available', available)
-                    if available == empty_buffer_available:
+        try:
+            for chunk in audio_stream:
+                if self.is_aborted:
+                    break
+                try:
+                    if not first_chunk and empty_buffer_available > 0 and stream.get_write_available() == empty_buffer_available:
+                        num_underruns += 1
+                        stream_metrics["num_underruns"] = num_underruns
                         raise IOError('underflow')
-                stream.write(
-                    self._apply_output_gain_pcm16(chunk),
-                    exception_on_underflow=False,
-                )  # this may throw for various system reasons
+                    stream.write(self._apply_output_gain_pcm16(chunk), exception_on_underflow=False)
+                except IOError:
+                    if not first_chunk:
+                        underflow_count += 1
+                    stream.write(self._apply_output_gain_pcm16(chunk), exception_on_underflow=False)
                 first_chunk = False
-            except IOError as e:
-                if not first_chunk:
-                    underflow_count += 1
-                    # log('debug', 'tts underflow detected', underflow_count)
-                stream.write(self._apply_output_gain_pcm16(chunk), exception_on_underflow=False)
+                if empty_buffer_available > 0:
+                    stream_metrics["num_underruns"] = num_underruns
+        finally:
+            # Closing a postprocessor does not necessarily close its input generator.
+            try:
+                try:
+                    close = getattr(audio_stream, "close", None)
+                    if close:
+                        close()
+                finally:
+                    provider_stream.close()
+            finally:
+                if deferred_usage:
+                    # Buffered effects may exhaust synthesis before any write.
+                    # Persist once, only after the consumer's counts are final.
+                    count = stream_metrics["num_underruns"]
+                    deferred_usage["model_usage"].num_underruns = count if isinstance(count, int) else None
+                    log_tts_usage(context, **deferred_usage)
         
         if underflow_count > 0:
             self.prebuffer_size *= 2
             log('debug', 'tts underflow detected, total', underflow_count, 'increasing prebuffer size to', self.prebuffer_size)
 
-        output_audio_duration_ms = 0.0
-        if total_audio_bytes > 0:
-            output_audio_duration_ms = (
-                total_audio_bytes / (24_000 * self.sample_size)
-            ) * 1000
-
-        log_tts_usage(
-            context,
-            provider=getattr(self.tts_model, "provider_name", None),
-            model_name=getattr(self.tts_model, "model_name", None),
-            latency_usage=LatencyUsageStats(
-                response_ms=stream_metrics.get("response_ms"),
-                time_to_first_byte_ms=stream_metrics.get("time_to_first_byte_ms"),
-            ),
-            audio_usage=AudioUsageStats(
-                output_audio_duration_ms=output_audio_duration_ms,
-            ),
-            text_usage=TextUsageStats(input_chars=len(text)),
-        )
+    def _observed_postprocess(self, audio_stream, postprocessing):
+        try:
+            yield from self._postprocess_audio(audio_stream, postprocessing)
+        except LLMError:
+            raise  # Provider failures keep their own operation outcome.
+        except Exception as exc:
+            raise AudioPipelineError("Audio postprocessing failed", exc, stage="postprocessing") from exc
 
 
     def _reset_postprocessing_state(self) -> None:
@@ -541,6 +557,8 @@ class TTS:
         text: str,
         voice_override: str | None = None,
         metrics: dict[str, float | None] | None = None,
+        context: str = "speech",
+        *, _deferred_usage: dict[str, Any] | None = None,
     ):
         started_at = time()
         if self.tts_model is None:
@@ -555,24 +573,53 @@ class TTS:
             if metrics is not None:
                 metrics["response_ms"] = (time() - started_at) * 1000
         else:
+            started = perf_counter()
+            usage = ModelUsageStats.unknown()
+            status, kind, total_bytes = "cancelled", "none", 0
+            audio = None
             try:
-                selected_voice = voice_override if voice_override else self.voice
-                if self.voice_settings is not None:
+                if self.voice_settings is None:
+                    result = self.tts_model.synthesize_voice_with_usage(text, voice_override or self.voice)
+                else:
                     settings = dict(self.voice_settings)
                     if voice_override is not None and "voice" in settings:
                         settings["voice"] = voice_override
-                    audio = self.tts_model.synthesize_with_settings(text, settings)
-                else:
-                    audio = self.tts_model.synthesize(text, selected_voice)
+                    result = self.tts_model.synthesize_with_usage(text, settings)
+                usage = result.usage
+                audio = iter(result.audio_stream)
                 for chunk in audio:
-                    if metrics is not None and metrics.get("time_to_first_byte_ms") is None:
-                        metrics["time_to_first_byte_ms"] = (time() - started_at) * 1000
+                    total_bytes += len(chunk)
+                    if metrics is not None:
+                        metrics["time_to_first_byte_ms"] = usage.time_to_first_byte_ms
                     yield chunk
+                status = "success"
                 if metrics is not None:
-                    metrics["response_ms"] = (time() - started_at) * 1000
-            except Exception as e:
-                log('error', 'TTS synthesis error', e, traceback.format_exc())
-                show_chat_message('error', 'TTS synthesis error:', str(e))
+                    metrics["response_ms"] = usage.response_ms
+            except Exception as exc:
+                status, kind = "error", error_kind(exc)
+                if isinstance(exc, LLMError):
+                    usage = exc.usage or usage
+                    raise
+                raise ModelError(str(exc), exc, usage=usage) from exc
+            finally:
+                try:
+                    close = getattr(audio, "close", None)
+                    if close:
+                        close()
+                finally:
+                    if usage.is_provider_operation:
+                        if metrics is not None and isinstance(metrics.get("num_underruns"), int):
+                            usage.num_underruns = metrics["num_underruns"]
+                        report = dict(model_usage=usage, status=status, error_kind=kind,
+                                      operation_ms=(perf_counter() - started) * 1000,
+                                      latency_usage=LatencyUsageStats(response_ms=usage.response_ms,
+                                                                     time_to_first_byte_ms=usage.time_to_first_byte_ms),
+                                      audio_usage=AudioUsageStats(output_audio_duration_ms=total_bytes / (24_000 * self.sample_size) * 1000),
+                                      text_usage=TextUsageStats(input_chars=len(text)))
+                        if _deferred_usage is not None:
+                            _deferred_usage.update(report)
+                        else:
+                            log_tts_usage(context, **report)
 
     @observe()
     def _playback_audio_file(self, file_path: str, stream: pyaudio.Stream):

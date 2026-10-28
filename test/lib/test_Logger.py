@@ -14,7 +14,7 @@ from src.lib.Logger import ModelUsageStats, PromptUsageStats, log_llm_usage
 from src.lib.Logger import AudioUsageStats, LatencyUsageStats, TextUsageStats, log_stt_usage, log_tts_usage
 from src.lib.Logger import CacheUsageStats, log_action_cache_usage
 from src.lib.Database import ModelUsageStore, set_connection_for_testing
-from src.lib.Models import OpenAIResponsesLLMModel, _get_reasoning_tokens
+from src.lib.Models import OpenAIResponsesLLMModel, _get_reasoning_tokens, _get_reasoning_usage
 
 
 @pytest.fixture
@@ -29,7 +29,8 @@ def mock_connection(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     conn.enable_load_extension(False)
     conn.execute("DROP TABLE IF EXISTS model_usage_v1")
     conn.commit()
-    set_connection_for_testing(conn)
+    import src.lib.Database as database
+    monkeypatch.setattr(database._thread_local, "conn", conn, raising=False)
 
     try:
         yield conn
@@ -67,7 +68,8 @@ def test_log_llm_usage_includes_provider_model_and_reasoning_tokens(
     assert message["type"] == "llm_usage"
     assert message["provider"] == "openai"
     assert message["model_name"] == "gpt-5"
-    assert message["schema_version"] == 2
+    assert message["schema_version"] == 3
+    assert message["status"] == "success"
     assert message["model_usage"]["reasoning_tokens"] == 7
     assert message["model_usage"]["provider"] == "openai"
     assert message["model_usage"]["model_name"] == "gpt-5"
@@ -216,6 +218,7 @@ def test_openai_responses_model_usage_captures_reasoning_tokens(
     assert usage.total_tokens == 16
     assert usage.cached_tokens == 2
     assert usage.reasoning_tokens == 4
+    assert usage.reasoning_tokens_in_output is True
     assert usage.provider == "openai"
     assert usage.model_name == "gpt-5"
     assert usage.response_ms is not None
@@ -245,3 +248,74 @@ def test_get_reasoning_tokens_falls_back_to_response_usage_totals() -> None:
     )
 
     assert _get_reasoning_tokens(usage) == 106
+    assert _get_reasoning_usage(usage) == (106, False)
+
+
+@pytest.mark.parametrize("details", [None, SimpleNamespace(reasoning_tokens=None)])
+def test_missing_reasoning_breakdown_is_not_zero(details):
+    usage = SimpleNamespace(input_tokens=10, output_tokens=4, total_tokens=14, output_tokens_details=details)
+    assert _get_reasoning_usage(usage) == (None, None)
+
+
+@pytest.mark.parametrize("reasoning,total,expected", [(0, 14, (0, True)), (2, 14, (2, True)), (2, 16, (2, False))])
+def test_reasoning_accounting_uses_reported_counts(reasoning, total, expected):
+    usage = SimpleNamespace(prompt_tokens=10, completion_tokens=4, total_tokens=total,
+                            completion_tokens_details=SimpleNamespace(reasoning_tokens=reasoning))
+    assert _get_reasoning_usage(usage) == expected
+
+
+def test_failed_usage_keeps_operation_identity_and_unknown_measurements(capsys, mock_connection):
+    usage = ModelUsageStats(provider="actual-provider", model_name="actual-model", voice_name="used-voice")
+    log_tts_usage("assistant", model_usage=usage, status="error", error_kind="timeout", operation_ms=120)
+    message = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert message["schema_version"] == 3
+    assert message["output_voice"] == "used-voice"
+    assert message["status"] == "error"
+    assert message["error_kind"] == "timeout"
+    assert "model_usage" not in message
+    rows, _ = ModelUsageStore().get_history(usage_kind="tts")
+    assert rows[0]["payload"]["model_name"] == "actual-model"
+
+
+def test_llm_logger_does_not_override_stats_from_model_instance(capsys, mock_connection):
+    usage = ModelUsageStats(provider="served-provider", model_name="served-model")
+    log_llm_usage("assistant", usage, PromptUsageStats(), llm_model=SimpleNamespace(
+        provider_name="configured-provider", model_name="configured-model"))
+    message = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert message["model_name"] == "served-model"
+
+
+def test_legacy_logger_explicit_model_argument_still_fills_missing_identity(capsys, mock_connection):
+    log_llm_usage("assistant", ModelUsageStats(input_tokens=1), PromptUsageStats(),
+                  llm_model=SimpleNamespace(provider_name="legacy-provider", model_name="legacy-model"))
+    message = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert message["provider"] == "legacy-provider"
+    assert message["model_name"] == "legacy-model"
+
+
+def test_plugin_outcome_categories_survive_all_usage_emitters(capsys, mock_connection):
+    from src.lib.Logger import log_audio_pipeline_error, log_tool_usage
+    log_tts_usage("plugin-context", status="plugin-status", error_kind="plugin-error")
+    log_tool_usage(tool_name="plugin-tool", tool_type="plugin-type", source="plugin-source",
+                   status="error", error_kind="plugin-error", duration_ms=1)
+    log_audio_pipeline_error("plugin-audio", "resample", "plugin-error")
+    messages = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
+    outcomes = [message for message in messages if message.get("type") in ("tts_usage", "tool_usage", "audio_pipeline_error")]
+    assert len(outcomes) == 3
+    assert all(message["error_kind"] == "plugin-error" for message in outcomes)
+    assert outcomes[0]["status"] == "plugin-status"
+    assert outcomes[1]["tool_name"] == "plugin-tool"
+    assert outcomes[2]["stage"] == "resample"
+
+
+@pytest.mark.parametrize("underruns", [None, 0, 2])
+def test_tts_underrun_stats_are_emitted_and_persisted_without_inventing_zero(capsys, mock_connection, underruns):
+    usage = ModelUsageStats(provider="provider", model_name="tts", num_underruns=underruns)
+    log_tts_usage("assistant", model_usage=usage)
+    message = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    rows, _ = ModelUsageStore().get_history(usage_kind="tts")
+    for payload in [message, rows[0]["payload"]]:
+        if underruns is None:
+            assert "num_underruns" not in payload
+        else:
+            assert payload["num_underruns"] == underruns

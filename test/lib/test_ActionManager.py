@@ -4,6 +4,7 @@ from pathlib import Path
 import sys
 
 import pytest
+from unittest.mock import MagicMock
 from openai.types.chat import ChatCompletionMessageFunctionToolCall
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -14,7 +15,9 @@ from src.lib.ActionManager import ActionManager
 
 
 @pytest.fixture(autouse=True)
-def reset_actions() -> Generator[None, None, None]:
+def reset_actions(monkeypatch) -> Generator[None, None, None]:
+    # These tests exercise dispatch, not the persistent action cache.
+    monkeypatch.setattr("src.lib.ActionManager.KeyValueStore", lambda _: MagicMock())
     original_actions = ActionManager.actions
     ActionManager.actions = {}
     try:
@@ -199,3 +202,46 @@ def test_station_actions_require_docked_status() -> None:
     assert undocked_tools == []
     assert [tool["function"]["name"] for tool in docked_tools] == ["stationAction"]
     assert fighter_tools == []
+
+
+@pytest.mark.parametrize("source", ["llm", "cache", "ui"])
+def test_outcome_is_emitted_once_after_generator_failure(monkeypatch, source):
+    from src.lib.Errors import ToolError
+    report = MagicMock()
+    monkeypatch.setattr("src.lib.ActionManager.log_tool_usage", report)
+    manager = ActionManager()
+    def action(args, states):
+        yield "working"
+        raise ToolError("private arguments", kind="rate_limit")
+    manager.registerAction("testAction", "Test", {}, action)
+    result = manager.runAction(make_tool_call("testAction"), {}, source=source)
+    assert result["content"].startswith("ERROR:")
+    report.assert_called_once()
+    assert report.call_args.kwargs["error_kind"] == "rate_limit"
+    assert report.call_args.kwargs["source"] == source
+    assert report.call_args.kwargs["duration_ms"] >= 0
+    assert "private" not in str(report.call_args)
+
+
+def test_error_text_is_not_a_failure_and_telemetry_failure_does_not_change_result(monkeypatch):
+    manager = ActionManager()
+    manager.registerAction("testAction", "Test", {}, lambda args, states: "ERROR is just text")
+    report = MagicMock(side_effect=RuntimeError("export failed"))
+    monkeypatch.setattr("src.lib.ActionManager.log_tool_usage", report)
+    assert manager.runAction(make_tool_call("testAction"), {})["content"] == "ERROR is just text"
+    assert report.call_args.kwargs["status"] == "success"
+
+
+def test_unknown_and_malformed_actions_have_no_execution_duration(monkeypatch):
+    report = MagicMock()
+    monkeypatch.setattr("src.lib.ActionManager.log_tool_usage", report)
+    manager = ActionManager()
+    manager.runAction(make_tool_call("private-tool-name"), {})
+    assert report.call_args.kwargs["tool_name"] == "private-tool-name"
+    assert report.call_args.kwargs["error_kind"] == "unknown_tool"
+    manager.registerAction("testAction", "Test", {}, lambda args, states: "done")
+    call = make_tool_call("testAction")
+    call.function.arguments = "{"
+    manager.runAction(call, {})
+    assert report.call_args.kwargs["error_kind"] == "invalid_arguments"
+    assert report.call_args.kwargs["duration_ms"] is None

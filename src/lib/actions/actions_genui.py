@@ -2,6 +2,7 @@
 GenUI Actions - LLM-generated UI components for Elite Dangerous overlay
 """
 import json
+from ..Errors import ToolError
 from typing import Optional, Dict, cast, Any
 
 from pydantic import BaseModel
@@ -88,7 +89,7 @@ class GenUIManager:
         """
         if undo:
             if instruction:
-                return "Undo and instruction are mutually exclusive. Provide either undo=true or an instruction."
+                raise ToolError("Undo and instruction are mutually exclusive. Provide either undo=true or an instruction.", kind="invalid_arguments")
 
             try:
                 history = self._store.get_history(self.STORE_KEY, limit=2)
@@ -97,11 +98,11 @@ class GenUIManager:
 
                 deleted = self._store.delete_latest(self.STORE_KEY)
                 if not deleted:
-                    return "Failed to delete the latest overlay UI version."
+                    raise ToolError("Failed to delete the latest overlay UI version.", kind="execution_error")
 
                 previous_entry = self._store.get_latest(self.STORE_KEY)
                 if previous_entry is None:
-                    return "Failed to load the previous overlay UI version after undo."
+                    raise ToolError("Failed to load the previous overlay UI version after undo.", kind="execution_error")
 
                 self.current_code = previous_entry.code
                 self._send_to_frontend(previous_entry.code)
@@ -109,13 +110,13 @@ class GenUIManager:
                 return f"UI reverted to the previous saved version ({previous_entry.version})."
             except Exception as e:
                 log('error', f"GenUI: Failed to undo latest UI version: {e}")
-                return f"Error undoing UI version: {str(e)}"
+                raise
 
         if not self.llm_model:
-            return "LLM model not configured for UI generation."
+            raise ToolError("LLM model not configured for UI generation.", kind="unsupported")
         
         if not instruction:
-            return "Please provide an instruction for the UI generation."
+            raise ToolError("Please provide an instruction for the UI generation.", kind="invalid_arguments")
         
         # Build state schema documentation and current values from Pydantic models
         state_schemas, state_values = self._build_state_for_llm(projected_states)
@@ -146,10 +147,10 @@ class GenUIManager:
             
         except RuntimeError as e:
             log('error', f"GenUI: Failed to generate valid UI: {e}")
-            return f"Failed to generate valid UI code: {str(e)}"
+            raise
         except Exception as e:
             log('error', f"GenUI: Unexpected error: {e}")
-            return f"Error generating UI: {str(e)}"
+            raise
     
     def clear(self) -> str:
         """
@@ -276,7 +277,7 @@ def get_genui_manager() -> GenUIManager | None:
 def _generate_ui_action(obj: Dict, projected_states: ProjectedStates) -> str:
     """Action wrapper for UI generation."""
     if _genui_manager is None:
-        return "GenUI manager not initialized."
+        raise ToolError("GenUI manager not initialized.", kind="unsupported")
     return _genui_manager.generate(obj.get('instruction'), projected_states, bool(obj.get('undo', False)))
 
 

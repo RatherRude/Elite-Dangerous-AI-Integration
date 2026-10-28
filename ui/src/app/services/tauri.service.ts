@@ -19,6 +19,7 @@ import { ScreenInfo } from "../models/screen-info";
 declare global {
     interface Window {
         electronAPI?: {
+            runtimeRole?: "primary_desktop" | "overlay";
             invoke: (call: string, opts?: any) => Promise<any>;
             onStdout: (callback: (value: any) => void) => Promise<void> | void;
             onStderr: (callback: (value: any) => void) => Promise<void> | void;
@@ -170,6 +171,40 @@ export interface BaseMessage {
     timestamp: string;
     index: number;
     [key: string]: any;
+}
+
+export interface ModelUsageMessage extends BaseMessage {
+    type: "llm_usage" | "stt_usage" | "tts_usage";
+    schema_version: number;
+    context: string;
+    provider?: string | null;
+    model_name?: string | null;
+    output_voice?: string;
+    input_language?: string;
+    output_language?: string;
+    status?: "success" | "error" | "cancelled";
+    error_kind?: string;
+    operation_ms?: number;
+    model_usage?: Record<string, number | string | boolean | null>;
+    prompt_usage?: Record<string, number | null>;
+    latency_usage?: Record<string, number | null>;
+    audio_usage?: Record<string, number | null>;
+    text_usage?: Record<string, number | null>;
+}
+export interface ToolUsageMessage extends BaseMessage {
+    type: "tool_usage";
+    tool_name: string;
+    tool_type: string;
+    source: "llm" | "cache" | "ui" | "auto";
+    status: "success" | "error";
+    error_kind: string;
+    duration_ms: number | null;
+}
+export interface AudioPipelineErrorMessage extends BaseMessage {
+    type: "audio_pipeline_error";
+    usage_kind: "stt" | "tts";
+    stage: string;
+    error_kind: string;
 }
 
 type OutboundMessage = {
@@ -374,6 +409,7 @@ export interface UnknownMessage extends BaseMessage {
     providedIn: "root",
 })
 export class TauriService {
+    public readonly runtimeRole = window.electronAPI?.runtimeRole ?? "remote";
     public readonly installId = window.localStorage.getItem(
         "install_id",
     ) ||
@@ -384,7 +420,7 @@ export class TauriService {
         Math.random().toString(36).substring(2, 15)
     }`;
     public readonly commitHash = environment.COMMIT_HASH;
-    public readonly windowCloseCallbacks = [] as ((event: Event) => void)[];
+    public readonly windowCloseCallbacks = [] as ((event: Event) => void | Promise<void>)[];
     private runModeSubject = new BehaviorSubject<
         "starting" | "configuring" | "running" | "error"
     >(
@@ -872,8 +908,15 @@ export class TauriService {
         console.log('Window close requested, running callbacks');
         //event.preventDefault();
         // Promise all windowCloseCallbacks
-        await Promise.all(this.windowCloseCallbacks.map(callback => callback(event)));
-        // confirm close to electron
-        await window.electronAPI?.confirmWindowClose();
+        let timeout: ReturnType<typeof setTimeout> | undefined;
+        try {
+            await Promise.race([
+                Promise.allSettled(this.windowCloseCallbacks.map(callback => Promise.resolve().then(() => callback(event)))),
+                new Promise<void>(resolve => { timeout = setTimeout(resolve, 5000); }),
+            ]);
+        } finally {
+            clearTimeout(timeout);
+            await window.electronAPI?.confirmWindowClose();
+        }
     }
 }

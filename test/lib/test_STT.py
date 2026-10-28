@@ -8,6 +8,35 @@ import queue
 from time import sleep
 import openai
 from src.lib.STT import STT, STTResult
+from src.lib.ModelUsage import ModelUsageStats, TranscriptionResult
+
+@pytest.fixture(autouse=True)
+def isolate_usage(monkeypatch):
+    monkeypatch.setattr("src.lib.STT.log_stt_usage", MagicMock())
+
+
+def test_filtered_transcription_still_reports_provider_usage(stt, mock_stt_model, monkeypatch):
+    import speech_recognition as sr
+    report = MagicMock()
+    monkeypatch.setattr("src.lib.STT.log_stt_usage", report)
+    stt.required_word = "missing-keyword"
+    assert stt._transcribe(sr.AudioData(b"\xff\xff" * 16000, 16000, 2)) == ""
+    report.assert_called_once()
+    assert report.call_args.kwargs["model_usage"].model_name == "test-stt"
+
+
+def test_failed_transcription_reports_error_without_output_text(stt, mock_stt_model, monkeypatch):
+    import speech_recognition as sr
+    from src.lib.Errors import ModelError
+    report = MagicMock()
+    monkeypatch.setattr("src.lib.STT.log_stt_usage", report)
+    usage = ModelUsageStats(provider="actual", model_name="served-stt")
+    mock_stt_model.transcribe_with_usage.side_effect = ModelError("private", kind="rate_limit", usage=usage)
+    assert stt._transcribe(sr.AudioData(b"\xff\xff" * 16000, 16000, 2)) == ""
+    report.assert_called_once()
+    assert report.call_args.kwargs["model_usage"] is usage
+    assert report.call_args.kwargs["error_kind"] == "rate_limit"
+    assert "text_usage" not in report.call_args.kwargs
 
 def read_no_voice(x):
     """Return silence"""
@@ -77,6 +106,8 @@ class MockTextResponse:
 def mock_stt_model():
     mock = MagicMock()
     mock.transcribe.return_value = "Test transcription via API"
+    mock.transcribe_with_usage.side_effect = lambda audio: TranscriptionResult(
+        mock.transcribe(audio), ModelUsageStats(provider="test", model_name="test-stt"))
     return mock
 
 @pytest.fixture

@@ -10,6 +10,8 @@ import fsPromises from 'node:fs/promises';
 import contextMenu from 'electron-context-menu';
 import pino from 'pino';
 import { WebSocketServer } from 'ws';
+import { installWindowCloseHandshake } from './window-close-handshake.js';
+import { withCorsFallbacks } from './cors-headers.js';
 import {VROverlay} from '@covas-labs/electron-vr';
 import { describeVrStatus } from './vr-status.js';
 import { createGameProbe } from './vr-game-probe.js';
@@ -843,7 +845,8 @@ function createMainWindow() {
     height: 768,
     title: 'COVAS:NEXT',
     webPreferences: {
-      preload: overlayPreloadPath
+      preload: overlayPreloadPath,
+      additionalArguments: ['--covas-primary-renderer']
     }
   });
   mainWindow.setMenuBarVisibility(false);
@@ -857,14 +860,7 @@ function createMainWindow() {
 
   mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
     callback({
-      responseHeaders: {
-        'access-control-allow-origin': '*',
-        'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'access-control-allow-headers': 'Authorization, User-Agent, content-type',
-        'access-control-allow-credentials': 'true',
-        'access-control-max-age': '86400',
-        ...details.responseHeaders,
-      },
+      responseHeaders: withCorsFallbacks(details.responseHeaders),
     });
   });
 
@@ -883,17 +879,7 @@ function createMainWindow() {
   mainWindow.loadURL(config.ui);
 
   // Handle window close
-  mainWindow.once('close', (event) => {
-    disableLoggerForShutdown();
-    // Prevent the window from closing immediately
-    event.preventDefault();
-    // If the user confirms, then close the window
-    ipcMain.handleOnce('window-close-ready', () => {
-      mainWindow.close();
-    });
-    // Call renderer close handler
-    mainWindow.webContents.send('window-close');
-  });
+  installWindowCloseHandshake(mainWindow, ipcMain, disableLoggerForShutdown);
 
   return mainWindow;
 }

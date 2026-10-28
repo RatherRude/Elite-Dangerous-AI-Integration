@@ -170,6 +170,9 @@ class MistralTTSModel(TTSModel):
             timeout=60.0,
         )
 
+    def synthesis_usage(self, settings: dict[str, Any]):
+        return super().synthesis_usage({**settings, "voice": str(settings.get("voice") or "").strip() or self.default_voice})
+
     def _iter_audio_deltas(self, response: httpx.Response) -> Iterable[bytes]:
         data_lines: list[str] = []
         for line in response.iter_lines():
@@ -187,7 +190,7 @@ class MistralTTSModel(TTSModel):
                 if event_type == "speech.audio.delta":
                     encoded_audio = event.get("audio_data")
                     if not isinstance(encoded_audio, str) or not encoded_audio:
-                        raise LLMError("TTS Mistral audio event did not contain audio data")
+                        raise LLMError("TTS Mistral audio event did not contain audio data", kind="invalid_response")
                     yield base64.b64decode(encoded_audio, validate=True)
                 elif isinstance(event_type, str) and "error" in event_type:
                     raise LLMError(f"TTS Mistral stream error: {event}")
@@ -201,7 +204,7 @@ class MistralTTSModel(TTSModel):
             if isinstance(event, dict) and event.get("type") == "speech.audio.delta":
                 encoded_audio = event.get("audio_data")
                 if not isinstance(encoded_audio, str) or not encoded_audio:
-                    raise LLMError("TTS Mistral audio event did not contain audio data")
+                    raise LLMError("TTS Mistral audio event did not contain audio data", kind="invalid_response")
                 yield base64.b64decode(encoded_audio, validate=True)
 
     def _to_pcm16(self, audio_deltas: Iterable[bytes]) -> Iterable[bytes]:
@@ -225,7 +228,7 @@ class MistralTTSModel(TTSModel):
                 del pcm16_buffer[:1024]
 
         if float32_buffer:
-            raise LLMError("TTS Mistral returned invalid float32 PCM data")
+            raise LLMError("TTS Mistral returned invalid float32 PCM data", kind="invalid_response")
         if pcm16_buffer:
             yield bytes(pcm16_buffer)
 
