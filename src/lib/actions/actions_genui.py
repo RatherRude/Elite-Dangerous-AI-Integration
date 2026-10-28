@@ -306,7 +306,7 @@ def register_genui_actions(
     # GenUI agent tools, while undo is handled here by rolling back the saved DB history.
     actionManager.registerAction(
         'generate_overlay_ui',
-        "Generate, modify, reset, or undo the game overlay UI. Use an instruction to update the overlay, or set undo=true to delete the most recent saved version and restore the previous one. Undo and instruction are mutually exclusive.",
+        "Create, customize, or reset the game overlay's layout and displayed information, or undo the latest saved change. Provide either an instruction or undo=true, never both.",
         {
             "type": "object",
             "properties": {
