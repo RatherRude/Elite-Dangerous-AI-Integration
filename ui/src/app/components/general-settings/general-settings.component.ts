@@ -102,6 +102,8 @@ export class GeneralSettingsComponent implements OnDestroy {
     private avatarSvgText: string | null = null;
     private avatarSvgFetchSeq = 0;
     private vrCompatibilityRefreshTimer?: ReturnType<typeof setTimeout>;
+    private vrStatusRequest = 0;
+    private vrStatusDestroyed = false;
     private readonly svgStateClasses = ["listening", "speaking", "thinking", "acting"];
     private readonly avatarPreviewStateClasses: readonly AvatarPreviewStateClass[] = ["listening", "thinking", "acting", "speaking"];
     private avatarPreviewStateIndex = 0;
@@ -168,7 +170,7 @@ export class GeneralSettingsComponent implements OnDestroy {
                 this.refreshAvatarPreviewSvg();
             },
         );
-        void this.refreshOverlayRuntimeInfo(false);
+        void this.refreshOverlayRuntimeInfo(true);
     }
 
     hasInstalledPluginProviders(providers: ModelProviderDefinition[]): boolean {
@@ -191,6 +193,8 @@ export class GeneralSettingsComponent implements OnDestroy {
     }
 
     ngOnDestroy() {
+        this.vrStatusDestroyed = true;
+        this.vrStatusRequest++;
         this.configSubscription.unsubscribe();
         this.systemSubscription.unsubscribe();
         this.screensSubscription?.unsubscribe();
@@ -585,14 +589,29 @@ export class GeneralSettingsComponent implements OnDestroy {
 
     async refreshOverlayRuntimeInfo(schedulePolling = this.vrOverlaySelected): Promise<void> {
         clearTimeout(this.vrCompatibilityRefreshTimer);
+        const request = ++this.vrStatusRequest;
         try {
-            this.overlayRuntimeInfo = await this.tauriService.getOverlayRuntimeInfo();
-            if (schedulePolling && this.vrOverlaySelected && this.overlayCompatibility?.readiness === "waiting-for-host") {
-                this.vrCompatibilityRefreshTimer = setTimeout(() => void this.refreshOverlayRuntimeInfo(), 1500);
-            }
+            const info = await this.tauriService.getOverlayRuntimeInfo();
+            if (this.vrStatusDestroyed || request !== this.vrStatusRequest) return;
+            this.overlayRuntimeInfo = info;
         } catch (error) {
+            if (this.vrStatusDestroyed || request !== this.vrStatusRequest) return;
             console.error("Error loading overlay runtime info:", error);
             this.overlayRuntimeInfo = null;
+        } finally {
+            if (!this.vrStatusDestroyed && request === this.vrStatusRequest && schedulePolling && this.vrOverlaySelected) {
+                const delay = this.overlayCompatibility?.readiness === "waiting-for-host" ? 2000 : 5000;
+                this.vrCompatibilityRefreshTimer = setTimeout(() => void this.refreshOverlayRuntimeInfo(), delay);
+            }
+        }
+    }
+
+    async copyVrDiagnostics(): Promise<void> {
+        try {
+            await this.tauriService.copyVrDiagnostics();
+            this.snackBar.open("VR diagnostics copied.", "OK", { duration: 3000 });
+        } catch (error) {
+            this.snackBar.open("Could not copy VR diagnostics. Try again.", "OK", { duration: 5000 });
         }
     }
 
@@ -600,7 +619,7 @@ export class GeneralSettingsComponent implements OnDestroy {
         const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
             data: {
                 title: "Enable overlays in OpenXR applications?",
-                message: "COVAS:NEXT will install a per-user OpenXR integration component. It does not require administrator access, but compatible OpenXR applications must be restarted afterward.",
+                message: "COVAS:NEXT will install a per-user OpenXR integration component. If Elite Dangerous is already running in VR, restart Elite after enabling it. Otherwise, start Elite normally.",
                 confirmButtonText: "Enable integration",
                 cancelButtonText: "Not now",
             },
@@ -614,7 +633,7 @@ export class GeneralSettingsComponent implements OnDestroy {
         const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
             data: {
                 title: "Update OpenXR integration?",
-                message: "COVAS:NEXT will replace its per-user OpenXR integration component. Restart any running VR applications afterward.",
+                message: "COVAS:NEXT will replace its per-user OpenXR integration component. If Elite Dangerous is already running in VR, restart Elite afterward.",
                 confirmButtonText: "Update integration",
                 cancelButtonText: "Not now",
             },
@@ -628,7 +647,7 @@ export class GeneralSettingsComponent implements OnDestroy {
         const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
             data: {
                 title: "Remove OpenXR integration?",
-                message: "This removes COVAS:NEXT's per-user OpenXR integration. Restart any running VR applications afterward.",
+                message: "This removes COVAS:NEXT's per-user OpenXR integration. If Elite Dangerous is running in VR, restart Elite afterward.",
                 confirmButtonText: "Remove integration",
                 cancelButtonText: "Keep integration",
             },
@@ -648,7 +667,11 @@ export class GeneralSettingsComponent implements OnDestroy {
             } as OverlayRuntimeInfo;
             this.snackBar.open(
                 action === "install" || action === "enable"
-                    ? "OpenXR integration updated. Restart any running VR applications."
+                    ? compatibility.requiresOpenXRAppRestart
+                        ? "Restart Elite to load the updated VR integration."
+                        : compatibility.readiness === "ready" && compatibility.connectedApplication
+                            ? "VR integration updated. A VR game scene is connected."
+                            : "VR integration updated. Start Elite Dangerous in VR when ready."
                     : "OpenXR integration updated.",
                 "OK",
                 { duration: 5000 },

@@ -46,3 +46,11 @@ We have a native Linux version available, but it requires some special setup. St
 9. In the General Settings tab, setup your input and output audio devices, it is recommended to use the virtual pulse devices.
 10. Follow the regular [Getting Started](../index.md) guide to configure the rest of the application.
 11. Start the AI and it should now work 🤞 If you have any issues, please contact us on discord.
+
+## VR overlay
+
+In **General Settings → Overlay**, select **VR Overlay** and turn on the content you want to see. Choose a voice provider if you want the avatar or chat to appear; with voice output set to **None**, both are hidden.
+
+If COVAS:NEXT offers **Enable integration** or **Update integration**, select it and restart Elite Dangerous. Connect your headset, launch Elite in VR, and start the AI Assistant. Enabling integration by itself does not start the overlay.
+
+If the overlay is still missing, use **Check again** in the VR overlay settings. **Waiting for a VR application** means COVAS:NEXT has not connected to Elite yet; **Connected to Elite Dangerous** means the VR connection is working, so check your overlay content settings.
