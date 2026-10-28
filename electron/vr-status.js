@@ -5,6 +5,8 @@ function openXrRuntimeLabel(info) {
   if (/virtual\s*desktop|vdxr/i.test(name)) return 'VDXR (Virtual Desktop)';
   if (/steamvr/i.test(name)) return 'SteamVR';
   if (/oculus|meta quest|meta xr/i.test(name)) return 'Meta/Oculus';
+  if (/wivrn/i.test(name)) return 'WiVRn';
+  if (/monado/i.test(name)) return 'Monado';
   return name || 'an unspecified OpenXR runtime';
 }
 
@@ -25,7 +27,9 @@ export function describeVrStatus(report, options = {}) {
   }
   if (info.openxrHostDetected || info.openxrCompanionConnected) {
     const path = [
-      evidence.runtime
+      info.openxrHostRuntimeName
+        ? `OpenXR (${openXrRuntimeLabel({ openxrRuntimeName: info.openxrHostRuntimeName })}, reported by the game)`
+        : evidence.runtime
         ? `OpenXR (${evidence.runtime.name} runtime module detected in the game)`
         : `OpenXR (configured runtime: ${openXrRuntimeLabel(info)}; game runtime not confirmed)`,
       ...(edvr ? ['EDVR detected'] : []),

@@ -18,6 +18,9 @@ export function gameEvidence(info, probe = {}) {
 
 export function assessRestart(info, probe, integrationChange) {
   if (!integrationChange || !['install', 'enable'].includes(integrationChange.action)) return false;
+  if ((info.openxrHostDetected || info.openxrCompanionConnected) && info.openxrHostSessionStartedAtMs > 0) {
+    return info.openxrHostSessionStartedAtMs < integrationChange.changedAt;
+  }
   const { game, openxr } = gameEvidence(info, probe);
   // A SteamVR/OpenVR game does not need our OpenXR layer. Unknown start time
   // or API is not sufficient evidence to ask the user to restart.
@@ -28,7 +31,9 @@ export function assessRestart(info, probe, integrationChange) {
 export function createSceneTracker() {
   const knownElitePids = new Set();
   return function reconcile(report, probe) {
-    if (!probe.available) return report;
+    // Host and Flatpak PIDs can be from different namespaces. The authenticated
+    // game-side discovery endpoint is authoritative on Linux.
+    if (!probe.available || report.diagnostics.platform === 'linux') return report;
     for (const game of probe.processes || []) knownElitePids.add(game.pid);
     const alive = pid => probe.processes?.some(game => game.pid === pid);
     const info = { ...report.diagnostics };
@@ -68,22 +73,27 @@ export function createSceneTracker() {
 export function createFrameHealthTracker({ now = Date.now } = {}) {
   let previous;
   return function sample(info, { overlayInitialized = false } = {}) {
-    if (info.selectedBackend !== 'openxr' || info.openxrMode !== 'api-layer') {
+    const relay = info.selectedBackend === 'openvr' && (info.openvrHostRelayActive || info.openvrHostRelayAvailable);
+    if (!relay && (info.selectedBackend !== 'openxr' || info.openxrMode !== 'api-layer')) {
       previous = undefined;
       return { state: 'unavailable', message: overlayInitialized
         ? 'Overlay initialized. Frame-delivery counters are not available for this overlay path.'
         : 'Overlay is not initialized. Frame-delivery counters are not available for this overlay path.' };
     }
-    if (!info.openxrCompanionConnected) {
+    const connected = relay ? info.openvrHostRelayConnected : info.openxrCompanionConnected;
+    if (!connected) {
       previous = undefined;
-      return { state: 'disconnected', message: info.openxrHostDetected
+      return { state: 'disconnected', message: relay ? (info.openvrSceneProcessId
+        ? 'SteamVR scene detected. Connecting to the host overlay companion.'
+        : 'Host overlay disconnected. Waiting for SteamVR or a game scene.') : info.openxrHostDetected
         ? 'Game scene detected. Overlay is not connected yet.'
         : 'Overlay is listening for a game scene.' };
     }
     const time = now();
-    const submitted = Number(info.openxrSubmittedFrameSequence || 0);
-    const consumed = Number(info.openxrConsumedFrameSequence || 0);
-    const key = `${info.openxrHostProcessId}:${info.openxrProtocolVersion}`;
+    const submitted = Number((relay ? info.openvrSubmittedFrameSequence : info.openxrSubmittedFrameSequence) || 0);
+    const consumed = Number((relay ? info.openvrConsumedFrameSequence : info.openxrConsumedFrameSequence) || 0);
+    const key = relay ? `openvr:${info.openvrSceneProcessId}`
+      : `openxr:${info.openxrHostProcessId}:${info.openxrProtocolVersion}:${info.openxrHostSessionStartedAtMs || 0}`;
     if (!previous || previous.key !== key || consumed < previous.consumed || submitted < previous.submitted) {
       previous = { key, consumed, submitted, changedAt: time };
     } else {
@@ -91,11 +101,17 @@ export function createFrameHealthTracker({ now = Date.now } = {}) {
       previous.consumed = consumed;
       previous.submitted = submitted;
     }
-    if (consumed === 0) return { state: 'waiting', message: 'Overlay connected. Waiting for the game to consume its first frame.' };
+    if (consumed === 0) return { state: 'waiting', message: relay
+      ? 'Host overlay connected. Waiting for the companion to acknowledge its first frame.'
+      : 'Overlay connected. Waiting for the game to consume its first frame.' };
     if (submitted > consumed && time - previous.changedAt >= 10000) {
-      return { state: 'stalled', message: 'Overlay connected, but the game has not consumed newer frames for at least 10 seconds.' };
+      return { state: 'stalled', message: relay
+        ? 'Host overlay connected, but the companion has not acknowledged newer frames for at least 10 seconds.'
+        : 'Overlay connected, but the game has not consumed newer frames for at least 10 seconds.' };
     }
-    return { state: 'delivering', message: 'The game has consumed overlay frames. This does not confirm visible content in the headset.' };
+    return { state: 'delivering', message: relay
+      ? `Host companion received overlay frames. SteamVR texture submissions: ${info.openvrTextureSubmissionCount || 0}.`
+      : 'The game has consumed overlay frames. This does not confirm visible content in the headset.' };
   };
 }
 
@@ -115,6 +131,9 @@ export function buildVrDiagnostics({ info, probe, integrationChange, health, app
       openxrHostDetected: Boolean(info.openxrHostDetected),
       openxrHostProcessId: info.openxrHostProcessId || 0,
       openxrHostApplicationName: info.openxrHostApplicationName || '',
+      openxrHostRuntimeName: info.openxrHostRuntimeName || '',
+      openxrHostRuntimeVersion: info.openxrHostRuntimeVersion || '',
+      openxrHostSessionStartedAtMs: info.openxrHostSessionStartedAtMs || 0,
       openvrSceneProcessId: info.openvrSceneProcessId || 0,
       openvrSceneApplicationName: info.openvrSceneApplicationName || '',
       libovrHostDetected: Boolean(info.libovrHostDetected),
@@ -133,6 +152,12 @@ export function buildVrDiagnostics({ info, probe, integrationChange, health, app
       protocolVersion: info.openxrProtocolVersion,
       submittedFrames: info.openxrSubmittedFrameSequence,
       consumedFrames: info.openxrConsumedFrameSequence,
+      openvrHostRelayAvailable: Boolean(info.openvrHostRelayAvailable),
+      openvrHostRelayActive: Boolean(info.openvrHostRelayActive),
+      openvrHostRelayConnected: Boolean(info.openvrHostRelayConnected),
+      openvrSubmittedFrames: info.openvrSubmittedFrameSequence || 0,
+      openvrConsumedFrames: info.openvrConsumedFrameSequence || 0,
+      openvrTextureSubmissions: info.openvrTextureSubmissionCount || 0,
       health,
     },
   };

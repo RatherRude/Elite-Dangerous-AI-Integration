@@ -1,6 +1,5 @@
 import { app, BrowserWindow, clipboard, dialog, ipcMain, protocol, net, screen, shell, systemPreferences } from 'electron';
 import { spawn } from 'child_process';
-import { createRequire } from 'node:module';
 import http from 'node:http';
 import crypto from 'node:crypto';
 import os from 'node:os';
@@ -42,6 +41,34 @@ const redactedConfigLineMarkers = [
 let loggerShuttingDown = false;
 let remoteInterface = null;
 let activeVrOverlay = null;
+let openvrHostProcess = null;
+let openvrHostRestartTimer = null;
+let appQuitting = false;
+let openvrHostRestartDelay = 2000;
+
+function startOpenVRHostCompanion() {
+  const hostPath = process.env.ELECTRON_VR_OPENVR_HOST_PATH;
+  if (appQuitting || openvrHostProcess || !isLinux || !process.env.FLATPAK_ID || !hostPath) return;
+  const startedAt = Date.now();
+  const child = spawn('flatpak-spawn', ['--host', '--watch-bus',
+    `--env=LD_LIBRARY_PATH=${path.dirname(hostPath)}`, hostPath], { stdio: ['ignore', 'pipe', 'pipe'] });
+  openvrHostProcess = child;
+  child.stdout.on('data', data => logger.debug('SteamVR host companion:', data.toString().trim()));
+  child.stderr.on('data', data => logger.warn('SteamVR host companion:', data.toString().trim()));
+  child.on('error', error => logger.warn({ err: error }, 'Could not start SteamVR host companion'));
+  // SteamVR can spawn descendants that keep stdout/stderr open after the
+  // presenter exits. Restart on process exit, not stream closure.
+  child.on('exit', code => {
+    if (openvrHostProcess !== child) return;
+    openvrHostProcess = null;
+    logger.info('SteamVR host companion exited:', code);
+    if (appQuitting) return;
+    const delay = Date.now() - startedAt > 10000 ? 2000 : openvrHostRestartDelay;
+    openvrHostRestartDelay = Math.min(delay * 2, 30000);
+    openvrHostRestartTimer = setTimeout(startOpenVRHostCompanion, delay);
+    openvrHostRestartTimer.unref();
+  });
+}
 const detectEliteProcess = createGameProbe();
 const sampleFrameHealth = createFrameHealthTracker();
 const reconcileGameScene = createSceneTracker();
@@ -53,7 +80,7 @@ try {
 } catch { /* No integration change has been recorded yet. */ }
 let electronVrVersion = 'unknown';
 try {
-  const entry = createRequire(import.meta.url).resolve('@covas-labs/electron-vr');
+  const entry = url.fileURLToPath(import.meta.resolve('@covas-labs/electron-vr'));
   electronVrVersion = JSON.parse(fs.readFileSync(path.resolve(path.dirname(entry), '../package.json'), 'utf8')).version;
 } catch { /* Keep diagnostics usable if package metadata is unavailable. */ }
 
@@ -103,6 +130,9 @@ const logger = pino({
 });
 
 app.on('before-quit', () => {
+  appQuitting = true;
+  clearTimeout(openvrHostRestartTimer);
+  openvrHostProcess?.kill();
   disableLoggerForShutdown();
 });
 
@@ -1384,6 +1414,7 @@ function getRemoteInterfaceState() {
 }
 
 app.whenReady().then(async ()=>{
+  startOpenVRHostCompanion();
 
   protocol.handle('app', (request) => {
     const requestUrl = new URL(request.url);

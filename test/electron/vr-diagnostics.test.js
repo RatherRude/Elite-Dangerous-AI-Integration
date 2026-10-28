@@ -112,3 +112,37 @@ test('live process evidence clears a cached Elite host after exit, but not on a 
   assert.equal(exited.launch.wouldWorkNow, false);
   assert.equal(connected.diagnostics.openxrCompanionConnected, true);
 });
+
+test('Linux uses game-reported runtime and session timing without host process visibility', () => {
+  const host = { ...info, platform: 'linux', openxrHostRuntimeName: 'Monado',
+    openxrHostRuntimeVersion: '25.0.0', openxrHostSessionStartedAtMs: 1000 };
+  const hidden = { available: false, running: false, processes: [] };
+  const summary = describeVrStatus({ readiness: 'ready', diagnostics: host }, { probe: hidden });
+  assert.match(summary, /OpenXR \(Monado, reported by the game\)/);
+  assert.doesNotMatch(summary, /configured runtime/);
+  assert.equal(assessRestart(host, hidden, { action: 'install', changedAt: 2000 }), true);
+  assert.equal(assessRestart(host, hidden, { action: 'install', changedAt: 500 }), false);
+  const reconcile = createSceneTracker();
+  assert.equal(reconcile({ diagnostics: host, readiness: 'ready' }, normalizeGameProbe([])).readiness, 'ready');
+});
+
+test('SteamVR host relay health measures accepted frames separately from game-side OpenXR consumption', () => {
+  const sample = createFrameHealthTracker();
+  const relay = { selectedBackend: 'openvr', openvrHostRelayAvailable: true, openvrSceneProcessId: 99 };
+  assert.equal(sample(relay).state, 'disconnected');
+  assert.equal(sample({ ...relay, openvrHostRelayConnected: true }).state, 'waiting');
+  const delivered = sample({ ...relay, openvrHostRelayConnected: true,
+    openvrSubmittedFrameSequence: 20, openvrConsumedFrameSequence: 20, openvrTextureSubmissionCount: 15 });
+  assert.equal(delivered.state, 'delivering');
+  assert.match(delivered.message, /SteamVR texture submissions: 15/);
+});
+
+test('a new OpenXR session reusing a container PID does not inherit stale frame health', () => {
+  let time = 0;
+  const sample = createFrameHealthTracker({ now: () => time });
+  const sharedPid = { ...info, openxrHostProcessId: 2, openxrCompanionConnected: true,
+    openxrSubmittedFrameSequence: 10, openxrConsumedFrameSequence: 9 };
+  sample({ ...sharedPid, openxrHostSessionStartedAtMs: 1000 });
+  time = 11000;
+  assert.equal(sample({ ...sharedPid, openxrHostSessionStartedAtMs: 2000 }).state, 'delivering');
+});

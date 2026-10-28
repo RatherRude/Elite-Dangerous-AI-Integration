@@ -45,6 +45,7 @@
     "productName": "COVAS NEXT",
     "appId": "com.covasnext.ui",
     "asarUnpack": [
+      "node_modules/@covas-labs/electron-vr-prebuilt-linux-x64/**/*",
       "node_modules/@covas-labs/electron-vr-prebuilt-win32-x64/**/*"
     ],
     "directories": {
@@ -69,7 +70,7 @@
   },
   "dependencies": {
     "@covas-labs/electron-overlay": "^0.5.2",
-    "@covas-labs/electron-vr": "^0.8.8",
+    "@covas-labs/electron-vr": "^0.8.9",
     "cross-env": "^7.0.3",
     "electron-context-menu": "^4.1.0",
     "pino": "^9.7.0",
