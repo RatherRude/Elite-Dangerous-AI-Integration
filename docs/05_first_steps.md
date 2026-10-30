@@ -1,43 +1,31 @@
-
 # First Steps
 
-If you have not already done so, you should first complete the [Getting Started](./index.md) guide. This guide will help you set up your AI and get you started with the basics.
+Start with the [Getting Started](./index.md) guide if you have not set up COVAS:NEXT yet. Once you are ready, start the AI Assistant, launch Elite Dangerous, and try talking to your assistant in-game.
 
-Once you have completed the setup, you can start using the AI in-game. The AI can help you with a variety of tasks, such as navigating the galaxy map, managing your ship's systems, and providing information about the game world. The AI can also assist you in combat, mining, trading, and other activities.
+You can ask questions about the game, request help with your ship, or simply have a conversation. The settings below let you make the experience your own.
 
-There are several configuration options, that you can adjust to customize the AI to your liking.
+## Give your assistant a personality
 
-## Character Prompt
+In the **Character** settings, describe how you would like your assistant to speak and behave. For example, mention a cat aboard your ship if you would like your assistant to bring it up in conversation. Find more ideas on our [Discord server](https://discord.gg/9c58jxVuAT).
 
-The AI Character Prompt is a description of the AI's personality. You can modify this text to your liking – if you want the AI to talk about your ships cat, you can mention "We have a cat on our ship that likes to get in the way of my controls when it wants attention.", causing the AI to role-play and mention the cats current whereabouts regularly. More examples can be found on our discord server.
+## Talk to your assistant
 
-## Audio
+Use your chosen push-to-talk button or voice activation to speak. If you use voice activation, headphones help prevent the assistant from hearing its own replies.
 
-The integration uses your microphone for speech recognition. We support voice activation and push-to-talk (PTT). When using voice activation, we recommend using headphones to avoid the AI hearing itself, which causes a feedback loop.
+## Choose when it speaks and what it can do
 
-## Event Triggers
+In **Reactions**, choose which in-game events your assistant should comment on. Turn off reactions you would rather not hear. See the [Reactions guide](./25_reactions.md) for more options.
 
-Changes in the game world can trigger events that the AI can respond to. For example, when the ship is in danger, the AI can be programmed to inform you. These reactions are configured in the UI in the **Reactions** tab of the settings, where you can choose to silence some events or have the AI respond to others, making the AI more or less chatty.
+In **Actions**, review the things your assistant can do in-game. The app will point out anything that needs a control assigned. You can turn off actions you do not want to use. See the [Actions guide](./20_actions.md) for details.
 
-For a more in-depth guide on reactions and event triggers, see the [Reactions](./25_reactions.md) page.
+## Personalize the appearance
 
-## Keyboard Bindings
+You can give your assistant an avatar and choose what appears in the overlay. Explore the appearance settings to find a look that suits you.
 
-Certain keyboard bindings are required for the AI to trigger game actions. In the **Actions** tab of the settings, the UI will inform you if actions are unassigned, conflicting, or unsupported. Actions can be toggled on and off to disable unwanted ones, such as ejecting all cargo.
+## Explore more features
 
-For a full list of actions and their required keyboard buttons, see the [Actions](./20_actions.md) page.
+Browse [Plugins](./plugins/index.md) if you want to add more voices or other capabilities later. You can start using COVAS:NEXT without configuring plugins.
 
-## Avatars
+## Stay up to date
 
-Avatars allow you to give the AI a face. You provide a 2×2 grid with equal sections; each section shows the same styled character in one of four attitudes:
-
-| <img src="../ui/src/assets/cn_avatar_default.png" alt="Default avatar grid" width="120" /> | **Top-left:** the character is listening<br>**Top-right:** the character is speaking<br>**Bottom-left:** the character is thinking<br>**Bottom-right:** the character is performing searches or actions |
-|----------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-
-## Plugins
-
-Explore [Plugins](./plugins/index.md) to enhance your experience: fast, on-device speech-to-text (STT), text-to-speech (TTS), and embedding.
-
-## Upgrading the AI
-
-You will automatically receive a notification when a new version of the AI is available during the launch of the application. After downloading the new version, run the MSI installer. The one-click installer updates your existing installation; your configuration and conversations are migrated automatically.
+The app will let you know when a new version is available. Download the update for your platform and install it as you normally would; your settings and conversations will carry over.

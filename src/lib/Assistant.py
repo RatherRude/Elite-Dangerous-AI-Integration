@@ -35,6 +35,7 @@ from typing import Any,  Callable, final
 import yaml
 from threading import Thread
 from .actions.Actions import engine_boost, set_speed, fire_weapons, get_visuals
+from .actions.actions_ui import predict_plugin_ui_action
 from .Projections import get_state_dict, ProjectedStates
 from .QuestCatalogManager import remove_orphaned_quest_states
 
@@ -907,20 +908,25 @@ class Assistant:
                 allowed_actions,
                 in_station,
             )
+            direct_ui_actions = None
             predicted_actions = None
-            if tool_list and user_input and not tool_uses and self.config["use_action_cache_var"]:
-                predicted_actions = self.action_manager.predict_action(user_input[-1], tool_list)
+            if tool_list and user_input and not tool_uses:
+                direct_ui_actions = predict_plugin_ui_action(user_input[-1], self.action_manager, tool_list)
+                predicted_actions = direct_ui_actions
+                if not predicted_actions and self.config["use_action_cache_var"]:
+                    predicted_actions = self.action_manager.predict_action(user_input[-1], tool_list)
                 
             if predicted_actions:
                 #log('info', 'predicted_actions', predicted_actions)
                 response_text = None
                 response_actions = predicted_actions
-                log_action_cache_usage(
-                    "assistant",
-                    provider=getattr(self.llmModel, "provider_name", None),
-                    model_name=getattr(self.llmModel, "model_name", None),
-                    cache_usage=CacheUsageStats(llm_calls_saved=1),
-                )
+                if not direct_ui_actions:
+                    log_action_cache_usage(
+                        "assistant",
+                        provider=getattr(self.llmModel, "provider_name", None),
+                        model_name=getattr(self.llmModel, "model_name", None),
+                        cache_usage=CacheUsageStats(llm_calls_saved=1),
+                    )
             else:
                 start_time = time()
                     

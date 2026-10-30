@@ -59,6 +59,7 @@ isolation for in-process Python plugins, not a process sandbox.
 | `on_ui_action(action, payload) -> Any` | Handle an interaction and return a JSON-serializable result, or raise an error. |
 | `on_ui_changed(key, value, state)` | Handle an input edit in either context with a detached snapshot of all current input values. |
 | `get_ui_state()` | Return the same detached input snapshot, including from button/action callbacks. |
+| `set_ui_value(key, value)` | Reset a declared, editable input for this plugin without saving or invoking input callbacks. Raises before registration or for unknown/readonly inputs; call `publish_ui()` afterward. |
 | `publish_ui()` | Refresh and broadcast settings, views, input state, translations and provider settings. |
 | `publish_settings()` | Deprecated alias of `publish_ui()`. |
 | `get_app_config()` | Return a detached copy of application configuration with only this plugin's settings section, or `{}` before registration. |
@@ -84,6 +85,7 @@ A `PluginUIView` contains:
 | --- | --- | --- |
 | `id` | Yes | Nonempty local identifier, unique within the plugin, without `:`. |
 | `label` | Yes | User-facing translation key. |
+| `voice_aliases` | No | Business names/synonyms in any supported language, independent of the displayed label. |
 | `sections` | Yes | Ordered section definitions. |
 | `icon` | No | Material icon name. |
 | `description` | No | Assistant-facing description used in the `showUI` tool schema. Explain the view's purpose and any preparation action here. |
@@ -97,11 +99,63 @@ Each section has a stable `key`, a translated `label`, and optionally:
 
 - `grids`: ordered keys referencing grids from this plugin's exported settings.
 - `content`: ordered generic content nodes.
+- `voice_aliases`: business names/synonyms for this subtab, independent of its displayed label or GUI language.
 
 Both may be supplied: the grids render first, followed by content. Missing grid
 references produce no grid. Keep section keys unique and stable for navigation.
 
+The `showUI` schema includes translated view/subtab labels from every registered
+language, their stable keys and `voice_aliases`. For example:
+
+```python
+UIViewSection(
+    key="session",
+    label="@progress.title",
+    voice_aliases=["progression du vaisseau", "suivi des ameliorations", "ship upgrade progress"],
+    grids=["session"],
+)
+```
+
+The GUI may display **Progress** while French voice requests select this same
+subtab. Exact French/English display requests, including `affiche-moi`,
+`montre-moi` and `show me`, are resolved locally from published plugin metadata
+before the action cache or model, even when the action cache is disabled.
+They open the requested view/subtab first; the assistant may then give a spoken
+summary, but a status-reading operation alone does not fulfill a display request.
+No domain-specific plugin names are embedded in this local resolver.
+The same requests are also prefilled against the final tool schema.
+When multiple plugin views are
+available, unqualified plugin navigation requests go through the model rather
+than a direct prefilled shortcut, so semantically similar aliases cannot bypass
+disambiguation. Qualified subtab requests include the view name, for example
+`show progress in ship upgrades`. Exact collisions, including accent variants,
+are never prefilled, even when qualified.
+
+The tool exposes each view's owning plugin name alongside its translated labels
+and aliases. If multiple plugins, views or subtabs plausibly match the request,
+the assistant must ask the player which one they mean, naming the alternatives
+in the player's language, and leave the UI unchanged until clarified. It must
+not choose based on registration order or the currently open tab. Explicitly
+identifying a view/subtab allows navigation; a shared alias alone does not.
+Publishing new labels, aliases or available views refreshes navigation without
+changing plugin data or overriding built-in navigation shortcuts.
+
+`setUISectionExpanded` controls collapsible content in the active subtab by name
+or one-based visible header index. The tool receives available plugin grid,
+category and detail labels. The shared renderer exposes stable identities and
+translations for lookup; generic Material accordion headers and native `details`
+summaries are also supported. Headers hidden in inactive tabs or under a closed
+parent are excluded from indexing. The command carries a correlated request ID;
+the desktop UI acknowledges the actual expanded state through
+`ui_section_result`. Errors and a five-second timeout are returned
+to the assistant. These are transient presentation changes, not plugin actions.
+
 ## Shared components
+
+Conditional settings from the host remain supported alongside shared components,
+collapsible grids and grouped buttons. Hidden fields keep their saved values and
+defaults; hidden buttons are not selected by Enter-to-submit. Plugin notification
+labels and content use the same translation resolution as other shared fields.
 
 Settings `fields`, grid `content`, view-section `content`, container `children`
 and list-row `details` all accept the same `UIComponent` union and use the same
@@ -262,10 +316,23 @@ Without `tabs`, grids retain flat rendering. With `tabs`, the plugin chooses whi
 grids to include and their order; the host does not infer tabs from grid names.
 
 Generic list rows support `key`, `title`, optional `title_key`, `suffix`, `meta`,
-`params`, `group`, `pending`, `tone`, and `details: list[UINode]`. List fields may
+`params`, `group`, `pending`, `tone`, `summary: list[UIComponent]`,
+`highlighted`, and `details: list[UIComponent]`. List fields may
 supply `count_labels: {one: <key>, many: <key>}` using a `count` parameter; absent
 labels fall back to the host's generic item count. `row_actions` belongs to the
 list field, not an individual row.
+
+Set `details_collapsible=True` on a list to put row details behind a native
+disclosure, initially closed; the compact `summary` stays visible. Without this
+flag existing detail rendering is unchanged. A newly `highlighted` row is
+accented and reveals its collapsed group, which the user can collapse again.
+
+Row actions are visible icon buttons by default. `secondary=True` moves an
+action into the row's overflow menu. An optional `confirmation` translation key
+opens the standard confirmation dialog before performing the action (including
+inline edits). Its interpolation parameters include row `params` plus `title`.
+Cancellation does not invoke the backend. Enforcement of data constraints must
+still happen in the plugin.
 
 List row buttons continue to call `on_settings_button('<action>:<row-key>', value)`;
 inline edits pass the edited value. Grid header actions and ordinary buttons
@@ -381,6 +448,14 @@ The reserved action `settings_button` forwards `payload.key` and optional string
 `payload.value` to `on_settings_button`. When overriding `on_ui_action`, delegate
 unhandled actions to `super()` to preserve that behavior. The legacy
 `plugin_settings_button` command remains supported for existing callers.
+
+For transient success feedback, an action can return
+`{"notification": "@added", "params": {"name": "Item"}}`. The core scopes
+`notification` and list-action `confirmation` translation references to the
+plugin owner, preserving literal parameter values. The frontend displays the
+translated notification for four seconds only after a correlated successful
+action result. It is not a field or durable state: repeated UI publications do
+not replay it. Errors should still be raised or shown explicitly inline.
 
 UI callbacks execute synchronously in the backend command reader. The frontend
 waits for the backend result rather than considering a successful send to be

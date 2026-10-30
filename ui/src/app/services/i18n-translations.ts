@@ -1,6 +1,6 @@
 export const TRANSLATIONS: Record<string, object> = {
   "en": {
-    "common": { "cancel": "Cancel", "confirm": "Confirm", "actionError": "Could not complete the action.", "invalidAction": "Invalid plugin action or parameters.", "pluginUnavailable": "This plugin is unavailable.", "itemsOne": "{{count}} item", "itemsMany": "{{count}} items" },
+    "common": { "cancel": "Cancel", "confirm": "Confirm", "details": "Details", "moreActions": "More actions", "actionError": "Could not complete the action.", "invalidAction": "Invalid plugin action or parameters.", "pluginUnavailable": "This plugin is unavailable.", "itemsOne": "{{count}} item", "itemsMany": "{{count}} items" },
     "module": {
       "powerplant": "Power Plant", "engine": "Thrusters", "enginefast": "Enhanced Performance Thrusters", "hyperdrive": "Frame Shift Drive (FSD)", "hyperdriveovercharge": "Frame Shift Drive (Supercruise Overcharge)", "lifesupport": "Life Support", "powerdistributor": "Power Distributor", "sensors": "Sensors", "fueltank": "Fuel Tank",
       "pulselaser": "Pulse Laser", "pulselaserburst": "Burst Laser", "beamlaser": "Beam Laser", "multicannon": "Multi-cannon", "cannon": "Cannon", "slugshot": "Fragmentation Cannon", "railgun": "Railgun", "plasmaaccelerator": "Plasma Accelerator", "basicmissilerack": "Seeker Missile Rack", "dumbfirermissilerack": "Dumbfire Missile Rack", "torpedopylon": "Torpedo Pylon", "minelauncher": "Mine Launcher",
@@ -12,7 +12,7 @@ export const TRANSLATIONS: Record<string, object> = {
     }
   },
   "fr": {
-    "common": { "cancel": "Annuler", "confirm": "Confirmer", "actionError": "Impossible d’effectuer cette action.", "invalidAction": "Action ou paramètres du plugin invalides.", "pluginUnavailable": "Ce plugin est indisponible.", "itemsOne": "{{count}} élément", "itemsMany": "{{count}} éléments" },
+    "common": { "cancel": "Annuler", "confirm": "Confirmer", "details": "Détails", "moreActions": "Autres actions", "actionError": "Impossible d’effectuer cette action.", "invalidAction": "Action ou paramètres du plugin invalides.", "pluginUnavailable": "Ce plugin est indisponible.", "itemsOne": "{{count}} élément", "itemsMany": "{{count}} éléments" },
     "module": {
       "powerplant": "Générateur", "engine": "Propulseurs", "enginefast": "Propulseurs à performances améliorées", "hyperdrive": "Réacteur FSD", "hyperdriveovercharge": "Réacteur FSD (Surcharge Supercruise)", "lifesupport": "Système de survie", "powerdistributor": "Répartiteur de puissance", "sensors": "Capteurs", "fueltank": "Réservoir de carburant",
       "pulselaser": "Laser à impulsions", "pulselaserburst": "Laser rafale", "beamlaser": "Laser à rayon", "multicannon": "Multicanon", "cannon": "Canon", "slugshot": "Canon à fragmentation", "railgun": "Canon électrique (Railgun)", "plasmaaccelerator": "Accélérateur à plasma", "basicmissilerack": "Lance-missiles guidés", "dumbfirermissilerack": "Lance-missiles non guidés", "torpedopylon": "Pylône de torpilles", "minelauncher": "Lanceur de mines",

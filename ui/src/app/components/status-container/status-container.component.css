@@ -1185,6 +1185,28 @@
   height: 6px;
 }
 
+.hull-range-bar {
+  position: relative;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--hud-orange) 18%, transparent);
+}
+
+.hull-range-solid,
+.hull-range-uncertain {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--hud-orange);
+}
+
+.hull-range-solid {
+  left: 0;
+}
+
+.hull-range-uncertain {
+  opacity: 0.55;
+}
+
 .stat-value-large {
   font-size: 1.25rem;
   color: #e0e0e0;

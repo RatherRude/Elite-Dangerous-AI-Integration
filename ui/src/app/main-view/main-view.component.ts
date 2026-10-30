@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ViewChild } from "@angular/core";
+import { ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
@@ -32,6 +32,7 @@ import { PluginViewComponent } from "../components/plugin-view/plugin-view.compo
 import { PluginUIService } from "../services/plugin-ui.service";
 import { RegisteredUIView } from "../services/plugin-ui";
 import { TranslateModule } from "@ngx-translate/core";
+import { UISectionService } from "../services/ui-section.service";
 
 @Component({
     selector: "app-main-view",
@@ -89,6 +90,7 @@ export class MainViewComponent implements OnInit, OnDestroy {
     public isQuestEditorOpen = false;
     private systemSubscription?: Subscription;
     private pluginViewsSubscription?: Subscription;
+    private sectionSubscription?: Subscription;
     pluginViews: RegisteredUIView[] = [];
     configPluginViews: RegisteredUIView[] = [];
 
@@ -103,6 +105,9 @@ export class MainViewComponent implements OnInit, OnDestroy {
         private uiService: UIService,
         private snackBar: MatSnackBar,
         private pluginUI: PluginUIService,
+        private host: ElementRef<HTMLElement>,
+        private changeDetector: ChangeDetectorRef,
+        private sections: UISectionService,
     ) {
         this.policyService.usageDisclaimerAccepted$.subscribe(
             (accepted) => {
@@ -125,6 +130,23 @@ export class MainViewComponent implements OnInit, OnDestroy {
     }
 
     ngOnInit(): void {
+        this.sectionSubscription = this.uiService.sectionRequests$.subscribe(request => {
+            let result;
+            try {
+                this.changeDetector.detectChanges();
+                result = { success: true, ...this.sections.apply(this.host.nativeElement, request,
+                    () => this.changeDetector.detectChanges()) };
+            } catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                console.error("Could not change UI section:", error);
+                this.snackBar.open(message, "OK", { duration: 7000 });
+                result = { success: false, error: message };
+            }
+            void this.tauri.send_command({
+                type: "ui_section_result", request_id: request.request_id,
+                timestamp: new Date().toISOString(), ...result,
+            }).catch(error => console.error("Could not acknowledge UI section change:", error));
+        });
         this.pluginViewsSubscription = this.pluginUI.views$.subscribe(views => {
             this.pluginViews = views.filter(view => (view.modes ?? ['running']).includes('running'));
             this.configPluginViews = views.filter(view => (view.modes ?? ['running']).includes('configuring'));
@@ -219,6 +241,7 @@ export class MainViewComponent implements OnInit, OnDestroy {
     }
 
     ngOnDestroy(): void { // Implement ngOnDestroy
+        this.sectionSubscription?.unsubscribe();
         this.pluginViewsSubscription?.unsubscribe();
         if (this.systemSubscription) {
             this.systemSubscription.unsubscribe();
@@ -244,6 +267,13 @@ export class MainViewComponent implements OnInit, OnDestroy {
         return ['chat', ...(!this.isShipIdentUnknown ? ['status'] : []), 'navigation',
             ...(!this.isShipIdentUnknown ? ['storage', 'tasks', ...(this.isDockedAtStation ? ['station'] : [])] : []),
             ...(this.hasLogbook ? ['logbook'] : []), 'search', 'actions'];
+    }
+
+    onRuntimeTabSelected(index: number): void {
+        if (index === this.selectedTabIndex) return;
+        this.selectedTabIndex = index;
+        const target = [...this.builtinRuntimeTabs(), ...this.pluginViews.map(view => view.target)][index];
+        if (target) this.uiService.showTab(target);
     }
 
     private getCurrentGameModeLabel(currentStatusData: any): string {

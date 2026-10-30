@@ -16,7 +16,6 @@ finish-args:
   # File access
   - --filesystem=home:rw
   - --filesystem=/tmp:rw
-  - --filesystem=xdg-run/electron-vr:create
   # Devices access
   - --device=dri # OpenGL
   #- --device=input # Not supported in flatpak-builder 1.4 (default on ubuntu 24.04) 
@@ -66,6 +65,29 @@ modules:
         export ELECTRON_OZONE_PLATFORM_HINT="${ELECTRON_OZONE_PLATFORM_HINT:-x11}"
         export OZONE_PLATFORM="${OZONE_PLATFORM:-x11}"
         export GDK_BACKEND="${GDK_BACKEND:-x11}"
+        # SteamVR's host registry is outside Flatpak's private XDG_CONFIG_HOME.
+        if [ -z "${VR_PATHREG_OVERRIDE:-}" ] && [ -r "$HOME/.config/openvr/openvrpaths.vrpath" ]; then
+          export VR_PATHREG_OVERRIDE="$HOME/.config/openvr/openvrpaths.vrpath"
+        fi
+        # The OpenXR loader needs its bundled libjsoncpp before the native addon is loaded.
+        prebuilt_dir="/app/bin/resources/app.asar.unpacked/node_modules/@covas-labs/electron-vr-prebuilt-linux-x64"
+        if [ -f "$prebuilt_dir/vr_bridge.node" ]; then
+          export LD_LIBRARY_PATH="$prebuilt_dir${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+        fi
+
+        # SteamVR cannot initialize an overlay client in Flatpak's PID namespace.
+        # Stage the bundled presenter on the host; image FDs cross the sandbox
+        # over a per-user abstract socket. Electron owns the helper's lifetime.
+        if [ -x "$prebuilt_dir/electron_vr_openvr_host" ] && command -v flatpak-spawn >/dev/null; then
+          helper_hash="$(sha256sum "$prebuilt_dir/electron_vr_openvr_host" | cut -d' ' -f1)"
+          helper_dir="$HOME/.local/share/ElectronVR/OpenVR/$helper_hash"
+          if [ ! -x "$helper_dir/electron_vr_openvr_host" ]; then
+            mkdir -p "$helper_dir"
+            cp "$prebuilt_dir/libopenvr_api.so" "$helper_dir/libopenvr_api.so"
+            install -m755 "$prebuilt_dir/electron_vr_openvr_host" "$helper_dir/electron_vr_openvr_host"
+          fi
+          export ELECTRON_VR_OPENVR_HOST_PATH="$helper_dir/electron_vr_openvr_host"
+        fi
 
         # The host OpenXR loader cannot discover layers in Flatpak's private XDG_DATA_HOME.
         host_layer_dir="$HOME/.local/share/openxr/1/api_layers/implicit.d"

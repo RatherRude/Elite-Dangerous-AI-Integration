@@ -17,7 +17,7 @@ import { PluginContentComponent } from "../plugin-content/plugin-content.compone
   standalone: true,
   imports: [MatTabsModule, SettingsGridComponent, PluginContentComponent],
   template: `
-    <mat-tab-group [selectedIndex]="selectedIndex" (selectedIndexChange)="selectedIndex = $event">
+    <mat-tab-group [selectedIndex]="selectedIndex" (selectedIndexChange)="onSectionSelected($event)">
       @for (section of view.sections; track section.key) {
         <mat-tab [label]="resolve(section.label)">
           @for (grid of grids(section.grids); track grid.key) {
@@ -58,6 +58,13 @@ export class PluginViewComponent implements OnDestroy {
         this.requested = null;
       }
     }
+  }
+
+  onSectionSelected(index: number): void {
+    if (index === this.selectedIndex) return;
+    this.selectedIndex = index;
+    const section = this.view.sections[index];
+    if (section) this.ui.showTab(this.view.target, section.key);
   }
 
   grids(keys: string[] = []): SettingsGrid[] {

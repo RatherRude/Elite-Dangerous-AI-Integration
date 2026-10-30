@@ -199,6 +199,29 @@ button.primary.mat-mdc-outlined-button:hover:not(:disabled) {
     background-color: rgba(255, 255, 255, 0.04);
 }
 
+.list-row.highlighted {
+    background: rgba(255, 152, 0, 0.12);
+    box-shadow: inset 3px 0 var(--color-warning-orange, #ff9800);
+}
+
+.list-row-details {
+    margin: -4px 12px 12px;
+    font-size: 0.9em;
+}
+
+.list-row-details summary {
+    cursor: pointer;
+    color: var(--color-text-secondary, rgba(255, 255, 255, 0.6));
+}
+
+.list-row-text app-plugin-content {
+    font-size: 0.85em;
+}
+
+button.danger, button.danger mat-icon {
+    color: #ef5350;
+}
+
 .list-row-text {
     display: flex;
     flex-direction: column;
@@ -263,3 +286,34 @@ ul { margin: 0; padding-left: 22px; }
 .tone-success { color: #75baff; }
 .tone-danger { color: #ff6b6b; }
 mat-progress-bar { margin: 6px 0; }
+.notification-field {
+    margin: 8px 0 16px;
+    padding: 10px 12px;
+    border-radius: 4px;
+}
+
+.notification-field p {
+    margin: 0;
+}
+
+.notification-field strong + p {
+    margin-top: 4px;
+}
+
+.notification-field.info {
+    color: #bbdefb;
+    background: rgba(33, 150, 243, 0.12);
+    border: 1px solid rgba(33, 150, 243, 0.55);
+}
+
+.notification-field.warning {
+    color: #ffe0b2;
+    background: rgba(255, 152, 0, 0.12);
+    border: 1px solid rgba(255, 152, 0, 0.55);
+}
+
+.notification-field.error {
+    color: #ffcdd2;
+    background: rgba(244, 67, 54, 0.12);
+    border: 1px solid rgba(244, 67, 54, 0.55);
+}
