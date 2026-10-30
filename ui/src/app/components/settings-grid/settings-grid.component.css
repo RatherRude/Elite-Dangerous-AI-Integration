@@ -32,6 +32,35 @@
     font-weight: 500;
 }
 
+.grid-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+}
+
+.grid-header h2,
+.grid-header h3,
+.grid-header h4 {
+    margin: 16px 0 8px 0;
+}
+
+.grid-header-action {
+    margin: 8px 0;
+    flex: none;
+}
+
+.button-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.button-row app-settings-field {
+    width: auto;
+}
+
 .settings-grid h3,
 .plugin-provider-settings h3 {
     font-size: 1.1rem;

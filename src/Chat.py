@@ -837,6 +837,8 @@ class Chat:
 
         # Execute plugin helper ready hooks
         self.plugin_manager.on_chat_start(self.plugin_helper)
+        from lib.actions.actions_ui import configure_plugin_ui
+        configure_plugin_ui(self.plugin_manager, self.action_manager)
         show_chat_message("info", "Plugins ready.")
 
         # Cue the user that we're ready to go.
@@ -1012,6 +1014,9 @@ def read_stdin(chat: Chat):
         line = sys.stdin.readline().strip()
         if line:
             data = json.loads(line)
+            if data.get("type") == "ui_section_result":
+                from lib.actions.actions_ui import handle_ui_section_result
+                handle_ui_section_result(data)
             if data.get("type") == "change_config":
                 partial = data.get("config")
                 if isinstance(partial, dict):
@@ -1028,8 +1033,17 @@ def read_stdin(chat: Chat):
             if data.get("type") == "plugin_settings_button":
                 plugin_guid = data.get("plugin_guid")
                 key = data.get("key")
+                value = data.get("value")
                 if isinstance(plugin_guid, str) and isinstance(key, str):
-                    chat.plugin_manager.on_settings_button(plugin_guid, key)
+                    chat.plugin_manager.on_settings_button(
+                        plugin_guid, key, value if isinstance(value, str) else None
+                    )
+            if data.get('type') == 'plugin_ui_action':
+                chat.plugin_manager.on_ui_action(
+                    str(data.get('plugin_guid', '')), str(data.get('action', '')),
+                    data.get('payload') if isinstance(data.get('payload'), dict) else {},
+                    str(data.get('request_id', '')),
+                )
             if data.get("type") == "query_memories":
                 query = data.get("query", "")
                 top_k = data.get("top_k", 5)
@@ -1258,8 +1272,17 @@ if __name__ == "__main__":
                 if data.get("type") == "plugin_settings_button":
                     plugin_guid = data.get("plugin_guid")
                     key = data.get("key")
+                    value = data.get("value")
                     if isinstance(plugin_guid, str) and isinstance(key, str):
-                        plugin_manager.on_settings_button(plugin_guid, key)        
+                        plugin_manager.on_settings_button(
+                            plugin_guid, key, value if isinstance(value, str) else None
+                        )
+                if data.get('type') == 'plugin_ui_action':
+                    plugin_manager.on_ui_action(
+                        str(data.get('plugin_guid', '')), str(data.get('action', '')),
+                        data.get('payload') if isinstance(data.get('payload'), dict) else {},
+                        str(data.get('request_id', '')),
+                    )
                 if data.get("type") == "enable_remote_tracing":
                     from lib.Logger import enable_remote_tracing
 

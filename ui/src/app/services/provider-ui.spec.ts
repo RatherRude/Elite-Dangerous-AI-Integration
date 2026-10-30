@@ -11,6 +11,8 @@ import { EMPTY } from "rxjs";
 import { TestBed } from "@angular/core/testing";
 import { SettingsGridComponent } from "../components/settings-grid/settings-grid.component";
 import { SettingsGrid } from "./plugin-settings";
+import { PluginUIService } from "./plugin-ui.service";
+import { TranslateModule } from "@ngx-translate/core";
 import { CharacterSettingsComponent } from "../components/character-settings/character-settings.component";
 import { GeneralSettingsComponent } from "../components/general-settings/general-settings.component";
 import { AdvancedSettingsComponent } from "../components/advanced-settings/advanced-settings.component";
@@ -64,7 +66,7 @@ describe("provider UI compatibility", () => {
         const tauri = jasmine.createSpyObj<TauriService>("TauriService", ["send_command"]);
         Object.defineProperty(tauri, "output$", { value: EMPTY });
         tauri.send_command.and.resolveTo();
-        const service = new ConfigService(tauri);
+        const service = new ConfigService(tauri, {} as PluginUIService);
 
         await service.clickPluginSettingsButton("owner-guid", "refresh-models");
 
@@ -175,7 +177,7 @@ describe("provider UI compatibility", () => {
 
 describe("provider settings layout", () => {
     beforeEach(async () => {
-        await TestBed.configureTestingModule({ imports: [SettingsGridComponent] }).compileComponents();
+        await TestBed.configureTestingModule({ imports: [SettingsGridComponent, TranslateModule.forRoot()] }).compileComponents();
     });
 
     for (const width of [1280, 375]) {
