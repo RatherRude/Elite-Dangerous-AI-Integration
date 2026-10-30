@@ -231,6 +231,9 @@ jobs:
           name: COVAS_NEXT_FLATPAK_v${{ github.sha }}_linux
           path: release-assets
 
+      - name: Name Flatpak for release
+        run: mv release-assets/*.flatpak "release-assets/COVAS_NEXT_${GITHUB_REF_NAME}_linux.flatpak"
+
       - name: Create or update draft release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -247,7 +250,7 @@ jobs:
               return
             fi
 
-            gh release create "$TAG" --draft --title "$TAG" --notes "Draft release for $TAG" || {
+            gh release create "$TAG" --draft --title "COVAS NEXT $TAG" --notes "Draft release for $TAG" || {
               gh release view "$TAG" >/dev/null
               if [ "$(gh release view "$TAG" --json isDraft --jq '.isDraft')" != "true" ]; then
                 echo "Release $TAG already exists and is not a draft. Refusing to attach assets."
@@ -257,4 +260,5 @@ jobs:
           }
 
           ensure_draft_release
+          gh release edit "$TAG" --title "COVAS NEXT $TAG"
           gh release upload "$TAG" release-assets/* --clobber

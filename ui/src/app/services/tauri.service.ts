@@ -225,6 +225,7 @@ export interface OverlayRuntimeInfo {
     available: boolean;
     hasRealVRRuntime: boolean;
     compatibility?: VRCompatibilityState;
+    vrDiagnostics?: Record<string, unknown>;
     desktopOverlay: {
         backend: "win32" | "macos" | "x11" | "wayland-electron" | "unknown";
         source: "explicit" | "native-handle" | "ozone-argument" | "environment" | "platform-default";
@@ -264,6 +265,10 @@ export interface VRCompatibilityState {
     readiness: "ready" | "setup-required" | "waiting-for-host" | "fallback-only" | "unavailable" | "development-only";
     backendLabel: string;
     summary: string;
+    frameHealth?: {
+        state: "unavailable" | "disconnected" | "waiting" | "stalled" | "delivering";
+        message: string;
+    };
     canRenderOverlay: boolean;
     isRealVrBackend: boolean;
     requiresOpenXRAppRestart: boolean;
@@ -450,6 +455,11 @@ export class TauriService {
         }
         const result = await window.electronAPI.invoke('get_vr_compatibility_state');
         return result as VRCompatibilityState;
+    }
+
+    public async copyVrDiagnostics(): Promise<void> {
+        if (!window.electronAPI) throw new Error('electronAPI not available');
+        await window.electronAPI.invoke('copy_vr_diagnostics');
     }
 
     public async runVrIntegrationAction(action: VRIntegrationAction): Promise<VRCompatibilityState> {

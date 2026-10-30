@@ -116,6 +116,12 @@ class PluginBase(ABC):
             raise RuntimeError('Plugin is not registered')
         return self._manager._get_ui_state(self)
 
+    def set_ui_value(self, key: str, value: Any) -> None:
+        """Set a declared input without persisting it or invoking its callback."""
+        if self._manager is None:
+            raise RuntimeError('Plugin is not registered')
+        self._manager._set_ui_value(self, key, value)
+
     def on_registered(self) -> None:
         pass
 

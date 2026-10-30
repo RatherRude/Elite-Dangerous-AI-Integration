@@ -318,10 +318,7 @@ class PluginManager:
             }
             self.plugin_settings_configs[guid] = error_settings
 
-        if self.settings_migrated:
-            emit_message("config", config=self.config)
-            save_config(self.config)
-            self.settings_migrated = False
+        self._persist_migrated_settings()
 
         # Broadcast settings configs to UI
         self.broadcast_plugin_ui()
@@ -365,7 +362,7 @@ class PluginManager:
                 if not isinstance(key, str) or not key:
                     raise ValueError('Plugin UI inputs must have nonempty keys')
                 fields[key] = value
-            for key in ('grids', 'fields', 'content', 'sections', 'children', 'items', 'details'):
+            for key in ('grids', 'fields', 'content', 'sections', 'children', 'items', 'details', 'summary'):
                 child = value.get(key)
                 if isinstance(child, (list, dict)):
                     fields.update(self._input_fields(child))
@@ -403,6 +400,12 @@ class PluginManager:
             self._ui_values[plugin] = previous
             raise
 
+    def _set_ui_value(self, plugin: PluginBase, key: str, value: Any) -> None:
+        fields = {**self._setting_inputs(plugin), **self._input_fields(plugin.get_ui_views())}
+        if not isinstance(key, str) or key not in fields or fields[key].get('readonly'):
+            raise ValueError('common.invalidAction')
+        self._ui_values[plugin][key] = deepcopy(value)
+
     def broadcast_plugin_ui(self) -> None:
         emit_message('plugin_ui', plugins=self.plugin_ui)
         emit_message('plugin_settings_configs', plugin_settings_configs=self.plugin_settings_configs,
@@ -428,7 +431,7 @@ class PluginManager:
             if action == 'ui_changed':
                 result = self._on_ui_changed(plugin, payload)
             else:
-                result = plugin.on_ui_action(action, payload)
+                result = self._namespaces[plugin].presentation(plugin.on_ui_action(action, payload))
             self._refresh_plugin_setting_contents(plugin)
             plugin.publish_ui()
             emit_message('plugin_ui_result', request_id=request_id, plugin_guid=plugin_guid, success=True, result=result)
@@ -440,6 +443,12 @@ class PluginManager:
                 error_text = 'common.invalidAction'
             emit_message('plugin_ui_result', request_id=request_id, plugin_guid=plugin_guid, success=False, error=error_text)
 
+    def _persist_migrated_settings(self) -> None:
+        if self.settings_migrated:
+            emit_message("config", config=self.config)
+            save_config(self.config)
+            self.settings_migrated = False
+
     def on_settings_changed(self, new_config: Config):
         """
         Executed when the plugin settings are changed, and will call the on_settings_changed hook for each plugin.
@@ -448,9 +457,8 @@ class PluginManager:
         for module in self.plugin_list.values():
             log('debug', f"Executing on_settings_changed hook for {module.plugin_manifest.name}")
             try:
-                guid = self._namespaces[module].guid
                 previous_settings = module.settings
-                module.settings = deepcopy(new_config.get('plugin_settings', {}).get(guid) or {})
+                self._initialize_plugin_settings(module)
                 missing = object()
                 for key in self._get_ui_state(module):
                     if previous_settings.get(key, missing) != module.settings.get(key, missing):
@@ -461,6 +469,7 @@ class PluginManager:
         # Emit after the hooks so field mutations made inside them (e.g. live
         # list filtering) are included in the published snapshot.
         self.republish_settings()
+        self._persist_migrated_settings()
 
     def update_plugin_setting(self, plugin_guid: str, key: str, value: Any) -> bool:
         """Persist one plugin setting and notify the UI and owning plugin."""

@@ -1501,7 +1501,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
                 weapon_type_enum.append(weapon_key)
 
     # Register actions - General Ship Actions
-    actionManager.registerAction('fireWeapons', "Fire weapons with simple controls: single shot, start continuous, or stop", {
+    actionManager.registerAction('fireWeapons', "Fire primary or secondary ship weapons: fire once, hold fire for a duration, start continuous fire, or stop firing.", {
         "type": "object",
         "properties": {
             "weaponType": {
@@ -1550,7 +1550,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "honk": {"weaponType": "discovery_scanner", "action":"fire"},
     })
 
-    actionManager.registerAction('setSpeed', "Change flight thrust", {
+    actionManager.registerAction('setSpeed', "Set ship throttle or flight speed: full speed, half speed, percentages, reverse thrust, or a full stop.", {
         "type": "object",
         "properties": {
             "speed": {
@@ -1577,7 +1577,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "reverse": {"speed": "Minus100"},
     })
 
-    actionManager.registerAction('deployHeatSink', "Deploy heat sink", {
+    actionManager.registerAction('deployHeatSink', "Deploy a heat sink to reduce ship heat.", {
         "type": "object",
         "properties": {}
     }, deploy_heat_sink, 'ship', permission='deployHeatSink', cache_prefill={
@@ -1590,7 +1590,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "cooling": {},
     })
 
-    actionManager.registerAction('deployHardpointToggle', "Deploy or retract hardpoints. Do not call this action when asked to switch hud mode", {
+    actionManager.registerAction('deployHardpointToggle', "Deploy or retract weapon hardpoints. HUD combat and analysis modes are controlled separately by Change_ship_HUD_mode.", {
         "type": "object",
         "properties": {}
     }, deploy_hardpoint_toggle, 'ship', permission='deployHardpointToggle', cache_prefill={
@@ -1605,7 +1605,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
     })
 
     actionManager.registerAction('managePowerDistribution',
-                                 "Manage power distribution between ship systems. Apply pips to one or more power systems or balance the power across two or if unspecified, across all 3",
+                                 "Allocate ship power pips to engines, weapons, or systems; maximize a category, balance power, or reset pips evenly.",
                                  {
                                      "type": "object",
                                      "properties": {
@@ -1648,7 +1648,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "pips to systems": {"power_category": ["Systems"], "pips": [2]},
     })
 
-    actionManager.registerAction('plotToTarget', "Plot a navigation route to a system, station, or body. Uses Spansh to resolve the target, then plots via the galaxy map or navigates in the current system map when already there. Set clear_nav_route to true to clear the current navigation route; when a route exists this plots to the final stop in that route.", {
+    actionManager.registerAction('plotToTarget', "Plot a navigation route to a named star system, station, or celestial body, or clear the current navigation route.", {
         "type": "object",
         "properties": {
             "system": {
@@ -1665,7 +1665,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
             },
             "clear_nav_route": {
                 "type": "boolean",
-                "description": "Clear the current navigation route.",
+                "description": "Clear the current navigation route. If a route exists, this plots to the final stop in that route to clear it. If no route exists, this succeeds only when no system, station, or body target was provided.",
             },
         },
     }, plot_to_target, 'ship', permission='plotToTarget', cache_prefill={
@@ -1673,7 +1673,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "clear navigation route": {"clear_nav_route": True},
     })
 
-    actionManager.registerAction('galaxyMapOpenOrClose', "Open or close the galaxy map", {
+    actionManager.registerAction('galaxyMapOpenOrClose', "Open or close the galaxy map or star map.", {
         "type": "object",
         "properties": {
             "desired_state": {
@@ -1692,7 +1692,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "nav map": {"desired_state": "open"},
     })
 
-    actionManager.registerAction('systemMapOpenOrClose', "Open or close system map", {
+    actionManager.registerAction('systemMapOpenOrClose', "Open or close the local system map showing planets, moons, stations, and bodies within the current star system.", {
         "type": "object",
         "properties": {
             "desired_state": {
@@ -1711,7 +1711,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "show system map": {"desired_state": "open"},
     })
 
-    actionManager.registerAction('targetShip', "Target a ship - cycle to next/previous target or select highest threat", {
+    actionManager.registerAction('targetShip', "Select the next or previous ship or hostile target, target the highest threat, or select a wingmate or their target.", {
         "type": "object",
         "properties": {
             "mode": {
@@ -1774,7 +1774,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "target third teammate's target": {"mode": "wingman_3_target"},
     })
 
-    actionManager.registerAction('toggleWingNavLock', "Toggle wing nav lock", {
+    actionManager.registerAction('toggleWingNavLock', "Toggle wing navigation lock to follow a wingmate's jumps and supercruise transitions.", {
         "type": "object",
         "properties": {}
     }, toggle_wing_nav_lock, 'ship', permission='toggleWingNavLock', cache_prefill={
@@ -1794,7 +1794,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
 
     actionManager.registerAction(
         'cycle_fire_group',
-        "call this tool if the user asks to cycle, select or switch to specific firegroup, the the next firegroup or to the previous firegroup",
+        "Switch to the next or previous fire group, or select a specific fire group by letter or index.",
         {
             "type": "object",
             "properties": {
@@ -1821,7 +1821,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         }
     )
 
-    actionManager.registerAction('Change_ship_HUD_mode', "Switch to combat or analysis mode", {
+    actionManager.registerAction('Change_ship_HUD_mode', "Switch the ship's HUD to combat or analysis mode, or toggle between the two.", {
         "type": "object",
         "properties": {
             "hud mode": {
@@ -1841,7 +1841,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "change hud": {"hud mode": "toggle"},
     })
 
-    actionManager.registerAction('shipSpotLightToggle', "Toggle ship spotlight", {
+    actionManager.registerAction('shipSpotLightToggle', "Turn the ship's external lights, headlights, or spotlight on or off.", {
         "type": "object",
         "properties": {}
     }, ship_spot_light_toggle, 'ship', permission='shipSpotLightToggle', cache_prefill={
@@ -1854,7 +1854,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "toggle the lights": {}
     })
 
-    actionManager.registerAction('fireChaffLauncher', "Fire chaff launcher", {
+    actionManager.registerAction('fireChaffLauncher', "Deploy chaff to disrupt enemy gimballed and turreted weapon tracking.", {
         "type": "object",
         "properties": {}
     }, fire_chaff_launcher, 'ship', permission='fireChaffLauncher', cache_prefill={
@@ -1866,7 +1866,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "evade": {},
     })
 
-    actionManager.registerAction('engineBoost', "Use engine boost", {
+    actionManager.registerAction('engineBoost', "Boost the engines for a short burst of speed.", {
         "type": "object",
         "properties": {}
     }, engine_boost, ['mainship', 'fighter', 'nomad'], permission='engineBoost', cache_prefill={
@@ -1876,7 +1876,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "use boost": {},
     })
 
-    actionManager.registerAction('nightVisionToggle', "Toggle night vision", {
+    actionManager.registerAction('nightVisionToggle', "Toggle the ship's night vision to highlight terrain and objects in darkness.", {
         "type": "object",
         "properties": {}
     }, night_vision_toggle, 'ship', permission='nightVisionToggle', cache_prefill={
@@ -1890,7 +1890,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
 
 
 
-    actionManager.registerAction('targetSubmodule', "Target a subsystem on locked ship", {
+    actionManager.registerAction('targetSubmodule', "Target a specific module on the currently selected ship, such as its drives, power plant, shield generator, or frame shift drive.", {
         "type": "object",
         "properties": {
             "subsystem": {
@@ -1933,7 +1933,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "target the power plant": {"subsystem":"Power Plant"},
     })
 
-    actionManager.registerAction('chargeECM', "Charge ECM", {
+    actionManager.registerAction('chargeECM', "Charge and activate electronic countermeasures (ECM) to disrupt incoming guided missiles and torpedoes.", {
         "type": "object",
         "properties": {}
     }, charge_ecm, 'ship', permission='chargeECM', cache_prefill={
@@ -1945,7 +1945,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "disrupt": {},
     })
 
-    actionManager.registerAction('chargeFieldNeutraliser', "Charge Shutdown Field Neutraliser", {
+    actionManager.registerAction('chargeFieldNeutraliser', "Charge the Shutdown Field Neutraliser to counter a Thargoid shutdown pulse.", {
         "type": "object",
         "properties": {}
     }, charge_field_neutraliser, 'ship', permission='chargeFieldNeutraliser', cache_prefill={
@@ -1958,7 +1958,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
     })
 
     # Register actions - NPC Crew Order Actions
-    actionManager.registerAction('npcOrder', "Order NPC crew ship", {
+    actionManager.registerAction('npcOrder', "Give NPC crew orders: attack your target, defend, act aggressively, hold fire or position, follow, return to the ship, or launch a fighter.", {
         "type": "object",
         "properties": {
             "orders": {
@@ -1986,7 +1986,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
     })
 
     # Register actions - Mainship Actions
-    actionManager.registerAction('launchSLF', "Launch a ship-launched fighter", {
+    actionManager.registerAction('launchSLF', "Launch a ship-launched fighter from fighter bay slot 1 or 2.", {
         "type": "object",
         "properties": {
             "vehicle_number": {
@@ -1998,7 +1998,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         },
     }, launch_slf, 'mainship', permission='launchSLF', cache_prefill={})
 
-    actionManager.registerAction('deploySRV', "Deploy an SRV", {
+    actionManager.registerAction('deploySRV', "Deploy a Surface Recon Vehicle (SRV) from the ship's vehicle bay.", {
         "type": "object",
         "properties": {
             "vehicle_number": {
@@ -2012,7 +2012,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "launch srv": {},
     })
 
-    actionManager.registerAction('disembark', "Leave vehicle", {
+    actionManager.registerAction('disembark', "Exit the current ship or vehicle and continue on foot.", {
         "type": "object",
         "properties": {},
     }, disembark, ['mainship', 'buggy', 'nomad'], permission='disembark', cache_prefill={
@@ -2022,7 +2022,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
     })
 
     actionManager.registerAction('FsdJump',
-                                 "initiate FSD jump (jump to the next system or enter supercruise)", {
+                                 "Activate the frame shift drive: jump to the next star system, enter supercruise, or punch it.", {
                                      "type": "object",
                                      "properties": {
                                          "jump_type": {
@@ -2044,7 +2044,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
     })
 
     actionManager.registerAction('target_next_system_in_route',
-                                 "When we have a nav route set, this will automatically target the next system in the route",
+                                 "Select or target the next star system or waypoint on the plotted navigation route.",
                                  {
                                      "type": "object",
                                      "properties": {}
@@ -2057,7 +2057,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "next in route": {},
     })
 
-    actionManager.registerAction('toggleCargoScoop', "Toggles cargo scoop", {
+    actionManager.registerAction('toggleCargoScoop', "Deploy or retract the ship's cargo scoop for collecting floating cargo and materials.", {
         "type": "object",
         "properties": {}
     }, toggle_cargo_scoop, 'mainship', permission='toggleCargoScoop', cache_prefill={
@@ -2070,7 +2070,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "close cargo scoop": {},
     })
 
-    actionManager.registerAction('ejectAllCargo', "Eject all cargo", {
+    actionManager.registerAction('ejectAllCargo', "Jettison all cargo from the ship's cargo hold.", {
         "type": "object",
         "properties": {}
     }, eject_all_cargo, 'mainship', permission='ejectAllCargo', cache_prefill={
@@ -2082,7 +2082,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "purge cargo": {},
     })
 
-    actionManager.registerAction('landingGearToggle', "Toggle landing gear", {
+    actionManager.registerAction('landingGearToggle', "Deploy or retract the landing gear: gear down for landing or gear up for flight.", {
         "type": "object",
         "properties": {}
     }, landing_gear_toggle, ['mainship','nomad'], permission='landingGearToggle', cache_prefill={
@@ -2096,7 +2096,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "gear down": {},
     })
 
-    actionManager.registerAction('useShieldCell', "Use shield cell", {
+    actionManager.registerAction('useShieldCell', "Activate a shield cell bank (SCB) to replenish the ship's active shields.", {
         "type": "object",
         "properties": {}
     }, use_shield_cell, 'mainship', permission='useShieldCell', cache_prefill={
@@ -2109,7 +2109,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "restore shields": {},
     })
 
-    actionManager.registerAction('requestDocking', "Request docking", {
+    actionManager.registerAction('requestDocking', "Request permission to dock at the targeted station or docking facility.", {
         "type": "object",
         "properties": {}
     }, request_docking, 'mainship', permission='requestDocking', cache_prefill={
@@ -2121,7 +2121,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "docking permission": {},
     })
 
-    actionManager.registerAction('liftoff', "Undock from station or lift off from planet", {
+    actionManager.registerAction('liftoff', "Launch from a station landing pad or lift off from a planetary surface.", {
         "type": "object",
         "properties": {}
     }, liftoff, ['mainship', 'nomad'], permission='liftoff', cache_prefill={
@@ -2134,7 +2134,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "liftoff": {},
     })
 
-    actionManager.registerAction('stationServices', "Access a station service", {
+    actionManager.registerAction('stationServices', "Refuel, repair, or rearm the ship while docked; request one or more services.", {
         "type": "object",
         "properties": {
             "service": {
@@ -2155,7 +2155,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
     })
 
     # Register actions - Ship Launched Fighter Actions
-    actionManager.registerAction('fighterRequestDock', "Request docking for Ship Launched Fighter", {
+    actionManager.registerAction('fighterRequestDock', "Request permission to dock the ship-launched fighter with its mothership.", {
         "type": "object",
         "properties": {}
     }, fighter_request_dock, 'fighter', permission='fighterRequestDock', cache_prefill={
@@ -2168,7 +2168,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
     })
 
     # Register actions - Nomad Actions
-    actionManager.registerAction('requestDockingNomad', "Request docking with ship", {
+    actionManager.registerAction('requestDockingNomad', "Request permission to dock the Nomad with its mothership.", {
         "type": "object",
         "properties": {},
     }, request_docking_nomad, 'nomad', permission='requestDockingNomad', cache_prefill={
@@ -2177,7 +2177,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "return to ship": {},
     })
 
-    actionManager.registerAction('recallDismissShipNomad', "Recall or dismiss ship", {
+    actionManager.registerAction('recallDismissShipNomad', "Recall the mothership to your location or dismiss it while piloting the Nomad.", {
         "type": "object",
         "properties": {},
     }, recall_dismiss_ship_nomad, 'nomad', permission='recallDismissShipNomad', cache_prefill={
@@ -2186,7 +2186,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
     })
 
     # Register actions - SRV Actions (Horizons)
-    actionManager.registerAction('dockSRV', "Dock the SRV", {
+    actionManager.registerAction('dockSRV', "Board the ship with the SRV and return it to the vehicle bay.", {
         "type": "object",
         "properties": {},
     }, dock_srv, 'buggy', permission='dockSRV', cache_prefill={
@@ -2194,7 +2194,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "return to ship": {},
     })
 
-    actionManager.registerAction('toggleDriveAssist', "Toggle drive assist", {
+    actionManager.registerAction('toggleDriveAssist', "Toggle SRV drive assist on or off.", {
         "type": "object",
         "properties": {}
     }, toggle_drive_assist, 'buggy', permission='toggleDriveAssist', cache_prefill={
@@ -2206,7 +2206,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "stability": {},
     })
 
-    actionManager.registerAction('fireWeaponsBuggy', "Fire buggy weapons with simple controls: single shot, start continuous, or stop", {
+    actionManager.registerAction('fireWeaponsBuggy', "Fire primary or secondary SRV weapons: fire once, hold fire for a duration, start continuous fire, or stop firing.", {
         "type": "object",
         "properties": {
             "weaponType": {
@@ -2255,7 +2255,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "engage weapons": {"weaponType": "primary", "action": "fire"},
     })
 
-    actionManager.registerAction('autoBreak', "Toggle auto-brake", {
+    actionManager.registerAction('autoBreak', "Toggle the SRV's automatic brake.", {
         "type": "object",
         "properties": {}
     }, auto_break_buggy, 'buggy', permission='autoBreak', cache_prefill={
@@ -2267,7 +2267,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "parking brake": {},
     })
 
-    actionManager.registerAction('headlights', "Control SRV headlights - toggle or set to specific mode (off/low/high)", {
+    actionManager.registerAction('headlights', "Set the SRV headlights to off, low beam, or high beam, or cycle to the next lighting mode.", {
         "type": "object",
         "properties": {
             "desired_state": {
@@ -2288,7 +2288,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "full beam": {"desired_state": "high"},
     })
 
-    actionManager.registerAction('nightVisionToggleBuggy', "Toggle night vision", {
+    actionManager.registerAction('nightVisionToggleBuggy', "Toggle SRV night vision to highlight terrain and objects in darkness.", {
         "type": "object",
         "properties": {}
     }, night_vision_toggle, 'buggy', permission='nightVisionToggleBuggy', cache_prefill={
@@ -2300,7 +2300,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "infrared": {},
     })
 
-    actionManager.registerAction('toggleTurret', "Toggle turret mode", {
+    actionManager.registerAction('toggleTurret', "Switch between SRV driving view and turret control mode.", {
         "type": "object",
         "properties": {}
     }, toggle_buggy_turret, 'buggy', permission='toggleTurret', cache_prefill={
@@ -2312,7 +2312,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "retract turret": {},
     })
 
-    actionManager.registerAction('selectTargetBuggy', "Select target", {
+    actionManager.registerAction('selectTargetBuggy', "Select the object under the SRV's targeting reticle.", {
         "type": "object",
         "properties": {}
     }, select_target_buggy, 'buggy', permission='selectTargetBuggy', cache_prefill={
@@ -2325,7 +2325,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
     })
 
     actionManager.registerAction('managePowerDistributionBuggy',
-                                 "Manage power distribution between buggy power systems. Apply pips to one or more power systems or balance the power across two or if unspecified, across all 3",
+                                 "Allocate SRV power pips to engines, weapons, or systems; maximize a category, balance power, or reset pips evenly.",
                                  {
                                      "type": "object",
                                      "properties": {
@@ -2368,7 +2368,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "pips to systems": {"power_category": ["Systems"], "pips": [2]},
     })
 
-    actionManager.registerAction('toggleCargoScoopBuggy', "Toggle cargo scoop", {
+    actionManager.registerAction('toggleCargoScoopBuggy', "Deploy or retract the SRV's cargo scoop for collecting cargo and materials.", {
         "type": "object",
         "properties": {}
     }, toggle_cargo_scoop_buggy, 'buggy', permission='toggleCargoScoopBuggy', cache_prefill={
@@ -2380,7 +2380,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "collect materials": {},
     })
 
-    actionManager.registerAction('ejectAllCargoBuggy', "Eject all cargo", {
+    actionManager.registerAction('ejectAllCargoBuggy', "Jettison all cargo from the SRV's cargo hold.", {
         "type": "object",
         "properties": {}
     }, eject_all_cargo_buggy, 'buggy', permission='ejectAllCargoBuggy', cache_prefill={
@@ -2392,7 +2392,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "drop materials": {},
     })
 
-    actionManager.registerAction('recallDismissShipBuggy', "Recall or dismiss ship", {
+    actionManager.registerAction('recallDismissShipBuggy', "Recall your ship for pickup or dismiss it while driving the SRV.", {
         "type": "object",
         "properties": {}
     }, recall_dismiss_ship_buggy, 'buggy', permission='recallDismissShipBuggy', cache_prefill={
@@ -2404,7 +2404,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "ship pickup": {},
     })
 
-    actionManager.registerAction('plotToTargetBuggy', "Plot a navigation route to a system, station, or body from the SRV. Set clear_nav_route to true to clear the current navigation route; when a route exists this plots to the final stop in that route.", {
+    actionManager.registerAction('plotToTargetBuggy', "Plot a navigation route to a named star system, station, or celestial body from the SRV, or clear the current navigation route.", {
         "type": "object",
         "properties": {
             "system": {
@@ -2429,7 +2429,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "clear navigation route": {"clear_nav_route": True},
     })
 
-    actionManager.registerAction('galaxyMapOpenOrCloseBuggy', "Open or close the galaxy map from the SRV.", {
+    actionManager.registerAction('galaxyMapOpenOrCloseBuggy', "Open or close the galaxy map or star map while driving the SRV.", {
         "type": "object",
         "properties": {
             "desired_state": {
@@ -2447,7 +2447,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "nav map": {"desired_state": "open"},
     })
 
-    actionManager.registerAction('systemMapOpenOrCloseBuggy', "Open/close system map.", {
+    actionManager.registerAction('systemMapOpenOrCloseBuggy', "Open or close the local system map showing planets, moons, stations, and other bodies while driving the SRV.", {
         "type": "object",
         "properties": {
             "desired_state": {
@@ -2467,7 +2467,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
     })
 
     # Register actions - On-Foot Actions
-    actionManager.registerAction('embark', "Enter a vehicle", {
+    actionManager.registerAction('embark', "Board a nearby ship or vehicle from on foot.", {
         "type": "object",
         "properties": {},
     }, embark, 'humanoid', permission='embark', cache_prefill={
@@ -2475,7 +2475,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "enter vehicle": {},
     })
 
-    actionManager.registerAction('primaryInteractHumanoid', "Primary interact action", {
+    actionManager.registerAction('primaryInteractHumanoid', "Perform the primary interaction with the object or interface you are looking at while on foot.", {
         "type": "object",
         "properties": {}
     }, primary_interact_humanoid, 'humanoid', permission='primaryInteractHumanoid', cache_prefill={
@@ -2487,7 +2487,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "engage": {},
     })
 
-    actionManager.registerAction('secondaryInteractHumanoid', "Secondary interact action", {
+    actionManager.registerAction('secondaryInteractHumanoid', "Perform the secondary or alternate interaction with the object or interface you are looking at while on foot.", {
         "type": "object",
         "properties": {}
     }, secondary_interact_humanoid, 'humanoid', permission='secondaryInteractHumanoid', cache_prefill={
@@ -2499,7 +2499,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "alternative": {},
     })
 
-    actionManager.registerAction('equipGearHumanoid', "Equip or hide a piece of gear", {
+    actionManager.registerAction('equipGearHumanoid', "Equip an on-foot weapon, tool, or grenade, or holster the currently held weapon.", {
         "type": "object",
         "properties": {
             "equipment": {
@@ -2538,7 +2538,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "profile analyser": {"equipment": "HumanoidSwitchToSuitTool"},
     })
 
-    actionManager.registerAction('toggleFlashlightHumanoid', "Toggle flashlight", {
+    actionManager.registerAction('toggleFlashlightHumanoid', "Toggle the suit's flashlight or torch while on foot.", {
         "type": "object",
         "properties": {}
     }, toggle_flashlight_humanoid, 'humanoid', permission='toggleFlashlightHumanoid', cache_prefill={
@@ -2550,7 +2550,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "helmet light": {},
     })
 
-    actionManager.registerAction('toggleNightVisionHumanoid', "Toggle night vision", {
+    actionManager.registerAction('toggleNightVisionHumanoid', "Toggle suit night vision to improve visibility in darkness while on foot.", {
         "type": "object",
         "properties": {}
     }, toggle_night_vision_humanoid, 'humanoid', permission='toggleNightVisionHumanoid', cache_prefill={
@@ -2562,7 +2562,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "infrared": {},
     })
 
-    actionManager.registerAction('toggleShieldsHumanoid', "Toggle shields", {
+    actionManager.registerAction('toggleShieldsHumanoid', "Toggle the suit's personal shields on or off.", {
         "type": "object",
         "properties": {}
     }, toggle_shields_humanoid, 'humanoid', permission='toggleShieldsHumanoid', cache_prefill={
@@ -2574,19 +2574,18 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "protective field": {},
     })
 
-    actionManager.registerAction('clearAuthorityLevelHumanoid', "Clear authority level", {
+    actionManager.registerAction('clearAuthorityLevelHumanoid', "Clear the security access level held by the suit, including cloned authorization.", {
         "type": "object",
         "properties": {}
     }, clear_authority_level_humanoid, 'humanoid', permission='clearAuthorityLevelHumanoid', cache_prefill={
         "clear authority": {},
         "reset authority": {},
-        "clear wanted level": {},
-        "clear notoriety": {},
         "authority reset": {},
-        "clean record": {},
+        "clear security access": {},
+        "clear cloned authorization": {},
     })
 
-    actionManager.registerAction('healthPackHumanoid', "Use health pack", {
+    actionManager.registerAction('healthPackHumanoid', "Use a health pack or medkit to restore health while on foot.", {
         "type": "object",
         "properties": {}
     }, health_pack_humanoid, 'humanoid', permission='healthPackHumanoid', cache_prefill={
@@ -2598,7 +2597,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "first aid": {},
     })
 
-    actionManager.registerAction('batteryHumanoid', "Use battery", {
+    actionManager.registerAction('batteryHumanoid', "Use an energy cell or battery to replenish suit power.", {
         "type": "object",
         "properties": {}
     }, battery_humanoid, 'humanoid', permission='batteryHumanoid', cache_prefill={
@@ -2610,7 +2609,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "charge suit": {},
     })
 
-    actionManager.registerAction('galaxyMapOpenOrCloseHumanoid', "Open or Close Galaxy Map", {
+    actionManager.registerAction('galaxyMapOpenOrCloseHumanoid', "Open or close the galaxy map or star map while on foot.", {
         "type": "object",
         "properties": {}
     }, galaxy_map_open_or_close_humanoid, 'humanoid', permission='galaxyMapOpenOrCloseHumanoid', cache_prefill={
@@ -2623,7 +2622,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "show galaxy map": {},
     })
 
-    actionManager.registerAction('systemMapOpenOrCloseHumanoid', "Open or Close System Map", {
+    actionManager.registerAction('systemMapOpenOrCloseHumanoid', "Open or close the local system map showing planets, moons, stations, and other bodies while on foot.", {
         "type": "object",
         "properties": {}
     }, system_map_open_humanoid, 'humanoid', permission='systemMapOpenOrCloseHumanoid', cache_prefill={
@@ -2636,7 +2635,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "show system map": {},
     })
 
-    actionManager.registerAction('recallDismissShipHumanoid', "Recall or dismiss ship", {
+    actionManager.registerAction('recallDismissShipHumanoid', "Recall your ship for pickup or dismiss it while on foot.", {
         "type": "object",
         "properties": {}
     }, recall_dismiss_ship_humanoid, 'humanoid', permission='recallDismissShipHumanoid', cache_prefill={
@@ -2648,7 +2647,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "ship pickup": {},
     })
 
-    actionManager.registerAction('textMessage', "Send message to commander or local", {
+    actionManager.registerAction('textMessage', "Send an in-game text chat message to local, system, wing, or squadron chat, or privately to a named Commander.", {
         "type": "object",
         "properties": {
             "message": {
@@ -2689,7 +2688,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         )
 
     if vision_model:
-        actionManager.registerAction('getVisuals', "Describes what's currently visible to the Commander.", {
+        actionManager.registerAction('getVisuals', "Inspect the Commander's current game view and answer a question about visible objects, text, or surroundings.", {
             "type": "object",
             "properties": {
                 "query": {

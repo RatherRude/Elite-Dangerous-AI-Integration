@@ -13,7 +13,7 @@
         </div>
     } @else {
         <div class="runtime-container">
-            <mat-tab-group [selectedIndex]="selectedTabIndex">
+            <mat-tab-group [selectedIndex]="selectedTabIndex" (selectedIndexChange)="onRuntimeTabSelected($event)">
                 <mat-tab>
                     <ng-template mat-tab-label>
                         <mat-icon class="tab-label-icon">forum</mat-icon>

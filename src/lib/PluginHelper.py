@@ -102,8 +102,8 @@ class PluginHelper():
 
     _ActionModelT = TypeVar('_ActionModelT', bound=BaseModel)
 
-    def register_action(self, name: str, description: str, parameters: type[_ActionModelT], method: Callable[[_ActionModelT, dict], str], action_type="ship", input_template: Callable[[dict, dict], str]|None=None):
-        """Register an action"""
+    def register_action(self, name: str, description: str, parameters: type[_ActionModelT], method: Callable[[_ActionModelT, dict], str], action_type="ship", input_template: Callable[[dict, dict], str]|None=None, is_enabled: Callable[[], bool] | None = None):
+        """Register an action, optionally checking live availability through is_enabled."""
         def _wrapper(args: dict, context: dict) -> str:
             try:
                 model = parameters(**args)
@@ -112,7 +112,7 @@ class PluginHelper():
                 log('error', f"Plugin action '{name}' raised an exception: {e}")
                 return f"Error executing action {name}: {str(e)}"
 
-        self._action_manager.registerAction(name=name, description=description, parameters=parameters.model_json_schema(), method=_wrapper, action_type=action_type, input_template=input_template)
+        self._action_manager.registerAction(name=name, description=description, parameters=parameters.model_json_schema(), method=_wrapper, action_type=action_type, input_template=input_template, is_enabled=is_enabled)
 
     def register_projection(self, projection: Projection):
         """Register a projection to maintain state over time

@@ -3,6 +3,7 @@ from functools import lru_cache
 from typing import Any, Callable, cast, Dict, Union, List, Optional
 from pathlib import Path
 import random
+import math
 
 from openai.types.chat import ChatCompletionMessageParam
 from pydantic import BaseModel
@@ -57,6 +58,14 @@ NavRouteEvent = dict
 
 class PromptGenerator:
     previous_prompt_json = ''
+
+    @staticmethod
+    def format_hull_health(health: Any) -> str:
+        """Journal hull updates only establish a 20-percentage-point range."""
+        if isinstance(health, bool) or not isinstance(health, (int, float)) or not math.isfinite(health) or not 0 <= health <= 1:
+            return "unknown"
+        lower = min(80, math.floor(health * 5) * 20)
+        return f"between {lower}% and {lower + 20}% (journal updates in 20% steps; exact current value unavailable)"
     
     def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str], system_db: SystemDatabase, weapon_types: list[dict] | None = None, disabled_game_events: list[str] | None = None):
         self.registered_prompt_event_handlers: list[Callable[[Event], str|None]] = []
@@ -2162,9 +2171,9 @@ class PromptGenerator:
 
         if event_name == 'HullDamage':
             hull_damage_event = cast(HullDamageEvent, content)
-            health = hull_damage_event.get('Health', 0) * 100
+            health = self.format_hull_health(hull_damage_event.get('Health'))
             vehicle = "fighter" if hull_damage_event.get('Fighter') else "ship"
-            return f"{self.commander_name}'s {vehicle} hull integrity at {health:.1f}%."
+            return f"{self.commander_name}'s {vehicle} hull integrity is {health}."
 
         if event_name == 'Interdicted':
             interdicted_event = cast(InterdictedEvent, content)
@@ -3193,6 +3202,7 @@ class PromptGenerator:
         if active_mode == 'Main ship':
             # Get the ship loadout information
             loadout_info = get_state_dict(projected_states, 'Loadout')
+            ship_display['Hull integrity'] = self.format_hull_health(loadout_info.get('HullHealth'))
             if loadout_info:
                 # Create comprehensive ship loadout display focusing only on modules
                 loadout_display = {}
@@ -3792,7 +3802,8 @@ class PromptGenerator:
                     + "Do not use markdown in your responses, and no commas in numbers. " \
                     + "Your purpose is to provide information, status updates, and execute tools as required. Only use tools you are given from me. " \
                     + "Be specific about amounts and percentages for inquiries as the commander can not see the game events' text description but lives in the universe. " \
-                    + "You do not ask questions or initiate conversations. You respond only when addressed and in a single sentence. " \
+                    + "When showUI is available, an explicit request to display or open an available panel requires opening that panel with showUI; a spoken summary alone does not fulfill it. You may also summarize its state after opening it. " \
+                    + "You do not initiate conversations. Ask a short clarification question when a requested action or UI target is ambiguous, without executing it or changing the UI until clarified; otherwise do not ask questions. You respond only when addressed and in a single sentence. " \
                     + "Don't repeat the same words and sentences, mix it up. " \
                     + "Your character prompt is: " + self.character_prompt.format(commander_name=self.commander_name)
             

@@ -8,7 +8,7 @@ class UIText(TypedDict, total=False):
     localized: dict[str, str]
 
 
-ComponentType = Literal['paragraph', 'text', 'textarea', 'toggle', 'number', 'select', 'button', 'list', 'filter', 'error', 'heading', 'section', 'inline', 'progress', 'action']
+ComponentType = Literal['paragraph', 'notification', 'text', 'textarea', 'toggle', 'number', 'select', 'button', 'list', 'filter', 'error', 'heading', 'section', 'inline', 'progress', 'action']
 
 
 class _ComponentProperties(TypedDict, total=False):
@@ -19,7 +19,7 @@ class _ComponentProperties(TypedDict, total=False):
     text: UIText
     tone: Literal['default', 'info', 'warning', 'success', 'muted', 'danger']
     outlined: bool
-    level: int
+    level: int | Literal['info', 'warning', 'error']
     children: list['UIComponent']
     value: float
     maximum: float
@@ -87,6 +87,10 @@ class Paragraph(InputBase):
     content: str
 
 
+class Notification(Paragraph):
+    pass
+
+
 class Error(Paragraph):
     pass
 
@@ -121,6 +125,8 @@ class ListAction(TypedDict):
     label: NotRequired[str]
     danger: NotRequired[bool]
     inline_edit: NotRequired[bool]
+    secondary: NotRequired[bool]
+    confirmation: NotRequired[str]
 
 
 class ListRow(TypedDict):
@@ -134,20 +140,24 @@ class ListRow(TypedDict):
     pending: NotRequired[bool]
     tone: NotRequired[str]
     details: NotRequired[list['UIComponent']]
+    summary: NotRequired[list['UIComponent']]
+    highlighted: NotRequired[bool]
 
 
 class List(UINode):
     items: NotRequired[list[ListRow]]
     row_actions: NotRequired[list[ListAction]]
     count_labels: NotRequired[dict[str, str]]
+    details_collapsible: NotRequired[bool]
 
 
-UIComponent = UINode | TextInput | Filter | TextArea | NumberInput | Toggle | Select | Button | Paragraph | Error | Text | Heading | Section | Inline | Progress | Action | List
+UIComponent = UINode | TextInput | Filter | TextArea | NumberInput | Toggle | Select | Button | Paragraph | Notification | Error | Text | Heading | Section | Inline | Progress | Action | List
 
 
 class UIViewSection(TypedDict):
     key: str
     label: str
+    voice_aliases: NotRequired[list[str]]
     grids: NotRequired[list[str]]
     content: NotRequired[list[UIComponent]]
 
@@ -155,6 +165,7 @@ class UIViewSection(TypedDict):
 class PluginUIView(TypedDict):
     id: str
     label: str
+    voice_aliases: NotRequired[list[str]]
     description: NotRequired[str]
     icon: NotRequired[str]
     order: NotRequired[int]

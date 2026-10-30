@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, List, Literal, Optional
 
 from lib.Logger import ModelUsageStats
 from lib.Models import OpenAILLMModel
@@ -101,8 +101,26 @@ def paragraph(content: str) -> dict[str, Any]:
     }
 
 
+def notification(
+    content: str,
+    key: str,
+    *,
+    level: Literal["info", "warning", "error"] = "info",
+    label: str | None = None,
+) -> dict[str, Any]:
+    return {
+        "key": key,
+        "label": label,
+        "type": "notification",
+        "readonly": True,
+        "placeholder": None,
+        "content": content,
+        "level": level,
+    }
+
+
 def api_key(settings: dict[str, Any], prefix: str, shared_key: str = "api_key") -> str:
-    return str(settings.get(f"{prefix}_api_key") or settings.get(shared_key) or "-")
+    return str(settings.get(shared_key) or settings.get(f"{prefix}_api_key") or "-")
 
 
 def string_setting(settings: dict[str, Any], key: str, default: str) -> str:
