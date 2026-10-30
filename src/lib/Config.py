@@ -860,10 +860,8 @@ class Character(TypedDict, total=False):
     personality_knowledge_pop_culture: bool
     personality_knowledge_scifi: bool
     personality_knowledge_history: bool
-    tts_voice: str
     tts_voice_settings: dict[str, dict[str, Any]]
     tts_speed: str
-    tts_prompt: str
     tts_postprocessing: CharacterTTSPostprocessingConfig
     tts_environment_damage_effects_var: bool
     tts_environment_helmet_effects_var: bool
@@ -1011,7 +1009,7 @@ LEGACY_PROVIDER_SETTING_KEYS = (
     'llm_api_key', 'llm_endpoint', 'llm_model_name', 'llm_reasoning_effort', 'llm_temperature',
     'agent_llm_model_name', 'agent_llm_reasoning_effort', 'agent_llm_endpoint',
     'agent_llm_api_key', 'agent_llm_temperature',
-    'vision_model_name', 'vision_endpoint', 'vision_api_key',
+    'vision_model_name', 'vision_endpoint', 'vision_api_key', 'vision_temperature', 'vision_reasoning_effort',
     'stt_model_name', 'stt_api_key', 'stt_endpoint', 'stt_language', 'stt_custom_prompt',
     'tts_model_name', 'tts_api_key', 'tts_endpoint',
     'embedding_model_name', 'embedding_endpoint', 'embedding_api_key',
@@ -1048,11 +1046,31 @@ def _copy_provider_settings(
     api_key_target: str | None = None,
 ) -> None:
     plugin_settings = data.setdefault('plugin_settings', {}).setdefault(plugin_guid, {})
+    # This is the legacy-provider handoff, not a plugin schema upgrade. Leave
+    # settings_version untouched so the owning plugin can migrate from version 0.
     if shared_api_key:
-        plugin_settings.setdefault('api_key', data.get('api_key', ''))
+        legacy_key = next((
+            data[source] for target, source in mappings.items()
+            if target.endswith('_api_key') and isinstance(data.get(source), str) and data[source]
+        ), '') or data.get('api_key') or ''
+        if not plugin_settings.get('api_key') and legacy_key:
+            plugin_settings['api_key'] = legacy_key
+            plugin_settings.setdefault('legacy_shared_api_key', legacy_key)
+        else:
+            plugin_settings.setdefault('api_key', '')
     for target, source in mappings.items():
-        if target not in plugin_settings and source in data:
-            plugin_settings[target] = data[source]
+        inherits_legacy_key = (
+            shared_api_key and target.endswith('_api_key') and data.get('api_key')
+            and 'legacy_shared_api_key' in plugin_settings
+        )
+        if target not in plugin_settings and (source in data or inherits_legacy_key):
+            # Before plugins, each role's non-empty override preceded the global
+            # credential. Save the effective key so empty overrides still inherit
+            # the original global key, even when another role uses a different key.
+            if shared_api_key and target.endswith('_api_key'):
+                plugin_settings[target] = data.get(source) or data.get('api_key', '')
+            else:
+                plugin_settings[target] = data[source]
     if api_key_target and not plugin_settings.get(api_key_target):
         plugin_settings[api_key_target] = data.get('api_key', '')
 
@@ -1090,8 +1108,13 @@ def migrate(data: dict) -> dict:
     legacy_game_events = data.get('game_events', game_events)
     if not isinstance(legacy_game_events, dict) or any(isinstance(value, dict) for value in legacy_game_events.values()):
         legacy_game_events = game_events
-    # Migrate vision_var to vision_provider
-    if 'vision_var' in data and not data.get('vision_var'):
+    # Convert the legacy enable flag without discarding an already-migrated
+    # plugin selection when vision is temporarily disabled.
+    vision_provider = data.get('vision_provider')
+    if (
+        'vision_var' in data and not data.get('vision_var')
+        and not (isinstance(vision_provider, str) and vision_provider.startswith('plugin:'))
+    ):
         data['vision_provider'] = 'none'
     
     if 'config_version' not in data or data['config_version'] is None:
@@ -1158,6 +1181,7 @@ def migrate(data: dict) -> dict:
             data['characters'].append(character)
             data['active_character_index'] = 1
 
+        data.setdefault('active_character_index', 0)
         if data['active_character_index'] + 1 > len(data['characters']):
             data['active_character_index'] = len(data['characters']) - 1
 
@@ -1222,12 +1246,12 @@ def migrate(data: dict) -> dict:
                 data['embedding_provider'] = data['llm_provider']
                 data["embedding_endpoint"] = "https://api.openai.com/v1"
                 data["embedding_model_name"] = "text-embedding-3-small"
-                data["embedding_api_key"] = data["llm_api_key"]
+                data["embedding_api_key"] = data.get("llm_api_key") or data.get("api_key", '')
             elif data['llm_provider'] == 'google-ai-studio':
                 data['embedding_provider'] = data['llm_provider']
                 data["embedding_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
                 data["embedding_model_name"] = "gemini-embedding-001"
-                data["embedding_api_key"] = data["llm_api_key"]
+                data["embedding_api_key"] = data.get("llm_api_key") or data.get("api_key", '')
             elif data['llm_provider'] == 'local-ai-server':
                 data['embedding_provider'] = data['llm_provider']
                 data["embedding_endpoint"] = "http://127.0.0.1:8080"
@@ -1319,29 +1343,11 @@ def migrate(data: dict) -> dict:
     if data['config_version'] < 12:
         data['config_version'] = 12
 
-        if data.get('vision_provider') == 'google-ai-studio' and data.get('vision_model_name') == 'gemini-2.0-flash':
-            data['vision_model_name'] = 'gemini-2.5-flash'
-        if data.get('stt_provider') == 'google-ai-studio' and data.get('stt_model_name') == 'gemini-2.0-flash-lite':
-            data['stt_model_name'] = 'gemini-2.5-flash-lite'
-
     if data['config_version'] < 13:
         data['config_version'] = 13
 
-        if data.get('llm_provider') == 'google-ai-studio':
-            data['llm_model_name'] = 'gemini-3.1-flash-lite-preview'
-        if data.get('agent_llm_provider') == 'google-ai-studio':
-            data['agent_llm_model_name'] = 'gemini-3.1-flash-lite-preview'
-        if data.get('vision_provider') == 'google-ai-studio':
-            data['vision_model_name'] = 'gemini-3.1-flash-lite-preview'
-
     if data['config_version'] < 14:
         data['config_version'] = 14
-
-        if data.get('agent_llm_provider') == 'openai' and data.get('agent_llm_model_name') in ['gpt-4.1-mini', 'gpt-5.4-nano']:
-            data['agent_llm_model_name'] = 'gpt-5.4-mini'
-            data['agent_llm_reasoning_effort'] = 'low'
-        if data.get('vision_provider') == 'openai' and data.get('vision_model_name') == 'gpt-4.1-mini':
-            data['vision_model_name'] = 'gpt-5.4-nano'
             
     if data['config_version'] < 15:
         data['config_version'] = 15
@@ -1412,6 +1418,7 @@ def migrate(data: dict) -> dict:
         vlm_mappings = {
             'vlm_model': 'vision_model_name', 'vlm_endpoint': 'vision_endpoint',
             'vlm_api_key': 'vision_api_key',
+            'vlm_temperature': 'vision_temperature', 'vlm_reasoning_effort': 'vision_reasoning_effort',
         }
         stt_mappings = {
             'stt_model': 'stt_model_name', 'stt_endpoint': 'stt_endpoint',
@@ -1447,8 +1454,8 @@ def migrate(data: dict) -> dict:
             _migrate_provider_selection(data, 'agent_llm_provider', legacy, guid, 'agent-llm', agent_mappings, shared_api_key=True)
             _migrate_provider_selection(data, 'vision_provider', legacy, guid, 'vlm', vlm_mappings, shared_api_key=True)
             _migrate_provider_selection(data, 'stt_provider', legacy, guid, 'stt', stt_mappings, shared_api_key=True)
+            _migrate_provider_selection(data, 'tts_provider', legacy, guid, 'tts', tts_mappings, shared_api_key=True)
             _migrate_provider_selection(data, 'embedding_provider', legacy, guid, 'embedding', embedding_mappings, shared_api_key=True)
-        _migrate_provider_selection(data, 'tts_provider', 'openai', openai_guid, 'tts', tts_mappings, shared_api_key=True)
 
         _migrate_provider_selection(data, 'llm_provider', 'mistral', mistral_guid, 'llm', llm_mappings, shared_api_key=True)
         _migrate_provider_selection(data, 'agent_llm_provider', 'mistral', mistral_guid, 'llm', llm_mappings, shared_api_key=True)
@@ -1573,6 +1580,13 @@ def migrate(data: dict) -> dict:
 
     data.pop('tools_var', None)
 
+    # Legacy voice fields are consumed only by the migration above. Never retain
+    # them as cross-provider fallbacks in an already migrated character.
+    for character in data.get('characters', []):
+        if isinstance(character, dict):
+            character.pop('tts_voice', None)
+            character.pop('tts_prompt', None)
+
     for key in LEGACY_PROVIDER_SETTING_KEYS:
         data.pop(key, None)
 
@@ -1640,20 +1654,6 @@ def merge_config_data(defaults: dict, user: dict):
     return merge
 
 def getDefaultCharacter(config: Config) -> Character:
-    characters = config.get('characters', [])
-    active_index = config.get('active_character_index', -1)
-    current_voice = (
-        characters[active_index].get('tts_voice')
-        if 0 <= active_index < len(characters)
-        else None
-    )
-    selected_tts_provider = config.get('tts_provider')
-    initial_voice = current_voice or 'en-US-AvaMultilingualNeural'
-    initial_voice_settings = (
-        {selected_tts_provider: {'voice': initial_voice}}
-        if isinstance(selected_tts_provider, str) and selected_tts_provider.startswith('plugin:')
-        else {}
-    )
     return Character({
         "name": 'Default',
         "character": "Keep your responses extremely brief and minimal. Maintain a professional and serious tone in all responses. Stick to factual information. You are COVAS:NEXT (Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal) - professional, efficient, and no-nonsense. Provides essential information without unnecessary elaboration. Focuses on factual data and operational status. 'Destination reached.' 'Fuel level acceptable.' Clean, precise communication. Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS:NEXT. Always respond in English regardless of the language spoken to you. Balance emotional understanding with factual presentation. Use everyday language that balances casual and professional tones. Project an air of expertise and certainty when providing information. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.",
@@ -1671,10 +1671,8 @@ def getDefaultCharacter(config: Config) -> Character:
         "personality_knowledge_pop_culture": False,
         "personality_knowledge_scifi": False,
         "personality_knowledge_history": False,
-        "tts_voice": initial_voice,
-        "tts_voice_settings": initial_voice_settings,
+        "tts_voice_settings": {},
         "tts_speed": '1.2',
-        "tts_prompt": '',
         "tts_postprocessing": get_default_character_tts_postprocessing(),
         "tts_environment_damage_effects_var": True,
         "tts_environment_helmet_effects_var": True,

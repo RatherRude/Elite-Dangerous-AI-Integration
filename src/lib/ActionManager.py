@@ -23,9 +23,8 @@ class ActionManager:
         action_cache: KeyValueStore = KeyValueStore("action_cache")
         action_cache.delete_all()
     
-    actions = {}
-
     def __init__(self):
+        self.actions: dict[str, dict[str, Any]] = {}
         self.action_cache = KeyValueStore("action_cache")
         self.allowed_actions: dict[str, bool] = {}
 
@@ -40,6 +39,9 @@ class ActionManager:
         valid_actions = []
         action_permissions = allowed_actions if isinstance(allowed_actions, dict) else {}
         for action in actions:
+            is_enabled = action.get("is_enabled")
+            if is_enabled is not None and not is_enabled():
+                continue
             permission_key = action.get("permission")
             if permission_key and action_permissions.get(permission_key) is not True:
                 continue
@@ -96,7 +98,9 @@ class ActionManager:
 
         function_name = tool_call.function.name
         function_descriptor = self.actions.get(function_name)
-        if function_descriptor:
+        if function_descriptor and (
+            function_descriptor.get("is_enabled") is None or function_descriptor["is_enabled"]()
+        ):
             function_to_call = function_descriptor.get("method")
             function_args = json.loads(tool_call.function.arguments if tool_call.function.arguments else "null")
 
@@ -117,7 +121,7 @@ class ActionManager:
                 log("debug", "An error occurred during function:", e, traceback.format_exc())
                 function_result = "ERROR: " + repr(e)
         else:
-            function_result = f"ERROR: Function {function_name} does not exist!"
+            function_result = f"ERROR: Function {function_name} does not exist or is disabled!"
 
         return {
             "tool_call_id": tool_call.id,
@@ -133,12 +137,14 @@ class ActionManager:
         action_type="ship", 
         permission: str | None = None,
         input_template: Callable[[dict, dict], str] | None = None, 
-        cache_prefill: dict[str, dict] | None = None
+        cache_prefill: dict[str, dict] | None = None,
+        is_enabled: Callable[[], bool] | None = None,
     ):
         """
             register action with name, description, parameters and method
             input_template is a function that takes the function arguments and projected states and returns a string
             cache_prefill is a dictionary of user input and arguments to prefill the cache with
+            is_enabled optionally checks live availability before listing or executing an action
         """
         if permission and self.allowed_actions.get(permission) is not True:
             log("debug", f"Action '{name}' skipped registration due to missing permission '{permission}'")
@@ -148,6 +154,7 @@ class ActionManager:
             "method": method,
             "type": action_type,
             "permission": permission,
+            "is_enabled": is_enabled,
             "input_template": input_template,
             "tool": {
                 "type": "function",

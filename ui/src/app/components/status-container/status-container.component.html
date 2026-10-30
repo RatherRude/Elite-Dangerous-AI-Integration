@@ -416,8 +416,13 @@
                             <div class="stat-label">HULL</div>
                             <div class="stat-value-with-bar">
                                 <div class="stat-value">{{ getShipHealth() }}</div>
-                                <mat-progress-bar class="stat-bar" mode="determinate"
-                                                  [value]="getShipHealthPercentage()"></mat-progress-bar>
+                                <div *ngIf="getShipHealthRange() as range" class="stat-bar hull-range-bar"
+                                     role="meter" aria-label="Hull integrity" aria-valuemin="0" aria-valuemax="100"
+                                     [attr.aria-valuenow]="range[0]" [attr.aria-valuetext]="getShipHealth()">
+                                    <span class="hull-range-solid" [style.width.%]="range[0]"></span>
+                                    <span class="hull-range-uncertain" [style.left.%]="range[0]"
+                                          [style.width.%]="range[1] - range[0]"></span>
+                                </div>
                             </div>
                         </div>
 

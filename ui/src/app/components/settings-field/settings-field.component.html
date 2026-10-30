@@ -53,6 +53,15 @@
             <div [innerHTML]="resolve(field.content, field.params)"></div>
         </div>
     }
+    @case ('notification') {
+        <div class="notification-field" [class]="'notification-field ' + (field.level || 'info')"
+            [attr.role]="field.level === 'warning' || field.level === 'error' ? 'alert' : 'status'">
+            @if (resolve(field.label)) {
+                <strong>{{ resolve(field.label) }}</strong>
+            }
+            <p [innerHTML]="resolve(field.content, field.params)"></p>
+        </div>
+    }
     @case ('error') {
         <div class="error-field">
             @if (resolve(field.label)) {
@@ -145,7 +154,9 @@
             }
             @for (entry of rowsWithGroups(field.items); track entry.row.key) {
                 @if (entry.header) {
-                    <button class="list-group" [class.pending]="entry.groupPending" type="button" (click)="toggleGroup(entry.header)">
+                    <button class="list-group" [class.pending]="entry.groupPending" type="button"
+                            [attr.aria-expanded]="!isGroupCollapsed(entry.header)" (click)="toggleGroup(entry.header)"
+                            [attr.data-ui-section]="entry.header" [attr.data-ui-section-label]="resolve(entry.header)">
                         <mat-icon class="list-group-icon">{{ isGroupCollapsed(entry.header) ? 'keyboard_arrow_right' : 'keyboard_arrow_down' }}</mat-icon>
                         <span>{{ resolve(entry.header) }}</span>
                         <span class="list-group-count">{{ groupCountLabel(entry) }}</span>
@@ -170,28 +181,61 @@
                             </div>
                         </div>
                     } @else {
-                        <div class="list-row" [class.pending]="entry.row.pending" [class.tone-warning]="entry.row.tone === 'warning'" [class.tone-info]="entry.row.tone === 'info'" [class.tone-muted]="entry.row.tone === 'muted'" [class.tone-default]="entry.row.tone === 'default'">
+                        <div class="list-row" [class.highlighted]="entry.row.highlighted" [class.pending]="entry.row.pending" [class.tone-warning]="entry.row.tone === 'warning'" [class.tone-info]="entry.row.tone === 'info'" [class.tone-muted]="entry.row.tone === 'muted'" [class.tone-default]="entry.row.tone === 'default'">
                             <div class="list-row-text">
                         <span class="list-row-title">{{ rowTitle(entry.row) }}</span>
                         @if (entry.row.meta) {
                             <span class="list-row-meta">{{ resolve(entry.row.meta, entry.row.params) }}</span>
                         }
+                        <app-plugin-content [nodes]="entry.row.summary ?? []" [getValue]="getValue" [setValue]="setValue"
+                            [onButtonClick]="onButtonClick" (action)="uiAction.emit($event)" />
                             </div>
                             <div class="list-row-actions">
                                 @for (action of field.row_actions; track action.action) {
+                                    @if (!action.secondary) {
                                     <button mat-icon-button type="button"
                                             [attr.aria-label]="resolve(action.label)"
+                                            [matTooltip]="resolve(action.label)"
                                             [class.danger]="action.danger"
                                             (click)="onListAction(action, entry.row)">
                                         <mat-icon>{{ action.icon }}</mat-icon>
                                     </button>
+                                    }
+                                }
+                                @if (hasSecondaryActions()) {
+                                    <button mat-icon-button type="button" [matMenuTriggerFor]="rowMenu"
+                                            [attr.aria-label]="resolve('common.moreActions')"
+                                            [matTooltip]="resolve('common.moreActions')">
+                                        <mat-icon>more_vert</mat-icon>
+                                    </button>
+                                    <mat-menu #rowMenu="matMenu">
+                                        @for (action of field.row_actions; track action.action) {
+                                            @if (action.secondary) {
+                                                <button mat-menu-item type="button" [class.danger]="action.danger"
+                                                        (click)="onListAction(action, entry.row)">
+                                                    <mat-icon>{{ action.icon }}</mat-icon>
+                                                    <span>{{ resolve(action.label) }}</span>
+                                                </button>
+                                            }
+                                        }
+                                    </mat-menu>
                                 }
                             </div>
                         </div>
                     }
+                    @if (field.details_collapsible && entry.row.details?.length) {
+                    <details class="list-row-details">
+                        <summary [attr.data-ui-section]="entry.row.title_key ?? entry.row.key"
+                                 [attr.data-ui-section-id]="entry.row.key"
+                                 [attr.data-ui-section-label]="rowTitle(entry.row)">{{ resolve('common.details') }}</summary>
+                        <app-plugin-content [nodes]="entry.row.details ?? []" [getValue]="getValue" [setValue]="setValue"
+                            [onButtonClick]="onButtonClick" (action)="uiAction.emit($event)" />
+                    </details>
+                    } @else {
                     <app-plugin-content [nodes]="entry.row.details ?? []" [getValue]="getValue" [setValue]="setValue"
                         [onButtonClick]="onButtonClick"
                         (action)="uiAction.emit($event)" />
+                    }
                 }
             } @empty {
                 <p class="list-empty">{{ resolve(field.placeholder) }}</p>

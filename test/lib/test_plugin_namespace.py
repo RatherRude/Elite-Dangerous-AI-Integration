@@ -28,6 +28,14 @@ def test_header_link_scopes_translations_and_preserves_destination():
     assert link['text'] == '@support.prompt'
 
 
+def test_list_confirmation_and_action_notification_scope_only_the_translation_keys():
+    original = {'confirmation': '@delete', 'notification': '@added', 'params': {'title': '@literal'}}
+    assert PluginNamespace('alpha').presentation(original) == {
+        'confirmation': 'plugin.alpha.delete', 'notification': 'plugin.alpha.added', 'params': {'title': '@literal'},
+    }
+    assert original['confirmation'] == '@delete'
+
+
 class LocalPlugin(PluginBase):
     def __init__(self, guid):
         super().__init__(PluginManifest(json.dumps({'guid': guid, 'name': 'Local plugin'})))

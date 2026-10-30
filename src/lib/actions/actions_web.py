@@ -2703,7 +2703,7 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
 
     actionManager.registerAction(
         'web_search_agent',
-        "Request a detailed report about information from the game, including news, system, station, body, engineers, blueprint, material lookups and commander data(owned ships and modules, statistics, super power reputation, elite ranks, squadron, owned fleet carriers). Use this tool whenever the user asks about anything related to external or global information.",
+        "Research Elite Dangerous information and return a detailed report: news, systems, stations, bodies, engineers, blueprints, materials, or Commander records such as owned ships, modules, ranks, reputation, squadron, and fleet carriers.",
         {
             "type": "object",
             "properties": {
@@ -2724,7 +2724,7 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
     if embeddingModel:
         actionManager.registerAction(
             'remember_memories',
-        "Retrieve relevant long-term memory notes from logbook by semantic search. Use this to remember and recall older logbook entries and memories than currently known to answer questions concerning the past.",
+        "Search older logbook entries and long-term memories to recall past conversations, events, activities, or Commander preferences.",
             parameters={
                 "type": "object",
                 "properties": {

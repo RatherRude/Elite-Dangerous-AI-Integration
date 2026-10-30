@@ -41,6 +41,7 @@ from lib.Config import (
     reset_game_events,
 )
 from lib.PluginManager import PluginManager
+from lib.PluginSettingDefinitions import resolve_voice_settings
 from lib.ActionManager import ActionManager
 
 
@@ -279,46 +280,24 @@ class Chat:
                 else:
                     self.ttsModel = cast(TTSModel, model)
                     provider = self.plugin_manager.get_plugin_provider(tts_plugin[0], tts_plugin[1])
-                    grids = provider.get("voice_settings_config") if provider else None
-                    if grids is not None:
-                        fields = [field for grid in grids for field in grid["fields"]]
-                        defaults = {
-                            field["key"]: field.get("default_value")
-                            for field in fields
-                            if "default_value" in field
-                        }
-                        stored = self.character.get("tts_voice_settings", {}).get(
-                            self.config["tts_provider"], {}
-                        )
-                        declared_keys = {field["key"] for field in fields}
-                        stored = {
-                            key: value
-                            for key, value in stored.items()
-                            if key in declared_keys
-                        } if isinstance(stored, dict) else {}
-                        tts_voice_settings = {
-                            **defaults,
-                            **stored,
-                        }
-                        if any(field["key"] == "voice" for field in fields):
-                            tts_voice_settings.setdefault("voice", self.character["tts_voice"])
-                        if any(field["key"] == "instructions" for field in fields):
-                            tts_voice_settings.setdefault("instructions", self.character["tts_prompt"])
+                    grids = provider.get("voice_settings_config", []) if provider else []
+                    stored = self.character.get("tts_voice_settings", {}).get(
+                        self.config["tts_provider"], {}
+                    )
+                    tts_voice_settings = resolve_voice_settings(
+                        grids, self.config.get("plugin_settings", {}).get(tts_plugin[0], {}),
+                        stored if isinstance(stored, dict) else {},
+                    )
             else:
                 show_chat_message("warning", f"TTS provider is not a registered plugin: {self.config['tts_provider']}")
 
         if self.ttsModel is not None:
             if hasattr(self.ttsModel, "speed"):
                 self.ttsModel.speed = float(self.character["tts_speed"])
-            if tts_voice_settings is None and hasattr(self.ttsModel, "voice_instructions"):
-                self.ttsModel.voice_instructions = self.character["tts_prompt"] or None
 
         self.tts = TTS(
             tts_model=self.ttsModel,
-            voice=str(
-                (tts_voice_settings or {}).get("voice")
-                or self.character["tts_voice"]
-            ),
+            voice=str((tts_voice_settings or {}).get("voice") or ""),
             voice_settings=tts_voice_settings,
             speed=float(self.character["tts_speed"]),
             postprocessing_config=self.character.get("tts_postprocessing"),
@@ -785,10 +764,10 @@ class Chat:
             )
         elif mode == "toggle" and ptt_keys:
             log("info", f"Setting hotkeys {ptt_keys} to toggle voice activation.")
-            self.stt.listen_continuous()
             self.stt.pause_continuous_listening(
                 self.config.get("ptt_inverted_var", False)
             )
+            self.stt.listen_continuous()
             self.controller_manager.register_hotkey(
                 ptt_keys,
                 lambda _: _,
@@ -874,11 +853,10 @@ class Chat:
                     self.event_manager.add_status_event(status)
 
                 # mute continuous listening during response
-                if self.config.get("mute_during_response_var"):
-                    if self.tts.get_is_playing():
-                        self.stt.pause_continuous_listening(True)
-                    else:
-                        self.stt.pause_continuous_listening(False)
+                self.stt.pause_continuous_listening_for_response(
+                    bool(self.config.get("mute_during_response_var"))
+                    and self.tts.get_is_playing()
+                )
 
                 # check STT recording
                 if self.stt.recording:
@@ -1035,10 +1013,14 @@ def read_stdin(chat: Chat):
         line = sys.stdin.readline().strip()
         if line:
             data = json.loads(line)
+            if data.get("type") == "ui_section_result":
+                from lib.actions.actions_ui import handle_ui_section_result
+                handle_ui_section_result(data)
             if data.get("type") == "change_config":
                 partial = data.get("config")
                 if isinstance(partial, dict):
                     chat.config = update_config(chat.config, partial)
+                    chat.assistant.config = chat.config
                     chat.plugin_manager.on_settings_changed(chat.config)
                     if "output_volume_multiplier" in partial:
                         chat.tts.set_output_volume_multiplier(

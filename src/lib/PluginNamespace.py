@@ -76,7 +76,7 @@ class PluginNamespace:
                     for field in ('text', 'label'):
                         if isinstance(item.get(field), str):
                             item[field] = self.translation_key(item[field])
-                elif key in {'label', 'placeholder', 'content', 'title_key', 'meta', 'group'} and isinstance(item, str):
+                elif key in {'label', 'placeholder', 'content', 'title_key', 'meta', 'group', 'confirmation', 'notification'} and isinstance(item, str):
                     value[key] = self.translation_key(item)
                 elif key == 'text' and isinstance(item, dict):
                     self._scope_text(item)

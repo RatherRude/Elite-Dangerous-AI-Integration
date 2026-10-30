@@ -1,13 +1,14 @@
 import { Component, Input, Output, EventEmitter, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { SettingsFieldComponent } from "../settings-field/settings-field.component";
-import { SettingsGrid, SettingBase } from "../../services/plugin-settings";
+import { SettingsGrid, SettingBase, SettingsElement, SettingCondition, matchesSettingCondition } from "../../services/plugin-settings";
 import { TranslateService } from "@ngx-translate/core";
 import { resolveSettingText } from "../../services/setting-text";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { PluginContentComponent } from "../plugin-content/plugin-content.component";
+import { MatTooltipModule } from "@angular/material/tooltip";
 
 /**
  * A reusable component for rendering a settings grid with a label and fields.
@@ -23,6 +24,7 @@ import { PluginContentComponent } from "../plugin-content/plugin-content.compone
         MatButtonModule,
         MatIconModule,
         PluginContentComponent,
+        MatTooltipModule,
     ],
     templateUrl: "./settings-grid.component.html",
     styleUrl: "./settings-grid.component.css",
@@ -84,7 +86,7 @@ export class SettingsGridComponent {
             | { kind: "field"; field: SettingBase }
         )[] = [];
         let pendingButtons: SettingBase[] | null = null;
-        for (const field of this.grid?.fields ?? []) {
+        for (const field of this.visibleFields(this.grid?.fields ?? [])) {
             if (field.type === "button") {
                 if (!pendingButtons) {
                     pendingButtons = [];
@@ -100,7 +102,7 @@ export class SettingsGridComponent {
     }
 
     firstButtonKey(): string | null {
-        const button = (this.grid?.fields ?? []).find(
+        const button = this.visibleFields(this.grid?.fields ?? []).find(
             (field) => field.type === "button",
         );
         return button?.key ?? null;
@@ -111,6 +113,16 @@ export class SettingsGridComponent {
         if (key && this.onButtonClick) {
             this.onButtonClick(key);
         }
+    }
+
+    matchesCondition(condition: SettingCondition): boolean {
+        return matchesSettingCondition(condition, this.getValue?.(condition.key, undefined));
+    }
+
+    private visibleFields(elements: SettingsElement[]): SettingBase[] {
+        return elements.flatMap(element => element.type === "condition"
+            ? this.matchesCondition(element.condition) ? this.visibleFields(element.fields) : []
+            : [element]);
     }
 
     handleButtonClick(field: SettingBase): void {

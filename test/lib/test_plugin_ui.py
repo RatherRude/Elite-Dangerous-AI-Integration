@@ -3,18 +3,19 @@ import sys
 from pathlib import Path
 from copy import deepcopy
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
 
 sys.path.insert(0, str(Path(__file__).parents[2] / 'src'))
 
-from lib.Event import GameEvent
+from lib.Event import ConversationEvent, GameEvent, ToolEvent
 from lib.PluginBase import PluginBase, PluginManifest
 from lib.PluginHelper import PluginHelper
 from lib.PluginManager import PluginManager
 from lib.PluginSettingDefinitions import PluginSettings
-from lib.PluginUIDefinitions import PluginUIView, UINode, UIText, UIViewSection
-from lib.PluginUIDefinitions import TextInput, Button, Progress, Select, SelectOption, Toggle
+from lib.PluginUIDefinitions import List as UIList, PluginUIView, UINode, UIText, UIViewSection
+from lib.PluginUIDefinitions import TextInput, Button, Progress, Select, SelectOption, Toggle, List, ListRow
 from lib.PluginSettingDefinitions import SettingsGrid, ModelProviderDefinition
 from lib.actions import actions_ui
 
@@ -68,6 +69,43 @@ def register(manager, guid):
     return plugin
 
 
+@pytest.fixture
+def ui_actions(monkeypatch):
+    cache = {}
+    messages = []
+    monkeypatch.setattr('lib.ActionManager.KeyValueStore', lambda name: SimpleNamespace(
+        get=cache.get, set=cache.__setitem__,
+    ))
+    monkeypatch.setattr(actions_ui.ActionManager, 'actions', {})
+    monkeypatch.setattr(actions_ui, 'plugin_manager', None)
+    monkeypatch.setattr(actions_ui, 'event_manager', None)
+    monkeypatch.setattr(actions_ui, 'send_message', messages.append)
+    action_manager = actions_ui.ActionManager()
+    actions_ui.register_ui_actions(action_manager, None)
+    return action_manager, messages, cache
+
+
+def register_upgrade_view(manager, guid='upgrades-guid', title='Am\u00e9liorations'):
+    plugin = register(manager, guid)
+    plugin.get_ui_views = lambda: [PluginUIView(id='upgrades', label='@runtime.title', sections=[
+        UIViewSection(key='route', label='@route.title'),
+        UIViewSection(key='session', label='@progress.title', grids=['session'],
+                      voice_aliases=["progression de l'am\u00e9lioration du vaisseau", 'suivi des am\u00e9liorations']),
+        UIViewSection(key='broker', label='@broker.grid'),
+        UIViewSection(key='plans', label='@grid.plans'),
+    ])]
+    plugin.get_ui_translations = lambda: {
+        'en': {'runtime': {'title': 'Ship upgrades'}, 'route': {'title': 'Route'},
+               'progress': {'title': 'Progress'}, 'broker': {'grid': 'Unlockable blueprints'},
+               'grid': {'plans': 'Plans'}},
+        'fr': {'runtime': {'title': title}, 'route': {'title': 'Route'},
+               'progress': {'title': 'Progression'}, 'broker': {'grid': 'Plans \u00e0 d\u00e9bloquer'},
+               'grid': {'plans': 'Plans'}},
+    }
+    manager.publish_plugin_ui(plugin)
+    return plugin
+
+
 def test_plugins_register_same_local_view_id_without_collision_and_publish_translations(manager):
     manager, emitted = manager
     register(manager, 'alpha-guid')
@@ -97,6 +135,19 @@ def test_ui_interactions_route_to_owner_and_correlate_success_and_errors(manager
     assert alpha.count == 3 and beta.count == 0
 
 
+def test_action_notifications_are_scoped_to_owner_and_never_published(manager):
+    manager, emitted = manager
+    plugin = register(manager, 'alpha')
+    result = {'notification': '@added', 'params': {'name': '@literal-user-title'}}
+    plugin.on_ui_action = lambda _action, _payload: result
+    manager.on_ui_action('alpha', 'add', {}, 'notify')
+    assert emitted[-1][1]['result'] == {
+        'notification': 'plugin.alpha.added', 'params': {'name': '@literal-user-title'},
+    }
+    assert result['notification'] == '@added'
+    assert 'notification' not in manager.plugin_ui['alpha']
+
+
 def test_event_hook_updates_plugin_view_through_public_api(manager):
     manager, emitted = manager
     plugin = register(manager, 'events-guid')
@@ -112,13 +163,10 @@ def test_event_hook_updates_plugin_view_through_public_api(manager):
     assert view['sections'][0]['content'][0]['text']['text'] == '1'
 
 
-def test_navigation_uses_registered_targets_and_validates_sections(manager, monkeypatch):
+def test_navigation_uses_registered_targets_and_validates_sections(manager, ui_actions):
     manager, _ = manager
     register(manager, 'other-guid')
-    messages = []
-    monkeypatch.setattr(actions_ui, 'send_message', messages.append)
-    monkeypatch.setattr(actions_ui, 'plugin_manager', None)
-    action_manager = SimpleNamespace(actions={'showUI': {'tool': {'function': {'parameters': {'properties': {'tab': {}, 'submenu': {}}}}}}})
+    action_manager, messages, _ = ui_actions
     actions_ui.configure_plugin_ui(manager, action_manager)
     schema = action_manager.actions['showUI']['tool']['function']['parameters']['properties']
     assert 'plugin:other-guid:dashboard' in schema['tab']['enum']
@@ -128,9 +176,377 @@ def test_navigation_uses_registered_targets_and_validates_sections(manager, monk
         actions_ui.show_ui({'tab': 'plugin:other-guid:dashboard', 'submenu': 'missing'}, {})
     manager.plugin_ui = {}
     manager.broadcast_plugin_ui()
+    schema = action_manager.actions['showUI']['tool']['function']['parameters']['properties']
     assert 'plugin:other-guid:dashboard' not in schema['tab']['enum']
     with pytest.raises(Exception, match='Unknown tab'):
         actions_ui.show_ui({'tab': 'plugin:other-guid:dashboard'}, {})
+
+
+@pytest.mark.parametrize('command,section', [
+    ('affiche la progression', 'session'),
+    ("AFFICHE L'ONGLET PROGRESSION !", 'session'),
+    ('montre la progression', 'session'),
+    ('ouvre la progression', 'session'),
+    ('affiche le sous-onglet progression', 'session'),
+    ('affiche la progression des am\u00e9liorations', 'session'),
+    ('affiche la progression du module ameliorations', 'session'),
+    ("affiche la progression de l'am\u00e9lioration du vaisseau", 'session'),
+    ("affiche la progression de l'amelioration du vaisseau", 'session'),
+    ("affiche le suivi des am\u00e9liorations", 'session'),
+    ("Affiche-moi la progression de l'am\u00e9lioration du vaisseau.", 'session'),
+    ("affiche moi la progression de l'amelioration du vaisseau", 'session'),
+    ("Montre-moi la progression de l'am\u00e9lioration du vaisseau.", 'session'),
+    ('affiche les plans', 'plans'),
+    ('affiche les plans \u00e0 d\u00e9bloquer', 'broker'),
+    ('affiche les plans a debloquer', 'broker'),
+    ('affiche la route des am\u00e9liorations', 'route'),
+    ('affiche la route des ameliorations', 'route'),
+    ('show progress', 'session'),
+    ('show the progress', 'session'),
+    ('show me the progress', 'session'),
+    ('open plans', 'plans'),
+    ('show unlockable blueprints', 'broker'),
+    ('show route in ship upgrades', 'route'),
+])
+def test_localized_upgrade_subtabs_predict_the_exact_tab_and_submenu(manager, ui_actions, command, section):
+    manager, _ = manager
+    register_upgrade_view(manager)
+    action_manager, messages, _ = ui_actions
+    actions_ui.configure_plugin_ui(manager, action_manager)
+    tools = action_manager.getToolsList('mainship', False, False, True)
+    predictions = action_manager.predict_action(command, tools)
+    assert predictions is not None and len(predictions) == 1
+    assert predictions[0].function.name == 'showUI'
+    assert json.loads(predictions[0].function.arguments) == {
+        'tab': 'plugin:upgrades-guid:upgrades', 'submenu': section,
+    }
+    result = action_manager.runAction(predictions[0], {})
+    assert not result['content'].startswith('ERROR:')
+    assert messages == [{'type': 'ui', 'show': 'plugin:upgrades-guid:upgrades', 'submenu': section}]
+    assert action_manager.predict_action(command, action_manager.getToolsList('mainship', True, False, False)) is None
+
+
+def test_model_sees_localized_labels_mapped_to_section_keys_even_without_action_cache(manager, ui_actions):
+    manager, _ = manager
+    register_upgrade_view(manager)
+    action_manager, _, cache = ui_actions
+    actions_ui.configure_plugin_ui(manager, action_manager)
+    properties = action_manager.actions['showUI']['tool']['function']['parameters']['properties']
+    assert 'Ship upgrades / Am\u00e9liorations' in properties['tab']['description']
+    assert 'session = Progress / Progression' in properties['tab']['description']
+    assert 'broker = Unlockable blueprints / Plans \u00e0 d\u00e9bloquer' in properties['tab']['description']
+    assert 'paired with the owning tab' in properties['submenu']['description']
+    previous_count = len(cache)
+    manager.broadcast_plugin_ui()
+    assert len(cache) == previous_count
+    tools = action_manager.getToolsList('mainship', False, False, True)
+    for command in ('ne montre pas la progression', 'comment afficher la progression',
+                    'calcule la route des ameliorations', 'commence les ameliorations'):
+        assert action_manager.predict_action(command, tools) is None
+    for command, args in actions_ui.SHOW_UI_PREFILLS.items():
+        prediction = action_manager.predict_action(command, tools)
+        assert prediction is not None
+        assert json.loads(prediction[0].function.arguments) == args
+
+
+@pytest.mark.parametrize('cache_enabled', [False, True])
+def test_explicit_display_opens_the_plugin_before_state_queries_and_keeps_the_followup_summary(
+    manager, ui_actions, monkeypatch, cache_enabled,
+):
+    from lib.Assistant import Assistant
+    from lib.Logger import PromptUsageStats
+
+    manager, _ = manager
+    register_upgrade_view(manager)
+    action_manager, messages, cache = ui_actions
+    actions_ui.configure_plugin_ui(manager, action_manager)
+    cache.clear()
+    command = "Affiche-moi la progression de l'am\u00e9lioration du vaisseau."
+    state_query = Mock(return_value='Plan progress')
+    action_manager.registerAction('plugin_state', 'Read state', {'type': 'object', 'properties': {}},
+                                  state_query, 'ship', cache_prefill={command: {}})
+    user_event = ConversationEvent(kind='user', content=command, responded_at=None)
+    event_manager = Mock()
+    event_manager.get_short_term_memory.return_value = [user_event]
+    event_manager.get_latest_memories.return_value = []
+    assistant = Assistant.__new__(Assistant)
+    assistant.is_replying = False
+    assistant.config = {
+        'game_actions_var': True, 'web_search_actions_var': False,
+        'ui_actions_var': True, 'use_action_cache_var': cache_enabled,
+    }
+    assistant.event_manager = event_manager
+    assistant.action_manager = action_manager
+    assistant.llmModel = Mock()
+    assistant.tts = Mock()
+    assistant.prompt_generator = Mock()
+    assistant.prompt_generator.generate_prompt.return_value = (
+        [{'role': 'user', 'content': command}], PromptUsageStats(),
+    )
+    assistant._get_tts_postprocessing_layers = Mock(return_value=[])
+    assistant.verify_action = Mock()
+    cache_usage = Mock()
+    monkeypatch.setattr('lib.Assistant.log_action_cache_usage', cache_usage)
+    monkeypatch.setattr('lib.Assistant.log_llm_usage', Mock())
+    states = {'CurrentStatus': {'flags': {'InMainShip': True}, 'flags2': {}}}
+
+    assistant.reply_thread(states)
+
+    assert messages == [{'type': 'ui', 'show': 'plugin:upgrades-guid:upgrades', 'submenu': 'session'}]
+    assistant.llmModel.generate.assert_not_called()
+    state_query.assert_not_called()
+    assistant.verify_action.assert_not_called()
+    cache_usage.assert_not_called()
+    request, results, _ = event_manager.add_tool_call.call_args.args
+    assert request[0]['function']['name'] == 'showUI'
+    assert not results[0]['content'].startswith('ERROR:')
+    user_event.responded_at = 1.0
+    tool_event = ToolEvent(request=request, results=results, responded_at=None)
+    event_manager.get_short_term_memory.return_value = [tool_event, user_event]
+    summary = 'Quarante-sept niveaux sur quatre-vingt-quatorze valid\u00e9s.'
+    assistant.llmModel.generate.return_value = (summary, [], None)
+
+    assistant.reply_thread(states)
+
+    assert len(messages) == 1
+    assistant.llmModel.generate.assert_called_once()
+    assistant.tts.say.assert_called_once_with(summary, context='assistant', postprocessing_layers=[])
+    event_manager.add_assistant_complete_event.assert_called_once()
+
+
+def test_direct_display_resolver_respects_ui_permissions_negation_and_ambiguity(manager, ui_actions):
+    manager, _ = manager
+    register_upgrade_view(manager)
+    action_manager, messages, _ = ui_actions
+    actions_ui.configure_plugin_ui(manager, action_manager)
+    disabled_tools = action_manager.getToolsList('mainship', True, False, False)
+    command = "affiche-moi la progression de l'am\u00e9lioration du vaisseau"
+    assert actions_ui.predict_plugin_ui_action(command, action_manager, disabled_tools) is None
+    tools = action_manager.getToolsList('mainship', True, False, True)
+    for query in ('ne montre pas la progression', 'ne m\'affiche pas la progression',
+                  'comment afficher la progression', 'quelle est la progression',
+                  'calcule la route des ameliorations'):
+        assert actions_ui.predict_plugin_ui_action(query, action_manager, tools) is None
+    register_upgrade_view(manager, guid='exploration', title='Exploration')
+    tools = action_manager.getToolsList('mainship', True, False, True)
+    assert actions_ui.predict_plugin_ui_action(command, action_manager, tools) is None
+    assert actions_ui.predict_plugin_ui_action('affiche-moi la progression', action_manager, tools) is None
+    prediction = actions_ui.predict_plugin_ui_action(
+        'affiche-moi la progression du module exploration', action_manager, tools,
+    )
+    assert prediction is not None
+    action_manager.runAction(prediction[0], {})
+    assert messages == [{'type': 'ui', 'show': 'plugin:exploration:upgrades', 'submenu': 'session'}]
+    manager.plugin_ui = {}
+    manager.broadcast_plugin_ui()
+    assert actions_ui.predict_plugin_ui_action(command, action_manager, tools) is None
+
+
+def test_system_prompt_requires_display_and_allows_ambiguity_clarification():
+    from lib.PromptGenerator import PromptGenerator
+
+    generator = PromptGenerator.__new__(PromptGenerator)
+    generator.commander_name = 'Commander'
+    generator.character_prompt = 'Assist {commander_name}.'
+    generator.registered_prompt_event_handlers = []
+    generator.generate_status_message = Mock(return_value='Current ship status')
+    event = ConversationEvent(kind='user', content='Show progress')
+    prompt, _ = generator.generate_prompt(events=[event], projected_states={}, pending_events=[event], memories=[])
+    system = next(message['content'] for message in prompt if message['role'] == 'system')
+    assert 'opening that panel with showUI' in system
+    assert 'a spoken summary alone does not fulfill it' in system
+    assert 'summarize its state after opening it' in system
+    assert 'Ask a short clarification question' in system
+    assert 'without executing it or changing the UI until clarified' in system
+    assert 'You do not ask questions or initiate conversations' not in system
+
+
+def test_ambiguous_subtab_names_need_qualification_and_removed_views_cannot_be_predicted(manager, ui_actions):
+    manager, _ = manager
+    register_upgrade_view(manager)
+    action_manager, _, _ = ui_actions
+    actions_ui.configure_plugin_ui(manager, action_manager)
+    tools = action_manager.getToolsList('mainship', False, False, True)
+    assert action_manager.predict_action('affiche la progression', tools) is not None
+    register_upgrade_view(manager, guid='other-guid', title='Exploration')
+    tools = action_manager.getToolsList('mainship', False, False, True)
+    assert action_manager.predict_action('affiche la progression', tools) is None
+    for title, guid in [('ameliorations', 'upgrades-guid'), ('exploration', 'other-guid')]:
+        prediction = action_manager.predict_action(f'affiche la progression du module {title}', tools)
+        assert prediction is not None
+        assert json.loads(prediction[0].function.arguments) == {'tab': f'plugin:{guid}:upgrades', 'submenu': 'session'}
+    del manager.plugin_ui['other-guid']
+    manager.broadcast_plugin_ui()
+    tools = action_manager.getToolsList('mainship', False, False, True)
+    assert action_manager.predict_action('affiche la progression', tools) is not None
+    manager.plugin_ui = {}
+    manager.broadcast_plugin_ui()
+    tools = action_manager.getToolsList('mainship', False, False, True)
+    assert action_manager.predict_action('affiche la progression', tools) is None
+    assert action_manager.predict_action('affiche la progression du module exploration', tools) is None
+    assert action_manager.predict_action('show route', tools) is not None
+
+
+@pytest.mark.parametrize('aliases', [
+    ('progr\u00e8s', 'progres'),
+    ('progression', 'progr\u00e8s'),
+])
+def test_multiple_plugin_views_require_semantic_resolution_or_explicit_qualification(manager, ui_actions, aliases):
+    manager, _ = manager
+    action_manager, messages, _ = ui_actions
+    for guid, title, alias in zip(('fleet', 'exploration'), ('Fleet', 'Exploration'), aliases):
+        plugin = register(manager, guid)
+        plugin.plugin_manifest.name = f'{title} extension'
+        view = PluginUIView(id='overview', label=title, sections=[
+            UIViewSection(key='progress', label=f'{title} report', voice_aliases=[alias]),
+        ])
+        plugin.get_ui_views = lambda view=view: [view]
+        manager.publish_plugin_ui(plugin)
+        manager.plugin_list[f'{guid}.entrypoint'] = manager.plugin_list.pop(guid)
+    actions_ui.configure_plugin_ui(manager, action_manager)
+    tools = action_manager.getToolsList('mainship', False, False, True)
+    function = action_manager.actions['showUI']['tool']['function']
+    assert 'ask the player which plugin, view or subtab' in function['description']
+    assert 'Do not call this tool or change the UI until the player clarifies' in function['description']
+    assert 'Never guess from plugin order, the current tab or similar aliases' in function['description']
+    for title in ('Fleet', 'Exploration'):
+        assert f'Owner plugin: {title} extension' in function['parameters']['properties']['tab']['description']
+        assert action_manager.predict_action(f'open {title}', tools) is None
+    for alias in aliases:
+        for variant in (alias, alias.replace('\u00e8', 'e')):
+            assert action_manager.predict_action(f'affiche les {variant}', tools) is None
+            assert action_manager.predict_action(f'show {variant}', tools) is None
+    assert messages == []
+    for guid, title, alias in zip(('fleet', 'exploration'), ('Fleet', 'Exploration'), aliases):
+        prediction = action_manager.predict_action(f'affiche les {alias} du module {title}', tools)
+        assert prediction is not None
+        assert json.loads(prediction[0].function.arguments) == {'tab': f'plugin:{guid}:overview', 'submenu': 'progress'}
+        action_manager.runAction(prediction[0], {})
+        assert messages[-1] == {'type': 'ui', 'show': f'plugin:{guid}:overview', 'submenu': 'progress'}
+    del manager.plugin_ui['exploration']
+    manager.broadcast_plugin_ui()
+    tools = action_manager.getToolsList('mainship', False, False, True)
+    assert action_manager.predict_action(f'affiche les {aliases[0]}', tools) is not None
+
+
+@pytest.mark.parametrize('separate_plugins', [False, True])
+def test_accent_variants_never_resolve_an_alias_collision_even_with_a_shared_view_qualifier(
+    manager, ui_actions, separate_plugins,
+):
+    manager, _ = manager
+    action_manager, messages, _ = ui_actions
+    for index, alias in enumerate(('progr\u00e8s', 'progres')):
+        guid = f'plugin-{index}' if separate_plugins else 'single-plugin'
+        plugin = manager.plugin_list.get(guid) or register(manager, guid)
+        section = UIViewSection(key=f'section-{index}', label=f'Report {index}', voice_aliases=[alias])
+        if separate_plugins or index == 0:
+            view = PluginUIView(id='overview', label='Overview', sections=[section])
+            plugin.get_ui_views = lambda view=view: [view]
+        else:
+            plugin.get_ui_views()[0]['sections'].append(section)
+        manager.publish_plugin_ui(plugin)
+    actions_ui.configure_plugin_ui(manager, action_manager)
+    tools = action_manager.getToolsList('mainship', False, False, True)
+    for alias in ('progr\u00e8s', 'progres'):
+        for suffix in ('', ' du module Overview'):
+            assert action_manager.predict_action(f'affiche les {alias}{suffix}', tools) is None
+        assert action_manager.predict_action(f'show {alias} in Overview', tools) is None
+    assert messages == []
+    prediction = action_manager.predict_action('show Report 0 in Overview', tools)
+    assert prediction is not None
+    assert json.loads(prediction[0].function.arguments) == {
+        'tab': 'plugin:plugin-0:overview' if separate_plugins else 'plugin:single-plugin:overview',
+        'submenu': 'section-0',
+    }
+
+
+@pytest.mark.parametrize('command,expanded,index', [
+    ('d\u00e9ploie la deuxi\u00e8me section', True, 2),
+    ('deploie la 2e section', True, 2), ('ouvre la section 2', True, 2),
+    ('replie la premi\u00e8re section', False, 1),
+    ('rabats la deuxieme section', False, 2),
+    ('expand the second section', True, 2), ('collapse section 3', False, 3),
+])
+def test_section_commands_wait_for_the_real_ui_acknowledgement(manager, ui_actions, monkeypatch, command, expanded, index):
+    manager, _ = manager
+    register_upgrade_view(manager)
+    action_manager, _, _ = ui_actions
+    actions_ui.configure_plugin_ui(manager, action_manager)
+    messages = []
+
+    def respond(message):
+        messages.append(message)
+        request = message['section']
+        actions_ui.handle_ui_section_result({
+            'request_id': request['request_id'], 'success': True, 'expanded': request['expanded'], 'label': 'Core Internal',
+        })
+
+    monkeypatch.setattr(actions_ui, 'send_message', respond)
+    tools = action_manager.getToolsList('mainship', False, False, True)
+    prediction = action_manager.predict_action(command, tools)
+    assert prediction is not None
+    assert prediction[0].function.name == 'setUISectionExpanded'
+    assert json.loads(prediction[0].function.arguments) == {'expanded': expanded, 'index': index}
+    result = action_manager.runAction(prediction[0], {})
+    assert ('expanded' if expanded else 'collapsed') in result['content']
+    assert messages[0]['section']['index'] == index
+    assert not actions_ui._section_requests
+
+
+def test_collapsible_section_catalog_translates_groups_and_keeps_index_commands_available(manager, ui_actions):
+    manager, _ = manager
+    plugin = register_upgrade_view(manager)
+    translations = plugin.get_ui_translations()
+    translations['en']['category'] = {'core': 'Core Internal'}
+    translations['fr']['category'] = {'core': 'Compartiments essentiels'}
+    plugin.get_ui_translations = lambda: translations
+    plugin.settings_config['grids'] = [
+        SettingsGrid(key='session', label='@progress.title', collapsible=True, fields=[
+            UIList(key='modules', type='list', items=[{'key': 'reactor', 'title': 'Power Plant', 'group': '@category.core'}]),
+        ]),
+    ]
+    manager.publish_plugin_ui(plugin)
+    action_manager, _, _ = ui_actions
+    actions_ui.configure_plugin_ui(manager, action_manager)
+    description = action_manager.actions['setUISectionExpanded']['tool']['function']['parameters']['properties']['name']['description']
+    assert 'plugin:upgrades-guid:upgrades / session' in description
+    assert 'Core Internal / Compartiments essentiels' in description
+    assert 'session = Progress / Progression' in description
+    tools = action_manager.getToolsList('mainship', False, False, True)
+    assert action_manager.predict_action('deploie la 2e section', tools) is not None
+    manager.broadcast_plugin_ui()
+    assert action_manager.predict_action('replie la section 2', tools) is not None
+
+@pytest.mark.parametrize('arguments', [
+    {}, {'expanded': True}, {'expanded': 'true', 'index': 1},
+    {'expanded': True, 'index': 0}, {'expanded': True, 'index': True},
+    {'expanded': True, 'index': 1.5}, {'expanded': True, 'name': ''},
+    {'expanded': True, 'name': 'core', 'index': 1},
+])
+def test_invalid_section_controls_do_not_emit_ui_messages(monkeypatch, arguments):
+    messages = []
+    monkeypatch.setattr(actions_ui, 'send_message', messages.append)
+    with pytest.raises(ValueError):
+        actions_ui.set_ui_section_expanded(arguments, {})
+    assert not messages and not actions_ui._section_requests
+
+
+def test_missing_failed_or_malformed_section_acknowledgements_are_not_reported_as_success(monkeypatch):
+    monkeypatch.setattr(actions_ui, '_section_timeout', 0)
+    monkeypatch.setattr(actions_ui, 'send_message', lambda message: None)
+    with pytest.raises(TimeoutError, match='not confirm'):
+        actions_ui.set_ui_section_expanded({'expanded': True, 'index': 2}, {})
+    assert not actions_ui._section_requests
+    for result, error in [
+        ({'success': False, 'error': 'Section not found'}, 'Section not found'),
+        ({'success': True, 'expanded': False, 'label': 'Core'}, 'Invalid UI section'),
+    ]:
+        monkeypatch.setattr(actions_ui, 'send_message', lambda message: actions_ui.handle_ui_section_result({
+            'request_id': message['section']['request_id'], **result,
+        }))
+        with pytest.raises(ValueError, match=error):
+            actions_ui.set_ui_section_expanded({'expanded': True, 'name': 'Compartiments essentiels'}, {})
+        assert not actions_ui._section_requests
 
 
 def test_application_without_plugins_has_no_views(manager):
@@ -138,6 +554,19 @@ def test_application_without_plugins_has_no_views(manager):
     manager.register_settings()
     assert manager.get_ui_targets() == {}
     assert next(payload for kind, payload in emitted if kind == 'plugin_ui') == {'plugins': {}}
+
+
+def test_voice_navigation_and_scrolling_use_shared_ui_messages(monkeypatch):
+    messages = []
+    monkeypatch.setattr(actions_ui, 'send_message', messages.append)
+    monkeypatch.setattr(actions_ui, 'plugin_manager', None)
+    actions_ui.show_ui({'tab': 'navigation', 'submenu': 'route'}, {})
+    for direction in ('down', 'up', 'top', 'bottom'):
+        actions_ui.scroll_ui({'direction': direction}, {})
+    assert messages == [
+        {'type': 'ui', 'show': 'navigation', 'submenu': 'route'},
+        *({'type': 'ui', 'scroll': direction} for direction in ('down', 'up', 'top', 'bottom')),
+    ]
 
 
 def test_duplicate_view_ids_are_rejected(manager):
@@ -229,6 +658,54 @@ def register_unified(manager, guid='unified'):
     manager.plugin_list[guid] = plugin
     manager.register_settings()
     return plugin
+
+
+def test_plugin_can_reset_a_declared_input_without_persistence_or_callbacks(manager, monkeypatch):
+    manager, emitted = manager
+    plugin = register_unified(manager)
+    other = register_unified(manager, 'other')
+    saved = []
+    monkeypatch.setattr('lib.PluginManager.save_config', lambda config: saved.append(deepcopy(config)))
+    manager.on_ui_action('unified', 'ui_changed', {'key': 'search', 'value': 'filter'}, 'filter')
+    changes = deepcopy(plugin.changes)
+    emitted.clear()
+    plugin.set_ui_value('search', '')
+    plugin.set_ui_value('transient', 'cleared')
+    assert plugin.get_ui_state()['search'] == ''
+    assert plugin.get_ui_state()['transient'] == 'cleared'
+    assert other.get_ui_state()['transient'] == 'view only'
+    assert plugin.changes == changes
+    assert plugin.settings == {} and saved == [] and emitted == []
+    plugin.publish_ui()
+    assert manager.plugin_ui['unified']['state']['search'] == ''
+    assert manager.plugin_ui['unified']['state']['transient'] == 'cleared'
+    for key in ('missing', 'refresh', 'progress'):
+        with pytest.raises(ValueError, match='common.invalidAction'):
+            plugin.set_ui_value(key, '')
+    plugin.model_providers[0]['settings_config'][0]['fields'][0]['readonly'] = True
+    with pytest.raises(ValueError, match='common.invalidAction'):
+        plugin.set_ui_value('enabled', True)
+
+
+def test_list_summary_uses_the_shared_input_state_and_callback(manager):
+    manager, emitted = manager
+    plugin = register_unified(manager)
+    views = plugin.get_ui_views()
+    views[0]['sections'][0]['content'].append(List(type='list', items=[
+        ListRow(key='item', title='Item', summary=[
+            TextInput(key='nested', type='text', default_value='initial', min_length=None, max_length=None),
+        ]),
+    ]))
+    plugin.get_ui_views = lambda: views
+    plugin.publish_ui()
+    assert manager.plugin_ui['unified']['state']['nested'] == 'initial'
+    manager.on_ui_action('unified', 'ui_changed', {'key': 'nested', 'value': 'changed'}, 'summary-input')
+    assert emitted[-1][1]['success'] is True
+    assert plugin.changes[-1][:2] == ('nested', 'changed')
+    plugin.set_ui_value('nested', 'reset')
+    plugin.publish_ui()
+    assert manager.plugin_ui['unified']['state']['nested'] == 'reset'
+    assert plugin.settings == {}
 
 
 def test_shared_callback_exposes_current_state_without_automatic_persistence(manager, monkeypatch):

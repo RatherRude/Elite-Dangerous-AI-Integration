@@ -13,7 +13,7 @@ from lib.PluginSettingDefinitions import (
     SettingsGrid, 
     ToggleSetting, 
     ParagraphSetting,
-    ModelProviderDefinition, TextSetting
+    ModelProviderDefinition, TextSetting, resolve_voice_settings
 )
 from lib.Logger import log, show_chat_message
 from lib.PluginBase import PluginBase, PluginManifest
@@ -527,15 +527,24 @@ class EDCoPilotPlugin(PluginBase):
 
         config = self._helper._config
         tts_provider = config.get('tts_provider')
+        provider = None
+        plugin_settings = {}
+        if isinstance(tts_provider, str) and tts_provider.startswith('plugin:'):
+            _, plugin_guid, provider_id = tts_provider.split(':', 2)
+            provider = self._helper._plugin_manager.get_plugin_provider(plugin_guid, provider_id)
+            plugin_settings = config.get('plugin_settings', {}).get(plugin_guid, {})
 
         def character_voice(character: dict[str, Any]):
             if self.is_edcopilot_dominant():
                 return None
             provider_settings = character.get('tts_voice_settings', {}).get(tts_provider, {})
-            if isinstance(provider_settings, dict) and 'voice' in provider_settings:
-                voice = provider_settings['voice']
-                return voice if isinstance(voice, str) and voice else None
-            return character.get('tts_voice')
+            settings = resolve_voice_settings(
+                provider.get('voice_settings_config', []) if provider else [],
+                plugin_settings,
+                provider_settings if isinstance(provider_settings, dict) else {},
+            )
+            voice = settings.get('voice')
+            return voice if isinstance(voice, str) and voice else None
 
         read_commentary = self.settings.get("read_commentary", False)
         voice = self.settings.get("voice") or None
@@ -646,13 +655,8 @@ class EDCoPilotPlugin(PluginBase):
         self._helper.register_status_generator(self._edcopilot_panel_contents_status)
 
 
-        # Register actions if enabled
-        actions_enabled = self.settings.get("actions", True)
-        if actions_enabled:
-            self._register_actions(helper)
-            log('info', f"EDCoPilot UI actions registered")
-        else:
-            log('info', f"EDCoPilot UI actions disabled")
+        # Availability is evaluated for every request so settings changes take effect immediately.
+        self._register_actions(helper)
         
         # Register side effect to monitor conversation events
         helper.register_sideeffect(
@@ -663,6 +667,9 @@ class EDCoPilotPlugin(PluginBase):
         
     def _register_actions(self, helper: PluginHelper):
         """Register EDCoPilot-specific actions"""
+
+        def actions_enabled() -> bool:
+            return self.settings.get("enabled", False) is True and self.settings.get("actions", False) is True
         
         # Register open panel action
         helper.register_action(
@@ -671,6 +678,7 @@ class EDCoPilotPlugin(PluginBase):
             parameters=EDCoPilotOpenPanelParams,
             method=self.edcopilot_open_panel,
             action_type='global',
+            is_enabled=actions_enabled,
             input_template=lambda args, _: f"Opening EDCoPilot panel: {args.get('panelName', '')} {args.get('details', '')}"
         )
         
@@ -681,6 +689,7 @@ class EDCoPilotPlugin(PluginBase):
             parameters=EDCoPilotNavigatePanelParams,
             method=self.edcopilot_navigate_panel,
             action_type='global',
+            is_enabled=actions_enabled,
             input_template=lambda args, _: f"Navigating in EDCoPilot panel: {args.get('navigate', '')}{args.get('selectItem', '')}"
         )
         

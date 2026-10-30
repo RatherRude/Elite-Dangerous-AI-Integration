@@ -1,5 +1,4 @@
 import json
-from collections.abc import Generator
 from pathlib import Path
 import sys
 
@@ -11,16 +10,6 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from src.lib.ActionManager import ActionManager
-
-
-@pytest.fixture(autouse=True)
-def reset_actions() -> Generator[None, None, None]:
-    original_actions = ActionManager.actions
-    ActionManager.actions = {}
-    try:
-        yield
-    finally:
-        ActionManager.actions = original_actions
 
 
 def make_tool_call(name: str, arguments: dict | None = None) -> ChatCompletionMessageFunctionToolCall:
@@ -199,3 +188,44 @@ def test_station_actions_require_docked_status() -> None:
     assert undocked_tools == []
     assert [tool["function"]["name"] for tool in docked_tools] == ["stationAction"]
     assert fighter_tools == []
+
+
+def test_action_registrations_do_not_leak_between_sessions() -> None:
+    first_session = ActionManager()
+    first_session.registerAction("pluginAction", "Plugin action", {}, lambda args, states: "done")
+
+    second_session = ActionManager()
+
+    assert second_session.getToolsList("ship", True, True, True) == []
+    assert "ERROR" in second_session.runAction(make_tool_call("pluginAction"), {})["content"]
+
+
+@pytest.mark.parametrize("action_type", ["ship", "global", "web", "ui"])
+def test_category_toggles_remove_tools_from_model_list(action_type: str) -> None:
+    manager = ActionManager()
+    manager.registerAction("testAction", "Test", {}, lambda args, states: "done", action_type)
+    enabled_category = {"ship": 0, "global": 0, "web": 1, "ui": 2}[action_type]
+    toggles = [False, False, False]
+
+    assert manager.getToolsList("mainship", *toggles) == []
+    toggles[enabled_category] = True
+    assert [tool["function"]["name"] for tool in manager.getToolsList("mainship", *toggles)] == ["testAction"]
+    toggles[enabled_category] = False
+    assert manager.getToolsList("mainship", *toggles) == []
+
+
+def test_dynamic_plugin_toggle_hides_and_prevents_execution() -> None:
+    manager = ActionManager()
+    settings = {"actions": True}
+    calls = []
+    manager.registerAction(
+        "pluginAction", "Plugin action", {}, lambda args, states: calls.append(args),
+        action_type="global", is_enabled=lambda: settings["actions"],
+    )
+
+    assert len(manager.getToolsList("mainship", True, False, False)) == 1
+    settings["actions"] = False
+
+    assert manager.getToolsList("mainship", True, False, False) == []
+    assert "disabled" in manager.runAction(make_tool_call("pluginAction"), {})["content"]
+    assert calls == []

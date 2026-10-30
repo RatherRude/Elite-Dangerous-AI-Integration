@@ -7,7 +7,7 @@ export interface UIText {
 
 export interface UIComponent {
   key?: string;
-  type: "paragraph" | "number" | "toggle" | "text" | "textarea" | "select" | "button" | "list" | "filter" | "error" | "heading" | "section" | "inline" | "progress" | "action";
+  type: "paragraph" | "notification" | "number" | "toggle" | "text" | "textarea" | "select" | "button" | "list" | "filter" | "error" | "heading" | "section" | "inline" | "progress" | "action";
   label?: string | null;
   readonly?: boolean | null;
   placeholder?: string | null;
@@ -27,10 +27,11 @@ export interface UIComponent {
   items?: ListRow[];
   row_actions?: ListAction[];
   count_labels?: {one: string; many: string};
+  details_collapsible?: boolean;
   text?: UIText;
   tone?: "default" | "info" | "warning" | "success" | "muted" | "danger";
   outlined?: boolean;
-  level?: number;
+  level?: number | "info" | "warning" | "error";
   children?: UIComponent[];
   value?: number;
   maximum?: number;
@@ -54,6 +55,8 @@ export interface ListAction {
   label?: string;
   danger?: boolean;
   inline_edit?: boolean;
+  secondary?: boolean;
+  confirmation?: string;
 }
 
 export interface ListRow {
@@ -67,11 +70,14 @@ export interface ListRow {
   pending?: boolean;
   tone?: string;
   details?: UIComponent[];
+  summary?: UIComponent[];
+  highlighted?: boolean;
 }
 
 export interface UIViewSection {
   key: string;
   label: string;
+  voice_aliases?: string[];
   grids?: string[];
   content?: UINode[];
 }
@@ -79,6 +85,7 @@ export interface UIViewSection {
 export interface PluginUIView {
   id: string;
   label: string;
+  voice_aliases?: string[];
   description?: string;
   icon?: string;
   order?: number;

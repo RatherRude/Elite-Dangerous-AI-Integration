@@ -227,12 +227,12 @@
                                                 headerLevel="h4">
                                             </app-settings-grid>
                                         }
-                                    } @else {
+                                    } @else if (selectedTtsProviderRef) {
                                         <h4>Voice</h4>
                                         <mat-form-field appearance="outline">
                                             <mat-label>Voice</mat-label>
-                                            <input matInput [ngModel]="activeCharacter.tts_voice"
-                                                (ngModelChange)="setCharacterProperty('tts_voice', $event)">
+                                            <input matInput [ngModel]="getVoiceSettingValue('voice', '')"
+                                                (ngModelChange)="setVoiceSettingValue('voice', $event)">
                                         </mat-form-field>
                                     }
                                 </div>
