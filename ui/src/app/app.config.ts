@@ -14,6 +14,12 @@ import { MarkdownModule } from 'ngx-markdown';
 import { AvatarMigrationService } from "./services/avatar-migration.service";
 import { FontScaleService } from "./services/font-scale.service";
 
+export function initializeTranslations(translate: TranslateService): () => Promise<object> {
+  return () => firstValueFrom(translate.use(
+    navigator.language.toLowerCase().split("-")[0] === "fr" ? "fr" : "en",
+  ));
+}
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes, withHashLocation()),
@@ -30,7 +36,7 @@ export const appConfig: ApplicationConfig = {
       provide: APP_INITIALIZER,
       multi: true,
       deps: [TranslateService],
-      useFactory: (translate: TranslateService) => () => firstValueFrom(translate.use("en")),
+      useFactory: initializeTranslations,
     },
     importProvidersFrom(MatDialogModule),
     importProvidersFrom(MatSnackBarModule),

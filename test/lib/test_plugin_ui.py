@@ -76,7 +76,6 @@ def ui_actions(monkeypatch):
     monkeypatch.setattr('lib.ActionManager.KeyValueStore', lambda name: SimpleNamespace(
         get=cache.get, set=cache.__setitem__,
     ))
-    monkeypatch.setattr(actions_ui.ActionManager, 'actions', {})
     monkeypatch.setattr(actions_ui, 'plugin_manager', None)
     monkeypatch.setattr(actions_ui, 'event_manager', None)
     monkeypatch.setattr(actions_ui, 'send_message', messages.append)

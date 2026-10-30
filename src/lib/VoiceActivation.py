@@ -18,7 +18,7 @@ PARAKEET_GUID = "b77dec4f-8993-4213-8d44-caf902dabc6d"
 PARAKEET_MODEL = "parakeet-stt"
 PARAKEET_PROVIDER = f"plugin:{PARAKEET_GUID}:{PARAKEET_MODEL}"
 VoiceState = Literal["standby", "active", "error", "disabled"]
-VoiceInputKind = Literal["command", "wake", "close"]
+VoiceInputKind = Literal["command", "wake", "close", "hold"]
 
 
 def normalized_words(text: str) -> tuple[str, ...]:
@@ -34,6 +34,7 @@ class VoiceLanguagePhrases:
     wake_acknowledgments: tuple[str, ...]
     close_acknowledgments: tuple[str, ...]
     language_names: tuple[str, ...] = ()
+    keep_listening_phrases: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -117,6 +118,10 @@ def load_voice_phrases(path: Path | None = None) -> VoicePhrases:
             language_names=(
                 read_phrases(language_data, language, "language_names", allow_empty=True)
                 if "language_names" in language_data else ()
+            ),
+            keep_listening_phrases=(
+                read_phrases(language_data, language, "keep_listening_phrases", allow_empty=True)
+                if "keep_listening_phrases" in language_data else ()
             ),
         )
     return VoicePhrases(default_language=default_language, languages=localized)
@@ -207,9 +212,12 @@ class VoiceActivation:
         self._detect_language = detect_language
         self._warned_languages: set[str] = set()
         self._closing_languages: dict[tuple[str, ...], set[str]] = {}
+        self._keep_listening_languages: dict[tuple[str, ...], set[str]] = {}
         for language, localized in self.phrases.languages.items():
             for phrase in localized.closing_phrases:
                 self._closing_languages.setdefault(normalized_words(phrase), set()).add(language)
+            for phrase in localized.keep_listening_phrases:
+                self._keep_listening_languages.setdefault(normalized_words(phrase), set()).add(language)
         name_words = normalized_words(name)
         self._invocation_prefixes = (name_words,) + tuple(
             normalized_words(prefix) + name_words
@@ -221,10 +229,12 @@ class VoiceActivation:
         self._state: VoiceState = "standby"
         self._generation = 0
         self._deadline: float | None = None
+        self._keep_listening = False
         self._busy = False
         self._capturing = False
         self._output_busy = False
         self._control_pending = False
+        self._timeout_pending = False
 
     @property
     def state(self) -> VoiceState:
@@ -262,7 +272,9 @@ class VoiceActivation:
         self._state = state
         self._generation += 1
         self._deadline = None
+        self._keep_listening = False
         self._control_pending = False
+        self._timeout_pending = False
 
     def stop(self) -> None:
         with self._lock:
@@ -276,6 +288,7 @@ class VoiceActivation:
     def _expire(self) -> None:
         if (
             self._state == "active"
+            and not self._keep_listening
             and not self._busy
             and not self._capturing
             and not self._control_pending
@@ -283,6 +296,8 @@ class VoiceActivation:
             and self._clock() >= self._deadline
         ):
             self._close()
+            self._timeout_pending = True
+            self._control_pending = True
 
     def tick(self, busy: bool, output_busy: bool = False) -> None:
         with self._lock:
@@ -290,7 +305,7 @@ class VoiceActivation:
             self._output_busy = output_busy
             if self._state != "active":
                 return
-            if busy or self._capturing or self._control_pending:
+            if self._keep_listening or busy or self._capturing or self._control_pending:
                 self._deadline = None
             elif self._deadline is None:
                 self._deadline = self._clock() + self.timeout
@@ -299,9 +314,9 @@ class VoiceActivation:
 
     def begin_audio(self) -> VoiceTicket | None:
         with self._lock:
+            self._expire()
             if self.suppressed:
                 return None
-            self._expire()
             if self._state == "error":
                 self._state = "standby"
             ticket = VoiceTicket(self._generation, self._state == "active")
@@ -317,6 +332,12 @@ class VoiceActivation:
     def finish_control(self) -> None:
         with self._lock:
             self._control_pending = False
+
+    def consume_timeout(self) -> bool:
+        with self._lock:
+            pending = self._timeout_pending
+            self._timeout_pending = False
+            return pending
 
     def accepts(self, result: VoiceInput) -> bool:
         with self._lock:
@@ -354,12 +375,15 @@ class VoiceActivation:
         elif command is None:
             command = text
 
-        closing_languages = self._closing_languages.get(normalized_words(command), set())
+        command_words = normalized_words(command)
+        closing_languages = self._closing_languages.get(command_words, set())
+        keep_listening_languages = self._keep_listening_languages.get(command_words, set())
+        control_languages = closing_languages or keep_listening_languages
         detected_language = None
         if not self._preferred_language and command:
-            if len(closing_languages) == 1:
-                detected_language = next(iter(closing_languages))
-            elif not closing_languages and self._detect_language is not None:
+            if len(control_languages) == 1:
+                detected_language = next(iter(control_languages))
+            elif not control_languages and self._detect_language is not None:
                 detected_language = self._detect_language(command)
 
         with self._lock:
@@ -382,6 +406,11 @@ class VoiceActivation:
                 self._close()
                 self._control_pending = True
                 return VoiceInput("close", "", self._generation, language)
+            if keep_listening_languages:
+                self._keep_listening = True
+                self._deadline = None
+                self._control_pending = True
+                return VoiceInput("hold", "", self._generation, language)
             if not command:
                 self._control_pending = True
                 return VoiceInput("wake", "", self._generation, language)
