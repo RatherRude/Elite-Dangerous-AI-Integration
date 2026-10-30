@@ -444,6 +444,151 @@ def test_closing_substrings_do_not_close_the_session(session, phrase):
     assert session.active
 
 
+@pytest.mark.parametrize("phrase", [
+    "reste en \u00e9coute", "RESTE EN ECOUTE !", "Simone, reste en \u00e9coute",
+    "Keep listening.", "Hey Simone, keep listening",
+])
+def test_keep_listening_survives_idle_processing_followups_and_repeated_calls(phrase):
+    now = [0.0]
+    session = VoiceActivation("Simone", 10, Mock(), Mock(), clock=lambda: now[0])
+    recognize(session, "Simone, plot a route")
+    session.tick(False)
+    now[0] = 9.999
+    result = recognize(session, phrase)
+    assert result.kind == "hold"
+    assert result.text == ""
+    assert session.accepts(result)
+    assert session.begin_audio() is None
+    session.finish_control()
+    session.tick(False)
+    now[0] = 100
+    session.tick(False)
+    assert session.active
+    session.tick(True, output_busy=True)
+    now[0] = 1000
+    session.tick(False)
+    assert session.active
+    now[0] = 2000
+    assert recognize(session, "avoid neutron stars").kind == "command"
+    result = recognize(session, "Simone?")
+    assert result.kind == "wake"
+    session.finish_control()
+    assert recognize(session, phrase).kind == "hold"
+    session.finish_control()
+    session.tick(False)
+    now[0] = 10000
+    session.tick(False)
+    assert session.active
+
+
+@pytest.mark.parametrize("phrase", ["reste en \u00e9coute", "keep listening"])
+def test_keep_listening_does_not_activate_from_standby(session, phrase):
+    assert recognize(session, phrase) is None
+    assert session.state == "standby"
+
+
+@pytest.mark.parametrize("phrase", [
+    "Explique la phrase reste en \u00e9coute",
+    "reste en \u00e9coute et pr\u00e9pare une route",
+    "don't keep listening",
+])
+def test_keep_listening_substrings_do_not_disable_timeout(phrase):
+    now = [0.0]
+    session = VoiceActivation("Simone", 10, Mock(), Mock(), clock=lambda: now[0])
+    recognize(session, "Simone, plot a route")
+    assert recognize(session, phrase).kind == "command"
+    session.tick(False)
+    now[0] = 10
+    session.tick(False)
+    assert session.state == "standby"
+
+
+@pytest.mark.parametrize("closing", ["\u00c7a sera tout !", "j'ai termin\u00e9", "that's all", "I'm done"])
+def test_explicit_close_ends_keep_listening_and_next_session_times_out(closing):
+    now = [0.0]
+    session = VoiceActivation("Simone", 10, Mock(), Mock(), clock=lambda: now[0])
+    hold = recognize(session, "Simone, reste en \u00e9coute")
+    session.finish_control()
+    late_ticket = session.begin_audio()
+    session.end_audio()
+    now[0] = 1000
+    closing_result = recognize(session, closing)
+    assert closing_result.kind == "close"
+    assert session.accepts(closing_result)
+    assert not session.accepts(hold)
+    assert session.recognize(late_ticket, lambda _: "reste en \u00e9coute") is None
+    assert session.state == "standby"
+    session.finish_control()
+    recognize(session, "Simone, plot a route")
+    session.tick(False)
+    now[0] = 1009.999
+    session.tick(False)
+    assert session.active
+    now[0] = 1010
+    session.tick(False)
+    assert session.state == "standby"
+    assert session.timeout == 10
+
+
+def test_keep_listening_is_reset_after_recognition_failure(session):
+    recognize(session, "Simone, reste en \u00e9coute")
+    session.finish_control()
+    session.fail()
+    now = [0.0]
+    session._clock = lambda: now[0]
+    recognize(session, "Simone, plot a route")
+    session.tick(False)
+    now[0] = 10
+    session.tick(False)
+    assert session.state == "standby"
+
+
+def test_stop_still_closes_keep_listening(session):
+    hold = recognize(session, "Simone, keep listening")
+    session.stop()
+    session.finish_control()
+    session.tick(False)
+    assert session.state == "disabled"
+    assert not session.accepts(hold)
+    assert session.begin_audio() is None
+
+
+def test_keep_listening_uses_custom_catalog_and_identifies_language(phrase_file):
+    data = json.loads(phrase_file.read_text(encoding="utf-8"))
+    data["languages"]["fr"]["keep_listening_phrases"] = ["\u00e9coute sans limite"]
+    phrase_file.write_text(json.dumps(data), encoding="utf-8")
+    detect = Mock()
+    session = VoiceActivation(
+        "Simone", 10, Mock(), Mock(), phrases=load_voice_phrases(phrase_file),
+        detect_language=detect,
+    )
+    result = recognize(session, "Simone, ECOUTE SANS LIMITE !")
+    assert result.kind == "hold"
+    assert result.language == "fr"
+    detect.assert_not_called()
+    session.finish_control()
+    assert recognize(session, "reste en \u00e9coute").kind == "command"
+
+
+@pytest.mark.parametrize("value", [None, "keep listening", [123], [""], ["?!"]])
+def test_invalid_keep_listening_catalog_is_rejected(phrase_file, value):
+    data = json.loads(phrase_file.read_text(encoding="utf-8"))
+    data["languages"]["en"]["keep_listening_phrases"] = value
+    phrase_file.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(ValueError, match="keep_listening_phrases"):
+        load_voice_phrases(phrase_file)
+
+
+@pytest.mark.parametrize("include_empty", [False, True])
+def test_keep_listening_is_optional_in_existing_catalogs(phrase_file, include_empty):
+    if include_empty:
+        data = json.loads(phrase_file.read_text(encoding="utf-8"))
+        data["languages"]["en"]["keep_listening_phrases"] = []
+        phrase_file.write_text(json.dumps(data), encoding="utf-8")
+    session = VoiceActivation("Simone", 10, Mock(), Mock(), phrases=load_voice_phrases(phrase_file))
+    assert recognize(session, "Simone, keep listening").kind == "command"
+
+
 def test_timeout_is_exact_and_restarts_after_processing_and_playback():
     now = [0.0]
     session = VoiceActivation("Simone", 10, Mock(), Mock(), clock=lambda: now[0])
@@ -455,6 +600,8 @@ def test_timeout_is_exact_and_restarts_after_processing_and_playback():
     now[0] = 10.0
     session.tick(busy=False)
     assert session.state == "standby"
+    assert session.consume_timeout()
+    session.finish_control()
 
     recognize(session, "Simone, plot a route")
     session.tick(busy=True)
@@ -468,6 +615,46 @@ def test_timeout_is_exact_and_restarts_after_processing_and_playback():
     now[0] = 110
     session.tick(busy=False)
     assert not session.active
+
+
+@pytest.mark.parametrize("expire_on_audio", [False, True])
+def test_timeout_notification_is_one_shot_and_blocks_audio_until_completed(expire_on_audio):
+    now = [0.0]
+    session = VoiceActivation("Simone", 10, Mock(), Mock(), clock=lambda: now[0])
+    recognize(session, "Simone, plot a route")
+    session.tick(False)
+    assert not session.consume_timeout()
+    now[0] = 10
+    if expire_on_audio:
+        assert session.begin_audio() is None
+    else:
+        session.tick(False)
+    assert session.state == "standby"
+    assert session.consume_timeout()
+    assert not session.consume_timeout()
+    session.tick(False)
+    assert session.begin_audio() is None
+    session.finish_control()
+    assert not session.consume_timeout()
+    assert session.begin_audio() is not None
+
+
+@pytest.mark.parametrize("control", ["Simone, reste en \u00e9coute", "Simone, that's all"])
+def test_explicit_controls_do_not_signal_timeout(session, control):
+    recognize(session, control)
+    assert not session.consume_timeout()
+
+
+@pytest.mark.parametrize("end", ["stop", "fail"])
+def test_shutdown_and_errors_discard_pending_timeout(end):
+    now = [0.0]
+    session = VoiceActivation("Simone", 10, Mock(), Mock(), clock=lambda: now[0])
+    recognize(session, "Simone, plot a route")
+    session.tick(False)
+    now[0] = 10
+    session.tick(False)
+    getattr(session, end)()
+    assert not session.consume_timeout()
 
 
 def test_speech_started_before_deadline_is_not_cut_off():

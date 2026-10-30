@@ -42,6 +42,7 @@ import {MatSlideToggle} from "@angular/material/slide-toggle";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { ChatService } from "../../services/chat.service";
 import { SettingsGridComponent } from "../settings-grid/settings-grid.component";
+import { TranslateModule } from "@ngx-translate/core";
 
 import { ModelProviderDefinition, providerVoiceDisplayValue, SettingsGrid } from "../../services/plugin-settings";
 
@@ -108,6 +109,7 @@ interface LowHighPassPresetOption {
         MatSlideToggle,
         MatExpansionModule,
         SettingsGridComponent,
+        TranslateModule,
     ],
     templateUrl: "./character-settings.component.html",
     styleUrl: "./character-settings.component.scss",
@@ -723,9 +725,8 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
             promptParts.push(this.generateCharacterInspirationTextFromConfig(activeChar));
         }
 
-        const charName = activeChar?.name || "COVAS:NEXT";
-        if (charName) {
-            promptParts.push(`Your name is ${charName}.`);
+        if (activeChar.first_name) {
+            promptParts.push(this.generateNameTextFromConfig(activeChar));
         }
 
         const language = activeChar?.personality_language || "english";
@@ -969,7 +970,7 @@ export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
     // Generate text for the name field
     generateNameTextFromConfig(activeChar: Character): string {
         return `Your name is ${
-            activeChar.name
+            activeChar.first_name
         }.`;
     }
 

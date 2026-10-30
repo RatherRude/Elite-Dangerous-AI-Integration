@@ -323,6 +323,66 @@ def test_control_line_playback_failure_does_not_retry_or_hold_session(mock_pyaud
     playback.assert_called_once()
 
 
+@pytest.mark.parametrize("with_model", [False, True])
+def test_listening_end_tone_is_local_quiet_and_two_tones(mock_pyaudio, monkeypatch, with_model):
+    mock_pyaudio["audio"].get_device_count.return_value = 2
+    mock_pyaudio["audio"].get_device_info_by_index.side_effect = lambda index: {
+        "name": "TestDevice" if index == 1 else "OtherDevice",
+    }
+    model = MagicMock(spec=OpenAITTSModel)
+    tts = TTS(model if with_model else None, output_device="TestDevice")
+    line = tts.play_listening_end_tone()
+    line.wait_for_completion()
+    assert line.is_completed()
+    assert tts.read_queue.empty()
+    model.synthesize.assert_not_called()
+    model.synthesize_with_settings.assert_not_called()
+    mock_pyaudio["audio"].open.assert_called_once_with(
+        format=tts.output_format, channels=1, rate=24_000,
+        frames_per_buffer=tts.frames_per_buffer, output=True, output_device_index=1,
+    )
+    samples = np.frombuffer(b"".join(
+        call.args[0] for call in mock_pyaudio["stream"].write.call_args_list
+    ), dtype=np.int16)
+    assert samples.size / 24_000 == pytest.approx(0.21)
+    assert 0 < np.max(np.abs(samples)) <= 2000
+    assert dominant_frequency(samples[:2160]) == pytest.approx(660, abs=6)
+    assert dominant_frequency(samples[-2160:]) == pytest.approx(440, abs=6)
+    assert np.all(samples[2160:2880] == 0)
+    assert samples[0] == samples[2159] == samples[2880] == samples[-1] == 0
+
+
+def test_listening_end_tone_respects_output_gain_and_abort(mock_pyaudio, monkeypatch):
+    monkeypatch.setattr("src.lib.TTS.threading.Thread", MagicMock())
+    tts = TTS(None, output_volume_multiplier=0.5)
+    stream = mock_pyaudio["stream"]
+    tts._playback_listening_end_tone(stream)
+    samples = np.frombuffer(b"".join(call.args[0] for call in stream.write.call_args_list), dtype=np.int16)
+    assert 0 < np.max(np.abs(samples)) <= 1000
+    stream.write.reset_mock()
+    tts.set_output_volume_multiplier(0)
+    tts._playback_listening_end_tone(stream)
+    assert all(not any(call.args[0]) for call in stream.write.call_args_list)
+    stream.write.reset_mock()
+    line = tts.play_listening_end_tone()
+    tts.abort()
+    assert line.is_completed()
+    assert tts.read_queue.empty()
+    tts._playback_listening_end_tone(stream)
+    stream.write.assert_not_called()
+
+
+def test_listening_end_tone_failure_completes_without_retry(mock_pyaudio, monkeypatch):
+    monkeypatch.setattr("src.lib.TTS.threading.Thread", MagicMock())
+    tts = TTS(None)
+    line = tts.play_listening_end_tone()
+    mock_pyaudio["stream"].write.side_effect = OSError("Audio output unavailable")
+    with pytest.raises(OSError, match="Audio output unavailable"):
+        tts._playback_loop()
+    assert line.is_completed()
+    assert tts.read_queue.empty()
+
+
 def test_postprocess_audio_applies_volume_and_distortion(mock_pyaudio):
     """Test TTS postprocessing reshapes synthesized audio"""
     tts = TTS(

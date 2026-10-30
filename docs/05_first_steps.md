@@ -19,7 +19,7 @@ The integration uses your microphone for speech recognition. We support voice ac
 
 Choose **Name-triggered Dialogue** under **Microphone Mode** in the general or advanced audio settings. The existing microphone modes, including Push-to-Talk, are unchanged. Start or restart the assistant after changing the microphone mode or activation settings.
 
-Set an **activation name** (initially `Simone`) and an **inactivity timeout** (initially 10 seconds). Say the name at the beginning of a phrase:
+The **active avatar's first name** is used for activation. It is separate from the technical **Profile name** displayed in the character selector. Each avatar has a **First name** field in Character Settings, initialized to `Simone`, including existing profiles when upgrading. A profile named `Default (Copy)` therefore responds to "Simone", not "Default Copy". Edit or duplicate an avatar to change its first name, then select it. Duplicating a profile preserves its first name without adding "(Copy)" to the spoken name. Set the global **inactivity timeout** (initially 10 seconds) in the microphone settings. Restart the assistant after changing the avatar or its first name. Say the first name at the beginning of a phrase:
 
 - "Simone, plot a route to Sol."
 - "Simone?" on its own, then wait for an acknowledgment before giving a command.
@@ -27,35 +27,38 @@ Set an **activation name** (initially `Simone`) and an **inactivity timeout** (i
 
 Activation is not restricted to French. Use your configured name on its own or with a configured prefix; recognition depends on your STT provider and its language settings. Commands can be spoken in a language supported by your configured STT.
 
-Once the dialogue is active, give follow-up commands without repeating the name. The timeout starts after the assistant finishes responding, including voice playback, and renews after each exchange. It does not cut off speech or processing already in progress. An inactivity timeout returns silently to standby.
+Once the dialogue is active, give follow-up commands without repeating the name. The timeout starts after the assistant finishes responding, including voice playback, and renews after each exchange. It does not cut off speech or processing already in progress. An inactivity timeout returns to standby with a quiet, short descending two-tone beep, generated locally without an LLM or speech-synthesis request. It uses the configured audio output and output volume, without character voice effects, and also works when TTS is disabled. No spoken acknowledgment or conversation event is generated for a timeout.
+
+To keep the current session open without an inactivity timeout, say "keep listening" or "reste en écoute" as a complete utterance. You can also open a session this way: "Simone, reste en écoute". The assistant gives a short confirmation without an LLM request, then keeps accepting follow-up commands until an explicit closing phrase. Mentioning the phrase inside another request does not suspend the timeout. The next session uses the normal configured timeout again; this command does not change the saved settings.
 
 To close the session explicitly, say a configured closing phrase as a complete utterance. Default phrases include "that's all", "I'm done" and "I am done" in English, and "ça sera tout" and "j'ai terminé" in French. You can edit or translate these phrases in the external phrase file described below.
 
 Calling the name alone produces a short readiness acknowledgment; explicitly closing the session produces a short confirmation. These direct acknowledgments use your configured TTS voice without an LLM request. English is the default, with French equivalents also provided in the phrase file. With TTS disabled, acknowledgments are shown as text and a warning explains why no voice was played.
 
-A badge in the application and visible overlays distinguishes **Standby**, **Dialogue active** and recognition errors. Game-event reactions and typed input continue to work outside voice sessions. Closing a session stops admission of new voice commands; it does not cancel game actions already started.
+A badge in the application and visible overlays shows the active first name and distinguishes **Standby**, **Dialogue active** and recognition errors. Bundled translated UI text, including this badge, follows the browser's language: French for `fr` locales, otherwise English. For example, a French interface displays **Simone: Veille**. This UI language does not change the STT, TTS or character language. Game-event reactions and typed input continue to work outside voice sessions. Closing a session stops admission of new voice commands; it does not cancel game actions already started.
 
 This mode **replaces the required-word filter** rather than adding another filter. The old required-word value is preserved for other microphone modes. Unlike a session, the old filter requires its text in every phrase and checks it only after transcription.
 
 #### Customizing voice phrases
 
-Invocation prefixes, closing phrases and direct acknowledgments are loaded from [src/data/voice_phrases.json](../src/data/voice_phrases.json), not embedded in the Python code. This file is also bundled with the packaged backend, in its `data` directory alongside the quest catalog. Its `default_language` is `en`, and `languages` contains separate `en` and `fr` objects.
+Invocation prefixes, closing phrases, keep-listening phrases and direct acknowledgments are loaded from [src/data/voice_phrases.json](../src/data/voice_phrases.json), not embedded in the Python code. This file is also bundled with the packaged backend, in its `data` directory alongside the quest catalog. Its `default_language` is `en`, and `languages` contains separate `en` and `fr` objects.
 
 | JSON field | Purpose |
 |---|---|
 | `invocation_prefixes` | Optional words before the configured name. An empty list adds no prefixes for that language. |
 | `closing_phrases` | Complete utterances that close the dialogue. |
+| `keep_listening_phrases` (optional) | Complete utterances that suspend the current session's inactivity timeout. An empty or omitted list disables this control for that language. |
 | `wake_acknowledgments` | Responses to calling the name without a command; one is chosen randomly. |
-| `close_acknowledgments` | Confirmations of explicit closing; one is chosen randomly. |
+| `close_acknowledgments` | Confirmations of explicit closing or a keep-listening request; one is chosen randomly. |
 | `language_names` (optional) | Names or aliases for an explicit TTS/STT language setting, such as `English` or `French`. Language codes work without aliases. |
 
-Edit the UTF-8 JSON lists under `languages.en` or `languages.fr`, or add another language using its lowercase ISO 639-1 code, then restart the assistant. All four fields are required for each language. Each entry must be a string containing at least one letter or number; all lists except `invocation_prefixes` must be non-empty. The default language must have its own entry. Invalid or missing files produce an explicit startup error rather than falling back to hard-coded phrases. Recognition ignores case, accents and punctuation, but closing phrases must still match the entire utterance. Prefix entries do not include the activation name, which remains configured in the audio settings.
+Edit the UTF-8 JSON lists under `languages.en` or `languages.fr`, or add another language using its lowercase ISO 639-1 code, then restart the assistant. The four original fields (`invocation_prefixes`, `closing_phrases`, `wake_acknowledgments` and `close_acknowledgments`) are required for each language. Each entry must be a string containing at least one letter or number; `closing_phrases`, `wake_acknowledgments` and `close_acknowledgments` must be non-empty. The default language must have its own entry. Invalid or missing files produce an explicit startup error rather than falling back to hard-coded phrases. Recognition ignores case, accents and punctuation, but closing and keep-listening phrases must still match the entire utterance. Prefix entries do not include the activation name, which comes from the active avatar's first name, never its technical profile name. The timeout, activation STT source, and first-command strategy remain global and are not stored per avatar.
 
-All configured languages' prefixes and closing phrases are recognized, so users can speak more than one language during a dialogue. Acknowledgment language is selected in this order:
+All configured languages' prefixes, closing phrases and keep-listening phrases are recognized, so users can speak more than one language during a dialogue. Acknowledgment language is selected in this order:
 
 1. An explicit TTS language, from the provider's character-level `language` setting or the TTS model's configured language.
 2. An explicit language configured in the main STT.
-3. Automatic local detection from accepted command text, if a compatible detector plugin is installed. A closing phrase identifies its language directly from the catalog, even without a detector plugin.
+3. Automatic local detection from accepted command text, if a compatible detector plugin is installed. A closing or keep-listening phrase identifies its language directly from the catalog, even without a detector plugin.
 
 Automatic or multilingual language settings do not fix a single language. A name-only call, with or without a prefix, cannot reliably identify the speaker's language: it reuses the last known language, or English before one is known. Ambiguous short commands also preserve the last known language. This memory lasts until the assistant restarts, including across dialogue timeouts and explicit closing.
 

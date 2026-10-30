@@ -16,6 +16,9 @@
         "I'm done",
         "I am done"
       ],
+      "keep_listening_phrases": [
+        "keep listening"
+      ],
       "wake_acknowledgments": [
         "Yes?",
         "What is it?"
@@ -36,6 +39,9 @@
       "closing_phrases": [
         "ça sera tout",
         "j'ai terminé"
+      ],
+      "keep_listening_phrases": [
+        "reste en écoute"
       ],
       "wake_acknowledgments": [
         "Oui",

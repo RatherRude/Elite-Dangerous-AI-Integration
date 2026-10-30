@@ -7,7 +7,7 @@ import { BaseMessage, TauriService } from "./tauri.service";
 export const PARAKEET_GUID = "b77dec4f-8993-4213-8d44-caf902dabc6d";
 export const PARAKEET_PROVIDER = `plugin:${PARAKEET_GUID}:parakeet-stt`;
 export type VoiceActivationConfig = Pick<Config,
-    "stt_provider" | "wake_word_name" | "wake_word_timeout" | "wake_word_source" | "wake_word_first_command"
+    "stt_provider" | "wake_word_timeout" | "wake_word_source" | "wake_word_first_command"
 >;
 
 export interface VoiceActivationMessage extends BaseMessage {

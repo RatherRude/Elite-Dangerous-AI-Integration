@@ -256,7 +256,7 @@ class Chat:
         log("debug", "Initializing Speech processing...")
         self._voice_mode_enabled = self.config.get("ptt_var") == "wake_word"
         if self._voice_mode_enabled:
-            emit_message("voice_activation", state="preparing", name=self.config.get("wake_word_name", "Simone"))
+            emit_message("voice_activation", state="preparing", name=self.character["first_name"])
         self.sttModel: STTModel | None = None
         if self.config["stt_provider"] != "none":
             stt_plugin = parse_plugin_provider(self.config["stt_provider"])
@@ -343,6 +343,7 @@ class Chat:
         self._voice_activation_warning = ""
         self._last_voice_state: str | None = None
         self._voice_control_line: TTSLine | None = None
+        self._voice_timeout_line: TTSLine | None = None
         if self._voice_mode_enabled and self.sttModel is not None:
             def create_parakeet() -> STTModel | None:
                 model = self.plugin_manager.create_plugin_model(PARAKEET_GUID, PARAKEET_MODEL, "stt")
@@ -364,7 +365,7 @@ class Chat:
                 )
                 show_chat_message("warning", self._voice_activation_warning)
             voice_activation = VoiceActivation(
-                self.config.get("wake_word_name", "Simone"),
+                self.character["first_name"],
                 self.config.get("wake_word_timeout", 10.0),
                 self.sttModel,
                 activation_model,
@@ -467,7 +468,7 @@ class Chat:
         emit_message(
             "voice_activation",
             state=state,
-            name=session.name if session else self.config.get("wake_word_name", "Simone"),
+            name=session.name if session else self.character["first_name"],
             activation_provider=self._voice_activation_provider,
             warning=self._voice_activation_warning,
         )
@@ -479,6 +480,9 @@ class Chat:
                 self._voice_control_line = None
                 session.finish_control()
                 self.event_manager.add_assistant_complete_event()
+            if self._voice_timeout_line is not None and self._voice_timeout_line.is_completed():
+                self._voice_timeout_line = None
+                session.finish_control()
             output_busy = self.tts.get_is_playing()
             session.tick(
                 busy=(
@@ -492,6 +496,8 @@ class Chat:
                 ),
                 output_busy=output_busy,
             )
+            if session.consume_timeout():
+                self._voice_timeout_line = self.tts.play_listening_end_tone()
         self._emit_voice_activation()
 
     def _handle_stt_result(self, result: STTResult) -> None:

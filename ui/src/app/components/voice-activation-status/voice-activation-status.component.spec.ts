@@ -19,10 +19,17 @@ describe("VoiceActivationStatusComponent", () => {
         TestBed.inject(TranslateService).use("en");
         const fixture = TestBed.createComponent(VoiceActivationStatusComponent);
         fixture.detectChanges();
-        expect(fixture.nativeElement.textContent).toContain("Standby");
+        expect(fixture.nativeElement.textContent).toContain("Simone: Standby");
         state.next({ ...state.value, state: "active" });
         fixture.detectChanges();
         expect(fixture.nativeElement.querySelector(".active").textContent).toContain("Dialogue active");
+        TestBed.inject(TranslateService).use("fr");
+        fixture.detectChanges();
+        expect(fixture.nativeElement.querySelector(".active").textContent).toContain("Simone: Dialogue actif");
+        state.next({ ...state.value, name: "Astra", state: "standby" });
+        fixture.detectChanges();
+        expect(fixture.nativeElement.textContent).toContain("Astra: Veille");
+        expect(fixture.nativeElement.textContent).not.toContain("Simone");
         state.next({ ...state.value, state: "disabled" });
         fixture.detectChanges();
         expect(fixture.nativeElement.querySelector('[role="status"]')).toBeNull();
