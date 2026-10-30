@@ -211,6 +211,7 @@
                                     </div>
                                     @if (config.ptt_var === 'wake_word') {
                                         <app-voice-activation-settings [config]="config" [providers]="pluginSTTProviders"
+                                            [name]="activeCharacter?.first_name ?? ''"
                                             (configChange)="onConfigChange($event)"></app-voice-activation-settings>
                                     }
                                     <div class="sound-devices">

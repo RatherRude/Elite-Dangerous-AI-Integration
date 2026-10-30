@@ -23,12 +23,8 @@ import {
             <div class="fields">
                 <mat-form-field>
                     <mat-label>{{ 'voice.name' | translate }}</mat-label>
-                    <input matInput required [pattern]="namePattern"
-                        [ngModel]="c.wake_word_name" (ngModelChange)="changeName($event)"
-                        #nameModel="ngModel">
-                    @if (nameModel.invalid) {
-                        <mat-error>{{ 'voice.invalidName' | translate }}</mat-error>
-                    }
+                    <input matInput readonly [value]="name">
+                    <mat-hint>{{ 'voice.nameFromAvatar' | translate }}</mat-hint>
                 </mat-form-field>
                 <mat-form-field>
                     <mat-label>{{ 'voice.timeout' | translate }}</mat-label>
@@ -72,7 +68,7 @@ import {
                         target="_blank" rel="noopener noreferrer">{{ 'voice.pluginLink' | translate }}</a>
                 </p>
             }
-            <p>{{ 'voice.usage' | translate }}</p>
+            <p>{{ 'voice.usage' | translate: { name: name } }}</p>
         }
     `,
     styles: [`
@@ -85,10 +81,10 @@ import {
 })
 export class VoiceActivationSettingsComponent {
     @Input() config: VoiceActivationConfig | null = null;
+    @Input({ required: true }) name = "";
     @Input() providers: ModelProviderDefinition[] = [];
     @Output() configChange = new EventEmitter<Partial<Config>>();
     readonly parakeetProvider = PARAKEET_PROVIDER;
-    readonly namePattern = /[\p{L}\p{N}]/u;
 
     get available(): boolean {
         return parakeetAvailable(this.providers);
@@ -105,10 +101,6 @@ export class VoiceActivationSettingsComponent {
 
     get mainProviderLabel(): string {
         return modelProviderLabel(this.config?.stt_provider, "stt", this.providers);
-    }
-
-    changeName(value: string): void {
-        if (this.namePattern.test(value)) this.configChange.emit({ wake_word_name: value });
     }
 
     changeTimeout(value: number | null, model: NgModel): void {

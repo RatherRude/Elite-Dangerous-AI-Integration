@@ -153,11 +153,22 @@
                         <div class="character-edit-header-left-column">
                             <div class="trait-input">
                                 <mat-form-field appearance="outline">
-                                    <mat-label>Character Name</mat-label>
+                                    <mat-label>{{ 'voice.profileName' | translate }}</mat-label>
                                     <input matInput
                                         [ngModel]="activeCharacter.name"
                                         [ngModelOptions]="{updateOn: 'blur'}"
-                                        (ngModelChange)="setCharacterPropertyAndUpdatePrompt('name', $event)">
+                                        (ngModelChange)="setCharacterProperty('name', $event)">
+                                    <mat-hint>{{ 'voice.profileNameHint' | translate }}</mat-hint>
+                                </mat-form-field>
+                            </div>
+                            <div class="trait-input">
+                                <mat-form-field appearance="outline">
+                                    <mat-label>{{ 'voice.firstName' | translate }}</mat-label>
+                                    <input matInput
+                                        [ngModel]="activeCharacter.first_name"
+                                        [ngModelOptions]="{updateOn: 'blur'}"
+                                        (ngModelChange)="setCharacterPropertyAndUpdatePrompt('first_name', $event)">
+                                    <mat-hint>{{ 'voice.avatarNameHint' | translate }}</mat-hint>
                                 </mat-form-field>
                             </div>
                             <div class="trait-input">
