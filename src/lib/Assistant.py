@@ -783,10 +783,15 @@ class Assistant:
 
 
     @observe()
-    def execute_actions(self, actions: list[ChatCompletionMessageToolCall], projected_states: ProjectedStates):
+    def execute_actions(self, actions: list[ChatCompletionMessageToolCall], projected_states: ProjectedStates, available_tools: list[dict] | None = None):
         action_descriptions: list[str | None] = []
         action_results: list[Any] = []
         for action in actions:
+            if available_tools is not None and not any(
+                tool.get("function", {}).get("name") == action.function.name for tool in available_tools
+            ):
+                log('error', f"Model requested unavailable tool: {action.function.name}")
+                continue
             action_input_desc = self.action_manager.getActionDesc(action, projected_states)
             action_descriptions.append(action_input_desc)
             if action_input_desc:
@@ -899,6 +904,8 @@ class Assistant:
             uses_ui_actions = self.config["ui_actions_var"]
             allowed_actions = self.config.get("allowed_actions", {})
             in_station = bool(flags.get("Docked"))
+            # Only user requests and tool follow-ups may offer actions to the model.
+            use_tools = bool(user_input or tool_uses)
             tool_list = self.action_manager.getToolsList(
                 active_mode,
                 uses_actions,
@@ -906,7 +913,7 @@ class Assistant:
                 uses_ui_actions,
                 allowed_actions,
                 in_station,
-            )
+            ) if use_tools else []
             predicted_actions = None
             if tool_list and user_input and not tool_uses and self.config["use_action_cache_var"]:
                 predicted_actions = self.action_manager.predict_action(user_input[-1], tool_list)
@@ -953,8 +960,18 @@ class Assistant:
                 self.event_manager.add_assistant_complete_event()
 
             if response_actions:
+                # A toggle may have changed while the model request was in flight.
+                current_tools = self.action_manager.getToolsList(
+                    active_mode,
+                    self.config["game_actions_var"],
+                    self.config["web_search_actions_var"],
+                    self.config["ui_actions_var"],
+                    self.config.get("allowed_actions", {}),
+                    in_station,
+                ) if use_tools else []
+                available_tools = [tool for tool in tool_list if tool in current_tools]
                 self.event_manager.add_assistant_acting(processed_at=max_conversation_processed)
-                self.execute_actions(response_actions, projected_states)
+                self.execute_actions(response_actions, projected_states, available_tools=available_tools)
 
                 if not predicted_actions and self.config["use_action_cache_var"] and tool_list:
                     if len(response_actions) == 1 and len(user_input):

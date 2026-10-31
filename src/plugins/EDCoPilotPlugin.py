@@ -655,13 +655,8 @@ class EDCoPilotPlugin(PluginBase):
         self._helper.register_status_generator(self._edcopilot_panel_contents_status)
 
 
-        # Register actions if enabled
-        actions_enabled = self.settings.get("actions", True)
-        if actions_enabled:
-            self._register_actions(helper)
-            log('info', f"EDCoPilot UI actions registered")
-        else:
-            log('info', f"EDCoPilot UI actions disabled")
+        # Availability is evaluated for every request so settings changes take effect immediately.
+        self._register_actions(helper)
         
         # Register side effect to monitor conversation events
         helper.register_sideeffect(
@@ -672,6 +667,9 @@ class EDCoPilotPlugin(PluginBase):
         
     def _register_actions(self, helper: PluginHelper):
         """Register EDCoPilot-specific actions"""
+
+        def actions_enabled() -> bool:
+            return self.settings.get("enabled", False) is True and self.settings.get("actions", False) is True
         
         # Register open panel action
         helper.register_action(
@@ -680,6 +678,7 @@ class EDCoPilotPlugin(PluginBase):
             parameters=EDCoPilotOpenPanelParams,
             method=self.edcopilot_open_panel,
             action_type='global',
+            is_enabled=actions_enabled,
             input_template=lambda args, _: f"Opening EDCoPilot panel: {args.get('panelName', '')} {args.get('details', '')}"
         )
         
@@ -690,6 +689,7 @@ class EDCoPilotPlugin(PluginBase):
             parameters=EDCoPilotNavigatePanelParams,
             method=self.edcopilot_navigate_panel,
             action_type='global',
+            is_enabled=actions_enabled,
             input_template=lambda args, _: f"Navigating in EDCoPilot panel: {args.get('navigate', '')}{args.get('selectItem', '')}"
         )
         

@@ -1016,6 +1016,7 @@ def read_stdin(chat: Chat):
                 partial = data.get("config")
                 if isinstance(partial, dict):
                     chat.config = update_config(chat.config, partial)
+                    chat.assistant.config = chat.config
                     chat.plugin_manager.on_settings_changed(chat.config)
                     if "output_volume_multiplier" in partial:
                         chat.tts.set_output_volume_multiplier(
