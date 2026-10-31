@@ -411,6 +411,11 @@ class VectorStore():
         # On any mismatch, drop existing tables to recreate them fresh
         if mismatches:
             log('warn', f"VectorStore '{self.store_name}' already initialized with {' and '.join(mismatches)}, dropping existing data.")
+            # Tables created before sqlite-vec 0.1.6 lack the _info shadow
+            # table, which newer versions unconditionally delete during DROP.
+            info_table = f'{self.vector_table}_info'
+            if self._table_exists(self.vector_table) and not self._table_exists(info_table):
+                cursor.execute(f'CREATE TABLE "{info_table}" (key TEXT PRIMARY KEY, value ANY)')
             cursor.execute(f'DROP TABLE IF EXISTS {self.vector_table}')
             cursor.execute(f'DROP TABLE IF EXISTS {self.table_name}')
             cursor.execute(f'DROP TABLE IF EXISTS {self.meta_table}')

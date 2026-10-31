@@ -279,6 +279,32 @@ def test_sqlite_vec_table_lifecycle(mock_connection: sqlite3.Connection) -> None
     mock_connection.execute('DROP TABLE test_vector_lifecycle')
 
 
+@pytest.mark.parametrize("model_name, embedding", [
+    ("new-model", [0.1, 0.2, 0.3]),
+    ("test-model", [0.1, 0.2]),
+])
+def test_vector_store_reinitializes_legacy_table(
+    vector_store: VectorStore,
+    mock_connection: sqlite3.Connection,
+    model_name: str,
+    embedding: list[float],
+) -> None:
+    vector_store.store("test-model", "old memory", [0.1, 0.2, 0.3], {})
+    # Simulate a table created by sqlite-vec 0.1.3, before _info existed.
+    mock_connection.execute(f'DROP TABLE {vector_store.vector_table}_info')
+    mock_connection.commit()
+
+    reopened_store = VectorStore(vector_store.store_name)
+    reopened_store.store(model_name, "new memory", embedding, {})
+
+    entries = reopened_store.get_most_recent_entries()
+    assert [entry["content"] for entry in entries] == ["new memory"]
+    assert reopened_store.get_current_embedding_dim() == len(embedding)
+    results = reopened_store.search("new memory", model_name, embedding, n=1)
+    assert len(results) == 1
+    assert results[0]["content"] == "new memory"
+
+
 def test_vector_store_vector_and_keyword_search(vector_store: VectorStore, mock_connection: sqlite3.Connection) -> None:
     """Vector search ranks hybrid scores and returns typed payloads"""
     _ = mock_connection
