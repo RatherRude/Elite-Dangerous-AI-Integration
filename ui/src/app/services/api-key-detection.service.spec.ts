@@ -90,6 +90,34 @@ describe("ApiKeyDetectionService", () => {
         expect(result.update.plugin_settings?.["openai"]?.api_key).toBe("sk-12345678");
     });
 
+    it("reapplies provider selections when another key from the same provider is pasted", async () => {
+        const openAI = provider("openai", "OpenAI", "^sk-[A-Za-z0-9]{8,}$", 10);
+        providers.next([openAI]);
+        await service.buildUpdateWhenReady("sk-12345678");
+        currentConfig = {
+            ...config,
+            llm_provider: "plugin:custom:llm",
+            stt_provider: "plugin:custom:stt",
+        };
+
+        const result = (await service.buildUpdateWhenReady("  sk-87654321\r\n", true))!;
+
+        expect(result.label).toBe("OpenAI");
+        expect(result.update.llm_provider).toBe("plugin:openai:llm");
+        expect(result.update.stt_provider).toBe("none");
+        expect(result.update.plugin_settings?.["openai"]?.api_key).toBe("sk-87654321");
+    });
+
+    it("can reconfigure the same pasted key after a manual provider change", () => {
+        const openAI = provider("openai", "OpenAI", "^sk-[A-Za-z0-9]{8,}$", 10);
+        service.buildUpdate("sk-12345678", config, [openAI]);
+
+        const result = service.buildUpdate("sk-12345678", config, [openAI], true);
+
+        expect(result.update.llm_provider).toBe("plugin:openai:llm");
+        expect(result.update.tts_provider).toBe("plugin:edge:tts");
+    });
+
     it("waits for startup metadata and configures STT and its shared key atomically", async () => {
         const openAI = provider("openai", "OpenAI", "^sk-[A-Za-z0-9]{8,}$", 10);
         openAI.api_key_detection!.provider_selections = {

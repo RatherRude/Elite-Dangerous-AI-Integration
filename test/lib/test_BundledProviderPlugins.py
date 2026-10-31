@@ -1,5 +1,6 @@
 import base64
 import json
+import re
 from pathlib import Path
 import sys
 from types import SimpleNamespace
@@ -62,6 +63,20 @@ def manifest(guid: str, name: str) -> PluginManifest:
 
 def provider_ids(plugin: Any) -> set[str]:
     return {provider["id"] for provider in plugin.model_providers or []}
+
+
+@pytest.mark.parametrize("plugin_type,guid,key", [
+    (GoogleAIStudioPlugin, GOOGLE_AI_STUDIO_PLUGIN_GUID, "AQ" + "a_9.-Z" * 10),
+    (GoogleAIStudioPlugin, GOOGLE_AI_STUDIO_PLUGIN_GUID, "AIza" + "a" * 35),
+    (OpenAIPlugin, OPENAI_PLUGIN_GUID, "sk-proj-" + "a" * 100),
+    (OpenRouterPlugin, OPENROUTER_PLUGIN_GUID, "sk-or-v1-" + "a" * 64),
+])
+def test_bundled_api_key_detection_patterns_are_valid_and_match_keys(plugin_type, guid, key):
+    plugin = plugin_type(manifest(guid, "Test"))
+    detection = next(provider["api_key_detection"] for provider in plugin.model_providers if provider.get("api_key_detection"))
+    patterns = [re.compile(pattern) for pattern in detection["patterns"]]
+    assert any(pattern.fullmatch(key) for pattern in patterns)
+    assert not any(pattern.fullmatch("unrecognized-key") for pattern in patterns)
 
 
 def setting_keys(plugin: Any) -> set[str]:

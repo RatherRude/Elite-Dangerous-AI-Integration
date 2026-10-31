@@ -1,4 +1,5 @@
-import { ConfigService } from "./config.service";
+import { Config, ConfigService } from "./config.service";
+import { ApiKeyDetectionService } from "./api-key-detection.service";
 import {
     filterProvidersForSlot,
     ModelProviderDefinition,
@@ -7,7 +8,7 @@ import {
     voiceSettingsContext,
 } from "./plugin-settings";
 import { TauriService } from "./tauri.service";
-import { EMPTY } from "rxjs";
+import { EMPTY, of } from "rxjs";
 import { TestBed } from "@angular/core/testing";
 import { SettingsGridComponent } from "../components/settings-grid/settings-grid.component";
 import { SettingsGrid } from "./plugin-settings";
@@ -169,6 +170,49 @@ describe("provider UI compatibility", () => {
             instance.apiKeyDetectionService = { buildUpdateWhenReady: async () => ({ label: "provider", update: { tts_provider: "plugin:new:tts" } }) };
             await instance.onApiKeyChange("key");
             expect(instance.characterService.setTtsProviderVoiceSettings).not.toHaveBeenCalled();
+        });
+    }
+});
+
+describe("API-key input configuration", () => {
+    for (const component of [GeneralSettingsComponent, AdvancedSettingsComponent]) {
+        it(`reconfigures providers on paste in ${component.name}`, async () => {
+            const config = { api_key: "", plugin_settings: {} } as unknown as Config;
+            const provider: ModelProviderDefinition = {
+                kind: "llm", id: "llm", label: "OpenAI", plugin_guid: "openai",
+                is_builtin: true, settings_config: [],
+                api_key_detection: {
+                    patterns: ["^sk-[A-Za-z0-9_-]{20,}$"],
+                    provider_selections: { llm_provider: "llm", stt_provider: "stt" },
+                },
+            };
+            const configService = {
+                plugin_model_providers$: of([provider]),
+                getCurrentConfig: () => config,
+                changeConfig: jasmine.createSpy("changeConfig").and.resolveTo(),
+            };
+            const detector = new ApiKeyDetectionService(configService as unknown as ConfigService);
+            const key = "sk-" + "a".repeat(24);
+            // Detection may already have run in either settings screen earlier.
+            detector.buildUpdate(key, config, [provider]);
+            const instance = Object.assign(Object.create(component.prototype), {
+                config, configService, apiKeyDetectionService: detector,
+            }) as GeneralSettingsComponent | AdvancedSettingsComponent;
+            const input = document.createElement("input");
+            input.value = `  ${key}\n`;
+            let pending: Promise<void> | undefined;
+            input.addEventListener("input", event => pending = instance.onApiKeyInput(event));
+
+            input.dispatchEvent(new InputEvent("input", { inputType: "insertFromPaste" }));
+            await pending;
+
+            expect(instance.apiKeyType).toBe("OpenAI");
+            expect(configService.changeConfig).toHaveBeenCalledOnceWith(jasmine.objectContaining({
+                api_key: key,
+                llm_provider: "plugin:openai:llm",
+                stt_provider: "plugin:openai:stt",
+                plugin_settings: { openai: { api_key: key } },
+            }));
         });
     }
 });

@@ -15,7 +15,7 @@ export class ApiKeyDetectionService {
 
     constructor(private configService: ConfigService) {}
 
-    async buildUpdateWhenReady(apiKey: string): Promise<ApiKeyDetectionResult | null> {
+    async buildUpdateWhenReady(apiKey: string, configureProviders = false): Promise<ApiKeyDetectionResult | null> {
         const request = ++this.latestRequest;
         // Config is emitted before providers at startup. Do not save a main key
         // without its provider credentials just because metadata is still loading.
@@ -25,13 +25,14 @@ export class ApiKeyDetectionService {
         if (request !== this.latestRequest) return null;
         const config = this.configService.getCurrentConfig();
         if (!config) return null;
-        return this.buildUpdate(apiKey, config, providers);
+        return this.buildUpdate(apiKey, config, providers, configureProviders);
     }
 
     buildUpdate(
         apiKey: string,
         config: Config,
         providers: ModelProviderDefinition[],
+        configureProviders = false,
     ): ApiKeyDetectionResult {
         apiKey = apiKey.trim();
         const matches = providers.flatMap((provider, order) => {
@@ -69,7 +70,7 @@ export class ApiKeyDetectionService {
             },
         };
 
-        if (this.lastDetectedPluginGuid !== match.plugin_guid) {
+        if (configureProviders || this.lastDetectedPluginGuid !== match.plugin_guid) {
             for (const [selector, selection] of Object.entries(detection.provider_selections ?? {})) {
                 const resolved = selection === "none" || selection.startsWith("plugin:")
                     ? selection

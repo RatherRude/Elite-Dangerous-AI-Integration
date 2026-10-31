@@ -422,9 +422,16 @@ export class AdvancedSettingsComponent implements OnDestroy {
         await this.onConfigChange({ tts_provider: providerRef });
     }
 
-    async onApiKeyChange(apiKey: string) {
+    onApiKeyInput(event: Event): Promise<void> {
+        return this.onApiKeyChange(
+            (event.target as HTMLInputElement).value,
+            (event as InputEvent).inputType === "insertFromPaste",
+        );
+    }
+
+    async onApiKeyChange(apiKey: string, configureProviders = false) {
         if (!this.config) return;
-        const result = await this.apiKeyDetectionService.buildUpdateWhenReady(apiKey);
+        const result = await this.apiKeyDetectionService.buildUpdateWhenReady(apiKey, configureProviders);
         if (!result) return;
         this.apiKeyType = result.label;
         await this.onConfigChange(result.update);
