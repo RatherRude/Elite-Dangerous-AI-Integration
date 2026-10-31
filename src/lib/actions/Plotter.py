@@ -1,5 +1,6 @@
 import json
 import math
+from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from time import sleep
@@ -61,6 +62,7 @@ class Plotter:
         prepare_body_request: Callable[[dict[str, Any], Any], dict[str, Any]] | None = None,
         spansh_post: Callable[[str, dict[str, Any]], dict[str, Any]] | None = None,
         enable_in_system_navigation: bool = False,
+        screen_reader_debug_directory: str | Path | None = None,
     ) -> None:
         self.keys = keys
         self.event_manager = event_manager
@@ -70,6 +72,15 @@ class Plotter:
         self.prepare_body_request = prepare_body_request
         self.spansh_post = spansh_post or self._spansh_post
         self.enable_in_system_navigation = enable_in_system_navigation
+        self.screen_reader_debug_directory = screen_reader_debug_directory
+
+    def _screen_reader(self):
+        from ..ScreenReader import ScreenReader
+
+        options: dict[str, Any] = {"hud_color_matrix": self.screen_reader_hud_color_matrix}
+        if self.screen_reader_debug_directory is not None:
+            options["debug_directory"] = self.screen_reader_debug_directory
+        return ScreenReader(**options)
 
     @staticmethod
     def normalize_plot_name(name: str) -> str:
@@ -244,34 +255,40 @@ class Plotter:
 
         return candidates
 
-    def _plot_candidates_from_stations(self, query: str, projected_states: Any) -> list[ResolvedPlotTarget]:
+    def _plot_candidates_from_stations(
+        self, query: str, projected_states: Any, *, system_name: str | None = None,
+    ) -> list[ResolvedPlotTarget]:
         if self.prepare_station_request is None:
             raise Exception("prepare_station_request is required")
         request_body = self.prepare_station_request(self._plot_search_obj(query), projected_states)
         self._apply_plot_request_routing(request_body, projected_states)
-        log('info', 'station requestion', request_body)
+        if system_name is not None:
+            request_body.setdefault("filters", {})["system_name"] = {"value": system_name}
+        log('debug', 'Plot station lookup request', request_body)
         data = self.spansh_post(SPANSH_STATIONS_URL, request_body)
         candidates: list[ResolvedPlotTarget] = []
 
         for station in data.get("results", [])[:PLOT_TARGET_SEARCH_SIZE]:
             name = str(station.get("name") or "").strip()
-            system_name = str(station.get("system_name") or "").strip()
+            candidate_system = str(station.get("system_name") or "").strip()
             station_type = str(station.get("type") or "").strip()
-            if not name or not system_name:
+            if not name or not candidate_system:
+                continue
+            if system_name is not None and not self._systems_match(candidate_system, system_name):
                 continue
             distance = station.get("distance")
             distance_value = float(distance) if distance is not None else None
             candidates.append(ResolvedPlotTarget(
                 target_type="station",
                 name=name,
-                system_name=system_name,
+                system_name=candidate_system,
                 system_map_category=self.system_map_category_for_station(station),
                 distance=distance_value,
                 match_score=self._plot_candidate_score(query, name),
                 details=self._plot_target_details(
                     "station",
                     name,
-                    system_name,
+                    candidate_system,
                     distance_value,
                     station_type=station_type or None,
                 ),
@@ -279,11 +296,16 @@ class Plotter:
 
         return candidates
 
-    def _plot_candidates_from_bodies(self, query: str, projected_states: Any) -> list[ResolvedPlotTarget]:
+    def _plot_candidates_from_bodies(
+        self, query: str, projected_states: Any, *, system_name: str | None = None,
+    ) -> list[ResolvedPlotTarget]:
         if self.prepare_body_request is None:
             raise Exception("prepare_body_request is required")
         request_body = self.prepare_body_request(self._plot_search_obj(query), projected_states)
         self._apply_plot_request_routing(request_body, projected_states)
+        if system_name is not None:
+            request_body.setdefault("filters", {})["system_name"] = {"value": system_name}
+        log('debug', 'Plot body lookup request', request_body)
         data = self.spansh_post(SPANSH_BODIES_URL, request_body)
         candidates: list[ResolvedPlotTarget] = []
 
@@ -291,8 +313,10 @@ class Plotter:
             if body.get("type") != "Planet":
                 continue
             name = str(body.get("name") or "").strip()
-            system_name = str(body.get("system_name") or "").strip()
-            if not name or not system_name:
+            candidate_system = str(body.get("system_name") or "").strip()
+            if not name or not candidate_system:
+                continue
+            if system_name is not None and not self._systems_match(candidate_system, system_name):
                 continue
             distance = body.get("distance")
             distance_value = float(distance) if distance is not None else None
@@ -301,14 +325,14 @@ class Plotter:
             candidates.append(ResolvedPlotTarget(
                 target_type="body",
                 name=name,
-                system_name=system_name,
+                system_name=candidate_system,
                 system_map_category="LANDFALL PLANETS",
                 distance=distance_value,
                 match_score=self._plot_candidate_score(query, name),
                 details=self._plot_target_details(
                     "body",
                     name,
-                    system_name,
+                    candidate_system,
                     distance_value,
                     is_landable=landable_value,
                 ),
@@ -356,12 +380,23 @@ class Plotter:
         body: str | None = None,
         projected_states: Any,
     ) -> ResolvedPlotTarget | None:
+        system, station, body = self._parse_plot_target_args({"system": system, "station": station, "body": body})
         query = self.plot_search_query(system=system, station=station, body=body)
         if not query:
             return None
+        if system and system.strip() and (station or body):
+            return self.resolve_plot_target(
+                query, projected_states,
+                target_type="station" if station else "body",
+                system_name=system.strip(),
+            )
         return self.resolve_plot_target(query, projected_states)
 
-    def resolve_plot_target(self, query: str, projected_states: Any) -> ResolvedPlotTarget | None:
+    def resolve_plot_target(
+        self, query: str, projected_states: Any, *,
+        target_type: Literal["system", "station", "body"] | None = None,
+        system_name: str | None = None,
+    ) -> ResolvedPlotTarget | None:
         query = str(query or "").strip()
         if not query:
             return None
@@ -371,12 +406,18 @@ class Plotter:
             "station": self._plot_candidates_from_stations,
             "body": self._plot_candidates_from_bodies,
         }
+        if target_type is not None:
+            search_jobs = {target_type: search_jobs[target_type]}
+        log("debug", "Plot target lookup", {"query": query, "target_type": target_type, "system": system_name})
         candidates: list[ResolvedPlotTarget] = []
 
-        with ThreadPoolExecutor(max_workers=3) as executor:
+        with ThreadPoolExecutor(max_workers=len(search_jobs)) as executor:
             futures = {
-                executor.submit(search_fn, query, projected_states): target_type
-                for target_type, search_fn in search_jobs.items()
+                executor.submit(
+                    search_fn, query, projected_states,
+                    **({"system_name": system_name} if system_name is not None and search_type != "system" else {}),
+                ): search_type
+                for search_type, search_fn in search_jobs.items()
             }
             for future in as_completed(futures):
                 target_type = futures[future]
@@ -385,6 +426,11 @@ class Plotter:
                 except Exception as error:
                     log("warn", "Plot target lookup failed", f"{target_type}: {error}")
 
+        log("debug", "Plot target candidates", [
+            {"type": candidate.target_type, "name": candidate.name, "system": candidate.system_name,
+             "distance": candidate.distance, "score": candidate.match_score}
+            for candidate in candidates
+        ])
         best_match = self._select_best_plot_target(candidates, query)
         if best_match:
             log(
@@ -397,6 +443,7 @@ class Plotter:
         return best_match
 
     def plot_to_target(self, args: dict[str, Any], projected_states: ProjectedStates, galaxymap_key: str = "GalaxyMapOpen") -> str:
+        set_game_window_active()
         system, station, body = self._parse_plot_target_args(args)
         clear_nav_route = bool(args.get('clear_nav_route'))
 
@@ -405,7 +452,6 @@ class Plotter:
             final_stop = self._nav_route_item_system(nav_route[-1])
             if not final_stop:
                 raise Exception("Could not determine final stop in the current navigation route.")
-            set_game_window_active()
             return self._plot_galaxy_route(
                 final_stop,
                 None,
@@ -417,7 +463,6 @@ class Plotter:
         if clear_nav_route and not any((system, station, body)):
             return "Navigation route is already clear."
 
-        set_game_window_active()
         if not any((system, station, body)):
             raise Exception("At least one of system, station, or body must be provided.")
 
@@ -430,10 +475,6 @@ class Plotter:
         current_system = get_state_dict(projected_states, 'Location').get('StarSystem', 'Unknown')
 
         if resolved:
-            if nav_route and self._systems_match(nav_route[-1].get('StarSystem', ''), resolved.system_name):
-                if resolved.target_type == 'system' or not self._systems_match(resolved.system_name, current_system):
-                    return f"The route to {resolved.system_name} is already set"
-
             if resolved.target_type == 'system' and self._systems_match(resolved.system_name, current_system):
                 return f"Already in {resolved.system_name}."
 
@@ -459,9 +500,7 @@ class Plotter:
                 resolved_target=resolved,
             )
 
-        if system:
-            if nav_route and self._systems_match(nav_route[-1].get('StarSystem', ''), system):
-                return f"The route to {system} is already set"
+        if system and not (station or body):
             if self._systems_match(system, current_system):
                 return f"Already in {system}."
             return self._plot_galaxy_route(system, None, projected_states, galaxymap_key)
@@ -496,13 +535,12 @@ class Plotter:
         return system or None
 
     def _navigate_system_map_target(self, resolved_target: ResolvedPlotTarget) -> None:
-        from ..ScreenReader import ScreenReader
         from ..SystemMap import SystemMap
 
         self._require_ui_dependencies()
         self.ensure_in_system_plot_target(resolved_target)
         category = resolved_target.system_map_category or "LANDFALL PLANETS"
-        SystemMap(ScreenReader(hud_color_matrix=self.screen_reader_hud_color_matrix), self.keys).run(
+        SystemMap(self._screen_reader(), self.keys).run(
             category=category,
             entry=resolved_target.name,
         )
@@ -544,10 +582,8 @@ class Plotter:
         raise Exception("Could not find orrery icon in galaxy map system list")
 
     def _plot_in_system_from_galaxy_map(self, resolved_target: ResolvedPlotTarget, projected_states: ProjectedStates) -> None:
-        from ..ScreenReader import ScreenReader
-
         self._require_ui_dependencies()
-        screen_reader = ScreenReader(hud_color_matrix=self.screen_reader_hud_color_matrix)
+        screen_reader = self._screen_reader()
         sleep(1)
         self._select_orrery_from_galaxy_map(screen_reader)
 
@@ -566,8 +602,7 @@ class Plotter:
         sys_map_key: str = "SystemMapOpen",
     ) -> str:
         current_gui = self._ensure_system_map_open(projected_states, sys_map_key)
-        if current_gui != "SystemMap":
-            sleep(3)
+        sleep(3)
 
         self._navigate_system_map_target(resolved_target)
 
@@ -586,8 +621,14 @@ class Plotter:
         if current_gui in ['SAA', 'FSS', 'Codex']:
             raise Exception('System map can not be opened currently, the active GUI needs to be closed first')
 
-        if current_gui == 'SystemMap':
-            return current_gui
+        if current_gui in ('SystemMap', 'GalaxyMap'):
+            close_key = sys_map_key if current_gui == 'SystemMap' else 'GalaxyMapOpen'
+            log("debug", "Resetting map UI before in-system plotting", current_gui)
+            self.keys.send(close_key)
+            try:
+                self.event_manager.wait_for_condition('CurrentStatus', lambda s: s.GuiFocus not in ('SystemMap', 'GalaxyMap'), 4)
+            except TimeoutError:
+                raise Exception(f"Failed to close the {current_gui} before opening a fresh system map")
 
         self.keys.send(sys_map_key)
         try:
@@ -646,6 +687,13 @@ class Plotter:
         clear_nav_route: bool = False,
     ) -> str:
         self._require_ui_dependencies()
+        nav_route = get_state_dict(projected_states, 'NavInfo').get('NavRoute', [])
+        route_destination = self._nav_route_item_system(nav_route[-1]) if nav_route else None
+        route_already_set = (
+            not clear_nav_route
+            and route_destination is not None
+            and self._systems_match(route_destination, system_name)
+        )
         current_gui = self._ensure_galaxy_map_open(projected_states, galaxymap_key)
         keep_galaxy_map_open = (
             self.enable_in_system_navigation
@@ -702,7 +750,10 @@ class Plotter:
         sleep(0.05)
         self.keys.send('CamZoomOut')
         sleep(zoom_wait_time)
-        self.keys.send('UI_Select', hold=1)
+        if route_already_set:
+            log('debug', 'Route already set; skipping hold-to-plot and continuing map navigation', system_name)
+        else:
+            self.keys.send('UI_Select', hold=1)
         sleep(0.05)
 
         try:
@@ -725,7 +776,8 @@ class Plotter:
 
             prefix = f"Best location found: {json.dumps(details)}. " if details else ""
             distance_text = f"Distance: {distance_ly} LY, " if distance_ly > 0 else ""
-            message = prefix + f"Route to {system_name} successfully plotted ({distance_text}Jumps: {jump_amount})"
+            route_status = "is already set" if route_already_set else "successfully plotted"
+            message = prefix + f"Route to {system_name} {route_status} ({distance_text}Jumps: {jump_amount})"
 
             if resolved_target is not None and resolved_target.target_type == 'body' and resolved_target.is_landable is False:
                 message += f" {resolved_target.name} is not landable; in-system body selection was skipped."
