@@ -20,6 +20,7 @@ declare global {
     interface Window {
         electronAPI?: {
             runtimeRole?: "primary_desktop" | "overlay";
+            platform?: string;
             invoke: (call: string, opts?: any) => Promise<any>;
             onStdout: (callback: (value: any) => void) => Promise<void> | void;
             onStderr: (callback: (value: any) => void) => Promise<void> | void;
@@ -409,6 +410,7 @@ export interface UnknownMessage extends BaseMessage {
     providedIn: "root",
 })
 export class TauriService {
+    public readonly runtimePlatform = window.electronAPI?.platform || "unknown";
     public readonly runtimeRole = window.electronAPI?.runtimeRole ?? "remote";
     public readonly installId = window.localStorage.getItem(
         "install_id",

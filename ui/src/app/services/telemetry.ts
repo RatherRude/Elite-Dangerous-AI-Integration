@@ -1,7 +1,7 @@
 /** Closed projection shared by local transparency and OTel. No payloads are retained. */
 export type Labels = Record<string, string | boolean>;
 export interface Observation { name: string; value: number; attributes: Labels; }
-export interface MetricDefinition { histogram?: boolean; unit?: string; boundaries?: number[]; }
+export interface MetricDefinition { histogram?: boolean; gauge?: boolean; unit?: string; boundaries?: number[]; }
 export const LATENCY_SCHEMA = "latency-v2";
 export const LATENCY_BUCKETS = [
     ...Array.from({ length: 31 }, (_, i) => i * 100),
@@ -26,6 +26,9 @@ export const METRICS: Record<string, MetricDefinition> = {
     covas_audio_pipeline_errors_total: {},
     covas_audio_realtime_factor: { histogram: true, boundaries: REALTIME_FACTOR_BUCKETS },
     covas_tts_underruns_total: {},
+    covas_setup_snapshot: { gauge: true }, covas_setup_feature_enabled: { gauge: true }, covas_setup_characters: { gauge: true },
+    covas_setup_feature_observed_at: { gauge: true }, covas_setup_characters_observed_at: { gauge: true },
+    covas_internal_operations_total: {},
 };
 /** Preserve supplied metadata; series policy belongs to the collector, not a client catalog. */
 export function metadataLabel(value: unknown): string {
@@ -109,6 +112,13 @@ export function projectMessage(message: Record<string, unknown>): Observation[] 
     }
     if (type === "backend_process_state") add("covas_backend_process_events_total", 1, {
         status: metadataLabel(message["status"]), expected: message["expected"] === true,
+    });
+    if (type === "internal_operation" || type === "startup_error") add("covas_internal_operations_total", 1, {
+        component: type === "startup_error" ? "assistant" : metadataLabel(message["component"]),
+        operation: type === "startup_error" ? metadataLabel(message["phase"]) : metadataLabel(message["operation"]),
+        status: type === "startup_error" ? "error" : metadataLabel(message["status"]),
+        "error.kind": message["status"] === "success" ? "none" : metadataLabel(message["error_kind"]),
+        "plugin.id": metadataLabel(message["plugin_id"]),
     });
     if (type === "audio_pipeline_error") add("covas_audio_pipeline_errors_total", 1, {
         "usage.kind": metadataLabel(message["usage_kind"]),

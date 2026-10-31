@@ -132,6 +132,17 @@ describe("telemetry projection", () => {
         expect(observations.some(o => o.name === "covas_audio_pipeline_errors_total")).toBeTrue();
         expect(observations.some(o => o.name === "covas_usage_calls_total")).toBeFalse();
     });
+    it("keeps structured internal failures distinct from provider calls and never exports error prose", () => {
+        const points = projectMessage({ type: "internal_operation", component: "vr", operation: "initialize", status: "error",
+            error_kind: "vr_setup_required", message: "SENSITIVE_EXCEPTION", details: "SENSITIVE_STACK" });
+        const failure = points.find(point => point.name === "covas_internal_operations_total")!;
+        expect(failure.attributes["component"]).toBe("vr");
+        expect(failure.attributes["error.kind"]).toBe("vr_setup_required");
+        expect(JSON.stringify(points)).not.toContain("SENSITIVE_");
+        expect(points.some(point => point.name === "covas_usage_calls_total")).toBeFalse();
+        expect(projectMessage({ type: "startup_error", phase: "assistant_initialization", error_kind: "internal" })
+            .find(point => point.name === "covas_internal_operations_total")?.attributes["component"]).toBe("assistant");
+    });
     it("rejects invalid numeric measurements", () => {
         for (const value of [NaN, Infinity, -1, true, "12", null]) expect(measurement(value)).toBeNull();
         expect(measurement(1.5, true)).toBeNull();

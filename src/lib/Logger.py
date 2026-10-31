@@ -557,6 +557,15 @@ def log_audio_pipeline_error(usage_kind: str, stage: str, kind: str) -> None:
                   "error_kind": kind})
 
 
+@_best_effort_usage
+def log_internal_operation(component: str, operation: str, status: str, *,
+                           error_kind: str = "none", plugin_id: str | None = None) -> None:
+    """Structured internal reliability; exception prose remains in ordinary logs."""
+    send_message({"type": "internal_operation", "schema_version": 1, "component": component,
+                  "operation": operation, "status": status,
+                  "error_kind": error_kind if status == "error" else "none", "plugin_id": plugin_id})
+
+
 def log_action_cache_usage(
     context: str,
     *,

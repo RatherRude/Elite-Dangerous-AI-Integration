@@ -75,7 +75,8 @@ from lib.Event import (
     ToolEvent,
     PluginEvent,
 )
-from lib.Logger import show_chat_message, configure_stdio
+from lib.Logger import show_chat_message, configure_stdio, log_internal_operation
+from lib.Errors import error_kind
 from lib.Projections import registerProjections
 from lib.PromptGenerator import PromptGenerator
 from lib.STT import STT
@@ -895,6 +896,7 @@ class Chat:
             except KeyboardInterrupt:
                 break
             except Exception as e:
+                log_internal_operation("assistant", "main_loop", "error", error_kind=error_kind(e))
                 log("error", e, traceback.format_exc())
                 break
 
@@ -1298,6 +1300,7 @@ if __name__ == "__main__":
                 emit_message(
                     "startup_error",
                     phase=startup_phase,
+                    error_kind=error_kind(e),
                     message=str(e),
                     details=details,
                 )

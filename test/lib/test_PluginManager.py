@@ -22,6 +22,18 @@ from plugins.GoogleAIStudioPlugin import GOOGLE_AI_STUDIO_PLUGIN_GUID, GOOGLE_LL
 from plugins.OpenRouterPlugin import OPENROUTER_PLUGIN_GUID, OpenRouterPlugin
 
 
+def test_plugin_hook_failure_is_reported_without_changing_hook_isolation(monkeypatch):
+    from types import SimpleNamespace
+    report = MagicMock()
+    monkeypatch.setattr("lib.PluginManager.log_internal_operation", report)
+    plugin = SimpleNamespace(plugin_manifest=SimpleNamespace(guid="external-plugin", name="Example"),
+                             on_chat_start=MagicMock(side_effect=RuntimeError("SENSITIVE_PLUGIN_FAILURE")))
+    manager = PluginManager.__new__(PluginManager)
+    manager.plugin_list = {"external-plugin": plugin}
+    manager.on_chat_start(None)
+    report.assert_called_once_with("plugins", "on_chat_start", "error", error_kind="internal", plugin_id="external-plugin")
+
+
 class MigratingPlugin(PluginBase):
     settings_schema_version = 2
 

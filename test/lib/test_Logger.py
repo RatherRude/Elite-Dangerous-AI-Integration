@@ -319,3 +319,12 @@ def test_tts_underrun_stats_are_emitted_and_persisted_without_inventing_zero(cap
             assert "num_underruns" not in payload
         else:
             assert payload["num_underruns"] == underruns
+
+
+def test_internal_operation_is_a_closed_non_content_payload(capsys):
+    from src.lib.Logger import log_internal_operation
+    log_internal_operation("plugins", "on_chat_start", "error", error_kind="plugin-category", plugin_id="external-plugin")
+    payload = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert payload.pop("timestamp", None)
+    assert payload == {"type": "internal_operation", "schema_version": 1, "component": "plugins", "operation": "on_chat_start",
+                       "status": "error", "error_kind": "plugin-category", "plugin_id": "external-plugin"}

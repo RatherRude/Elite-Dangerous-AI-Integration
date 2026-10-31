@@ -5,6 +5,7 @@ import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
 import { resourceFromAttributes } from "@opentelemetry/resources";
 import { TauriService } from "./tauri.service";
 import { Labels, localeResources, MetricAggregate, METRICS, Observation, projectMessage, TelemetryAggregation } from "./telemetry";
+import { SetupTelemetry } from "./setup-telemetry";
 
 export interface TelemetrySnapshot {
     role: string; exporting: boolean; resources: Labels; started: string; ready: string | null;
@@ -27,6 +28,7 @@ export class MetricsService implements OnDestroy {
     private provider?: MeterProvider;
     private instruments = new Map<string, { add?: (value: number, attrs: Labels) => void; record?: (value: number, attrs: Labels) => void }>();
     private aggregation = new TelemetryAggregation();
+    private setup: SetupTelemetry;
     private startedAt = performance.now();
     private lastIndex = -1;
     private ended = false;
@@ -35,19 +37,24 @@ export class MetricsService implements OnDestroy {
     private state: TelemetrySnapshot;
     private subject: BehaviorSubject<TelemetrySnapshot>;
     public readonly telemetrySnapshot$;
+    private readonly onRendererError = (event: ErrorEvent) => this.recordRendererFailure("uncaught_exception", event.error);
+    private readonly onUnhandledRejection = (event: PromiseRejectionEvent) => this.recordRendererFailure("unhandled_rejection", event.reason);
 
     constructor(private tauri: TauriService, @Inject(METRIC_EXPORTER_FACTORY) createExporter: () => PushMetricExporter) {
+        this.setup = new SetupTelemetry(tauri.runtimePlatform || "unknown");
         this.state = {
             role: tauri.runtimeRole, exporting: tauri.runtimeRole === "primary_desktop",
             resources: { "service.name": "com.covaslabs.ui", "service.namespace": "com.covaslabs",
                 "service.version": tauri.commitHash, "service.instance.id": tauri.sessionId,
-                "service.install.id": tauri.installId, ...localeResources() },
+                "service.install.id": tauri.installId, "os.type": tauri.runtimePlatform || "unknown", ...localeResources() },
             started: new Date().toISOString(), ready: null, state: "started", elapsedMs: 0,
             exportState: "not_attempted", lastExport: null, endpoint: METRICS_ENDPOINT, metrics: [],
         };
         this.subject = new BehaviorSubject(this.snapshot());
         this.telemetrySnapshot$ = this.subject.asObservable();
         if (!this.state.exporting) return;
+        window.addEventListener("error", this.onRendererError);
+        window.addEventListener("unhandledrejection", this.onUnhandledRejection);
         const delegate = createExporter();
         const exporter: PushMetricExporter = {
             export: (metrics, callback) => {
@@ -75,6 +82,12 @@ export class MetricsService implements OnDestroy {
         });
         const meter = this.provider.getMeter("com.covaslabs.ui-events", "3");
         for (const [name, definition] of Object.entries(METRICS)) {
+            if (definition.gauge) {
+                meter.createObservableGauge(name).addCallback(result => {
+                    for (const point of this.setup.observations(name)) result.observe(point.value, point.attributes);
+                });
+                continue;
+            }
             this.instruments.set(name, definition.histogram
                 ? meter.createHistogram(name, { unit: definition.unit })
                 : meter.createCounter(name, { unit: definition.unit }));
@@ -83,6 +96,7 @@ export class MetricsService implements OnDestroy {
         this.subscriptions.add(tauri.output$.subscribe(message => {
             if (message.index <= this.lastIndex || this.ended) return;
             this.lastIndex = message.index;
+            this.setup.update(message);
             if (message.type === "ready") {
                 if (!this.state.ready) {
                     this.state.ready = new Date().toISOString();
@@ -105,9 +119,19 @@ export class MetricsService implements OnDestroy {
         if (METRICS[mapped.name].histogram) instrument?.record?.(mapped.value, mapped.attributes);
         else instrument?.add?.(mapped.value, mapped.attributes);
     }
+    private recordRendererFailure(operation: string, error: unknown): void {
+        const detail = error && typeof error === "object" ? error as Record<string, unknown> : {};
+        for (const observation of projectMessage({ type: "internal_operation", component: "renderer", operation,
+            status: "error", error_kind: detail["code"] ?? detail["name"] ?? "internal" }))
+            if (observation.name === "covas_internal_operations_total") this.record(observation);
+        this.publishSoon();
+    }
     private snapshot(): TelemetrySnapshot {
         return { ...this.state, elapsedMs: this.ended ? this.state.elapsedMs : performance.now() - this.startedAt,
-            metrics: this.aggregation.snapshot() };
+            metrics: [...this.aggregation.snapshot(), ...this.setup.observations().map(point => ({
+                name: point.name, attributes: point.attributes, count: 1, sum: point.value, min: point.value, max: point.value,
+                buckets: [], samples: [],
+            }))] };
     }
     public getSnapshot(): TelemetrySnapshot { return this.snapshot(); }
     private publishSoon(): void {
@@ -119,6 +143,8 @@ export class MetricsService implements OnDestroy {
         this.state.elapsedMs = performance.now() - this.startedAt;
         this.ended = true; this.state.state = "ended";
         this.subscriptions.unsubscribe();
+        window.removeEventListener("error", this.onRendererError);
+        window.removeEventListener("unhandledrejection", this.onUnhandledRejection);
         this.record({ name: "covas_sessions_total", value: 1, attributes: { state: "ended" } });
         this.record({ name: "covas_session_duration_ms", value: this.state.elapsedMs, attributes: {} });
         this.subject.next(this.snapshot());

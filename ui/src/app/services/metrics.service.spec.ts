@@ -81,4 +81,21 @@ describe("metrics ownership and lifecycle", () => {
         }
         expect(exported.get("plugin/tool-2104")?.value).toBe(2);
     });
+    it("exports current setup as gauges, retaining disabled/zero values rather than accumulating config events", async () => {
+        create();
+        messages.next({ index: 0, type: "config", config: { ptt_var: "push_to_talk", game_actions_var: true,
+            characters: [{ name: "Default" }, { name: "One" }] } });
+        messages.next({ index: 1, type: "config", config: { ptt_var: "voice_activation", game_actions_var: false,
+            characters: [{ name: "Default" }] } });
+        const local = service.getSnapshot().metrics;
+        expect(local.find(row => row.name === "covas_setup_feature_enabled")?.sum).toBe(0);
+        await service.close();
+        const metrics = exporter.getMetrics()[0].scopeMetrics.flatMap(scope => scope.metrics);
+        const feature = metrics.find(metric => metric.descriptor.name === "covas_setup_feature_enabled");
+        if (feature?.dataPointType !== DataPointType.GAUGE) throw new Error("Expected current-value gauge");
+        expect(feature.dataPoints[0].value).toBe(0);
+        const counts = metrics.find(metric => metric.descriptor.name === "covas_setup_characters");
+        if (counts?.dataPointType !== DataPointType.GAUGE) throw new Error("Expected character gauge");
+        expect(counts.dataPoints.find(point => point.attributes["kind"] === "user_defined")?.value).toBe(0);
+    });
 });
