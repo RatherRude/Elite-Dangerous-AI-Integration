@@ -279,6 +279,44 @@ def test_default_provider_plugins_register_and_create_models() -> None:
     assert OPENAI_PLUGIN_GUID in manager.builtin_plugin_guids
 
 
+@pytest.mark.parametrize("guid", [OPENAI_PLUGIN_GUID, GOOGLE_AI_STUDIO_PLUGIN_GUID])
+def test_first_run_detected_shared_key_reaches_every_selected_provider(guid, monkeypatch) -> None:
+    import lib.Config as ConfigModule
+    import lib.PluginManager as PluginManagerModule
+
+    monkeypatch.setattr(ConfigModule, "save_config", lambda config: None)
+    monkeypatch.setattr(PluginManagerModule, "save_config", lambda config: None)
+    config: Any = {"config_version": 24, "api_key": "", "plugin_settings": {}}
+    manager = PluginManager(config)
+    manager.load_default_plugins()
+    manager.register_settings()
+    provider = next(
+        provider for provider in manager.plugin_model_providers
+        if provider["plugin_guid"] == guid and provider.get("api_key_detection")
+    )
+    detection = provider["api_key_detection"]
+    key = "first-run-key"
+    update: Any = {
+        "api_key": key,
+        "plugin_settings": {**config["plugin_settings"], guid: {
+            **config["plugin_settings"][guid], detection["setting_key"]: key,
+        }},
+    }
+    for selector, selection in detection["provider_selections"].items():
+        update[selector] = selection if selection == "none" or selection.startswith("plugin:") else f"plugin:{guid}:{selection}"
+    config = ConfigModule.update_config(config, update)
+    manager.on_settings_changed(config)
+
+    for selector, kind in (
+        ("llm_provider", "llm"), ("agent_llm_provider", "llm"), ("vision_provider", "vlm"),
+        ("stt_provider", "stt"), ("embedding_provider", "embedding"),
+    ):
+        _, selected_guid, provider_id = config[selector].split(":")
+        model = manager.create_plugin_model(selected_guid, provider_id, kind)
+        assert model is not None
+        assert model.client.api_key == key
+
+
 def test_metadata_free_third_party_provider_contract_remains_compatible() -> None:
     guid = "unchanged-third-party"
     manager = PluginManager({"plugin_settings": {guid: {"prefix": "plugin"}}})  # type: ignore[arg-type]

@@ -382,7 +382,7 @@ class GoogleAIStudioPlugin(PluginBase):
             },
         ])
         providers[0]["api_key_detection"] = {
-            "patterns": [r"^AIza[A-Za-z0-9_-]{35}$", r"^AQ[A-Za-z0-9_-]{30,}$"],
+            "patterns": [r"^AIza[A-Za-z0-9_-]{35}$", r"^AQ[A-Za-z0-9_-.]{30,}$"],
             "priority": 20,
             "setting_key": "api_key",
             "provider_selections": {

@@ -166,7 +166,7 @@ describe("provider UI compatibility", () => {
             expect(instance.characterService.setTtsProviderVoiceSettings).not.toHaveBeenCalled();
 
             instance.config = {};
-            instance.apiKeyDetectionService = { buildUpdate: () => ({ label: "provider", update: { tts_provider: "plugin:new:tts" } }) };
+            instance.apiKeyDetectionService = { buildUpdateWhenReady: async () => ({ label: "provider", update: { tts_provider: "plugin:new:tts" } }) };
             await instance.onApiKeyChange("key");
             expect(instance.characterService.setTtsProviderVoiceSettings).not.toHaveBeenCalled();
         });

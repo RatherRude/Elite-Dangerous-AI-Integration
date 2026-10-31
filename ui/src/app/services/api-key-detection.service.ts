@@ -1,5 +1,6 @@
 import { Injectable } from "@angular/core";
-import { Config } from "./config.service";
+import { filter, firstValueFrom } from "rxjs";
+import { Config, ConfigService } from "./config.service";
 import { ModelProviderDefinition } from "./plugin-settings";
 
 export interface ApiKeyDetectionResult {
@@ -10,12 +11,29 @@ export interface ApiKeyDetectionResult {
 @Injectable({ providedIn: "root" })
 export class ApiKeyDetectionService {
     private lastDetectedPluginGuid: string | null = null;
+    private latestRequest = 0;
+
+    constructor(private configService: ConfigService) {}
+
+    async buildUpdateWhenReady(apiKey: string): Promise<ApiKeyDetectionResult | null> {
+        const request = ++this.latestRequest;
+        // Config is emitted before providers at startup. Do not save a main key
+        // without its provider credentials just because metadata is still loading.
+        const providers = await firstValueFrom(
+            this.configService.plugin_model_providers$.pipe(filter(providers => providers.length > 0)),
+        );
+        if (request !== this.latestRequest) return null;
+        const config = this.configService.getCurrentConfig();
+        if (!config) return null;
+        return this.buildUpdate(apiKey, config, providers);
+    }
 
     buildUpdate(
         apiKey: string,
         config: Config,
         providers: ModelProviderDefinition[],
     ): ApiKeyDetectionResult {
+        apiKey = apiKey.trim();
         const matches = providers.flatMap((provider, order) => {
             const detection = provider.api_key_detection;
             if (!detection?.patterns?.length) return [];

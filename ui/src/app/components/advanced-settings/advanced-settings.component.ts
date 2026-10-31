@@ -424,7 +424,8 @@ export class AdvancedSettingsComponent implements OnDestroy {
 
     async onApiKeyChange(apiKey: string) {
         if (!this.config) return;
-        const result = this.apiKeyDetectionService.buildUpdate(apiKey, this.config, this.pluginModelProviders);
+        const result = await this.apiKeyDetectionService.buildUpdateWhenReady(apiKey);
+        if (!result) return;
         this.apiKeyType = result.label;
         await this.onConfigChange(result.update);
     }
