@@ -169,6 +169,9 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - `system_name`: String (optional)
     - `start_navigation`: Boolean (optional)
 
+    On Windows, system-name searches send literal Unicode text without physical key combinations or clipboard changes.
+    This avoids Shift-based digit entry on AZERTY keyboards. Game shortcuts keep their existing key bindings.
+
     <details>
     <summary>Examples</summary>
     
