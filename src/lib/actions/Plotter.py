@@ -6,7 +6,6 @@ from time import sleep
 from typing import Any, Callable, Literal
 
 import requests
-from pyautogui import typewrite
 
 from ..Logger import log
 from ..Projections import ProjectedStates, get_state_dict
@@ -660,7 +659,7 @@ class Plotter:
         self.keys.send('UI_Select')
         sleep(.05)
 
-        typewrite(system_name.split('+', 1)[0], interval=0.02)
+        self.keys.send_text(system_name.split('+', 1)[0])
         sleep(0.05)
 
         self.keys.send_key('Down', 'Key_Enter')
