@@ -331,6 +331,31 @@ def test_keep_listening_audio_queues_control_then_followup_after_timeout(stt, mo
     assert mock_stt_model.transcribe.call_count == 3
 
 
+@pytest.mark.parametrize("phrase,kind", [
+    ("reste en \u00e9coute", "hold"), ("\u00c7a sera tout", "close"),
+])
+def test_hybrid_named_controls_do_not_retranscribe_or_queue_conversation(stt, mock_stt_model, phrase, kind):
+    import speech_recognition as sr
+
+    local = MagicMock()
+    local.transcribe.return_value = f"Simone, {phrase}"
+    mock_stt_model.transcribe.return_value = f"Simon, {phrase}"
+    session = VoiceActivation("Simone", 10, mock_stt_model, local)
+    stt.voice_activation = session
+    audio = sr.AudioData(b'\xff\xff' * 16000, 16000, 2)
+
+    stt._process_audio(audio, 1, session.begin_audio())
+    session.end_audio()
+
+    result = stt.resultQueue.get_nowait()
+    assert result.text == ""
+    assert result.voice_input.kind == kind
+    assert session.accepts(result.voice_input)
+    assert stt.resultQueue.empty()
+    local.transcribe.assert_called_once_with(audio)
+    mock_stt_model.transcribe.assert_not_called()
+
+
 def test_hybrid_transmits_only_the_addressed_audio(stt, mock_stt_model):
     import speech_recognition as sr
 
