@@ -1,7 +1,7 @@
 {
     "300260": {"Engineer": "Tod 'The Blaster' McQuinn", "Location": "Wolf 397", "Workshop": "Trophy Camp",
              "Coords": {"x": 40, "y": 79.21875, "z": -10.40625},
-             "Modifies": {"Multi-cannon": 5, "Rail Gun": 5, "Cannon": 2, "Fragment Cannon": 2},
+             "Modifies": {"Multi-cannon": 5, "Rail Gun": 5, "Cannon": 2, "Fragment Cannon": 3},
              "HowToFind": "Available from start", "HowToGetInvite": "15 bounty vouchers earned",
              "HowToUnlock": "100,001 CR of bounty vouchers provided", "HowToGainRep": "Modules crafted or Alliance vouchers handed in"},
     "300100": {"Engineer": "Felicity Farseer", "Location": "Deciat", "Workshop": "Farseer Inc",
