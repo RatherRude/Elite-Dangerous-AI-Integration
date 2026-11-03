@@ -4,14 +4,15 @@ from pathlib import Path
 import platform
 from threading import Semaphore
 import traceback
-from typing import Any, Literal, TypedDict, Dict, cast, List
+from typing import Any, Literal, Mapping, Required, TypedDict, Dict, cast, List
 import os
 import sys
 from urllib.parse import urlparse
 
 from .HudColorMatrix import HudColorMatrix
-from .Logger import log
+from .Logger import log, show_chat_message
 from .UI import emit_message
+from .VoiceActivation import voice_config_error
 
 # List of game events categorized (legacy boolean defaults)
 game_events = {
@@ -844,7 +845,8 @@ class WeaponType(TypedDict):
 
 
 class Character(TypedDict, total=False):
-    name: str
+    name: Required[str]
+    first_name: Required[str]
     character: str
     personality_preset: str
     personality_verbosity: int
@@ -898,7 +900,10 @@ class Config(TypedDict):
     # Embedding settings
     embedding_provider: str
     vision_var: bool
-    ptt_var: Literal['voice_activation', 'push_to_talk', 'push_to_mute', 'toggle']
+    ptt_var: Literal['voice_activation', 'push_to_talk', 'push_to_mute', 'toggle', 'wake_word']
+    wake_word_timeout: float
+    wake_word_source: Literal['main', 'parakeet']
+    wake_word_first_command: Literal['retranscribe', 'reuse']
     ptt_inverted_var: bool
     mute_during_response_var: bool
     game_actions_var: bool
@@ -1104,6 +1109,13 @@ def _provider_from_legacy_endpoint(endpoint: object) -> str | None:
     return None
 
 
+def _has_default_character_name(character: Mapping[str, object]) -> bool:
+    return character.get("name") == "Default" or (
+        character.get("name") == "Simone"
+        and character.get("personality_preset") == "default"
+    )
+
+
 def migrate(data: dict) -> dict:
     legacy_game_events = data.get('game_events', game_events)
     if not isinstance(legacy_game_events, dict) or any(isinstance(value, dict) for value in legacy_game_events.values()):
@@ -1123,7 +1135,7 @@ def migrate(data: dict) -> dict:
         # Migrate old character format to new characters array
         if 'characters' in data and len(data['characters']) > 0:
             for i, character in enumerate(data['characters']):
-                if character['name'] != 'Default':
+                if not _has_default_character_name(character):
                     #merge character attributes
                     new_attributes = {
                         "event_reaction_enabled_var": data.get('event_reaction_enabled_var', True),
@@ -1201,7 +1213,7 @@ def migrate(data: dict) -> dict:
             if 'llm_model_name' in data and data['llm_model_name'] == 'gpt-4o-mini':
                 data['llm_model_name'] = 'gpt-4.1-mini'
 
-        if len(data['characters']) > 0 and data['characters'][0]['name'] != 'Default':
+        if len(data['characters']) > 0 and not _has_default_character_name(data['characters'][0]):
             # Insert default character at beginning
             data['characters'].insert(0, getDefaultCharacter(cast(Config, data)))
             # Adjust active character index if it exists
@@ -1578,6 +1590,26 @@ def migrate(data: dict) -> dict:
             mistral_settings.pop('tts_voice', None)
         data['config_version'] = 24
 
+    if data['config_version'] < 25:
+        characters = data.get('characters', [])
+        if (
+            characters
+            and characters[0].get('name') == 'Default'
+            and characters[0].get('personality_preset', 'default') == 'default'
+        ):
+            prompt = characters[0].get('character')
+            if isinstance(prompt, str):
+                characters[0]['character'] = prompt.replace(
+                    'Your name is COVAS:NEXT.', 'Your name is Simone.',
+                )
+        data['config_version'] = 25
+
+    if data['config_version'] < 26:
+        for character in data.get('characters', []):
+            character.setdefault('first_name', 'Simone')
+        data['config_version'] = 26
+
+    data.pop('wake_word_name', None)
     data.pop('tools_var', None)
 
     # Legacy voice fields are consumed only by the migration above. Never retain
@@ -1656,7 +1688,8 @@ def merge_config_data(defaults: dict, user: dict):
 def getDefaultCharacter(config: Config) -> Character:
     return Character({
         "name": 'Default',
-        "character": "Keep your responses extremely brief and minimal. Maintain a professional and serious tone in all responses. Stick to factual information. You are COVAS:NEXT (Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal) - professional, efficient, and no-nonsense. Provides essential information without unnecessary elaboration. Focuses on factual data and operational status. 'Destination reached.' 'Fuel level acceptable.' Clean, precise communication. Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS:NEXT. Always respond in English regardless of the language spoken to you. Balance emotional understanding with factual presentation. Use everyday language that balances casual and professional tones. Project an air of expertise and certainty when providing information. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.",
+        "first_name": 'Simone',
+        "character": "Keep your responses extremely brief and minimal. Maintain a professional and serious tone in all responses. Stick to factual information. You are COVAS:NEXT (Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal) - professional, efficient, and no-nonsense. Provides essential information without unnecessary elaboration. Focuses on factual data and operational status. 'Destination reached.' 'Fuel level acceptable.' Clean, precise communication. Adopt their speech patterns, mannerisms, and viewpoints. Your name is Simone. Always respond in English regardless of the language spoken to you. Balance emotional understanding with factual presentation. Use everyday language that balances casual and professional tones. Project an air of expertise and certainty when providing information. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.",
         "personality_preset": 'default',
         "personality_verbosity": 0,
         "personality_vulgarity": 0,
@@ -1694,13 +1727,16 @@ def getDefaultCharacter(config: Config) -> Character:
 
 def load_config() -> Config:
     defaults: Config = {
-        'config_version': 24,
+        'config_version': 26,
         'commander_name': "",
         'characters': [],
         'active_character_index': 0,  # -1 means using the default legacy character
         'api_key': "",
         'vision_var': False,
         'ptt_var': 'voice_activation',
+        'wake_word_timeout': 10.0,
+        'wake_word_source': 'main',
+        'wake_word_first_command': 'retranscribe',
         'ptt_inverted_var': False,
         'mute_during_response_var': False,
         'game_actions_var': True,
@@ -1912,6 +1948,27 @@ def get_system_info() -> SystemInfo:
 
 
 def validate_config(config: Config) -> Config | None:
+    values: dict[str, object] = dict(config)
+    values.pop("wake_word_name", None)
+    if config.get("ptt_var") == "wake_word":
+        characters = config.get("characters", [])
+        index = config.get("active_character_index", 0)
+        if (
+            not characters
+            or not isinstance(index, int)
+            or isinstance(index, bool)
+            or not -len(characters) <= index < len(characters)
+        ):
+            error = "Name-triggered dialogue requires a valid active avatar."
+            log("error", error)
+            show_chat_message("error", error)
+            return None
+        values["wake_word_name"] = characters[index].get("first_name")
+    error = voice_config_error(values)
+    if error:
+        log("error", error)
+        show_chat_message("error", error)
+        return None
     return config
 
 class UpdateCharacterRequest(TypedDict):
@@ -1921,7 +1978,9 @@ class UpdateCharacterRequest(TypedDict):
     set_active: bool | None
 
 def update_character(config: Config, data: UpdateCharacterRequest) -> Config:
-    old_config = config.copy()
+    old_config = config
+    config = config.copy()
+    config["characters"] = list(config.get("characters", []))
     if data.get('operation') == "add":
         # Add a new character
         if "character" in data and data["character"]:
@@ -2009,6 +2068,7 @@ def update_config(config: Config, data: dict) -> Config:
         # Backup imports use the ordinary update path, so migrate old full configs here too.
         data = migrate(data)
 
+    data.pop('wake_word_name', None)
     data.pop('tools_var', None)
     for key in LEGACY_PROVIDER_SETTING_KEYS:
         data.pop(key, None)
@@ -2031,8 +2091,10 @@ def update_config(config: Config, data: dict) -> Config:
             agent_tries = 1
         data["agent_llm_max_tries"] = agent_tries
 
-    # Now merge and save as before
     new_config = cast(Config, {**config, **data})
+    if validate_config(new_config) is None:
+        emit_message("config", config=config)
+        return config
     emit_message("config", config=new_config)
     save_config(new_config)
     return new_config

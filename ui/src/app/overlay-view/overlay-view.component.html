@@ -11,6 +11,7 @@
      [class.position-right]="avatarPosition === 'right'"
      *ngIf="avatarShow || chatShow">
     <div class="overlay-character" [ngClass]="action">
+        <app-voice-activation-status></app-voice-activation-status>
         @if (avatarShow) {
           @if (avatarUsesInlineSvg) {
             <div class="overlay-svg-tuber"

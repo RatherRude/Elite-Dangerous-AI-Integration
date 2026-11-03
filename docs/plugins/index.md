@@ -22,4 +22,8 @@ To install a plugin, download the packaged plugin archive and extract it to a su
 Ensure that the manifest is found at `C:/Users/USERNAME/AppData/Roaming/com.covas-next.ui/plugins/SUB-FOLDER/manifest.json`, otherwise the plugin will not load.
 
 # For developers
-See the [Development](./Development.md) page.
+
+- [Plugin development](Development.md): loading, lifecycle, settings, actions,
+  events, and model providers.
+- [Plugin UI and Runtime Integration](ui-integration.md): declarative views,
+  plugin-owned translations, structured interactions, navigation, and live updates.
