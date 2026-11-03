@@ -44,6 +44,7 @@ from plugins.GoogleAIStudioPlugin import (
     GoogleAIStudioTTSModel,
     GoogleAIStudioTranscribeModel,
 )
+from plugins.GroqPlugin import GROQ_API_URL, GROQ_PLUGIN_GUID, GROQ_STT_MODEL, GroqPlugin
 from plugins.MistralPlugin import MISTRAL_API_URL, MISTRAL_PLUGIN_GUID, MistralPlugin
 from plugins.OpenAICompatiblePlugin import OPENAI_COMPATIBLE_PLUGIN_GUID, OpenAICompatiblePlugin
 from plugins.OpenAIPlugin import OPENAI_API_URL, OPENAI_MODELS, OPENAI_PLUGIN_GUID, OpenAIPlugin
@@ -306,6 +307,30 @@ def test_openrouter_tool_toggle_suppresses_tools_per_role() -> None:
         model.generate([{"role": "user", "content": "hello"}], tools, "auto")
 
     generate.assert_called_once_with([{"role": "user", "content": "hello"}], None, None)
+
+
+def test_groq_stt_uses_fixed_endpoint_and_whisper_settings() -> None:
+    plugin = GroqPlugin(manifest(GROQ_PLUGIN_GUID, "Groq"))
+    providers = {provider["id"]: provider for provider in plugin.model_providers or []}
+    assert set(providers) == {"stt"}
+    assert providers["stt"]["slots"] == ["stt"]
+    assert not any(key == "endpoint" or key.endswith("_endpoint") for key in setting_keys(plugin))
+
+    default = plugin.create_model("stt", {"api_key": "groq-secret"})
+    assert isinstance(default, OpenAISTTModel)
+    assert str(default.client.base_url).rstrip("/") == GROQ_API_URL
+    assert default.client.api_key == "groq-secret"
+    assert default.model_name == GROQ_STT_MODEL
+    assert default.language is None and default.prompt is None
+
+    configured = plugin.create_model("stt", {
+        "stt_model": "whisper-large-v3", "stt_language": " fr ", "stt_prompt": "Elite Dangerous",
+    })
+    assert configured.model_name == "whisper-large-v3"
+    assert configured.language == "fr"
+    assert configured.prompt == "Elite Dangerous"
+    with pytest.raises(ValueError):
+        plugin.create_model("llm", {})
 
 
 def test_openai_compatible_models_cover_existing_modalities() -> None:
