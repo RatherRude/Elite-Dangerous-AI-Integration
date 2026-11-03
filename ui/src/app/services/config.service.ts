@@ -34,11 +34,26 @@ export interface RefreshSystemInfoMessage extends BaseCommand {
     type: "refresh_system_info";
 }
 
+export interface BindingKeyIssue {
+    action: string;
+    binding: string;
+    key: string;
+    role: 'key' | 'modifier';
+    character: string | null;
+    layout: string | null;
+    platform: string;
+    modifiers: string[];
+    reason: string;
+    native_shift_state?: number;
+}
+
 export interface KeybindsMessages extends BaseMessage {
     type: "keybinds";
     missing: string[];
     collisions: [string,string][];
     unsupported: string[];
+    unresolved_keys?: BindingKeyIssue[];
+    mapping_warnings?: BindingKeyIssue[];
     start_mismatch?: boolean | { file: string | null; values: string[] } | null;
     start_values?: string[];
     start_profile?: string | null;
