@@ -87,7 +87,7 @@ In the hybrid configuration, **First command in the invocation** controls a phra
 - **Retranscribe with main STT** (default): Parakeet recognizes the call, then that same phrase is transcribed by your main STT to preserve its recognition quality.
 - **Reuse local Parakeet text**: the first command uses the local text, avoiding a second transcription. Following commands use the main STT.
 
-Calling only the name never needs the second transcription. **If Parakeet is already the main STT, there is always exactly one model instance and one transcription per phrase**, regardless of a previously saved hybrid preference.
+Calling only the name or a complete named keep-listening/closing phrase in standby never needs the second transcription. These controls use the activation transcript directly, so a second provider cannot misrecognize the name and turn them into an ordinary conversation request. The retranscription setting applies only to conversational requests. **If Parakeet is already the main STT, there is always exactly one model instance and one transcription per phrase**, regardless of a previously saved hybrid preference.
 
 **If activation uses a remote STT, every detected phrase is sent to that provider even in standby.** The name filter prevents unintended commands, not that audio transmission. The settings show this distinction and recommend Parakeet for local standby transcription. Rejected standby speech is not added to application conversation history or content logs; any remote provider's retention policy still applies.
 

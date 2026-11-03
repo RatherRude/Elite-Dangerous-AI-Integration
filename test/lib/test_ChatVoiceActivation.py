@@ -145,6 +145,20 @@ def test_keep_listening_is_a_direct_control_and_close_restores_timeout(chat, tts
     chat._update_voice_activation()
     assert not session.suppressed
     chat.tts.play_listening_end_tone.assert_not_called()
+    chat.assistant.reply_pending = True
+    now[0] = 100
+    chat._update_voice_activation()
+    chat.assistant.reply_pending = False
+    chat.assistant.is_replying = True
+    now[0] = 200
+    chat._update_voice_activation()
+    chat.assistant.is_replying = False
+    chat.tts.get_is_playing.return_value = True
+    now[0] = 300
+    chat._update_voice_activation()
+    chat.tts.get_is_playing.return_value = False
+    now[0] = 400
+    chat._update_voice_activation()
     now[0] = 1000
     chat._update_voice_activation()
     assert session.active

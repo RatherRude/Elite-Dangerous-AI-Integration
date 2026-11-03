@@ -363,7 +363,17 @@ class VoiceActivation:
         if not ticket.active:
             if command is None:
                 return None
-            if command and self.activation_model is not self.main_model and self.first_command == "retranscribe":
+            command_words = normalized_words(command)
+            is_control = (
+                command_words in self._closing_languages
+                or command_words in self._keep_listening_languages
+            )
+            if (
+                command
+                and not is_control
+                and self.activation_model is not self.main_model
+                and self.first_command == "retranscribe"
+            ):
                 with self._lock:
                     if ticket.generation != self._generation or self._state == "disabled":
                         return None

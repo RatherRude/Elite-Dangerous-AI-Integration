@@ -398,6 +398,37 @@ def test_hybrid_first_command_and_followup(strategy, main_calls, remote_text):
     assert local.transcribe.call_count == 1
 
 
+@pytest.mark.parametrize("strategy", ["reuse", "retranscribe"])
+@pytest.mark.parametrize("phrase,kind,language", [
+    ("reste en \u00e9coute", "hold", "fr"),
+    ("keep listening", "hold", "en"),
+    ("\u00c7a sera tout !", "close", "fr"),
+    ("I'm done", "close", "en"),
+])
+def test_hybrid_named_controls_use_only_the_activation_transcript(strategy, phrase, kind, language):
+    now = [0.0]
+    main, local = Mock(), Mock()
+    local.transcribe.return_value = f"Hey Simone, {phrase}"
+    main.transcribe.return_value = f"Simon, {phrase}"
+    session = VoiceActivation("Simone", 10, main, local, strategy, clock=lambda: now[0])
+
+    result = session.recognize(session.begin_audio(), lambda model: model.transcribe("control audio"))
+    session.end_audio()
+
+    assert result.kind == kind
+    assert result.text == ""
+    assert result.language == language
+    assert session.accepts(result)
+    local.transcribe.assert_called_once_with("control audio")
+    main.transcribe.assert_not_called()
+    session.finish_control()
+    session.tick(False)
+    now[0] = 3600
+    session.tick(False)
+    assert session.state == ("active" if kind == "hold" else "standby")
+    assert not session.consume_timeout()
+
+
 def test_standby_speech_never_calls_hybrid_main():
     main, local = Mock(), Mock()
     local.transcribe.return_value = "private ambient conversation"
