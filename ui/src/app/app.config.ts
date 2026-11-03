@@ -4,6 +4,9 @@ import { provideRouter, withHashLocation } from "@angular/router";
 import { routes } from "./app.routes";
 import { provideAnimationsAsync } from "@angular/platform-browser/animations/async";
 import { provideHttpClient } from "@angular/common/http";
+import { TranslateLoader, TranslateService, provideTranslateService } from "@ngx-translate/core";
+import { InlineTranslateLoader } from "./services/inline-translate-loader";
+import { firstValueFrom } from "rxjs";
 import { MAT_DIALOG_DEFAULT_OPTIONS, MatDialogModule } from "@angular/material/dialog";
 import { MatSnackBarModule } from "@angular/material/snack-bar";
 import { importProvidersFrom } from "@angular/core";
@@ -16,6 +19,19 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes, withHashLocation()),
     provideAnimationsAsync(),
     provideHttpClient(),
+    provideTranslateService({
+      loader: {
+        provide: TranslateLoader,
+        useFactory: () => new InlineTranslateLoader(),
+      },
+      defaultLanguage: "en",
+    }),
+    {
+      provide: APP_INITIALIZER,
+      multi: true,
+      deps: [TranslateService],
+      useFactory: (translate: TranslateService) => () => firstValueFrom(translate.use("en")),
+    },
     importProvidersFrom(MatDialogModule),
     importProvidersFrom(MatSnackBarModule),
     importProvidersFrom(MarkdownModule.forRoot()),

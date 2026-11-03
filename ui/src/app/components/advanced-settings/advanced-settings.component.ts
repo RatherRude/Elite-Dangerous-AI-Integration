@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, OnDestroy, Output, ViewChild } from "@angular/core";
+import { Component, ElementRef, EventEmitter, OnDestroy, Output, ViewChild, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import {
     MatError,
@@ -46,6 +46,7 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { ScreenInfo } from "../../models/screen-info";
 import QRCode from "qrcode";
 import { FontScaleService } from "../../services/font-scale.service";
+import { PluginUIService } from "../../services/plugin-ui.service";
 
 export type AdvancedSettingsFocusTarget =
     | "commander-name"
@@ -92,6 +93,7 @@ type AdvancedSettingsPanel = "commander" | "llm" | "agent-llm" | "stt" | "tts" |
     styleUrl: "./advanced-settings.component.css",
 })
 export class AdvancedSettingsComponent implements OnDestroy {
+    private readonly pluginUI = inject(PluginUIService);
     @Output() questEditorOpen = new EventEmitter<void>();
     @ViewChild("commanderNameInput") private commanderNameInput?: ElementRef<HTMLInputElement>;
     @ViewChild("commanderNameField", { read: ElementRef }) private commanderNameField?: ElementRef<HTMLElement>;
@@ -381,24 +383,18 @@ export class AdvancedSettingsComponent implements OnDestroy {
 
     // Set plugin setting value
     async setPluginProviderSetting(pluginGuid: string, key: string, value: any): Promise<void> {
-        if (!this.config) return;
-        
-        const currentPluginSettings = this.config.plugin_settings?.[pluginGuid] ?? {};
-        const updatedPluginSettings = {
-            ...this.config.plugin_settings,
-            [pluginGuid]: {
-                ...currentPluginSettings,
-                [key]: value
-            }
-        };
-        
-        await this.onConfigChange({ plugin_settings: updatedPluginSettings });
+        try {
+            await this.pluginUI.change(pluginGuid, key, value);
+        } catch (error) {
+            console.error("Error updating provider input:", error);
+            this.snackBar.open("Error updating provider configuration", "OK", {duration: 5000});
+        }
     }
 
     // Create a getValue function for a specific plugin (for use with SettingsGridComponent)
     createGetValueFn(pluginGuid: string): (fieldKey: string, defaultValue: any) => any {
         return (fieldKey: string, defaultValue: any) => {
-            return this.config?.plugin_settings?.[pluginGuid]?.[fieldKey] ?? defaultValue;
+            return this.pluginUI.getValue(pluginGuid, fieldKey, this.config?.plugin_settings?.[pluginGuid]?.[fieldKey] ?? defaultValue);
         };
     }
 
@@ -409,13 +405,20 @@ export class AdvancedSettingsComponent implements OnDestroy {
         };
     }
 
-    createButtonClickFn(pluginGuid: string): (fieldKey: string) => void {
-        return (fieldKey: string) => {
-            this.configService.clickPluginSettingsButton(pluginGuid, fieldKey).catch((error) => {
+    createButtonClickFn(pluginGuid: string): (fieldKey: string, value?: string) => void {
+        return (fieldKey: string, value?: string) => {
+            this.pluginUI.invoke(pluginGuid, "settings_button", {key: fieldKey, value}).catch((error) => {
                 console.error("Error handling provider settings button click:", error);
                 this.snackBar.open("Error handling provider button click", "OK", { duration: 5000 });
             });
         };
+    }
+
+    invoke(pluginGuid: string, action: string, payload: Record<string, unknown>): void {
+        this.pluginUI.invoke(pluginGuid, action, payload).catch(error => {
+            console.error("Error handling provider UI action:", error);
+            this.snackBar.open("Error handling provider action", "OK", {duration: 5000});
+        });
     }
 
     async onTtsProviderChange(providerRef: string): Promise<void> {

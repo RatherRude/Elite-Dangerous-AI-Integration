@@ -1,14 +1,148 @@
 import { TestBed } from "@angular/core/testing";
-import { SettingsGridComponent } from "./settings-grid.component";
-import { SettingsFieldComponent } from "../settings-field/settings-field.component";
-import { By } from "@angular/platform-browser";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import {
-    matchesSettingCondition, providerVoiceSettingsValues, providerVoiceDisplayValue,
-    SettingsGrid, SettingCondition, ModelProviderDefinition,
-} from "../../services/plugin-settings";
+import { TranslateModule } from "@ngx-translate/core";
+import { SettingsGridComponent } from "./settings-grid.component";
+import { SettingsGrid, SettingCondition, ModelProviderDefinition, matchesSettingCondition,
+  providerVoiceSettingsValues, providerVoiceDisplayValue } from "../../services/plugin-settings";
+import { UIComponent, uiFields, matchesUICondition } from "../../services/plugin-ui";
+import { settingsFields } from "../../services/plugin-settings";
+import { PluginContentComponent } from "../plugin-content/plugin-content.component";
+import { By } from "@angular/platform-browser";
+import { MatSelect } from "@angular/material/select";
+
+describe("settings grid content", () => {
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [SettingsGridComponent, TranslateModule.forRoot(), NoopAnimationsModule],
+    }).compileComponents();
+  });
+
+  for (const collapsible of [false, true]) {
+    it(`renders structured content and forwards actions with collapsible=${collapsible}`, () => {
+      const fixture = TestBed.createComponent(SettingsGridComponent);
+      const grid: SettingsGrid = {key: "itinerary", label: collapsible ? "Itinerary" : "", collapsible, fields: [], content: [
+        {type: "section", children: [
+          {type: "heading", tone: "info", text: {text: "Destination"}},
+          {type: "inline", children: [{type: "text", tone: "warning", text: {text: "12 ly · 1 jump"}}]},
+          {type: "action", text: {text: "Inspect"}, action: "inspect", payload: {stop: 1}},
+        ]},
+      ]};
+      fixture.componentRef.setInput("grid", grid);
+      const action = jasmine.createSpy("uiAction");
+      fixture.componentInstance.uiAction.subscribe(action);
+      fixture.detectChanges();
+      const root: HTMLElement = fixture.nativeElement;
+      expect(root.querySelector("app-plugin-content h3")?.textContent).toBe("Destination");
+      expect(root.querySelector(".inline .tone-warning")?.textContent).toContain("12 ly · 1 jump");
+      const inline = root.querySelector<HTMLElement>(".inline > app-plugin-content")!;
+      expect(getComputedStyle(inline).display).toBe("flex");
+      expect(inline.firstElementChild!.getBoundingClientRect().width).toBeLessThan(inline.getBoundingClientRect().width);
+      expect(getComputedStyle(root.querySelector(".tone-info")!).color).toBe("rgb(117, 186, 255)");
+      if (!collapsible) expect(root.querySelector(".grid-header")).toBeNull();
+      root.querySelector<HTMLButtonElement>("app-plugin-content button")!.click();
+      expect(action).toHaveBeenCalledWith({action: "inspect", payload: {stop: 1}});
+      fixture.componentRef.setInput("grid", {...grid, content: [{type: "text", text: {text: "Updated destination"}}]});
+      fixture.detectChanges();
+      expect(root.textContent).toContain("Updated destination");
+      expect(root.textContent).not.toContain("12 ly");
+    });
+  }
+
+  for (const placement of ["fields", "content"] as const) {
+    it(`renders inputs, buttons and progress in ${placement}, including dynamic replacements`, async () => {
+      const fixture = TestBed.createComponent(SettingsGridComponent);
+      const components: UIComponent[] = [
+        {key: "search", type: "text", label: "Search", default_value: ""},
+        {key: "refresh", type: "button", label: "Refresh"},
+        {type: "progress", value: 2, maximum: 10, text: {text: "Loading"}},
+        {key: "choice", type: "select", label: "Choice", select_options: [
+          {key: "one", label: "First", value: "one", disabled: false},
+        ]},
+      ];
+      const values: Record<string, unknown> = {search: "initial", choice: "one"};
+      const setValue = jasmine.createSpy("setValue").and.callFake((key, value) => values[key] = value);
+      const button = jasmine.createSpy("button");
+      const grid: SettingsGrid = {key: "shared", label: "", fields: [], [placement]: components};
+      fixture.componentRef.setInput("grid", grid);
+      fixture.componentRef.setInput("getValue", (key: string, fallback: unknown) => values[key] ?? fallback);
+      fixture.componentRef.setInput("setValue", setValue);
+      fixture.componentRef.setInput("onButtonClick", button);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      const root: HTMLElement = fixture.nativeElement;
+      const input = root.querySelector("input")!;
+      expect(input.value).toBe("initial");
+      input.value = "filter";
+      input.dispatchEvent(new Event("input"));
+      root.querySelector("button")!.click();
+      expect(setValue).toHaveBeenCalledWith("search", "filter");
+      expect(button).toHaveBeenCalledWith("refresh");
+      expect(root.querySelector("mat-progress-bar")?.getAttribute("aria-valuenow")).toBe("20");
+      const updated = components.map(node => node.type === "progress"
+        ? {...node, value: 8, text: {text: "Ready"}}
+        : node.type === "select" ? {...node, select_options: [
+          ...node.select_options ?? [], {key: "two", label: "Second", value: "two", disabled: false},
+        ]} : {...node});
+      fixture.componentRef.setInput("grid", {...grid, [placement]: updated});
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(root.querySelector("input")?.value).toBe("filter");
+      expect(root.querySelector("mat-progress-bar")?.getAttribute("aria-valuenow")).toBe("80");
+      expect(root.textContent).toContain("Ready");
+      const select: MatSelect = fixture.debugElement.query(By.directive(MatSelect)).componentInstance;
+      expect(select.options.map(option => option.viewValue)).toEqual(["First", "Second"]);
+    });
+
+    for (const collapsible of [false, true]) {
+      it(`renders conditions in ${placement} with collapsible=${collapsible} through the shared renderer`, async () => {
+        const fixture = TestBed.createComponent(SettingsGridComponent);
+        const nodes: UIComponent[] = [{
+          key: "advanced", type: "condition", condition: {key: "enabled", operator: "eq", value: true},
+          fields: [
+            {key: "voice", type: "textarea", label: "Voice", default_value: "default"},
+            {key: "apply", type: "button", label: "Apply"},
+            {type: "progress", value: 1, maximum: 2},
+          ],
+        }];
+        const values: Record<string, unknown> = {enabled: true, voice: "saved"};
+        const button = jasmine.createSpy("button");
+        fixture.componentRef.setInput("grid", {
+          key: "shared", label: "", collapsible, fields: [], [placement]: nodes,
+        } satisfies SettingsGrid);
+        fixture.componentRef.setInput("getValue", (key: string, fallback: unknown) => values[key] ?? fallback);
+        fixture.componentRef.setInput("setValue", (key: string, value: unknown) => values[key] = value);
+        fixture.componentRef.setInput("onButtonClick", button);
+        fixture.detectChanges();
+        await fixture.whenStable();
+        const root: HTMLElement = fixture.nativeElement;
+        const textarea = root.querySelector("textarea")!;
+        expect(textarea.value).toBe("saved");
+        expect(root.querySelector("mat-progress-bar")?.getAttribute("aria-valuenow")).toBe("50");
+        textarea.value = "changed";
+        textarea.dispatchEvent(new Event("input"));
+        textarea.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true}));
+        expect(values["voice"]).toBe("changed");
+        expect(button).toHaveBeenCalledOnceWith("apply");
+        values["enabled"] = false;
+        fixture.detectChanges();
+        expect(root.querySelector("textarea")).toBeNull();
+        values["enabled"] = true;
+        fixture.detectChanges();
+        await fixture.whenStable();
+        expect(root.querySelector("textarea")?.value).toBe("changed");
+      });
+    }
+  }
+});
+
+import { SettingsFieldComponent } from "../settings-field/settings-field.component";
 
 describe("setting condition comparisons", () => {
+    it("re-exports the shared traversal and condition implementation for legacy imports", () => {
+        expect(settingsFields).toBe(uiFields);
+        expect(matchesSettingCondition).toBe(matchesUICondition);
+    });
+
     const cases: [SettingCondition["operator"], unknown, unknown, boolean][] = [
         ["eq", false, false, true], ["eq", "1", 1, false],
         ["neq", 1, "1", true], ["neq", 1, 1, false],
@@ -71,14 +205,15 @@ describe("nested conditional settings", () => {
     } as SettingsGrid;
 
     beforeEach(async () => {
-        await TestBed.configureTestingModule({ imports: [SettingsGridComponent, NoopAnimationsModule] }).compileComponents();
+        await TestBed.configureTestingModule({ imports: [SettingsGridComponent, TranslateModule.forRoot(), NoopAnimationsModule] }).compileComponents();
     });
 
-    it("reacts to default visibility and saved values, preserving hidden inputs and forwarding callbacks", () => {
+    for (const collapsible of [false, true]) {
+    it(`preserves conditional fields and callbacks with collapsible=${collapsible}`, () => {
         const fixture = TestBed.createComponent(SettingsGridComponent);
         const values: Record<string, unknown> = {};
         const component = fixture.componentInstance;
-        component.grid = grid;
+        component.grid = {...grid, collapsible};
         component.getValue = (key, fallback) => values[key] ?? fallback;
         component.setValue = (key, value) => { values[key] = value; };
         component.onButtonClick = jasmine.createSpy("button");
@@ -98,11 +233,19 @@ describe("nested conditional settings", () => {
         values["enabled"] = false;
         fixture.detectChanges();
         expect(fixture.debugElement.queryAll(By.directive(SettingsFieldComponent)).length).toBe(0);
+        const button = component.onButtonClick as jasmine.Spy;
+        button.calls.reset();
+        const renderer: PluginContentComponent = fixture.debugElement.query(By.directive(PluginContentComponent)).componentInstance;
+        renderer.handleEnterSubmit();
+        expect(button).not.toHaveBeenCalled();
         expect(values["voice"]).toBe("saved voice");
         values["enabled"] = true;
         fixture.detectChanges();
         expect(fixture.debugElement.query(By.directive(SettingsFieldComponent)).componentInstance.value).toBe("saved voice");
+        renderer.handleEnterSubmit();
+        expect(button).toHaveBeenCalledOnceWith("refresh");
     });
+    }
 
     it("collects nested voice defaults and preserves stored values without storing containers", () => {
         const provider = {
@@ -115,11 +258,34 @@ describe("nested conditional settings", () => {
         expect(providerVoiceSettingsValues(ref, [provider], stored)).toEqual({ voice: "saved voice", advanced_options: true, unknown: 1 });
         expect(providerVoiceDisplayValue(ref, [provider], stored)).toBe("saved voice");
     });
+
+    it("resolves voice inputs inside layout containers and grid content", () => {
+        const provider: ModelProviderDefinition = {
+            plugin_guid: "example", id: "tts", kind: "tts", label: "Example", is_builtin: false,
+            settings_config: [], voice_settings_config: [{
+                key: "shared", label: "", fields: [{type: "section", children: [{
+                    key: "conditional", type: "condition",
+                    condition: {key: "enabled", operator: "eq", value: true},
+                    fields: [{key: "voice", type: "select", default_value: "one", select_options: [
+                        {key: "one", value: "one", label: "First voice", disabled: false},
+                    ]}],
+                }]}],
+                content: [{type: "list", items: [{key: "row", title: "Row", summary: [
+                    {key: "instructions", type: "text", default_value: "calm"},
+                ], details: [{key: "speed", type: "number", default_value: 1}]}]}],
+            }],
+        };
+        const ref = "plugin:example:tts";
+        expect(providerVoiceSettingsValues(ref, [provider], undefined)).toEqual({
+            voice: "one", instructions: "calm", speed: 1,
+        });
+        expect(providerVoiceDisplayValue(ref, [provider], undefined)).toBe("First voice");
+    });
 });
 
 describe("notification settings", () => {
     beforeEach(async () => {
-        await TestBed.configureTestingModule({ imports: [SettingsGridComponent, SettingsFieldComponent, NoopAnimationsModule] }).compileComponents();
+        await TestBed.configureTestingModule({ imports: [SettingsGridComponent, SettingsFieldComponent, TranslateModule.forRoot(), NoopAnimationsModule] }).compileComponents();
     });
 
     it("renders plugin-provided notification content and level", () => {

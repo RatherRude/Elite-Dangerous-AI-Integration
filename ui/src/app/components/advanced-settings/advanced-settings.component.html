@@ -89,6 +89,7 @@
                         [getValue]="createGetValueFn(provider.plugin_guid)"
                         [setValue]="createSetValueFn(provider.plugin_guid)"
                         [onButtonClick]="createButtonClickFn(provider.plugin_guid)"
+                        (uiAction)="invoke(provider.plugin_guid, $event.action, $event.payload)"
                         [headerLevel]="'h3'"
                         [gridClass]="'plugin-provider-settings'">
                     </app-settings-grid>
@@ -142,6 +143,7 @@
                         [getValue]="createGetValueFn(provider.plugin_guid)"
                         [setValue]="createSetValueFn(provider.plugin_guid)"
                         [onButtonClick]="createButtonClickFn(provider.plugin_guid)"
+                        (uiAction)="invoke(provider.plugin_guid, $event.action, $event.payload)"
                         [headerLevel]="'h3'"
                         [gridClass]="'plugin-provider-settings'">
                     </app-settings-grid>
@@ -210,6 +212,7 @@
                         [getValue]="createGetValueFn(provider.plugin_guid)"
                         [setValue]="createSetValueFn(provider.plugin_guid)"
                         [onButtonClick]="createButtonClickFn(provider.plugin_guid)"
+                        (uiAction)="invoke(provider.plugin_guid, $event.action, $event.payload)"
                         [headerLevel]="'h3'"
                         [gridClass]="'plugin-provider-settings'">
                     </app-settings-grid>
@@ -335,6 +338,7 @@
                         [getValue]="createGetValueFn(provider.plugin_guid)"
                         [setValue]="createSetValueFn(provider.plugin_guid)"
                         [onButtonClick]="createButtonClickFn(provider.plugin_guid)"
+                        (uiAction)="invoke(provider.plugin_guid, $event.action, $event.payload)"
                         [headerLevel]="'h3'"
                         [gridClass]="'plugin-provider-settings'">
                     </app-settings-grid>
@@ -434,6 +438,7 @@
                         [getValue]="createGetValueFn(provider.plugin_guid)"
                         [setValue]="createSetValueFn(provider.plugin_guid)"
                         [onButtonClick]="createButtonClickFn(provider.plugin_guid)"
+                        (uiAction)="invoke(provider.plugin_guid, $event.action, $event.payload)"
                         [headerLevel]="'h3'"
                         [gridClass]="'plugin-provider-settings'">
                     </app-settings-grid>
@@ -487,6 +492,7 @@
                         [getValue]="createGetValueFn(provider.plugin_guid)"
                         [setValue]="createSetValueFn(provider.plugin_guid)"
                         [onButtonClick]="createButtonClickFn(provider.plugin_guid)"
+                        (uiAction)="invoke(provider.plugin_guid, $event.action, $event.payload)"
                         [headerLevel]="'h3'"
                         [gridClass]="'plugin-provider-settings'">
                     </app-settings-grid>
