@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, call
 import os
 from src.lib.EDKeys import EDKeys
 from src.lib import directinput
@@ -74,6 +74,109 @@ def binds_file(tmp_path):
     os.makedirs(binds_path.parent)
     binds_path.write_text(content)
     return str(tmp_path)
+
+
+@pytest.mark.parametrize("text", ["Wolf 397", "Wolf 597", "BD+21 55"])
+def test_send_text_uses_literal_unicode_on_windows(mock_directinput, monkeypatch, text):
+    keys = EDKeys.__new__(EDKeys)
+    typing = MagicMock()
+    monkeypatch.setattr("src.lib.EDKeys.SendUnicodeText", typing)
+
+    keys.send_text(text)
+
+    typing.assert_called_once_with(text)
+    mock_directinput["PressKey"].assert_not_called()
+    mock_directinput["ReleaseKey"].assert_not_called()
+
+
+def test_send_text_surfaces_windows_input_failure(mock_directinput, monkeypatch):
+    keys = EDKeys.__new__(EDKeys)
+    typing = MagicMock(side_effect=RuntimeError("Input failed"))
+    monkeypatch.setattr("src.lib.EDKeys.SendUnicodeText", typing)
+
+    with pytest.raises(RuntimeError, match="Input failed"):
+        keys.send_text("Wolf 397")
+
+    mock_directinput["PressKey"].assert_not_called()
+
+
+@pytest.mark.parametrize("text", ["Wolf 397", "Wolf 597", "BD+21 55", "\u00e9", "\U0001f680"])
+def test_unicode_text_sends_literal_utf16_packets(mock_directinput, monkeypatch, text):
+    captured = []
+
+    def send(count, inputs, size):
+        assert size == directinput.ctypes.sizeof(directinput.Input)
+        for item in inputs:
+            assert item.type == 1
+            assert item.ii.ki.wVk == 0
+            assert not item.ii.ki.dwExtraInfo
+            captured.append((item.ii.ki.wScan, item.ii.ki.dwFlags))
+        return count
+
+    monkeypatch.setattr(directinput, "SendInput", send)
+    pause = MagicMock()
+    monkeypatch.setattr(directinput.time, "sleep", pause)
+
+    directinput.SendUnicodeText(text, interval=0.1)
+
+    encoded = text.encode("utf-16-le")
+    units = [int.from_bytes(encoded[index:index + 2], "little") for index in range(0, len(encoded), 2)]
+    assert captured == [(unit, flags) for unit in units for flags in (0x0004, 0x0006)]
+    assert pause.call_args_list == [call(0.1)] * len(text)
+
+
+@pytest.mark.parametrize("accepted", [0, 1])
+def test_unicode_text_stops_when_windows_rejects_events(mock_directinput, monkeypatch, accepted):
+    send = MagicMock(return_value=accepted)
+    monkeypatch.setattr(directinput, "SendInput", send)
+    pause = MagicMock()
+    monkeypatch.setattr(directinput.time, "sleep", pause)
+
+    with pytest.raises(RuntimeError, match=f"Windows accepted {accepted} of 2"):
+        directinput.SendUnicodeText("Wolf 397")
+
+    send.assert_called_once()
+    pause.assert_not_called()
+
+
+def test_unicode_text_validates_before_sending_any_character(mock_directinput, monkeypatch):
+    send = MagicMock()
+    monkeypatch.setattr(directinput, "SendInput", send)
+
+    with pytest.raises(UnicodeEncodeError):
+        directinput.SendUnicodeText("Wolf \ud800")
+
+    send.assert_not_called()
+
+
+def test_unicode_text_reports_unavailable_windows_input(mock_directinput, monkeypatch):
+    monkeypatch.setattr(directinput, "SendInput", None)
+
+    with pytest.raises(RuntimeError, match="only supported on Windows"):
+        directinput.SendUnicodeText("Wolf 397")
+
+
+def test_unicode_text_uses_original_typing_interval(mock_directinput, monkeypatch):
+    monkeypatch.setattr(directinput, "SendInput", lambda count, inputs, size: count)
+    pause = MagicMock()
+    monkeypatch.setattr(directinput.time, "sleep", pause)
+
+    directinput.SendUnicodeText("Wolf 397")
+
+    assert pause.call_args_list == [call(0.02)] * len("Wolf 397")
+
+
+@pytest.mark.parametrize("system", ["Linux", "Darwin"])
+def test_send_text_preserves_non_windows_typing(mock_directinput, monkeypatch, system):
+    keys = EDKeys.__new__(EDKeys)
+    typing = MagicMock()
+    monkeypatch.setattr("pyautogui.typewrite", typing)
+    monkeypatch.setattr("platform.system", lambda: system)
+
+    keys.send_text("Wolf 597")
+
+    typing.assert_called_once_with("Wolf 597", interval=0.02)
+    mock_directinput["PressKey"].assert_not_called()
 
 
 def test_get_bindings_loads_valid_keys(mock_directinput, binds_file):
