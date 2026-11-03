@@ -1,6 +1,8 @@
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).parents[2] / "src"))
 
 from lib.PluginBase import PluginBase, PluginManifest
@@ -92,3 +94,35 @@ def test_settings_button_refreshes_plugin_paragraph_values(monkeypatch):
         == "clicked"
     )
     assert emitted == ["plugin_ui", "plugin_settings_configs", "plugin_model_providers"]
+
+
+@pytest.mark.parametrize('placement', ['fields', 'content'])
+@pytest.mark.parametrize('container_type', ['condition', 'section', 'summary', 'details'])
+def test_legacy_status_refresh_reaches_shared_containers(monkeypatch, placement, container_type):
+    manager, plugin = _manager()
+    monkeypatch.setattr("lib.PluginManager.emit_message", lambda *_args, **_payload: None)
+    monkeypatch.setattr("lib.PluginManager.save_config", lambda _config: None)
+    grid = plugin.settings_config['grids'][0]
+    status = grid['fields'][0]
+    if container_type == 'condition':
+        container = {
+            'key': 'hidden', 'type': 'condition',
+            'condition': {'key': 'enabled', 'operator': 'eq', 'value': True},
+            'fields': [status],
+        }
+    elif container_type == 'section':
+        container = {'type': 'section', 'children': [status]}
+    else:
+        container = {'type': 'list', 'items': [{'key': 'row', 'title': 'Row', container_type: [status]}]}
+    grid['fields'] = []
+    grid[placement] = [container]
+
+    assert manager.update_plugin_setting(plugin.plugin_manifest.guid, 'status', 'ready')
+    assert status['content'] == 'ready'
+
+    def click(_key):
+        plugin.settings['status'] = 'clicked'
+
+    plugin.on_settings_button = click
+    manager.on_settings_button(plugin.plugin_manifest.guid, 'refresh')
+    assert status['content'] == 'clicked'

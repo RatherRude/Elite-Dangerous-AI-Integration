@@ -3,6 +3,7 @@ import { TranslateModule, TranslateService } from "@ngx-translate/core";
 import { PluginContentComponent } from "./plugin-content.component";
 import { UINode } from "../../services/plugin-ui";
 import { Component, CUSTOM_ELEMENTS_SCHEMA } from "@angular/core";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 
 @Component({
   selector: "app-themed-content-test",
@@ -24,7 +25,7 @@ class SettingsMenuTestHost {
 
 describe("generic plugin content", () => {
   beforeEach(async () => {
-    await TestBed.configureTestingModule({imports: [PluginContentComponent, SettingsMenuTestHost, TranslateModule.forRoot()]}).compileComponents();
+    await TestBed.configureTestingModule({imports: [PluginContentComponent, SettingsMenuTestHost, TranslateModule.forRoot(), NoopAnimationsModule]}).compileComponents();
   });
 
   it("preserves blue, orange and white on visible content inside the themed settings menu", () => {
@@ -67,5 +68,78 @@ describe("generic plugin content", () => {
     translate.use("fr");
     fixture.detectChanges();
     expect(root.textContent).toContain("Fer : 2 manquants");
+  });
+
+  it("renders nested conditions with preserved values, grouped buttons and Enter submission", async () => {
+    const fixture = TestBed.createComponent(PluginContentComponent);
+    const values: Record<string, unknown> = {enabled: true, mode: "advanced", voice: "saved"};
+    fixture.componentRef.setInput("nodes", [
+      {key: "hidden", type: "condition", condition: {key: "enabled", operator: "eq", value: false}, fields: [
+        {key: "hidden-button", type: "button", label: "Hidden"},
+      ]},
+      {type: "section", children: [
+        {key: "options", type: "condition", condition: {key: "enabled", operator: "eq", value: true}, fields: [
+          {key: "voice", type: "textarea", label: "Voice"},
+          {key: "inner", type: "condition", condition: {key: "mode", operator: "eq", value: "advanced"}, fields: [
+            {key: "refresh", type: "button", label: "Refresh"},
+            {key: "reset", type: "button", label: "Reset"},
+            {key: "notice", type: "notification", content: "Advanced settings", level: "info"},
+          ]},
+        ]},
+      ]},
+    ] satisfies UINode[]);
+    fixture.componentRef.setInput("getValue", (key: string, fallback: unknown) => values[key] ?? fallback);
+    fixture.componentRef.setInput("setValue", (key: string, value: unknown) => values[key] = value);
+    const action = jasmine.createSpy("action");
+    fixture.componentInstance.action.subscribe(action);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const root: HTMLElement = fixture.nativeElement;
+    expect(root.querySelector("textarea")?.value).toBe("saved");
+    expect(root.querySelectorAll(".button-row button").length).toBe(2);
+    expect(root.querySelector(".button-row button.primary")?.textContent).toContain("Refresh");
+    root.querySelector("textarea")!.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true}));
+    expect(action).toHaveBeenCalledOnceWith({action: "settings_button", payload: {key: "refresh"}});
+    values["enabled"] = false;
+    fixture.detectChanges();
+    expect(root.querySelector("textarea")).toBeNull();
+    expect(root.querySelector(".notification-field")).toBeNull();
+    values["enabled"] = true;
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(root.querySelector("textarea")?.value).toBe("saved");
+    values["mode"] = "simple";
+    fixture.detectChanges();
+    expect(root.querySelector("button")).toBeNull();
+    action.calls.reset();
+    root.querySelector("textarea")!.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true}));
+    expect(action).not.toHaveBeenCalled();
+  });
+
+  it("handles list-row conditions and actions without requiring a settings grid", () => {
+    const fixture = TestBed.createComponent(PluginContentComponent);
+    const values: Record<string, unknown> = {visible: true};
+    fixture.componentRef.setInput("nodes", [{type: "list", items: [{
+      key: "row", title: "Row", summary: [{
+        key: "summary", type: "condition", condition: {key: "visible", operator: "eq", value: true},
+        fields: [{type: "text", text: {text: "Conditional summary"}}],
+      }], details: [{
+        key: "details", type: "condition", condition: {key: "visible", operator: "eq", value: true},
+        fields: [{type: "text", text: {text: "Conditional details"}}],
+      }],
+    }], row_actions: [{action: "remove", label: "Remove"}]}] satisfies UINode[]);
+    fixture.componentRef.setInput("getValue", (key: string, fallback: unknown) => values[key] ?? fallback);
+    const action = jasmine.createSpy("action");
+    fixture.componentInstance.action.subscribe(action);
+    fixture.detectChanges();
+    const root: HTMLElement = fixture.nativeElement;
+    expect(root.textContent).toContain("Conditional summary");
+    expect(root.textContent).toContain("Conditional details");
+    root.querySelector("button")!.click();
+    expect(action).toHaveBeenCalledWith({action: "settings_button", payload: {key: "remove:row"}});
+    values["visible"] = false;
+    fixture.detectChanges();
+    expect(root.textContent).not.toContain("Conditional summary");
+    expect(root.textContent).not.toContain("Conditional details");
   });
 });

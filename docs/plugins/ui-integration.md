@@ -26,8 +26,8 @@ Relevant source files:
 | Responsibility | Source |
 | --- | --- |
 | Public hooks | `src/lib/PluginBase.py` |
-| Shared Python component types | `src/lib/PluginUIDefinitions.py` |
-| Settings layout, provider types and deprecated component aliases | `src/lib/PluginSettingDefinitions.py` |
+| Shared Python components, conditions and grids | `src/lib/PluginUIDefinitions.py` |
+| Settings metadata, provider types and deprecated aliases | `src/lib/PluginSettingDefinitions.py` |
 | Registration, publication, interaction routing | `src/lib/PluginManager.py` |
 | Runtime event/action integration | `src/lib/PluginHelper.py` |
 | Command handling before and during Run | `src/Chat.py` |
@@ -152,13 +152,15 @@ to the assistant. These are transient presentation changes, not plugin actions.
 
 ## Shared components
 
-Conditional settings from the host remain supported alongside shared components,
-collapsible grids and grouped buttons. Hidden fields keep their saved values and
-defaults; hidden buttons are not selected by Enter-to-submit. Plugin notification
-labels and content use the same translation resolution as other shared fields.
+Settings and views use one component contract and one recursive renderer, including
+conditions, notifications and grouped buttons. Settings grids only add layout,
+headers and optional collapse behavior; they do not define another set of fields.
+Hidden fields keep their saved values and defaults; hidden buttons are not selected
+by Enter-to-submit. Plugin notification labels and content use the same translation
+resolution as other shared fields.
 
 Settings `fields`, grid `content`, view-section `content`, container `children`
-and list-row `details` all accept the same `UIComponent` union and use the same
+and list-row `summary`/`details` all accept the same `UIComponent` union and use the same
 recursive renderer. A text input or button does not have to be placed inside a
 settings grid to work in a view; progress and other display components do not
 have to be placed in a separate settings `content` array.
@@ -170,6 +172,8 @@ Import new typed constructors from `lib.PluginUIDefinitions`:
 | `TextInput`, `TextArea`, `NumberInput`, `Toggle`, `Select`, `Filter` | `text`, `textarea`, `number`, `toggle`, `select`, `filter` | Inputs with local keys, labels and typed `default_value` properties. |
 | `Button` | `button` | Calls `on_settings_button(key)` by default, in either context. Set `action` and optional `payload` to call `on_ui_action` instead. |
 | `Paragraph`, `Error` | `paragraph`, `error` | Label and `content`, with optional interpolation `params`. |
+| `Notification` | `notification` | Informational, warning or error content with a `level`. |
+| `Condition` | `condition` | A `condition: UICondition` and nested `fields`, usable anywhere a component is accepted. |
 | `Text`, `Heading`, `Section`, `Inline`, `List`, `Progress`, `Action` | See below | Display, layout and structured actions. |
 
 Constructors still require the explicit `type` discriminator, as historical
@@ -178,6 +182,24 @@ settings constructors did. `TextInput(type="text", ...)` is an input;
 `row_actions`, or `children` for a bullet list. Input keys are nonempty, flat,
 local names; reusing a key in settings and views deliberately shares its value.
 Use distinct keys for independent inputs.
+
+For example, the same conditional component can be returned in settings or a view:
+
+```python
+Condition(
+    key="advanced_options",
+    type="condition",
+    condition=UICondition(key="advanced", operator="eq", value=True),
+    fields=[TextInput(key="voice", type="text", default_value="Kore",
+                      min_length=None, max_length=None)],
+)
+```
+
+Conditions read the current input namespace in both contexts, including nested
+containers and list rows. `ui_fields()` traverses all descendants, including
+hidden ones, when resolving defaults. Rendering does not determine persistence:
+declared settings retain automatic persistence through the default input callback,
+while view-only inputs remain transient unless the plugin saves them explicitly.
 
 ### Historical aliases
 
@@ -195,12 +217,21 @@ dictionaries with the same properties and behavior:
 | `SelectSetting` | `Select` |
 | `ButtonSetting` | `Button` |
 | `ParagraphSetting` | `Paragraph` |
+| `NotificationSetting` | `Notification` |
 | `ErrorSetting` | `Error` |
+| `SettingCondition` | `UICondition` |
+| `ConditionSetting` | `Condition` |
+| `SettingsGrid` | `UIGrid` |
+| `SettingField`, `SettingsField`, `SettingsElement` | `UIComponent` |
+| `settings_fields` | `ui_fields` |
 
-`PluginSettings`, `SettingsGrid`, `SelectOption` and provider definitions retain
+`PluginSettings`, `SelectOption`, `GridHeaderAction` and provider definitions retain
 their import paths. The additional `FilterSetting` and `ListSetting` names also
 remain aliases. Existing `settings_config`, `on_settings_changed()` and
 single-argument `on_settings_button(key)` implementations continue to work.
+Frontend historical types and condition/traversal helpers are re-exported from
+`plugin-settings.ts`; their implementations live alongside the shared UI contract
+in `plugin-ui.ts`.
 
 ### Display and layout
 

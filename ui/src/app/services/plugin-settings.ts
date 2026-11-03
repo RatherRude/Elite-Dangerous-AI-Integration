@@ -1,6 +1,9 @@
 import { type BaseMessage } from "./tauri.service";
-import { UINode, UIComponent } from "./plugin-ui";
-export type { SelectOption, ListRow, ListAction } from "./plugin-ui";
+import { UIComponent, uiFields } from "./plugin-ui";
+export type { SelectOption, ListRow, ListAction, GridHeaderAction,
+    UIGrid as SettingsGrid, UICondition as SettingCondition, Condition as ConditionSetting } from "./plugin-ui";
+import type { UIGrid as SettingsGrid } from "./plugin-ui";
+export { uiFields as settingsFields, matchesUICondition as matchesSettingCondition } from "./plugin-ui";
 
 export interface SettingsHeaderLink {
     text: string;
@@ -17,22 +20,6 @@ export interface PluginSettings {
     header_link?: SettingsHeaderLink;
 }
 
-export interface GridHeaderAction {
-    key: string;
-    label?: string;
-    icon?: string;
-}
-
-export interface SettingsGrid {
-    key: string;
-    label: string;
-    collapsible?: boolean;
-    default_collapsed?: boolean;
-    header_action?: GridHeaderAction;
-    content?: UINode[];
-    fields: SettingsElement[];
-}
-
 // Deprecated names retained for existing consumers.
 export type SettingBase = UIComponent;
 export type TextSetting = UIComponent;
@@ -46,57 +33,7 @@ export type NotificationSetting = UIComponent;
 export type ErrorSetting = UIComponent;
 export type ListSetting = UIComponent;
 export type SelectSetting = UIComponent;
-export type SettingsElement = UIComponent | ConditionSetting;
-
-export interface SettingCondition {
-    key: string;
-    operator: "eq" | "neq" | "gt" | "geq" | "lt" | "leq" | "in" | "not_in" | "contains" | "not_contains" | "is_set" | "is_unset";
-    value?: unknown;
-    default_show?: boolean;
-}
-
-export interface ConditionSetting {
-    key: string;
-    type: "condition";
-    condition: SettingCondition;
-    fields: SettingsElement[];
-}
-
-/** All actual fields, including hidden descendants; containers have no stored value. */
-export function settingsFields(elements: SettingsElement[]): SettingBase[] {
-    return elements.flatMap(element => element.type === "condition"
-        ? settingsFields(element.fields) : [element]);
-}
-
-export function matchesSettingCondition(condition: SettingCondition, actual: unknown): boolean {
-    const unset = actual === undefined || actual === null;
-    if (condition.operator === "is_set") return !unset;
-    if (condition.operator === "is_unset") return unset;
-    if (actual === undefined || actual === null) return condition.default_show ?? false;
-    const expected = condition.value;
-    switch (condition.operator) {
-        case "eq": return actual === expected;
-        case "neq": return actual !== expected;
-        case "gt": case "geq": case "lt": case "leq":
-            if (typeof actual !== "number" || typeof expected !== "number"
-                || !Number.isFinite(actual) || !Number.isFinite(expected)) return false;
-            switch (condition.operator) {
-                case "gt": return actual > expected;
-                case "geq": return actual >= expected;
-                case "lt": return actual < expected;
-                case "leq": return actual <= expected;
-            }
-        case "in": case "not_in":
-            if (!Array.isArray(expected)) return false;
-            return condition.operator === "in" ? expected.includes(actual) : !expected.includes(actual);
-        case "contains": case "not_contains": {
-            if (!Array.isArray(actual) && !(typeof actual === "string" && typeof expected === "string")) return false;
-            const contains = Array.isArray(actual) ? actual.includes(expected) : (actual as string).includes(expected as string);
-            return condition.operator === "contains" ? contains : !contains;
-        }
-        default: return false;
-    }
-}
+export type SettingsElement = UIComponent;
 
 /** Voice conditions can reference global keys; character values win on collisions. */
 export function voiceSettingsContext(
@@ -141,7 +78,7 @@ export function providerVoiceSettingsValues(
 
     const defaults = Object.fromEntries(
         (provider.voice_settings_config ?? [])
-            .flatMap(grid => settingsFields(grid.fields))
+            .flatMap(grid => uiFields([...grid.fields, ...(grid.content ?? [])]))
             .filter(field => field.default_value !== undefined)
             .map(field => [field.key, field.default_value]),
     );
@@ -162,7 +99,7 @@ export function providerVoiceDisplayValue(
     );
     if (!provider) return undefined;
 
-    const voiceField = provider.voice_settings_config?.flatMap(grid => settingsFields(grid.fields))
+    const voiceField = provider.voice_settings_config?.flatMap(grid => uiFields([...grid.fields, ...(grid.content ?? [])]))
         .find(field => field.key === "voice");
     if (provider.voice_settings_config !== undefined && !voiceField) return undefined;
 
@@ -206,7 +143,7 @@ export function llmProviderSummary(
         (!p.slots || p.slots.includes(slot)) &&
         providerRef === `plugin:${p.plugin_guid}:${p.id}`
     );
-    const modelField = provider?.settings_config.flatMap(grid => settingsFields(grid.fields))
+    const modelField = provider?.settings_config.flatMap(grid => uiFields([...grid.fields, ...(grid.content ?? [])]))
         .find(field => field.label === "Model" || field.key === "model" || field.key?.endsWith("_model"));
     const configured = provider && modelField?.key ? pluginSettings[provider.plugin_guid]?.[modelField.key] : undefined;
     const model = typeof configured === "string" && configured.trim() ? configured.trim() : modelField?.default_value;

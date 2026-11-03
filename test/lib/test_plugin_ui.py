@@ -595,6 +595,10 @@ def test_historical_component_names_are_exact_aliases():
         'SettingBase': 'InputBase', 'TextSetting': 'TextInput', 'TextAreaSetting': 'TextArea',
         'NumericalSetting': 'NumberInput', 'ToggleSetting': 'Toggle', 'SelectSetting': 'Select',
         'ButtonSetting': 'Button', 'ParagraphSetting': 'Paragraph', 'ErrorSetting': 'Error',
+        'NotificationSetting': 'Notification', 'FilterSetting': 'Filter', 'ListSetting': 'List',
+        'SettingCondition': 'UICondition', 'ConditionSetting': 'Condition', 'SettingsGrid': 'UIGrid',
+        'SettingField': 'UIComponent', 'SettingsField': 'UIComponent', 'SettingsElement': 'UIComponent',
+        'GridHeaderAction': 'GridHeaderAction', 'settings_fields': 'ui_fields',
     }.items():
         assert getattr(legacy, old) is getattr(ui, new)
     password = legacy.TextSetting(key='password', label='Password', type='text', readonly=False,
@@ -657,6 +661,65 @@ def register_unified(manager, guid='unified'):
     manager.plugin_list[guid] = plugin
     manager.register_settings()
     return plugin
+
+
+@pytest.mark.parametrize('placement', ['fields', 'content', 'view'])
+def test_conditional_components_share_state_and_callbacks_in_every_context(manager, placement):
+    from lib.PluginUIDefinitions import Condition, Section, UICondition
+
+    manager, emitted = manager
+    plugin = register_unified(manager)
+    components = [Condition(
+        key='conditional', type='condition',
+        condition=UICondition(key='enabled', operator='eq', value=True),
+        fields=[Section(type='section', children=[
+            TextInput(key='nested', type='text', default_value='initial', min_length=None, max_length=None),
+            List(type='list', items=[ListRow(key='row', title='Row', details=[
+                Condition(key='inner', type='condition',
+                          condition=UICondition(key='mode', operator='is_set'), fields=[
+                    TextInput(key='deep', type='text', default_value='hidden', min_length=None, max_length=None),
+                ]),
+            ])]),
+        ])],
+    )]
+    if placement == 'view':
+        views = plugin.get_ui_views()
+        views[0]['sections'][0]['content'] = components
+        plugin.get_ui_views = lambda: views
+    else:
+        settings = plugin.get_ui_settings()
+        settings['grids'][0] = SettingsGrid(key='shared', label='Shared', fields=[])
+        settings['grids'][0][placement] = components
+        plugin.get_ui_settings = lambda: settings
+    plugin.publish_ui()
+    state = plugin.get_ui_state()
+    assert state['nested'] == 'initial' and state['deep'] == 'hidden'
+    assert 'conditional' not in state and 'inner' not in state
+    manager.on_ui_action('unified', 'ui_changed', {'key': 'deep', 'value': 'changed'}, 'nested-edit')
+    assert emitted[-1][1]['success'] is True
+    assert plugin.changes[-1][:2] == ('deep', 'changed')
+    plugin.set_ui_value('deep', 'reset')
+    assert plugin.get_ui_state()['deep'] == 'reset'
+
+
+def test_voice_defaults_include_shared_containers_and_grid_content():
+    from lib.PluginUIDefinitions import Condition, Section, UICondition, UIGrid, ui_fields
+    from lib.PluginSettingDefinitions import resolve_voice_settings
+
+    grids = [UIGrid(key='voice', label='Voice', fields=[
+        Section(type='section', children=[
+            Condition(key='hidden', type='condition',
+                      condition=UICondition(key='enabled', operator='eq', value=True),
+                      fields=[TextInput(key='voice', type='text', default_value='default')]),
+        ]),
+    ], content=[List(type='list', items=[ListRow(key='row', title='Row', summary=[
+        TextInput(key='instructions', type='text', default_value='calm'),
+    ], details=[TextInput(key='speed', type='text', default_value='normal')])])])]
+    fields = list(ui_fields(grids[0]['fields'] + grids[0]['content']))
+    assert all(field['type'] != 'condition' for field in fields)
+    assert resolve_voice_settings(grids, {'voice': 'global'}, {'voice': 'character'}) == {
+        'voice': 'character', 'instructions': 'calm', 'speed': 'normal',
+    }
 
 
 def test_plugin_can_reset_a_declared_input_without_persistence_or_callbacks(manager, monkeypatch):

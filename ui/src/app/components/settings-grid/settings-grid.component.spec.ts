@@ -4,7 +4,9 @@ import { TranslateModule } from "@ngx-translate/core";
 import { SettingsGridComponent } from "./settings-grid.component";
 import { SettingsGrid, SettingCondition, ModelProviderDefinition, matchesSettingCondition,
   providerVoiceSettingsValues, providerVoiceDisplayValue } from "../../services/plugin-settings";
-import { UIComponent } from "../../services/plugin-ui";
+import { UIComponent, uiFields, matchesUICondition } from "../../services/plugin-ui";
+import { settingsFields } from "../../services/plugin-settings";
+import { PluginContentComponent } from "../plugin-content/plugin-content.component";
 import { By } from "@angular/platform-browser";
 import { MatSelect } from "@angular/material/select";
 
@@ -90,12 +92,57 @@ describe("settings grid content", () => {
       const select: MatSelect = fixture.debugElement.query(By.directive(MatSelect)).componentInstance;
       expect(select.options.map(option => option.viewValue)).toEqual(["First", "Second"]);
     });
+
+    for (const collapsible of [false, true]) {
+      it(`renders conditions in ${placement} with collapsible=${collapsible} through the shared renderer`, async () => {
+        const fixture = TestBed.createComponent(SettingsGridComponent);
+        const nodes: UIComponent[] = [{
+          key: "advanced", type: "condition", condition: {key: "enabled", operator: "eq", value: true},
+          fields: [
+            {key: "voice", type: "textarea", label: "Voice", default_value: "default"},
+            {key: "apply", type: "button", label: "Apply"},
+            {type: "progress", value: 1, maximum: 2},
+          ],
+        }];
+        const values: Record<string, unknown> = {enabled: true, voice: "saved"};
+        const button = jasmine.createSpy("button");
+        fixture.componentRef.setInput("grid", {
+          key: "shared", label: "", collapsible, fields: [], [placement]: nodes,
+        } satisfies SettingsGrid);
+        fixture.componentRef.setInput("getValue", (key: string, fallback: unknown) => values[key] ?? fallback);
+        fixture.componentRef.setInput("setValue", (key: string, value: unknown) => values[key] = value);
+        fixture.componentRef.setInput("onButtonClick", button);
+        fixture.detectChanges();
+        await fixture.whenStable();
+        const root: HTMLElement = fixture.nativeElement;
+        const textarea = root.querySelector("textarea")!;
+        expect(textarea.value).toBe("saved");
+        expect(root.querySelector("mat-progress-bar")?.getAttribute("aria-valuenow")).toBe("50");
+        textarea.value = "changed";
+        textarea.dispatchEvent(new Event("input"));
+        textarea.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true}));
+        expect(values["voice"]).toBe("changed");
+        expect(button).toHaveBeenCalledOnceWith("apply");
+        values["enabled"] = false;
+        fixture.detectChanges();
+        expect(root.querySelector("textarea")).toBeNull();
+        values["enabled"] = true;
+        fixture.detectChanges();
+        await fixture.whenStable();
+        expect(root.querySelector("textarea")?.value).toBe("changed");
+      });
+    }
   }
 });
 
 import { SettingsFieldComponent } from "../settings-field/settings-field.component";
 
 describe("setting condition comparisons", () => {
+    it("re-exports the shared traversal and condition implementation for legacy imports", () => {
+        expect(settingsFields).toBe(uiFields);
+        expect(matchesSettingCondition).toBe(matchesUICondition);
+    });
+
     const cases: [SettingCondition["operator"], unknown, unknown, boolean][] = [
         ["eq", false, false, true], ["eq", "1", 1, false],
         ["neq", 1, "1", true], ["neq", 1, 1, false],
@@ -188,13 +235,14 @@ describe("nested conditional settings", () => {
         expect(fixture.debugElement.queryAll(By.directive(SettingsFieldComponent)).length).toBe(0);
         const button = component.onButtonClick as jasmine.Spy;
         button.calls.reset();
-        component.handleEnterSubmit();
+        const renderer: PluginContentComponent = fixture.debugElement.query(By.directive(PluginContentComponent)).componentInstance;
+        renderer.handleEnterSubmit();
         expect(button).not.toHaveBeenCalled();
         expect(values["voice"]).toBe("saved voice");
         values["enabled"] = true;
         fixture.detectChanges();
         expect(fixture.debugElement.query(By.directive(SettingsFieldComponent)).componentInstance.value).toBe("saved voice");
-        component.handleEnterSubmit();
+        renderer.handleEnterSubmit();
         expect(button).toHaveBeenCalledOnceWith("refresh");
     });
     }
@@ -209,6 +257,29 @@ describe("nested conditional settings", () => {
         const stored = { [ref]: { voice: "saved voice", advanced_options: true, unknown: 1 } };
         expect(providerVoiceSettingsValues(ref, [provider], stored)).toEqual({ voice: "saved voice", advanced_options: true, unknown: 1 });
         expect(providerVoiceDisplayValue(ref, [provider], stored)).toBe("saved voice");
+    });
+
+    it("resolves voice inputs inside layout containers and grid content", () => {
+        const provider: ModelProviderDefinition = {
+            plugin_guid: "example", id: "tts", kind: "tts", label: "Example", is_builtin: false,
+            settings_config: [], voice_settings_config: [{
+                key: "shared", label: "", fields: [{type: "section", children: [{
+                    key: "conditional", type: "condition",
+                    condition: {key: "enabled", operator: "eq", value: true},
+                    fields: [{key: "voice", type: "select", default_value: "one", select_options: [
+                        {key: "one", value: "one", label: "First voice", disabled: false},
+                    ]}],
+                }]}],
+                content: [{type: "list", items: [{key: "row", title: "Row", summary: [
+                    {key: "instructions", type: "text", default_value: "calm"},
+                ], details: [{key: "speed", type: "number", default_value: 1}]}]}],
+            }],
+        };
+        const ref = "plugin:example:tts";
+        expect(providerVoiceSettingsValues(ref, [provider], undefined)).toEqual({
+            voice: "one", instructions: "calm", speed: 1,
+        });
+        expect(providerVoiceDisplayValue(ref, [provider], undefined)).toBe("First voice");
     });
 });
 

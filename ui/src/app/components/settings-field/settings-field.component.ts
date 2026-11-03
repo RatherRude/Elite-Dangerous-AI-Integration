@@ -10,10 +10,9 @@ import { MatButtonModule } from "@angular/material/button";
 import { TranslateService } from "@ngx-translate/core";
 import { MatIconModule } from "@angular/material/icon";
 import { MatProgressBarModule } from "@angular/material/progress-bar";
-import { SettingBase, ListAction, ListRow } from "../../services/plugin-settings";
 import { resolveModuleName, resolveSettingText } from "../../services/setting-text";
 import { PluginContentComponent } from "../plugin-content/plugin-content.component";
-import { UIText } from "../../services/plugin-ui";
+import { UIElement, UIText, ListAction, ListRow } from "../../services/plugin-ui";
 import { MatMenuModule } from "@angular/material/menu";
 import { MatDialogModule } from "@angular/material/dialog";
 import { MatTooltipModule } from "@angular/material/tooltip";
@@ -54,7 +53,7 @@ export class SettingsFieldComponent implements OnChanges {
     /**
      * The field definition containing type, label, and other metadata.
      */
-    @Input() field!: SettingBase;
+    @Input() field!: UIElement;
 
     /**
      * The current value of the field.

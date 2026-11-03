@@ -3,39 +3,7 @@
     <mat-expansion-panel-header [attr.data-ui-section]="grid.label" [attr.data-ui-section-id]="grid.key"
                                 [attr.data-ui-section-label]="resolve(grid.label)">{{ resolve(grid.label) }}</mat-expansion-panel-header>
     <div [class]="gridClass">
-        @for (group of fieldGroups(); track $index) {
-            @if (group.kind === "buttons") {
-                <div class="button-row">
-                    @for (field of group.fields; track field.key) {
-                        <app-settings-field
-                            [field]="field"
-                            [getValue]="getValue" [setValue]="setValue" [onButtonClick]="onButtonClick"
-                            [primary]="field.key === firstButtonKey()"
-                            [value]="getFieldValue(field)"
-                            [buttonEnabled]="onButtonClick !== undefined"
-                            (valueChange)="onFieldChange(field, $event)"
-                             (buttonClick)="handleButtonClick(field)"
-                             (uiAction)="uiAction.emit($event)"
-                            (listAction)="handleListAction($event)">
-                        </app-settings-field>
-                    }
-                </div>
-            } @else {
-                <app-settings-field
-                    [field]="group.field"
-                    [getValue]="getValue" [setValue]="setValue" [onButtonClick]="onButtonClick"
-                    [value]="getFieldValue(group.field)"
-                    [buttonEnabled]="onButtonClick !== undefined"
-                    (valueChange)="onFieldChange(group.field, $event)"
-                     (buttonClick)="handleButtonClick(group.field)"
-                     (uiAction)="uiAction.emit($event)"
-                    (listAction)="handleListAction($event)"
-                    (submitRequested)="handleEnterSubmit()">
-                </app-settings-field>
-            }
-        }
-        <app-plugin-content [nodes]="grid.content ?? []" [getValue]="getValue" [setValue]="setValue"
-            [onButtonClick]="onButtonClick" (action)="uiAction.emit($event)" />
+        <ng-container *ngTemplateOutlet="content" />
     </div>
 </mat-expansion-panel>
 } @else {
@@ -64,38 +32,11 @@
         }
     </div>
     }
-    @for (group of fieldGroups(); track $index) {
-        @if (group.kind === "buttons") {
-            <div class="button-row">
-                @for (field of group.fields; track field.key) {
-                    <app-settings-field
-                        [field]="field"
-                        [getValue]="getValue" [setValue]="setValue" [onButtonClick]="onButtonClick"
-                        [primary]="field.key === firstButtonKey()"
-                        [value]="getFieldValue(field)"
-                        [buttonEnabled]="onButtonClick !== undefined"
-                        (valueChange)="onFieldChange(field, $event)"
-                         (buttonClick)="handleButtonClick(field)"
-                         (uiAction)="uiAction.emit($event)"
-                        (listAction)="handleListAction($event)">
-                    </app-settings-field>
-                }
-            </div>
-        } @else {
-            <app-settings-field
-                [field]="group.field"
-                [getValue]="getValue" [setValue]="setValue" [onButtonClick]="onButtonClick"
-                [value]="getFieldValue(group.field)"
-                [buttonEnabled]="onButtonClick !== undefined"
-                (valueChange)="onFieldChange(group.field, $event)"
-                 (buttonClick)="handleButtonClick(group.field)"
-                 (uiAction)="uiAction.emit($event)"
-                (listAction)="handleListAction($event)"
-                (submitRequested)="handleEnterSubmit()">
-            </app-settings-field>
-        }
-    }
-    <app-plugin-content [nodes]="grid.content ?? []" [getValue]="getValue" [setValue]="setValue"
-        [onButtonClick]="onButtonClick" (action)="uiAction.emit($event)" />
+    <ng-container *ngTemplateOutlet="content" />
 </div>
 }
+<ng-template #content>
+    <app-plugin-content [nodes]="grid.fields.concat(grid.content ?? [])" [getValue]="getValue" [setValue]="setValue"
+        [onButtonClick]="onButtonClick" [buttonEnabled]="onButtonClick !== undefined"
+        (action)="uiAction.emit($event)" />
+</ng-template>

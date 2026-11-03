@@ -15,7 +15,7 @@ from .UI import emit_message
 
 from .PluginBase import PluginBase, PluginManifest
 from .PluginNamespace import PluginNamespace
-from .PluginUIDefinitions import UIComponent, view_target
+from .PluginUIDefinitions import UIComponent, ui_fields, view_target
 from .Models import LLMModel, STTModel, TTSModel, EmbeddingModel
 
 from typing import TYPE_CHECKING
@@ -495,7 +495,7 @@ class PluginManager:
         settings_config = plugin.settings_config
         if settings_config is not None:
             for grid in settings_config.get("grids", []):
-                for field in grid.get("fields", []):
+                for field in ui_fields(grid.get("fields", []) + grid.get("content", [])):
                     if self._is_status_field(field) and field.get("key") == key:
                         field["content"] = str(value)
 
@@ -543,7 +543,7 @@ class PluginManager:
         if settings_config is None:
             return
         for grid in settings_config.get("grids", []):
-            for field in grid.get("fields", []):
+            for field in ui_fields(grid.get("fields", []) + grid.get("content", [])):
                 if self._is_status_field(field):
                     setting_key = field.get("key")
                     if setting_key in plugin.settings:

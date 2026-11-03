@@ -5,7 +5,8 @@
 } @else if (field.type === 'list' && !field.items) {
     <ul>@for (child of field.children ?? []; track $index) {
         <li><app-plugin-content [nodes]="[child]" [getValue]="getValue" [setValue]="setValue"
-            [onButtonClick]="onButtonClick" (action)="uiAction.emit($event)" /></li>
+            [onButtonClick]="onButtonClick" [buttonEnabled]="buttonEnabled"
+            (submitRequested)="submitRequested.emit()" (action)="uiAction.emit($event)" /></li>
     }</ul>
 } @else {
 @switch (field.type) {
@@ -188,7 +189,8 @@
                             <span class="list-row-meta">{{ resolve(entry.row.meta, entry.row.params) }}</span>
                         }
                         <app-plugin-content [nodes]="entry.row.summary ?? []" [getValue]="getValue" [setValue]="setValue"
-                            [onButtonClick]="onButtonClick" (action)="uiAction.emit($event)" />
+                            [onButtonClick]="onButtonClick" [buttonEnabled]="buttonEnabled"
+                            (submitRequested)="submitRequested.emit()" (action)="uiAction.emit($event)" />
                             </div>
                             <div class="list-row-actions">
                                 @for (action of field.row_actions; track action.action) {
@@ -229,11 +231,13 @@
                                  [attr.data-ui-section-id]="entry.row.key"
                                  [attr.data-ui-section-label]="rowTitle(entry.row)">{{ resolve('common.details') }}</summary>
                         <app-plugin-content [nodes]="entry.row.details ?? []" [getValue]="getValue" [setValue]="setValue"
-                            [onButtonClick]="onButtonClick" (action)="uiAction.emit($event)" />
+                            [onButtonClick]="onButtonClick" [buttonEnabled]="buttonEnabled"
+                            (submitRequested)="submitRequested.emit()" (action)="uiAction.emit($event)" />
                     </details>
                     } @else {
                     <app-plugin-content [nodes]="entry.row.details ?? []" [getValue]="getValue" [setValue]="setValue"
-                        [onButtonClick]="onButtonClick"
+                        [onButtonClick]="onButtonClick" [buttonEnabled]="buttonEnabled"
+                        (submitRequested)="submitRequested.emit()"
                         (action)="uiAction.emit($event)" />
                     }
                 }
@@ -250,6 +254,7 @@
 @if (field.type !== 'list' && field.children?.length) {
     <app-plugin-content [nodes]="field.children ?? []" [getValue]="getValue" [setValue]="setValue"
         [inline]="field.type === 'inline'"
-        [onButtonClick]="onButtonClick" (action)="uiAction.emit($event)" />
+        [onButtonClick]="onButtonClick" [buttonEnabled]="buttonEnabled"
+        (submitRequested)="submitRequested.emit()" (action)="uiAction.emit($event)" />
 }
 </div>
