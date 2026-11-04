@@ -17,6 +17,8 @@ ProjectedStates = dict[str, BaseModel]
 
 
 class ActionManager:
+    LANGUAGE_ALIAS_CACHE_KEY = "language_alias_cache_keys"
+
     @staticmethod
     def clear_action_cache():
         """clear action cache"""
@@ -27,6 +29,7 @@ class ActionManager:
         self.actions: dict[str, dict[str, Any]] = {}
         self.action_cache = KeyValueStore("action_cache")
         self.allowed_actions: dict[str, bool] = {}
+        self.base_action_aliases: dict[str, set[tuple[str, str]]] = {}
 
     def set_allowed_actions(self, allowed_actions: dict[str, bool] | None):
         """Set enabled states by permission key. Missing keys are disabled."""
@@ -167,6 +170,9 @@ class ActionManager:
         }
         if cache_prefill is not None:
             for user_input, arguments in cache_prefill.items():
+                clean_input = self.clean_user_input(user_input)
+                target = (name, json.dumps(arguments, sort_keys=True))
+                self.base_action_aliases.setdefault(clean_input, set()).add(target)
                 #log('debug', 'Cache: prefilling', name, user_input, arguments)
                 self.prefill_action_in_cache(user_input, ChatCompletionMessageFunctionToolCall(
                     type="function",
@@ -303,6 +309,71 @@ class ActionManager:
             }
         })
         log("info", f"Cache: Action {action.function.name} prefilled in cache with hash {input_hash}")
+
+    def apply_language_aliases(
+        self,
+        language_packs: dict[str, dict[str, Any]],
+        selected_languages: list[str],
+    ) -> None:
+        aliases: list[tuple[str, str, dict[str, Any], dict]] = []
+        seen_phrases: dict[str, tuple[str, str]] = {}
+
+        for language in selected_languages:
+            pack = language_packs.get(language)
+            if pack is None:
+                raise ValueError(f"Unknown action language pack: {language}")
+            pack_aliases = pack.get("aliases")
+            if not isinstance(pack_aliases, list):
+                raise ValueError(f"Invalid aliases in action language pack: {language}")
+
+            for alias in pack_aliases:
+                phrase = alias["phrase"]
+                action_name = alias["action"]
+                arguments = alias["arguments"]
+                clean_phrase = self.clean_user_input(phrase)
+                if not clean_phrase:
+                    raise ValueError(f"Invalid empty action language alias: {phrase}")
+                target = (action_name, json.dumps(arguments, sort_keys=True))
+                base_targets = self.base_action_aliases.get(clean_phrase, set())
+                if base_targets and target not in base_targets:
+                    raise ValueError(f"Language alias conflicts with an English command: {phrase}")
+                existing_target = seen_phrases.get(clean_phrase)
+                if existing_target is not None and existing_target != target:
+                    raise ValueError(f"Conflicting action language aliases for: {phrase}")
+                seen_phrases[clean_phrase] = target
+
+                if target in base_targets:
+                    continue
+
+                registered_action = self.actions.get(action_name)
+                if registered_action is None:
+                    log("debug", f"Skipping alias '{phrase}' for unavailable action '{action_name}'")
+                    continue
+                aliases.append((phrase, action_name, arguments, registered_action["tool"]))
+
+        previous_keys = self.action_cache.get(self.LANGUAGE_ALIAS_CACHE_KEY, [])
+        if isinstance(previous_keys, list):
+            for key in previous_keys:
+                if isinstance(key, str):
+                    self.action_cache.delete(key)
+
+        cache_keys: list[str] = []
+        for phrase, action_name, arguments, tool in aliases:
+            input_hash = self.hash_action_input(phrase, tool)
+            action_tool = self.actions[action_name]["tool"]["function"]
+            self.action_cache.set(input_hash, {
+                "status": "confirmed",
+                "input": phrase,
+                "function": {
+                    "name": action_name,
+                    "description": action_tool.get("description"),
+                    "arguments": json.dumps(arguments),
+                },
+            })
+            cache_keys.append(input_hash)
+
+        self.action_cache.set(self.LANGUAGE_ALIAS_CACHE_KEY, cache_keys)
+        log("info", f"Loaded aliases for action languages: {', '.join(selected_languages) or 'English only'}")
 
     def has_action_in_cache(self, user_input: str, action: ChatCompletionMessageFunctionToolCall, tool_list) -> Literal["suggested", "confirmed", False]:
         """

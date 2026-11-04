@@ -582,6 +582,8 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - let's go
     </details>
 
+    Optional translated command aliases can be enabled in **Settings → Actions → Additional command languages**. English commands remain available regardless of this setting.
+
     <details>
     <summary>Required Keyboard Binds</summary>
 
@@ -593,6 +595,10 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - ToggleCargoScoop (auto retract when deployed)
     - DeployHardpointToggle (auto retract when deployed)
     </details>
+
+### Adding an action language pack
+
+Language packs are JSON files in `src/lib/actions/languages/`, named with their language code (for example, `fr.json`). Each pack has a display `name` and an `aliases` array; every alias groups spoken `phrases` in a non-empty array sharing the same registered `action` and `arguments`. Packs add aliases only—English commands remain the defaults, and a translated alias cannot override an English command.
 
 2. **Target next system in route**
 
@@ -606,6 +612,8 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - continue route
     - next in route
     </details>
+
+    With the French language pack enabled, "continue la route" and "continue la navigation" also target the next system in the route using your configured `TargetNextRouteSystem` binding. These commands do not initiate an FSD jump.
 
     <details>
     <summary>Required Keyboard Binds</summary>

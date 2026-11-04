@@ -10,6 +10,8 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from src.lib.ActionManager import ActionManager
+from src.lib.actions import action_language_packs
+from src.lib.actions.action_language_packs import load_action_language_packs
 
 
 def make_tool_call(name: str, arguments: dict | None = None) -> ChatCompletionMessageFunctionToolCall:
@@ -169,6 +171,100 @@ def test_permissionless_actions_remain_available() -> None:
     assert [tool["function"]["name"] for tool in tools] == [
         "permissionlessAction"
     ]
+
+
+def test_selected_language_aliases_are_applied_and_removed() -> None:
+    manager = ActionManager()
+
+    class MemoryCache:
+        def __init__(self) -> None:
+            self.values: dict[str, object] = {}
+
+        def get(self, key: str, default: object = None) -> object:
+            return self.values.get(key, default)
+
+        def set(self, key: str, value: object) -> None:
+            self.values[key] = value
+
+        def delete(self, key: str) -> None:
+            self.values.pop(key, None)
+
+    manager.action_cache = MemoryCache()  # type: ignore[assignment]
+    manager.registerAction(
+        "FsdJump",
+        "Enter supercruise",
+        {"type": "object", "properties": {}},
+        lambda args, states: "started",
+        cache_prefill={"supercruise": {"jump_type": "supercruise"}},
+    )
+    manager.registerAction(
+        "target_next_system_in_route",
+        "Target the next system in route",
+        {"type": "object", "properties": {}},
+        lambda args, states: "targeted",
+        cache_prefill={"continue route": {}},
+    )
+    tools = manager.getToolsList("mainship", True, False, False)
+
+    manager.apply_language_aliases(load_action_language_packs(), ["fr"])
+    expected_aliases = {
+        "vitesse de croisière": ("FsdJump", {"jump_type": "supercruise"}),
+        "passer en vitesse de croisière": ("FsdJump", {"jump_type": "supercruise"}),
+        "continue la route": ("target_next_system_in_route", {}),
+        "continue la navigation": ("target_next_system_in_route", {}),
+    }
+    for phrase, (action_name, arguments) in expected_aliases.items():
+        prediction = manager.predict_action(phrase, tools)
+        assert prediction is not None
+        assert prediction[0].function.name == action_name
+        assert json.loads(prediction[0].function.arguments) == arguments
+
+    manager.apply_language_aliases(load_action_language_packs(), [])
+
+    for phrase in expected_aliases:
+        assert manager.predict_action(phrase, tools) is None
+    assert manager.predict_action("supercruise", tools) is not None
+    assert manager.predict_action("continue route", tools) is not None
+
+
+@pytest.mark.parametrize("phrases", [None, "command", [], [""], ["   "], ["valid", 42]])
+def test_language_pack_rejects_invalid_phrases(
+    phrases: object, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    pack = {
+        "name": "Test",
+        "aliases": [{"phrases": phrases, "action": "FsdJump", "arguments": {}}],
+    }
+    (tmp_path / "test.json").write_text(json.dumps(pack), encoding="utf-8")
+    monkeypatch.setattr(action_language_packs, "LANGUAGE_PACKS_DIRECTORY", tmp_path)
+
+    with pytest.raises(ValueError, match="Invalid action alias"):
+        load_action_language_packs()
+
+
+def test_language_alias_cannot_override_an_english_command() -> None:
+    manager = ActionManager()
+    manager.registerAction(
+        "FsdJump",
+        "Enter supercruise",
+        {"type": "object", "properties": {}},
+        lambda args, states: "started",
+        cache_prefill={"supercruise": {"jump_type": "supercruise"}},
+    )
+
+    with pytest.raises(ValueError, match="conflicts with an English command"):
+        manager.apply_language_aliases(
+            {
+                "fr": {
+                    "aliases": [{
+                        "phrase": "supercruise",
+                        "action": "FsdJump",
+                        "arguments": {"jump_type": "next_system"},
+                    }]
+                }
+            },
+            ["fr"],
+        )
 
 
 def test_station_actions_require_docked_status() -> None:

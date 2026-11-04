@@ -96,6 +96,8 @@ export interface Config {
     web_search_actions_var: boolean;
     ui_actions_var: boolean;
     use_action_cache_var: boolean;
+    selected_action_languages: string[];
+    available_action_languages: { code: string; name: string }[];
     allowed_actions: Record<string, boolean>;
     discovery_primary_var: boolean;
     discovery_firegroup_var: number;

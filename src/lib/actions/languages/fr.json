@@ -1,0 +1,23 @@
+{
+  "name": "Français",
+  "aliases": [
+    {
+      "phrases": [
+        "vitesse de croisière",
+        "passer en vitesse de croisière"
+      ],
+      "action": "FsdJump",
+      "arguments": {
+        "jump_type": "supercruise"
+      }
+    },
+    {
+      "phrases": [
+        "continue la route",
+        "continue la navigation"
+      ],
+      "action": "target_next_system_in_route",
+      "arguments": {}
+    }
+  ]
+}
