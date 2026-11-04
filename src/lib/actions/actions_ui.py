@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 
 from ..ActionManager import ActionManager
+from ..Errors import ToolError
 from ..EventManager import EventManager
 from ..UI import send_message
 from ..Projections import get_state_dict, ProjectedStates
@@ -20,7 +21,7 @@ def checkStatus(projected_states: ProjectedStates, blocked_status_dict: dict[str
                 flags = status_dict.get(flag_group, {})
                 if flags and blocked_status in flags:
                     if flags[blocked_status] == expected_value:
-                        raise Exception(f"Action not possible due to {'not ' if not expected_value else ''}being in a state of {blocked_status}!")
+                        raise ToolError(f"Action not possible due to {'not ' if not expected_value else ''}being in a state of {blocked_status}!", kind="unsupported")
 
 
 def show_ui(obj, projected_states):
@@ -42,9 +43,9 @@ def show_ui(obj, projected_states):
     }
 
     if tab not in valid_tabs:
-        raise Exception(f"Unknown tab '{tab}'. Expected one of: {', '.join(sorted(valid_tabs))}.")
+        raise ToolError(f"Unknown tab '{tab}'. Expected one of: {', '.join(sorted(valid_tabs))}.", kind="invalid_arguments")
     if submenu and submenu not in valid_submenus.get(tab, set()):
-        raise Exception(f"Unknown submenu '{submenu}' for {tab}.")
+        raise ToolError(f"Unknown submenu '{submenu}' for {tab}.", kind="invalid_arguments")
 
     # Guard for station tab when not docked
     if tab == 'station':
@@ -66,7 +67,7 @@ def scroll_ui(obj, projected_states):
     direction: str = (obj or {}).get('direction', 'down')
     valid_directions = {"top", "up", "down", "bottom"}
     if direction not in valid_directions:
-        raise Exception(f"Unknown scroll direction '{direction}'. Expected one of: {', '.join(sorted(valid_directions))}.")
+        raise ToolError(f"Unknown scroll direction '{direction}'. Expected one of: {', '.join(sorted(valid_directions))}.", kind="invalid_arguments")
 
     send_message({
         "type": "ui",

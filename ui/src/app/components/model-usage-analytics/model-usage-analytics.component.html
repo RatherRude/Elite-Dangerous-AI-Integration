@@ -341,10 +341,19 @@
             <div class="recent-main">
               <span class="recent-context">{{ formatContextLabel(row.context) }}</span>
               <span class="recent-model">{{ formatUsageKindLabel($any(row.usageKind)) }}</span>
-              <span class="recent-model">{{ row.provider }} / {{ row.modelName }}</span>
+              <span class="recent-model">
+                {{ row.provider }} / {{ row.modelName }}
+                @if (row.outputVoice) { / {{ row.outputVoice }} }
+              </span>
             </div>
 
             <div class="recent-metrics">
+              @if (row.status === 'error') {
+                <span class="metric-pill metric-error">Error: {{ row.errorKind }}</span>
+              } @else if (row.status === 'cancelled') {
+                <span class="metric-pill metric-cancelled">Cancelled</span>
+              }
+              @if (row.inputLanguage || row.outputLanguage) { <span class="metric-pill">Language: {{ row.inputLanguage || row.outputLanguage }}</span> }
               @if (row.tokenUsage.cachedTokens > 0) {
                 <span class="metric-pill metric-cached-input">{{ row.tokenUsage.cachedTokens | number }} cached</span>
               }
@@ -367,7 +376,7 @@
                 <span class="metric-pill metric-thinking-output">{{ row.latencyUsage.timeToFirstByteMs | number:'1.0-0' }} ms first byte</span>
               }
               @if (row.retryAttempts > 0) {
-                <span class="metric-pill metric-thinking-output">{{ row.retryAttempts | number }} retries</span>
+                <span class="metric-pill metric-thinking-output">{{ row.retryAttempts | number }} {{ row.retryAttempts === 1 ? 'retry' : 'retries' }}</span>
               }
               @if (row.audioUsage.inputAudioDurationMs !== null) {
                 <span class="metric-pill metric-live-input">{{ row.audioUsage.inputAudioDurationMs | number:'1.0-0' }} ms input audio</span>

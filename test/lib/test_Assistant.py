@@ -82,6 +82,24 @@ def test_unavailable_model_tool_call_is_not_executed_or_turned_into_a_followup()
     assistant.tts.say.assert_not_called()
 
 
+@pytest.mark.parametrize("source", ["llm", "cache", "ui"])
+def test_available_tool_execution_preserves_telemetry_source(monkeypatch, source):
+    assistant = make_assistant([])
+    report = MagicMock()
+    monkeypatch.setattr("src.lib.ActionManager.log_tool_usage", report)
+    action = ChatCompletionMessageFunctionToolCall(
+        id="call_test", type="function", function={"name": "testAction", "arguments": "{}"},
+    )
+    available_tools = assistant.action_manager.getToolsList("mainship", True, False, False)
+
+    assistant.execute_actions([action], {}, available_tools=available_tools, source=source)
+
+    report.assert_called_once()
+    assert report.call_args.kwargs["source"] == source
+    assert report.call_args.kwargs["status"] == "success"
+    assistant.event_manager.add_tool_call.assert_called_once()
+
+
 @pytest.mark.parametrize("action_type,toggle", [
     ("global", "game_actions_var"),
     ("web", "web_search_actions_var"),

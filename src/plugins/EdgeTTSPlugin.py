@@ -120,6 +120,7 @@ class Mp3Stream(miniaudio.StreamableSource):
         self._done = False
         self._closed = False
         self._first_chunk = False
+        self._error: Exception | None = None
         self._last_chunk_time = time()
         threading.Thread(target=self._produce, daemon=True).start()
 
@@ -133,10 +134,16 @@ class Mp3Stream(miniaudio.StreamableSource):
                     self._first_chunk = True
                     self._last_chunk_time = time()
         except Exception as e:
-            log('error', 'Mp3Stream producer exception', e, traceback.format_exc())
-            raise e
+            self._error = e
         finally:
-            self._done = True
+            try:
+                close = getattr(self.gen, "close", None)
+                if close:
+                    close()
+            except Exception as exc:
+                self._error = self._error or exc
+            finally:
+                self._done = True
 
     def close(self):  # type: ignore[override]
         self._closed = True
@@ -152,12 +159,14 @@ class Mp3Stream(miniaudio.StreamableSource):
             if (not self._done) and (time() - self._last_chunk_time > timeout):
                 log('warn', 'TTS Stream timeout (initial)' if not self._first_chunk else 'TTS Stream timeout (gap)')
                 self.close()
-                raise IOError('TTS Stream timeout')
+                raise TimeoutError('TTS Stream timeout')
             if self.buffer:
                 take = min(len(self.buffer), need - len(out))
                 out.extend(self.buffer[:take])
                 del self.buffer[:take]
             elif self._done:
+                if self._error is not None:
+                    raise self._error
                 break
             else:
                 sleep(0.01)
@@ -165,6 +174,14 @@ class Mp3Stream(miniaudio.StreamableSource):
 
 
 class EdgeTTSModel(TTSModel):
+    def synthesis_usage(self, settings: dict[str, Any]):
+        usage = super().synthesis_usage(settings)
+        # This provider's public voice catalog uses locale-prefixed IDs.
+        known = {name for name, _ in EDGE_TTS_VOICES}
+        if usage.voice_name in known:
+            usage.output_language = "-".join(usage.voice_name.split("-")[:2])
+        return usage
+
     def __init__(self, model_name: str, speed: float = 1.0, provider_name: str | None = None):
         super().__init__(model_name, provider_name=provider_name)
         self.speed = speed
@@ -174,8 +191,9 @@ class EdgeTTSModel(TTSModel):
         rate = f"+{int((float(self.speed) - 1) * 100)}%" if float(self.speed) > 1 else f"-{int((1 - float(self.speed)) * 100)}%"
         response = edge_tts.Communicate(text, voice=voice, rate=rate)
 
+        source = Mp3Stream(response.stream_sync(), self.prebuffer_size)
         pcm_stream = miniaudio.stream_any(
-            source=Mp3Stream(response.stream_sync(), self.prebuffer_size),
+            source=source,
             source_format=miniaudio.FileFormat.MP3,
             output_format=miniaudio.SampleFormat.SIGNED16,
             nchannels=1,
@@ -183,8 +201,18 @@ class EdgeTTSModel(TTSModel):
             frames_to_read=1024 // 2
         )
 
-        for chunk in pcm_stream:
-            yield chunk.tobytes()
+        try:
+            for chunk in pcm_stream:
+                yield chunk.tobytes()
+            if source._error is not None:
+                raise source._error
+        finally:
+            try:
+                close = getattr(pcm_stream, "close", None)
+                if close:
+                    close()
+            finally:
+                source.close()
 
 
 class EdgeTTSPlugin(PluginBase):

@@ -1,5 +1,6 @@
 import { Injectable, OnDestroy } from "@angular/core";
 import { filter, Subscription } from "rxjs";
+import { measurement, reportedTokenUsage } from "./telemetry";
 
 import {
     GetModelUsageHistoryMessage,
@@ -48,8 +49,11 @@ export interface TokenUsageBreakdown {
     inputTokens: number;
     outputTokens: number;
     totalTokens: number;
+    hasReportedTotal: boolean;
     cachedTokens: number;
     reasoningTokens: number;
+    stackedReasoningTokens: number;
+    effectiveOutputTokens: number | null;
     liveInputTokens: number;
     visibleOutputTokens: number;
 }
@@ -91,6 +95,13 @@ export interface ModelUsageRecord {
     textUsage: TextUsageBreakdown;
     cacheUsage: CacheUsageBreakdown;
     retryAttempts: number;
+    status: "success" | "error" | "cancelled" | "unknown";
+    errorKind: string;
+    operationMs: number | null;
+    inputLanguage: string | null;
+    outputLanguage: string | null;
+    outputVoice: string | null;
+    numUnderruns: number | null;
     raw: Record<string, unknown>;
 }
 
@@ -101,6 +112,24 @@ type PendingRequest = {
 };
 
 const REQUEST_TIMEOUT_MS = 15000;
+
+export function normalizeTokenUsage(modelUsage: Record<string, unknown>): TokenUsageBreakdown {
+    const facts = reportedTokenUsage(modelUsage);
+    const inputTokens = facts.inputTokens ?? 0, outputTokens = facts.outputTokens ?? 0;
+    const cachedTokens = facts.cachedTokens ?? 0, reasoningTokens = facts.reasoningTokens ?? 0;
+    const includesReasoning = facts.reasoningIncluded;
+    return {
+        inputTokens, outputTokens, cachedTokens, reasoningTokens,
+        totalTokens: facts.totalTokens ?? 0,
+        hasReportedTotal: facts.totalTokens !== null,
+        effectiveOutputTokens: facts.effectiveOutputTokens,
+        liveInputTokens: Math.max(inputTokens - cachedTokens, 0),
+        visibleOutputTokens: includesReasoning === true ? Math.max(outputTokens - reasoningTokens, 0) : outputTokens,
+        // Unknown provider semantics are shown as overlapping reported views,
+        // never stacked on top of output where they may be counted twice.
+        stackedReasoningTokens: includesReasoning === null ? 0 : reasoningTokens,
+    };
+}
 
 @Injectable({
     providedIn: "root",
@@ -250,20 +279,7 @@ export class ModelUsageService implements OnDestroy {
     }
 
     private buildTokenUsage(modelUsage: Record<string, unknown>): TokenUsageBreakdown {
-        const inputTokens = this.toNumber(modelUsage["input_tokens"]);
-        const outputTokens = this.toNumber(modelUsage["output_tokens"]);
-        const cachedTokens = this.toNumber(modelUsage["cached_tokens"]);
-        const reasoningTokens = this.toNumber(modelUsage["reasoning_tokens"]);
-
-        return {
-            inputTokens,
-            outputTokens,
-            totalTokens: this.toNumber(modelUsage["total_tokens"]),
-            cachedTokens,
-            reasoningTokens,
-            liveInputTokens: Math.max(inputTokens - cachedTokens, 0),
-            visibleOutputTokens: outputTokens,
-        };
+        return normalizeTokenUsage(modelUsage);
     }
 
     private buildLatencyUsage(
@@ -361,6 +377,14 @@ export class ModelUsageService implements OnDestroy {
             textUsage: this.buildTextUsage(textUsage),
             cacheUsage: this.buildCacheUsage(cacheUsage),
             retryAttempts: this.toNumber(modelUsage["retry_attempts"]),
+            status: ["success", "error", "cancelled"].includes(String(payload["status"]))
+                ? payload["status"] as "success" | "error" | "cancelled" : "unknown",
+            errorKind: this.toString(payload["error_kind"], "unknown"),
+            operationMs: this.toNullableNumber(payload["operation_ms"]),
+            inputLanguage: typeof payload["input_language"] === "string" ? payload["input_language"] : null,
+            outputLanguage: typeof payload["output_language"] === "string" ? payload["output_language"] : null,
+            outputVoice: typeof payload["output_voice"] === "string" ? payload["output_voice"] : null,
+            numUnderruns: measurement(payload["num_underruns"], true),
             raw: payload,
         };
     }
@@ -373,11 +397,11 @@ export class ModelUsageService implements OnDestroy {
     }
 
     private toNumber(value: unknown): number {
-        return typeof value === "number" && Number.isFinite(value) ? value : 0;
+        return measurement(value, true) ?? 0;
     }
 
     private toNullableNumber(value: unknown): number | null {
-        return typeof value === "number" && Number.isFinite(value) ? value : null;
+        return measurement(value);
     }
 
     private toString(value: unknown, fallback: string): string {
