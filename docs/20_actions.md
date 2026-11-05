@@ -423,6 +423,8 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 
 16. **Toggle night vision**
 
+    With the French language pack enabled, "vision nocturne", "active la vision nocturne", and "désactive la vision nocturne" are aliases for this ship action. All three toggle the current state, like the English command.
+
     <details>
     <summary>Examples</summary>
     

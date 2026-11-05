@@ -204,6 +204,14 @@ def test_selected_language_aliases_are_applied_and_removed() -> None:
         lambda args, states: "targeted",
         cache_prefill={"continue route": {}},
     )
+    manager.registerAction(
+        "nightVisionToggle",
+        "Toggle night vision",
+        {"type": "object", "properties": {}},
+        lambda args, states: "toggled",
+        action_type="ship",
+        cache_prefill={"night vision": {}},
+    )
     tools = manager.getToolsList("mainship", True, False, False)
 
     manager.apply_language_aliases(load_action_language_packs(), ["fr"])
@@ -212,6 +220,9 @@ def test_selected_language_aliases_are_applied_and_removed() -> None:
         "passer en vitesse de croisière": ("FsdJump", {"jump_type": "supercruise"}),
         "continue la route": ("target_next_system_in_route", {}),
         "continue la navigation": ("target_next_system_in_route", {}),
+        "vision nocturne": ("nightVisionToggle", {}),
+        "active la vision nocturne": ("nightVisionToggle", {}),
+        "désactive la vision nocturne": ("nightVisionToggle", {}),
     }
     for phrase, (action_name, arguments) in expected_aliases.items():
         prediction = manager.predict_action(phrase, tools)
@@ -225,6 +236,7 @@ def test_selected_language_aliases_are_applied_and_removed() -> None:
         assert manager.predict_action(phrase, tools) is None
     assert manager.predict_action("supercruise", tools) is not None
     assert manager.predict_action("continue route", tools) is not None
+    assert manager.predict_action("night vision", tools) is not None
 
 
 @pytest.mark.parametrize("phrases", [None, "command", [], [""], ["   "], ["valid", 42]])

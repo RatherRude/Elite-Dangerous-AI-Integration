@@ -18,6 +18,15 @@
       ],
       "action": "target_next_system_in_route",
       "arguments": {}
+    },
+    {
+      "phrases": [
+        "vision nocturne",
+        "active la vision nocturne",
+        "désactive la vision nocturne"
+      ],
+      "action": "nightVisionToggle",
+      "arguments": {}
     }
   ]
 }
