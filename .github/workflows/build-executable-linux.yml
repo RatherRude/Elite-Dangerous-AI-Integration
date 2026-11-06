@@ -145,8 +145,8 @@ jobs:
           flatpak --user remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
           # Install runtimes system-wide to avoid permission issues
-          sudo flatpak install -y flathub org.freedesktop.Platform//23.08
-          sudo flatpak install -y flathub org.freedesktop.Sdk//23.08
+          sudo flatpak install -y flathub org.freedesktop.Platform//24.08
+          sudo flatpak install -y flathub org.freedesktop.Sdk//24.08
 
       - name: Build flatpak
         run: |
@@ -192,6 +192,34 @@ jobs:
           name: COVAS_NEXT_FLATPAK_v${{ github.sha }}_linux
           path: covas-next-ui-*.flatpak
 
+  flatpak-ocr-smoke:
+    name: Clean Flatpak OCR Smoke Test
+    runs-on: ubuntu-24.04
+    needs: flatpak-bundle
+    timeout-minutes: 20
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Download built Flatpak artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: COVAS_NEXT_FLATPAK_v${{ github.sha }}_linux
+          path: flatpak-artifact
+
+      - name: Install Flatpak runtime and downloaded bundle
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends flatpak dbus-x11
+          flatpak --user remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+          flatpak --user install --noninteractive flathub org.freedesktop.Platform//24.08
+          flatpak --user install --noninteractive --bundle flatpak-artifact/*.flatpak
+
+      - name: Run packaged OCR offline inside Flatpak
+        run: dbus-run-session -- python3 e2e/test_RapidOCRFlatpak.py
+
   e2e:
     name: E2E Tests
     runs-on: ubuntu-latest
@@ -216,8 +244,8 @@ jobs:
 
   draft-release:
     name: Add Linux Artifacts to Draft Release
-    needs: [flatpak-bundle, e2e]
-    if: startsWith(github.ref, 'refs/tags/')
+    needs: [flatpak-bundle, flatpak-ocr-smoke, e2e]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     concurrency:
       group: release-${{ github.ref }}

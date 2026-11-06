@@ -1,5 +1,12 @@
-import copy
 import sys
+
+if __name__ == "__main__" and sys.argv[1:] == ["--ocr-smoke-test"]:
+    from lib.OcrSmokeTest import run_ocr_smoke_test
+
+    run_ocr_smoke_test()
+    sys.exit(0)
+
+import copy
 from time import sleep
 from typing import Any, cast, final
 import os

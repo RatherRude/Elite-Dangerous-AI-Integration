@@ -1,6 +1,9 @@
 import json
 from pathlib import Path
 import sys
+from fnmatch import fnmatchcase
+
+import pytest
 
 from openai.types.chat import ChatCompletionMessageFunctionToolCall
 
@@ -215,6 +218,116 @@ def test_body_lookup_prefers_exact_result_later_in_spansh_list(monkeypatch) -> N
     assert result is not None
     assert result.name == "Siris 5 a"
     assert result.details["name"] == "Siris 5 a"
+
+
+@pytest.mark.parametrize(("body", "system"), [
+    ("Desiat 6D", "Desiat"),
+    ("Deciat 6d", "Deciat"),
+    ("Deciat 6 d", "Deciat"),
+    ("DECIAT 6 D", "deciat"),
+    ("6d", "Deciat"),
+])
+def test_body_lookup_resolves_reported_and_canonical_names(monkeypatch, body, system) -> None:
+    requests = []
+
+    def fake_post(url, request):
+        requests.append((url, request))
+        search_name = request["filters"]["name"]["value"]
+        if url == actions_web.SPANSH_SYSTEMS_URL:
+            assert search_name == "Desia?"
+            return {"results": []}
+        assert url == actions_web.SPANSH_BODIES_URL
+        assert request["reference_system"] == "Deciat"
+        assert "reference_coords" not in request
+        assert request["filters"]["distance"] == {"min": "0", "max": "1"}
+        bodies = [
+            {"name": name, "system_name": "Deciat", "type": "Planet", "is_landable": True, "distance": 0}
+            for name in ("Deciat 6 c", "Deciat 6 d", "Deciat 6 e")
+            if fnmatchcase(name.casefold(), search_name.casefold())
+        ]
+        return {"results": bodies}
+
+    monkeypatch.setattr(actions_web, "_spansh_post", fake_post)
+    result = actions_web.lookup_plot_target(body=body, system=system, projected_states={
+        "Location": {"StarSystem": "Deciat", "StarPos": [1, 2, 3]},
+    })
+
+    assert result is not None
+    assert result.target_type == "body"
+    assert result.name == "Deciat 6 d"
+    assert result.system_name == "Deciat"
+    assert result.match_score == 1.0
+    assert result.is_landable is True
+    assert requests[-1][1]["filters"]["name"]["value"] == "Deciat 6 ?"
+
+
+def test_body_lookup_without_system_retrieves_compact_name(monkeypatch) -> None:
+    def fake_post(url, request):
+        assert url == actions_web.SPANSH_BODIES_URL
+        assert request["filters"]["name"]["value"] == "Deciat 6 ?"
+        return {"results": [{"name": "Deciat 6 d", "system_name": "Deciat", "type": "Planet"}]}
+
+    monkeypatch.setattr(actions_web, "_spansh_post", fake_post)
+    result = actions_web.lookup_plot_target(body="Deciat 6d", projected_states={})
+
+    assert result is not None
+    assert result.name == "Deciat 6 d"
+
+
+def test_body_lookup_preserves_catalog_system_prefix(monkeypatch) -> None:
+    searches = []
+
+    def fake_post(url, request):
+        searches.append((url, request["filters"]["name"]["value"]))
+        return {"results": []}
+
+    monkeypatch.setattr(actions_web, "_spansh_post", fake_post)
+    assert actions_web.lookup_plot_target(body="2MASS J1234 6d", projected_states={}) is None
+    assert searches == [(actions_web.SPANSH_BODIES_URL, "2MASS J1234 6 ?")]
+
+
+def test_body_lookup_honors_explicit_system_and_rejects_other_systems(monkeypatch) -> None:
+    body_requests = []
+
+    def fake_post(url, request):
+        if url == actions_web.SPANSH_SYSTEMS_URL:
+            return {"results": [{"name": "Deciat", "distance": 100}]}
+        assert url == actions_web.SPANSH_BODIES_URL
+        body_requests.append(request)
+        return {"results": [{"name": "Deciat 6 d", "system_name": "Sol", "type": "Planet"}]}
+
+    monkeypatch.setattr(actions_web, "_spansh_post", fake_post)
+    assert actions_web.lookup_plot_target(
+        body="Deciat 6d", system="Deciat", projected_states={"Location": {"StarSystem": "Sol"}},
+    ) is None
+    assert len(body_requests) == 1
+    assert body_requests[0]["reference_system"] == "Deciat"
+
+
+def test_body_lookup_does_not_fall_back_to_system_or_station(monkeypatch) -> None:
+    searched_urls = []
+
+    def fake_post(url, request):
+        searched_urls.append(url)
+        return {"results": []}
+
+    monkeypatch.setattr(actions_web, "_spansh_post", fake_post)
+    assert actions_web.lookup_plot_target(body="Unknown", projected_states={}) is None
+    assert searched_urls == [actions_web.SPANSH_BODIES_URL]
+
+
+def test_body_lookup_does_not_replace_unrelated_system_with_current_system(monkeypatch) -> None:
+    searched_urls = []
+
+    def fake_post(url, request):
+        searched_urls.append(url)
+        return {"results": []}
+
+    monkeypatch.setattr(actions_web, "_spansh_post", fake_post)
+    assert actions_web.lookup_plot_target(
+        body="Unknown 6d", system="Unknown", projected_states={"Location": {"StarSystem": "Deciat"}},
+    ) is None
+    assert searched_urls == [actions_web.SPANSH_SYSTEMS_URL]
 
 
 def test_system_map_category_for_station_uses_spansh_types() -> None:

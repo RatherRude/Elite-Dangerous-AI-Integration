@@ -1,5 +1,6 @@
 import json
 import math
+import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from time import sleep
@@ -279,13 +280,19 @@ class Plotter:
 
         return candidates
 
-    def _plot_candidates_from_bodies(self, query: str, projected_states: Any) -> list[ResolvedPlotTarget]:
+    def _plot_candidates_from_bodies(self, query: str, projected_states: Any, *, system_name: str | None = None) -> list[ResolvedPlotTarget]:
         if self.prepare_body_request is None:
             raise Exception("prepare_body_request is required")
-        request_body = self.prepare_body_request(self._plot_search_obj(query), projected_states)
+        search_name = re.sub(r"(?<=\d)(?=[A-Za-z](?:\s|$))", " ", query)
+        request_body = self.prepare_body_request(self._plot_search_obj(search_name), projected_states)
         self._apply_plot_request_routing(request_body, projected_states)
+        if system_name:
+            request_body.pop("reference_coords", None)
+            request_body["reference_system"] = system_name
+            request_body.setdefault("filters", {})["distance"] = {"min": "0", "max": "1"}
         data = self.spansh_post(SPANSH_BODIES_URL, request_body)
         candidates: list[ResolvedPlotTarget] = []
+        requested_system = system_name
 
         for body in data.get("results", [])[:PLOT_TARGET_SEARCH_SIZE]:
             if body.get("type") != "Planet":
@@ -293,6 +300,8 @@ class Plotter:
             name = str(body.get("name") or "").strip()
             system_name = str(body.get("system_name") or "").strip()
             if not name or not system_name:
+                continue
+            if requested_system and not self.is_plot_name_exact_match(requested_system, system_name):
                 continue
             distance = body.get("distance")
             distance_value = float(distance) if distance is not None else None
@@ -359,6 +368,33 @@ class Plotter:
         query = self.plot_search_query(system=system, station=station, body=body)
         if not query:
             return None
+        if body and not station:
+            try:
+                if system:
+                    current_system = get_state_dict(projected_states, 'Location').get('StarSystem', '')
+                    if self.is_plot_name_exact_match(system, current_system):
+                        canonical_system = current_system
+                    else:
+                        systems = self._plot_candidates_from_systems(system, projected_states)
+                        resolved_system = self._select_best_plot_target(systems, system)
+                        if resolved_system is not None:
+                            canonical_system = resolved_system.name
+                        elif self.plot_name_match_score(system, current_system) > 0:
+                            canonical_system = current_system
+                        else:
+                            return None
+                    body_query = query
+                    if self.normalize_plot_name(query).startswith(self.normalize_plot_name(system)):
+                        prefix = r"\s*".join(re.escape(character) for character in system if not character.isspace())
+                        body_query = re.sub(r"^" + prefix, canonical_system, query, count=1, flags=re.IGNORECASE)
+                    elif re.match(r"^\d", query):
+                        body_query = f"{canonical_system} {query}"
+                    candidates = self._plot_candidates_from_bodies(body_query, projected_states, system_name=canonical_system)
+                    return self._select_best_plot_target(candidates, body_query)
+                return self._select_best_plot_target(self._plot_candidates_from_bodies(query, projected_states), query)
+            except Exception as error:
+                log("warn", "Body plot target lookup failed", f"{query!r}: {error}")
+                return None
         return self.resolve_plot_target(query, projected_states)
 
     def resolve_plot_target(self, query: str, projected_states: Any) -> ResolvedPlotTarget | None:
