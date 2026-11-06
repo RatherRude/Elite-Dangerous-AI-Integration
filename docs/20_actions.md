@@ -652,7 +652,11 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - EjectAllCargo
     </details>
 
-5. **Toggle landing gear**
+5. **Deploy, retract, or toggle landing gear**
+
+    - `action`: String (options: "deploy", "retract", "toggle"; default: "toggle")
+    - Explicit deploy/retract requests leave the gear unchanged if it is already in the requested state.
+    - A change is reported as successful only after confirmation from game status. If no confirmation arrives within 5 seconds, the action reports an error; check the keyboard or mouse binding and game window focus.
 
     <details>
     <summary>Examples</summary>

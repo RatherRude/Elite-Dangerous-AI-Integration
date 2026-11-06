@@ -674,11 +674,35 @@ def eject_all_cargo(args, projected_states):
 
 
 def landing_gear_toggle(args, projected_states):
+    action = args.get('action', 'toggle')
+    if action not in ('deploy', 'retract', 'toggle'):
+        raise ValueError("Landing gear action must be deploy, retract, or toggle.")
+
+    current_status = get_state_dict(projected_states, 'CurrentStatus')
+    gear_down = current_status.get('flags', {}).get('LandingGearDown')
+    if not isinstance(gear_down, bool):
+        raise RuntimeError("Landing gear status is unavailable. Cannot safely change landing gear.")
+
+    target_down = not gear_down if action == 'toggle' else action == 'deploy'
+    target_state = 'deployed' if target_down else 'retracted'
+    if gear_down == target_down:
+        return f"Landing gear already {target_state}. No changes."
+
     checkStatus(projected_states, {'Docked': True, 'Landed': True, 'Supercruise': True})
     setGameWindowActive()
     keys.send('LandingGearToggle')
-    current_status = get_state_dict(projected_states, 'CurrentStatus')
-    return f"Landing gear {'deployed ' if not current_status.get('flags', {}).get('LandingGearDown') else 'retracted'}"
+
+    try:
+        event_manager.wait_for_condition(
+            'CurrentStatus', lambda s: s.flags.LandingGearDown == target_down, 5
+        )
+    except TimeoutError as exc:
+        raise TimeoutError(
+            f"Landing gear {target_state} was not confirmed by the game within 5 seconds. "
+            "Check the LandingGearToggle keyboard or mouse binding and that the game window is active."
+        ) from exc
+
+    return f"Landing gear {target_state}."
 
 
 def use_shield_cell(args, projected_states):
@@ -2082,18 +2106,25 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "purge cargo": {},
     })
 
-    actionManager.registerAction('landingGearToggle', "Deploy or retract the landing gear: gear down for landing or gear up for flight.", {
+    actionManager.registerAction('landingGearToggle', "Deploy or retract the landing gear: gear down for landing or gear up for flight. Use deploy or retract for an explicit request; toggle only when no direction is specified. Success requires confirmation from game status.", {
         "type": "object",
-        "properties": {}
+        "properties": {
+            "action": {
+                "type": "string",
+                "description": "Requested landing gear operation",
+                "enum": ["deploy", "retract", "toggle"],
+                "default": "toggle"
+            }
+        }
     }, landing_gear_toggle, ['mainship','nomad'], permission='landingGearToggle', cache_prefill={
         "landing gear": {},
         "gear": {},
-        "deploy gear": {},
-        "retract gear": {},
-        "landing gear up": {},
-        "landing gear down": {},
-        "gear up": {},
-        "gear down": {},
+        "deploy gear": {"action": "deploy"},
+        "retract gear": {"action": "retract"},
+        "landing gear up": {"action": "retract"},
+        "landing gear down": {"action": "deploy"},
+        "gear up": {"action": "retract"},
+        "gear down": {"action": "deploy"},
     })
 
     actionManager.registerAction('useShieldCell', "Activate a shield cell bank (SCB) to replenish the ship's active shields.", {
