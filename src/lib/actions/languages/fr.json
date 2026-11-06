@@ -4,7 +4,9 @@
     {
       "phrases": [
         "vitesse de croisière",
-        "passer en vitesse de croisière"
+        "passer en vitesse de croisière",
+        "passe en vitesse de croisière",
+        "passe en vitesse de coisière"
       ],
       "action": "FsdJump",
       "arguments": {
@@ -26,6 +28,14 @@
         "désactive la vision nocturne"
       ],
       "action": "nightVisionToggle",
+      "arguments": {}
+    },
+    {
+      "phrases": [
+        "ouvre la soute",
+        "ferme la soute"
+      ],
+      "action": "toggleCargoScoop",
       "arguments": {}
     }
   ]

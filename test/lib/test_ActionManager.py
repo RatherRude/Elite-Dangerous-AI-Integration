@@ -212,17 +212,29 @@ def test_selected_language_aliases_are_applied_and_removed() -> None:
         action_type="ship",
         cache_prefill={"night vision": {}},
     )
+    manager.registerAction(
+        "toggleCargoScoop",
+        "Toggle cargo scoop",
+        {"type": "object", "properties": {}},
+        lambda args, states: "toggled",
+        action_type="mainship",
+        cache_prefill={"cargo scoop": {}},
+    )
     tools = manager.getToolsList("mainship", True, False, False)
 
     manager.apply_language_aliases(load_action_language_packs(), ["fr"])
     expected_aliases = {
         "vitesse de croisière": ("FsdJump", {"jump_type": "supercruise"}),
         "passer en vitesse de croisière": ("FsdJump", {"jump_type": "supercruise"}),
+        "passe en vitesse de croisière": ("FsdJump", {"jump_type": "supercruise"}),
+        "passe en vitesse de coisière": ("FsdJump", {"jump_type": "supercruise"}),
         "continue la route": ("target_next_system_in_route", {}),
         "continue la navigation": ("target_next_system_in_route", {}),
         "vision nocturne": ("nightVisionToggle", {}),
         "active la vision nocturne": ("nightVisionToggle", {}),
         "désactive la vision nocturne": ("nightVisionToggle", {}),
+        "ouvre la soute": ("toggleCargoScoop", {}),
+        "ferme la soute": ("toggleCargoScoop", {}),
     }
     for phrase, (action_name, arguments) in expected_aliases.items():
         prediction = manager.predict_action(phrase, tools)
@@ -237,6 +249,7 @@ def test_selected_language_aliases_are_applied_and_removed() -> None:
     assert manager.predict_action("supercruise", tools) is not None
     assert manager.predict_action("continue route", tools) is not None
     assert manager.predict_action("night vision", tools) is not None
+    assert manager.predict_action("cargo scoop", tools) is not None
 
 
 @pytest.mark.parametrize("phrases", [None, "command", [], [""], ["   "], ["valid", 42]])
