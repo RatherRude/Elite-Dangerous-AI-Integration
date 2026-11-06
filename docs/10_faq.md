@@ -8,6 +8,18 @@ No, but we recommend OpenAI, which costs money based on usage. Typical usage cos
 
 Yes, you will need a working microphone to interact with the AI and preferably a headset to prevent the AI from hearing itself.
 
+## Can I position the VR overlay beyond the slider ranges?
+
+Yes. Close COVAS:NEXT before editing your existing `config.json`, then restart it to apply the changes. The following settings accept finite numeric values beyond the UI slider ranges:
+
+- `overlay_vr_horizontal_offset`: horizontal offset in meters.
+- `overlay_vr_vertical_offset`: vertical offset in meters.
+- `overlay_vr_distance_offset`: distance offset in meters, added to the default distance of 2.0 m in World Locked mode or 1.1 m in Head Locked mode.
+- `overlay_vr_tilt_degrees`: pitch in degrees.
+- `overlay_vr_yaw_degrees`: yaw in degrees.
+
+For example, `"overlay_vr_horizontal_offset": 3.0` moves the overlay farther sideways than the slider allows. The final distance still has a minimum of 0.1 m, so more negative distance offsets cannot move the overlay behind its anchor. The sliders retain their usual ranges; moving one replaces that manually configured value with a value from the slider's range.
+
 ## My antivirus software is flagging the application as a virus. What should I do?
 
 Some antivirus software may flag the application as a virus due to **a false positive**. This can be very annoying and you may need to add an exception in your antivirus software or disable it, if you encounter this issue. All our source code is publicly available and our build process is available (and can be replicated) in the repository.
