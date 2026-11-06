@@ -197,6 +197,34 @@ def test_transcribe(stt, mock_openai, mock_vad):
     assert res == 'Test transcription via API'
 
 
+@pytest.mark.parametrize('manual_paused', [False, True])
+@pytest.mark.parametrize('response_paused', [False, True])
+def test_continuous_listening_honors_independent_pause_states(
+    stt, mock_pyaudio, mock_vad, manual_paused, response_paused
+):
+    stt.pause_continuous_listening(manual_paused)
+    stt.pause_continuous_listening_for_response(response_paused)
+    stt.listening = True
+    stt.recording = True
+
+    def read_buffer(*args, **kwargs):
+        stt.listening = False
+        return b'\xff\xff' * stt.frames_per_buffer
+
+    mock_pyaudio['stream'].read.side_effect = read_buffer
+
+    stt._listen_continuous_loop()
+
+    assert stt.continuous_listening_paused is manual_paused
+    assert stt.continuous_listening_paused_for_response is response_paused
+    if manual_paused or response_paused:
+        mock_vad.assert_not_called()
+    else:
+        mock_vad.assert_called_once()
+    assert stt.recording is False
+    mock_pyaudio['stream'].close.assert_called_once()
+
+
 def test_read_stream_buffer_disables_overflow_exceptions(stt):
     source = MagicMock()
     source.read.return_value = b'audio'
