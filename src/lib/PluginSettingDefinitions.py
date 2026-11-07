@@ -1,98 +1,35 @@
-from typing import Any, Iterator, Literal, NotRequired, TypeAlias, TypedDict
+from typing import Any, Literal, NotRequired, TypedDict
+from .PluginUIDefinitions import (
+    UIComponent, UINode, InputBase, SelectOption, Select, TextInput, Filter,
+    TextArea, NumberInput, Toggle, Button, Paragraph, Notification, Error, List, ListAction, ListRow,
+    UICondition, Condition, UIGrid, GridHeaderAction, ui_fields,
+)
 
-class SettingBase(TypedDict):
-    key: str
-    label: str | None
-    type: Literal['paragraph', 'notification', 'text', 'textarea', 'toggle', 'number', 'select', 'button', 'error']
-    readonly: bool
-    placeholder: str | None
+# Deprecated compatibility aliases; use PluginUIDefinitions for new components.
+SettingBase = InputBase
+SelectSetting = Select
+TextSetting = TextInput
+TextAreaSetting = TextArea
+NumericalSetting = NumberInput
+ToggleSetting = Toggle
+ButtonSetting = Button
+ParagraphSetting = Paragraph
+NotificationSetting = Notification
+ErrorSetting = Error
+ListSetting = List
+FilterSetting = Filter
+SettingField = UIComponent
+SettingsField = UIComponent
+SettingsElement = UIComponent
+SettingCondition = UICondition
+ConditionSetting = Condition
+SettingsGrid = UIGrid
+settings_fields = ui_fields
 
-
-class SelectOption(TypedDict):
-    """Defines an option for a select setting."""
-    key: str
+class SettingsHeaderLink(TypedDict):
+    text: str
     label: str
-    value: object | str | int | float | bool
-    disabled: bool
-
-class SelectSetting(SettingBase):
-    """Used to display a select input."""
-    default_value: str | list[str] | None
-    select_options: list[SelectOption] | None
-    multi_select: bool
-
-class TextSetting(SettingBase):
-    """Used to display a text input."""
-    default_value: str | None
-    max_length: int | None
-    min_length: int | None
-    hidden: bool
-
-class TextAreaSetting(SettingBase):
-    """Used to display a textarea."""
-    default_value: str | None
-    rows: int | float | None
-    cols: int | float | None
-
-class NumericalSetting(SettingBase):
-    """Used to display a numerical input."""
-    default_value: int | float | None
-    min_value: int | float | None
-    max_value: int | float | None
-    step: int | float | None
-
-class ToggleSetting(SettingBase):
-    """Used to display a toggle switch."""
-    default_value: bool | None
-
-class ButtonSetting(SettingBase):
-    """Used to display a button that invokes the plugin's settings-button hook."""
-    pass
-
-class ParagraphSetting(SettingBase):
-    """Used to display a paragraph of text. The label is used as the title."""
-    content: str
-
-class NotificationSetting(SettingBase):
-    """Used to display a styled informational, warning, or error notification."""
-    content: str
-    level: Literal['info', 'warning', 'error']
-
-class ErrorSetting(SettingBase):
-    """Used to display an error message."""
-    content: str
-
-class SettingCondition(TypedDict):
-    """Compare a key in the current namespace, or use default_show when unset."""
-    key: str
-    operator: Literal['eq', 'neq', 'gt', 'geq', 'lt', 'leq', 'in', 'not_in', 'contains', 'not_contains', 'is_set', 'is_unset']
-    value: NotRequired[object]
-    default_show: NotRequired[bool]
-
-class ConditionSetting(TypedDict):
-    """Show nested fields when the condition matches; hidden values are preserved."""
-    key: str
-    type: Literal['condition']
-    condition: SettingCondition
-    fields: list['SettingsElement']
-
-SettingsField: TypeAlias = TextSetting | TextAreaSetting | SelectSetting | NumericalSetting | ToggleSetting | ButtonSetting | ParagraphSetting | NotificationSetting | ErrorSetting
-SettingsElement: TypeAlias = SettingsField | ConditionSetting
-
-class SettingsGrid(TypedDict):
-    """Defines a grid of settings for a plugin."""
-    key: str
-    label: str
-    fields: list[SettingsElement]
-
-def settings_fields(elements: list[SettingsElement]) -> Iterator[SettingsField]:
-    """Include hidden descendants when resolving defaults and persisted values."""
-    for element in elements:
-        if element['type'] == 'condition':
-            yield from settings_fields(element['fields'])
-        else:
-            yield element
-
+    url: str
 
 def resolve_voice_settings(
     grids: list[SettingsGrid], plugin_settings: dict[str, Any], character_settings: dict[str, Any],
@@ -100,7 +37,7 @@ def resolve_voice_settings(
     """Merge voice defaults, plugin globals, and character overrides, in that order."""
     defaults = {
         field['key']: field['default_value']
-        for grid in grids for field in settings_fields(grid['fields'])
+        for grid in grids for field in ui_fields(grid['fields'] + grid.get('content', []))
         if 'default_value' in field
     }
     return {
@@ -115,6 +52,14 @@ class PluginSettings(TypedDict):
     label: str
     icon: str
     grids: list[SettingsGrid]
+    tabs: NotRequired[list['SettingsTab']]
+    header_link: NotRequired[SettingsHeaderLink]
+
+
+class SettingsTab(TypedDict):
+    key: str
+    label: str
+    grids: list[str]
 
 
 class ApiKeyDetection(TypedDict, total=False):

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ViewChild } from "@angular/core";
+import { ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
@@ -28,6 +28,11 @@ import { MetricsService } from "../services/metrics.service";
 import { PolicyService } from "../services/policy.service";
 import {UIService} from "../services/ui.service";
 import { ActionsContainerComponent } from "../components/actions-container/actions-container.component";
+import { PluginViewComponent } from "../components/plugin-view/plugin-view.component";
+import { PluginUIService } from "../services/plugin-ui.service";
+import { RegisteredUIView } from "../services/plugin-ui";
+import { TranslateModule } from "@ngx-translate/core";
+import { UISectionService } from "../services/ui-section.service";
 
 @Component({
     selector: "app-main-view",
@@ -52,6 +57,8 @@ import { ActionsContainerComponent } from "../components/actions-container/actio
         SearchResultsComponent,
         NavigationContainerComponent,
         ActionsContainerComponent,
+        PluginViewComponent,
+        TranslateModule,
     ],
     templateUrl: "./main-view.component.html",
     styleUrl: "./main-view.component.css",
@@ -82,6 +89,10 @@ export class MainViewComponent implements OnInit, OnDestroy {
     public usageDisclaimerAccepted = false;
     public isQuestEditorOpen = false;
     private systemSubscription?: Subscription;
+    private pluginViewsSubscription?: Subscription;
+    private sectionSubscription?: Subscription;
+    pluginViews: RegisteredUIView[] = [];
+    configPluginViews: RegisteredUIView[] = [];
 
     constructor(
         private tauri: TauriService,
@@ -93,6 +104,10 @@ export class MainViewComponent implements OnInit, OnDestroy {
         private policyService: PolicyService,
         private uiService: UIService,
         private snackBar: MatSnackBar,
+        private pluginUI: PluginUIService,
+        private host: ElementRef<HTMLElement>,
+        private changeDetector: ChangeDetectorRef,
+        private sections: UISectionService,
     ) {
         this.policyService.usageDisclaimerAccepted$.subscribe(
             (accepted) => {
@@ -115,6 +130,29 @@ export class MainViewComponent implements OnInit, OnDestroy {
     }
 
     ngOnInit(): void {
+        this.sectionSubscription = this.uiService.sectionRequests$.subscribe(request => {
+            let result;
+            try {
+                this.changeDetector.detectChanges();
+                result = { success: true, ...this.sections.apply(this.host.nativeElement, request,
+                    () => this.changeDetector.detectChanges()) };
+            } catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                console.error("Could not change UI section:", error);
+                this.snackBar.open(message, "OK", { duration: 7000 });
+                result = { success: false, error: message };
+            }
+            void this.tauri.send_command({
+                type: "ui_section_result", request_id: request.request_id,
+                timestamp: new Date().toISOString(), ...result,
+            }).catch(error => console.error("Could not acknowledge UI section change:", error));
+        });
+        this.pluginViewsSubscription = this.pluginUI.views$.subscribe(views => {
+            this.pluginViews = views.filter(view => (view.modes ?? ['running']).includes('running'));
+            this.configPluginViews = views.filter(view => (view.modes ?? ['running']).includes('configuring'));
+            const visibleCount = this.builtinRuntimeTabs().length + this.pluginViews.length;
+            if (this.selectedTabIndex >= visibleCount) this.selectedTabIndex = 0;
+        });
         this.applyHudColors(this.configService.systemInfo);
         this.systemSubscription = this.configService.system$.subscribe((system) => {
             this.applyHudColors(system);
@@ -159,49 +197,8 @@ export class MainViewComponent implements OnInit, OnDestroy {
                 }
                 const tabName = uiMessage.show;
                 if (!tabName) return;
-                
-                let current = 0;
-                if (tabName === 'chat') {
-                    this.selectedTabIndex = current;
-                    return;
-                }
-                current++;
-
-                if (!this.isShipIdentUnknown) {
-                    if (tabName === 'status') {
-                        this.selectedTabIndex = current;
-                        return;
-                    }
-                    current++;
-                }
-
-                if (tabName === 'navigation') {
-                    this.selectedTabIndex = current;
-                    return;
-                }
-                current++;
-                if (!this.isShipIdentUnknown) {
-
-                    if (tabName === 'storage') { this.selectedTabIndex = current; return; }
-                    current++;
-                    if (tabName === 'tasks') { this.selectedTabIndex = current; return; }
-                    current++;
-                    if (this.isDockedAtStation) {
-                        if (tabName === 'station') { this.selectedTabIndex = current; return; }
-                        current++;
-                    }
-                }
-
-                if (this.hasLogbook) {
-                    if (tabName === 'logbook') { this.selectedTabIndex = current; return; }
-                    current++;
-                }
-
-
-                if (tabName === 'search') {
-                    this.selectedTabIndex = current;
-                    return;
-                }
+                const targetIndex = [...this.builtinRuntimeTabs(), ...this.pluginViews.map(view => view.target)].indexOf(tabName);
+                if (targetIndex >= 0) this.selectedTabIndex = targetIndex;
             }
         )
 
@@ -244,6 +241,8 @@ export class MainViewComponent implements OnInit, OnDestroy {
     }
 
     ngOnDestroy(): void { // Implement ngOnDestroy
+        this.sectionSubscription?.unsubscribe();
+        this.pluginViewsSubscription?.unsubscribe();
         if (this.systemSubscription) {
             this.systemSubscription.unsubscribe();
         }
@@ -262,6 +261,19 @@ export class MainViewComponent implements OnInit, OnDestroy {
         if (this.shipInfoSubscription) {
             this.shipInfoSubscription.unsubscribe();
         }
+    }
+
+    private builtinRuntimeTabs(): string[] {
+        return ['chat', ...(!this.isShipIdentUnknown ? ['status'] : []), 'navigation',
+            ...(!this.isShipIdentUnknown ? ['storage', 'tasks', ...(this.isDockedAtStation ? ['station'] : [])] : []),
+            ...(this.hasLogbook ? ['logbook'] : []), 'search', 'actions'];
+    }
+
+    onRuntimeTabSelected(index: number): void {
+        if (index === this.selectedTabIndex) return;
+        this.selectedTabIndex = index;
+        const target = [...this.builtinRuntimeTabs(), ...this.pluginViews.map(view => view.target)][index];
+        if (target) this.uiService.showTab(target);
     }
 
     private getCurrentGameModeLabel(currentStatusData: any): string {

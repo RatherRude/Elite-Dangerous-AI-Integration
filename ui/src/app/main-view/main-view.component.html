@@ -6,10 +6,14 @@
     @if (!showRuntimeView) {
         <div class="settings-container">
             <app-settings-menu (questEditorVisibilityChange)="onQuestEditorVisibilityChange($event)"></app-settings-menu>
+            @for (view of configPluginViews; track view.target) {
+                <h2>{{ view.label | translate }}</h2>
+                <app-plugin-view [view]="view" />
+            }
         </div>
     } @else {
         <div class="runtime-container">
-            <mat-tab-group [selectedIndex]="selectedTabIndex">
+            <mat-tab-group [selectedIndex]="selectedTabIndex" (selectedIndexChange)="onRuntimeTabSelected($event)">
                 <mat-tab>
                     <ng-template mat-tab-label>
                         <mat-icon class="tab-label-icon">forum</mat-icon>
@@ -121,6 +125,19 @@
                         <app-actions-container></app-actions-container>
                     </div>
                 </mat-tab>
+
+                @for (view of pluginViews; track view.target) {
+                <mat-tab>
+                    <ng-template mat-tab-label>
+                        <mat-icon class="tab-label-icon">{{ view.icon }}</mat-icon>
+                        {{ view.label | translate }}
+                    </ng-template>
+                    <div class="tab-content-container">
+                        <app-plugin-view [view]="view" />
+                    </div>
+                    <app-chat-container class="small" [limit]="2"></app-chat-container>
+                </mat-tab>
+                }
 
                 @if (false) {
                     <mat-tab label="Logs">
