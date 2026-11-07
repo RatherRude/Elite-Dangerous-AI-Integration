@@ -1,5 +1,4 @@
 import json
-import sys
 from pathlib import Path
 
 
@@ -29,6 +28,9 @@ def run_ocr_smoke_test() -> None:
         raise RuntimeError(f"RapidOCR smoke test did not recognize the test image: {text!r}")
     print(json.dumps({
         "ocr_smoke_test": "passed", "text": text,
-        "frozen": bool(getattr(sys, "frozen", False)),
         "package_dir": str(package_dir), "models": model_paths,
     }), flush=True)
+
+
+if __name__ == "__main__":
+    run_ocr_smoke_test()
