@@ -764,10 +764,10 @@ class Chat:
             )
         elif mode == "toggle" and ptt_keys:
             log("info", f"Setting hotkeys {ptt_keys} to toggle voice activation.")
-            self.stt.listen_continuous()
             self.stt.pause_continuous_listening(
                 self.config.get("ptt_inverted_var", False)
             )
+            self.stt.listen_continuous()
             self.controller_manager.register_hotkey(
                 ptt_keys,
                 lambda _: _,
@@ -851,11 +851,10 @@ class Chat:
                     self.event_manager.add_status_event(status)
 
                 # mute continuous listening during response
-                if self.config.get("mute_during_response_var"):
-                    if self.tts.get_is_playing():
-                        self.stt.pause_continuous_listening(True)
-                    else:
-                        self.stt.pause_continuous_listening(False)
+                self.stt.pause_continuous_listening_for_response(
+                    bool(self.config.get("mute_during_response_var"))
+                    and self.tts.get_is_playing()
+                )
 
                 # check STT recording
                 if self.stt.recording:

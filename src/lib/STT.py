@@ -45,6 +45,7 @@ class STT:
         self.input_device_name = input_device_name
         self.required_word = required_word
         self.continuous_listening_paused = False
+        self.continuous_listening_paused_for_response = False
 
         self.rate=16000
         self.sample_width = pyaudio.get_sample_size(pyaudio.paInt16)
@@ -121,7 +122,7 @@ class STT:
         activity = []
         while self.listening:
             buffer = self._read_stream_buffer(source)
-            if self.continuous_listening_paused:
+            if self.continuous_listening_paused or self.continuous_listening_paused_for_response:
                 self.recording = False
                 continue
             if len(buffer) == 0: break  # reached end of the stream
@@ -258,6 +259,9 @@ class STT:
 
     def pause_continuous_listening(self, pause: bool):
         self.continuous_listening_paused = pause
+
+    def pause_continuous_listening_for_response(self, pause: bool):
+        self.continuous_listening_paused_for_response = pause
 
 # if __name__ == "__main__":
 #     openai_audio = openai.OpenAI()
