@@ -3,13 +3,16 @@ import runpy
 from types import SimpleNamespace
 
 import rapidocr_onnxruntime
+import pytest
+import setuptools
 import yaml
 
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 
 
-def test_chat_spec_collects_rapidocr_config_and_all_configured_models() -> None:
+@pytest.fixture
+def bundled_files():
     collected_data = []
 
     def fake_analysis(*args, **kwargs):
@@ -23,16 +26,26 @@ def test_chat_spec_collects_rapidocr_config_and_all_configured_models() -> None:
         "COLLECT": lambda *args, **kwargs: None,
     })
 
-    package_dir = Path(rapidocr_onnxruntime.__file__).resolve().parent
-    config = yaml.safe_load((package_dir / "config.yaml").read_text(encoding="utf-8"))
-    required_files = [Path("config.yaml")] + [Path(config[section]["model_path"]) for section in ("Det", "Cls", "Rec")]
-    bundled_files = {
+    return {
         Path(destination) / Path(source).name: Path(source).resolve()
         for source, destination in collected_data
     }
+
+
+def test_chat_spec_collects_rapidocr_config_and_all_configured_models(bundled_files) -> None:
+    package_dir = Path(rapidocr_onnxruntime.__file__).resolve().parent
+    config = yaml.safe_load((package_dir / "config.yaml").read_text(encoding="utf-8"))
+    required_files = [Path("config.yaml")] + [Path(config[section]["model_path"]) for section in ("Det", "Cls", "Rec")]
     for relative_path in required_files:
         assert bundled_files[Path("rapidocr_onnxruntime") / relative_path] == package_dir / relative_path
         assert (package_dir / relative_path).is_file()
+
+
+def test_chat_spec_collects_setuptools_vendored_jaraco_text_resource(bundled_files) -> None:
+    relative_path = Path("_vendor/jaraco/text/Lorem ipsum.txt")
+    source = Path(setuptools.__file__).resolve().parent / relative_path
+    assert bundled_files[Path("setuptools") / relative_path] == source
+    assert source.read_text(encoding="utf-8").startswith("Lorem ipsum")
 
 
 def test_chat_has_no_production_ocr_smoke_entrypoint() -> None:
