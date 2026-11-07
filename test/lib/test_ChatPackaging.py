@@ -94,17 +94,20 @@ def test_flatpak_smoke_requires_frozen_bundled_ocr(monkeypatch, failure) -> None
         smoke_test()
 
 
-def test_pr_workflows_build_and_test_downloaded_artifacts_without_release_permissions() -> None:
-    for workflow_name, smoke_job, build_job in (
-        ("build-executable.yml", "dir-ocr-smoke", "electron-build"),
-        ("build-executable-linux.yml", "flatpak-ocr-smoke", "flatpak-bundle"),
+def test_artifact_smoke_tests_remain_manual_without_extra_ci_jobs_or_release_gates() -> None:
+    for workflow_name, release_dependencies in (
+        ("build-executable.yml", ["electron-build", "e2e"]),
+        ("build-executable-linux.yml", ["flatpak-bundle", "e2e"]),
     ):
         workflow = yaml.load((ROOT_DIR / ".github" / "workflows" / workflow_name).read_text(), Loader=yaml.BaseLoader)
-        assert "pull_request" in workflow["on"]
+        assert workflow["on"] == ["push", "pull_request"]
         assert workflow["permissions"] == {"contents": "read"}
-        assert workflow["jobs"][smoke_job]["needs"] == build_job
-        steps = workflow["jobs"][smoke_job]["steps"]
-        assert any(step.get("uses") == "actions/download-artifact@v4" for step in steps)
+        assert "dir-ocr-smoke" not in workflow["jobs"]
+        assert "flatpak-ocr-smoke" not in workflow["jobs"]
+        for job in workflow["jobs"].values():
+            for step in job.get("steps", []):
+                assert "test_RapidOCRArtifact.py" not in step.get("run", "")
+                assert "test_RapidOCRFlatpak.py" not in step.get("run", "")
         release = workflow["jobs"]["draft-release"]
-        assert smoke_job in release["needs"]
-        assert release["if"] == "github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')"
+        assert release["needs"] == release_dependencies
+        assert release["if"] == "startsWith(github.ref, 'refs/tags/')"

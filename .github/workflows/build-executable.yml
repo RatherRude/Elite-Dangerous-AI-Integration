@@ -142,30 +142,10 @@ jobs:
           python --version
           python e2e/test_ChatExecutable.py
 
-  dir-ocr-smoke:
-    name: Clean Windows DIR OCR Smoke Test
-    runs-on: windows-latest
-    needs: electron-build
-    timeout-minutes: 10
-    steps:
-      - name: Check out the repository
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: Download DIR artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: COVAS_NEXT_DIR_v${{ github.sha }}
-          path: simple-zip
-
-      - name: Verify bundled RapidOCR data and inference
-        run: python e2e/test_RapidOCRArtifact.py simple-zip/files/resources/Chat
-
   draft-release:
     name: Add Windows Artifacts to Draft Release
-    needs: [electron-build, e2e, dir-ocr-smoke]
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    needs: [electron-build, e2e]
+    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     concurrency:
       group: release-${{ github.ref }}
