@@ -12,6 +12,7 @@ import pino from 'pino';
 import { WebSocketServer } from 'ws';
 import {VROverlay} from '@covas-labs/electron-vr';
 import { describeVrStatus } from './vr-status.js';
+import { getOverlayPlacement, normalizeVrPlacementOptions } from './vr-placement.js';
 import { createGameProbe } from './vr-game-probe.js';
 import { assessRestart, buildVrDiagnostics, createFrameHealthTracker, createSceneTracker } from './vr-diagnostics.js';
 import {
@@ -188,41 +189,6 @@ function getOverlayUrl(opts = {}) {
   return overlayUrl.toString();
 }
 
-function getOverlayRotation(tiltDegrees = 0, yawDegrees = 0) {
-  const halfPitch = tiltDegrees * Math.PI / 360;
-  const halfYaw = yawDegrees * Math.PI / 360;
-  const sinPitch = Math.sin(halfPitch);
-  const cosPitch = Math.cos(halfPitch);
-  const sinYaw = Math.sin(halfYaw);
-  const cosYaw = Math.cos(halfYaw);
-  return {
-    x: cosYaw * sinPitch,
-    y: sinYaw * cosPitch,
-    z: -sinYaw * sinPitch,
-    w: cosYaw * cosPitch,
-  };
-}
-
-function getOverlayPlacement(vrAnchor, vrSizeMeters, horizontalOffset = 0, verticalOffset = 0, distanceOffset = 0, tiltDegrees = 0, yawDegrees = 0) {
-  const rotation = getOverlayRotation(tiltDegrees, yawDegrees);
-  if (vrAnchor === 'world') {
-    const distance = Math.max(0.1, 2.0 + distanceOffset);
-    const widthOffset = 0.5;
-    const heightOffset = (720 / 1280) / 2;
-    return {
-      mode: 'world',
-      position: { x: horizontalOffset - widthOffset, y: 1.4 + verticalOffset - heightOffset, z: -distance },
-      rotation,
-    };
-  }
-  const distance = Math.max(0.1, 1.1 + distanceOffset);
-  return {
-    mode: 'head',
-    position: { x: horizontalOffset, y: verticalOffset, z: -distance },
-    rotation,
-  };
-}
-
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
@@ -234,21 +200,6 @@ function normalizeOverlayOptions(opts = {}) {
     : ['disabled', 'desktop', 'standalone', 'vr', 'both'].includes(opts.mode)
       ? opts.mode
       : 'desktop';
-  const vrHorizontalOffset = Number.isFinite(opts.vrHorizontalOffset)
-    ? clamp(opts.vrHorizontalOffset, -2.0, 2.0)
-    : 0;
-  const vrVerticalOffset = Number.isFinite(opts.vrVerticalOffset)
-    ? clamp(opts.vrVerticalOffset, -1.5, 1.5)
-    : 0;
-  const vrDistanceOffset = Number.isFinite(opts.vrDistanceOffset)
-    ? clamp(opts.vrDistanceOffset, -0.75, 1.5)
-    : 0;
-  const vrTiltDegrees = Number.isFinite(opts.vrTiltDegrees)
-    ? clamp(opts.vrTiltDegrees, -90, 90)
-    : 0;
-  const vrYawDegrees = Number.isFinite(opts.vrYawDegrees)
-    ? clamp(opts.vrYawDegrees, -90, 90)
-    : 0;
   const vrCurvature = Number.isFinite(opts.vrCurvature)
     ? clamp(opts.vrCurvature, 0, 0.5)
     : 0;
@@ -262,11 +213,7 @@ function normalizeOverlayOptions(opts = {}) {
       ? opts.vrSizeMeters
       : 0.9,
     vrAnchor: opts.vrAnchor === 'world' ? 'world' : 'head',
-    vrHorizontalOffset,
-    vrVerticalOffset,
-    vrDistanceOffset,
-    vrTiltDegrees,
-    vrYawDegrees,
+    ...normalizeVrPlacementOptions(opts),
     vrCurvature,
     standaloneTransparent: opts.standaloneTransparent !== false,
     standaloneBackgroundColor: typeof opts.standaloneBackgroundColor === 'string' &&
