@@ -6,14 +6,27 @@ import sys
 import pytest
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
+SRC_DIR = ROOT_DIR / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 
-import src.lib.Config as ConfigModule
-from src.lib.Config import (
+import lib.Config as ConfigModule
+from lib.Config import (
     default_allowed_actions,
     migrate,
 )
+
+
+@pytest.fixture(autouse=True)
+def isolate_audio_devices(monkeypatch):
+    import pyaudio
+
+    def unexpected_audio_initialization(*args, **kwargs):
+        pytest.fail("Config unit tests must not initialize audio hardware")
+
+    monkeypatch.setattr(pyaudio, "PyAudio", unexpected_audio_initialization)
+    monkeypatch.setattr(ConfigModule, "get_default_input_device_name", lambda: "input")
+    monkeypatch.setattr(ConfigModule, "get_default_output_device_name", lambda: "output")
 
 
 def test_action_defaults_match_registered_permissions() -> None:
@@ -249,6 +262,8 @@ def test_default_config_uses_plugins_and_has_no_legacy_provider_settings(monkeyp
 
     config = ConfigModule.load_config()
 
+    assert config["input_device_name"] == "input"
+    assert config["output_device_name"] == "output"
     assert config["llm_provider"].startswith("plugin:")
     assert config["agent_llm_provider"].startswith("plugin:")
     assert config["embedding_provider"].startswith("plugin:")
@@ -284,8 +299,6 @@ def test_legacy_json_config_loads_then_migrates_through_current_provider_plugins
         legacy["config_version"] = version
         legacy["active_character_index"] = 0
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(ConfigModule, "get_default_input_device_name", lambda: "input")
-    monkeypatch.setattr(ConfigModule, "get_default_output_device_name", lambda: "output")
     (tmp_path / "config.json").write_text(json.dumps(legacy), encoding="utf-8")
     config = ConfigModule.load_config()
 
