@@ -316,7 +316,14 @@ def test_body_lookup_does_not_fall_back_to_system_or_station(monkeypatch) -> Non
     assert searched_urls == [actions_web.SPANSH_BODIES_URL]
 
 
-def test_body_lookup_does_not_replace_unrelated_system_with_current_system(monkeypatch) -> None:
+@pytest.mark.parametrize(("system", "current_system"), [
+    ("Unknown", "Deciat"),
+    ("HIP 12345", "HIP 12346"),
+    ("Sol", "Solati"),
+    ("Deciat", "Desiat"),
+    ("Desiat", "Deciat II"),
+])
+def test_body_lookup_does_not_replace_unrelated_system_with_current_system(monkeypatch, system, current_system) -> None:
     searched_urls = []
 
     def fake_post(url, request):
@@ -325,7 +332,7 @@ def test_body_lookup_does_not_replace_unrelated_system_with_current_system(monke
 
     monkeypatch.setattr(actions_web, "_spansh_post", fake_post)
     assert actions_web.lookup_plot_target(
-        body="Unknown 6d", system="Unknown", projected_states={"Location": {"StarSystem": "Deciat"}},
+        body=f"{system} 1", system=system, projected_states={"Location": {"StarSystem": current_system}},
     ) is None
     assert searched_urls == [actions_web.SPANSH_SYSTEMS_URL]
 

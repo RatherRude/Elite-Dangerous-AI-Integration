@@ -379,7 +379,10 @@ class Plotter:
                         resolved_system = self._select_best_plot_target(systems, system)
                         if resolved_system is not None:
                             canonical_system = resolved_system.name
-                        elif self.plot_name_match_score(system, current_system) > 0:
+                        elif (
+                            self.is_plot_name_exact_match(system, "Desiat")
+                            and self.is_plot_name_exact_match(current_system, "Deciat")
+                        ):
                             canonical_system = current_system
                         else:
                             return None
