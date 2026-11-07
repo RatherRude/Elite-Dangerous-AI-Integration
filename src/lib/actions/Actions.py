@@ -33,6 +33,7 @@ vision_model_name: str | None = None
 event_manager: EventManager = cast(EventManager, None)
 embedding_model: EmbeddingModel | None = None
 screen_reader_hud_color_matrix: HudColorMatrix | None = None
+screen_reader_debug_directory: str | None = None
 in_system_navigation: bool = False
 
 chat_local_tabbed: bool = False
@@ -474,6 +475,7 @@ def _plotter() -> Plotter:
         prepare_body_request=prepare_body_request,
         spansh_post=_spansh_post,
         enable_in_system_navigation=in_system_navigation,
+        screen_reader_debug_directory=screen_reader_debug_directory,
     )
 
 

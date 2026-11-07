@@ -56,17 +56,85 @@ def screenshot_windows_game_window(new_height: int) -> Image.Image | None:
         log("warn", "Window not found!")
         return None
 
-    import pyautogui
+    try:
+        image = _capture_windows_game_client(handle)
+        return resize_and_crop_16_9(image, new_height)
+    except Exception as error:
+        # A desktop-region fallback would reintroduce overlays into OCR.
+        log("warn", "Unable to capture the game window without overlays", error)
+        return None
+
+
+def _capture_windows_game_client(handle: int) -> Image.Image:
+    """Capture the HWND's client surface, not the desktop pixels covering it.
+
+    PW_RENDERFULLCONTENT is needed for the game's accelerated surface.
+    Separate overlay windows are excluded; overlays drawn into the game's
+    own render surface cannot be separated by this method.
+    """
+    import ctypes
+    from ctypes import wintypes
+    import struct
+
     import win32gui
 
-    set_windows_game_window_active()
-    x, y, x1, y1 = win32gui.GetClientRect(handle)
-    x, y = win32gui.ClientToScreen(handle, (x, y))
-    x1, y1 = win32gui.ClientToScreen(handle, (x1, y1))
-    width = x1 - x
-    height = y1 - y
-    image = pyautogui.screenshot(region=(x, y, width, height)).convert("RGB")
-    return resize_and_crop_16_9(image, new_height)
+    if win32gui.IsIconic(handle):
+        raise OSError("The game window is minimized; restore it before capturing")
+    left, top, right, bottom = win32gui.GetClientRect(handle)
+    width, height = right - left, bottom - top
+    if width <= 0 or height <= 0:
+        raise OSError("The game window has an empty client area")
+
+    user32 = ctypes.WinDLL("user32", use_last_error=True)
+    user32.PrintWindow.argtypes = [wintypes.HWND, wintypes.HDC, wintypes.UINT]
+    user32.PrintWindow.restype = wintypes.BOOL
+    gdi32 = ctypes.WinDLL("gdi32", use_last_error=True)
+    gdi32.GetDIBits.argtypes = [
+        wintypes.HDC, wintypes.HBITMAP, wintypes.UINT, wintypes.UINT,
+        ctypes.c_void_p, ctypes.c_void_p, wintypes.UINT,
+    ]
+    gdi32.GetDIBits.restype = ctypes.c_int
+
+    source_dc = win32gui.GetDC(handle)
+    if not source_dc:
+        raise OSError("Unable to acquire the game window device context")
+    memory_dc = bitmap = old_bitmap = None
+    try:
+        memory_dc = win32gui.CreateCompatibleDC(source_dc)
+        if not memory_dc:
+            raise OSError("Unable to create a capture device context")
+        bitmap = win32gui.CreateCompatibleBitmap(source_dc, width, height)
+        if not bitmap:
+            raise OSError("Unable to create a capture bitmap")
+        old_bitmap = win32gui.SelectObject(memory_dc, bitmap)
+        pw_clientonly = 0x1
+        pw_renderfullcontent = 0x2
+        if not user32.PrintWindow(handle, memory_dc, pw_clientonly | pw_renderfullcontent):
+            raise OSError("PrintWindow failed to capture the game client surface")
+
+        # GetDIBits requires the bitmap to be deselected from its DC. Request
+        # top-down, 32-bit BGR pixels so row order and channel order are explicit.
+        win32gui.SelectObject(memory_dc, old_bitmap)
+        old_bitmap = None
+        pixels = ctypes.create_string_buffer(width * height * 4)
+        header = ctypes.create_string_buffer(struct.pack(
+            "<IiiHHIIiiII", 40, width, -height, 1, 32, 0, len(pixels), 0, 0, 0, 0,
+        ))
+        rows = gdi32.GetDIBits(memory_dc, int(bitmap), 0, height, pixels, header, 0)
+        if rows != height:
+            raise OSError(f"GetDIBits returned {rows} of {height} game image rows")
+        image = Image.frombytes("RGB", (width, height), pixels.raw, "raw", "BGRX", 0, 1)
+        if image.getbbox() is None:
+            raise OSError("PrintWindow returned a black frame; game window capture is unavailable")
+        return image
+    finally:
+        if old_bitmap is not None:
+            win32gui.SelectObject(memory_dc, old_bitmap)
+        if bitmap:
+            win32gui.DeleteObject(bitmap)
+        if memory_dc:
+            win32gui.DeleteDC(memory_dc)
+        win32gui.ReleaseDC(handle, source_dc)
 
 
 def _macos_steam_streaming_window_bounds() -> tuple[int, int, int, int] | None:
