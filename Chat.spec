@@ -58,7 +58,8 @@ a = Analysis(
     datas=[
         ('./src', '.'),
         (str(Path(pysilero_vad.__file__).resolve().parent / 'models' / 'silero_vad.onnx'), './pysilero_vad/models'),
-    ] + collect_data_files('rapidocr_onnxruntime'),
+    ] + collect_data_files('rapidocr_onnxruntime')
+    + collect_data_files('setuptools', includes=['_vendor/jaraco/text/*.txt']),
     hiddenimports=['comtypes.stream', 'audiostretchy.stretch', 'audiostretchy.interface.tdhs', 'samplerate', 'rapidocr_onnxruntime'],
     hookspath=[],
     hooksconfig={},
