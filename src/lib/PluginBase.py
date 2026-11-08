@@ -100,6 +100,13 @@ class PluginBase(ABC):
         Returns:
             An instance of LLMModel, STTModel, TTSModel, or EmbeddingModel. VLM
             providers use the LLMModel interface.
+
+            LLM calls return request-local ModelUsageStats. STT/TTS providers may
+            implement transcribe_with_usage / synthesize_with_usage to report
+            effective model/voice identity and usage; base adapters support the
+            legacy entrypoints. Raise ModelError(kind=..., usage=...) on failure,
+            including during lazy streaming. The application handler owns terminal
+            usage reporting; plugins must not emit a second outcome.
             
         Raises:
             ValueError: If provider_id is not recognized

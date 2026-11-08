@@ -9,6 +9,7 @@ import requests
 from pyautogui import typewrite
 
 from ..Logger import log
+from ..Errors import ToolError
 from ..Projections import ProjectedStates, get_state_dict
 from ..Screenshot import set_game_window_active
 from ..HudColorMatrix import HudColorMatrix
@@ -735,10 +736,9 @@ class Plotter:
                 message += f" In-system navigation to {resolved_target.name} configured."
 
             return message
-        except TimeoutError:
-            if clear_nav_route:
-                return "Failed to clear navigation route"
-            return f"Failed to plot a route to {system_name}"
+        except TimeoutError as exc:
+            raise ToolError("Failed to clear navigation route" if clear_nav_route else f"Failed to plot a route to {system_name}",
+                            exc, kind="timeout") from exc
 
     @staticmethod
     def calculate_navigation_distance_and_timing(current_system: str, target_system: str) -> tuple[float, int]:

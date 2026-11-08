@@ -10,6 +10,9 @@ import fsPromises from 'node:fs/promises';
 import contextMenu from 'electron-context-menu';
 import pino from 'pino';
 import { WebSocketServer } from 'ws';
+import { installWindowCloseHandshake } from './window-close-handshake.js';
+import { withCorsFallbacks } from './cors-headers.js';
+import { observeFeatureOperation } from './feature-observation.js';
 import {VROverlay} from '@covas-labs/electron-vr';
 import { describeVrStatus } from './vr-status.js';
 import { getOverlayPlacement, normalizeVrPlacementOptions } from './vr-placement.js';
@@ -628,7 +631,10 @@ class BackendService {
     return true;
   }
   attachWindow(subWindow) {
-    this.#windows.push(subWindow);
+    if (!this.#windows.includes(subWindow)) this.#windows.push(subWindow);
+  }
+  reportInternalOperation(event) {
+    this.#notifyListeners('stdout', JSON.stringify({ ...event, timestamp: new Date().toISOString() }));
   }
   detachWindow(subWindow) {
     this.#windows = this.#windows.filter((w) => w !== subWindow);
@@ -790,7 +796,8 @@ function createMainWindow() {
     height: 768,
     title: 'COVAS:NEXT',
     webPreferences: {
-      preload: overlayPreloadPath
+      preload: overlayPreloadPath,
+      additionalArguments: ['--covas-primary-renderer']
     }
   });
   mainWindow.setMenuBarVisibility(false);
@@ -804,14 +811,7 @@ function createMainWindow() {
 
   mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
     callback({
-      responseHeaders: {
-        'access-control-allow-origin': '*',
-        'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'access-control-allow-headers': 'Authorization, User-Agent, content-type',
-        'access-control-allow-credentials': 'true',
-        'access-control-max-age': '86400',
-        ...details.responseHeaders,
-      },
+      responseHeaders: withCorsFallbacks(details.responseHeaders),
     });
   });
 
@@ -830,17 +830,7 @@ function createMainWindow() {
   mainWindow.loadURL(config.ui);
 
   // Handle window close
-  mainWindow.once('close', (event) => {
-    disableLoggerForShutdown();
-    // Prevent the window from closing immediately
-    event.preventDefault();
-    // If the user confirms, then close the window
-    ipcMain.handleOnce('window-close-ready', () => {
-      mainWindow.close();
-    });
-    // Call renderer close handler
-    mainWindow.webContents.send('window-close');
-  });
+  installWindowCloseHandshake(mainWindow, ipcMain, disableLoggerForShutdown);
 
   return mainWindow;
 }
@@ -924,7 +914,9 @@ async function createFloatingOverlayWindow(opts) {
 async function createVrOverlayWindow(opts) {
   const compatibility = await VROverlay.getCompatibilityReport();
   if (!compatibility.launch.canStartNow) {
-    throw new Error(compatibility.launch.message);
+    const error = new Error(compatibility.launch.message);
+    error.code = compatibility.launch.fundamentalIncompatibility ? 'vr_incompatible' : 'vr_setup_required';
+    throw error;
   }
   const runtimeInfo = compatibility.diagnostics;
 
@@ -1008,8 +1000,9 @@ async function createStandaloneOverlayWindow(opts) {
   };
 }
 
-async function createManagedOverlay(opts) {
+async function createManagedOverlay(opts, report = () => {}) {
   const normalized = normalizeOverlayOptions(opts);
+  const open = (component, run) => observeFeatureOperation(report, component, 'initialize', run);
   if (normalized.mode === 'disabled') {
     return {
       kind: 'disabled',
@@ -1021,16 +1014,16 @@ async function createManagedOverlay(opts) {
     };
   }
   if (normalized.mode === 'vr') {
-    return await createVrOverlayWindow(normalized);
+    return await open('vr', () => createVrOverlayWindow(normalized));
   }
   if (normalized.mode === 'standalone') {
-    return await createStandaloneOverlayWindow(normalized);
+    return await open('standalone_overlay', () => createStandaloneOverlayWindow(normalized));
   }
   if (normalized.mode === 'both') {
-    const vrOverlay = await createVrOverlayWindow(normalized);
+    const vrOverlay = await open('vr', () => createVrOverlayWindow(normalized));
     let desktopOverlay;
     try {
-      desktopOverlay = await createFloatingOverlayWindow(normalized);
+      desktopOverlay = await open('desktop_overlay', () => createFloatingOverlayWindow(normalized));
     } catch (error) {
       try {
         vrOverlay.controller.destroy();
@@ -1053,7 +1046,7 @@ async function createManagedOverlay(opts) {
       cleanedUp: false,
     };
   }
-  const desktopOverlay = await createFloatingOverlayWindow(normalized);
+  const desktopOverlay = await open('desktop_overlay', () => createFloatingOverlayWindow(normalized));
   return {
     kind: 'screen',
     window: desktopOverlay.window,
@@ -1393,7 +1386,7 @@ app.whenReady().then(async ()=>{
       disposeOverlay(floatingOverlay, backend);
       floatingOverlay = null;
     }
-    floatingOverlay = await createManagedOverlay(opts);
+    floatingOverlay = await createManagedOverlay(opts, event => backend.reportInternalOperation(event));
     const activeOverlay = floatingOverlay;
     if (floatingOverlay.runtimeInfo) {
       logger.info('VR overlay runtime info:', floatingOverlay.runtimeInfo);
@@ -1419,10 +1412,10 @@ app.whenReady().then(async ()=>{
       return getRemoteInterfaceState();
     }
 
-    remoteInterface = await createRemoteInterface(backend, {
+    remoteInterface = await observeFeatureOperation(event => backend.reportInternalOperation(event), 'remote_interface', 'start', () => createRemoteInterface(backend, {
       host: opts?.host,
       port: opts?.port,
-    });
+    }));
     return getRemoteInterfaceState();
   });
   ipcMain.handle('stop_remote_interface', async () => stopRemoteInterface());
@@ -1438,7 +1431,7 @@ app.whenReady().then(async ()=>{
     if (!['install', 'enable', 'disable', 'uninstall'].includes(action)) {
       throw new TypeError('Invalid VR integration action.');
     }
-    return await runVrIntegrationAction(action);
+    return await observeFeatureOperation(event => backend.reportInternalOperation(event), 'vr', action, () => runVrIntegrationAction(action));
   });
   ipcMain.handle('get_available_screens', async (event) => {
     const displays = screen.getAllDisplays();

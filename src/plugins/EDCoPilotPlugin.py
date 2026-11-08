@@ -275,6 +275,11 @@ class EDCoPilotDominantTTSModel(TTSModel):
     def __init__(self, speed: float = 1.0):
         super().__init__("edcopilot-dominant")
         self.speed = speed
+
+    def synthesis_usage(self, settings: dict[str, Any]):
+        usage = super().synthesis_usage(settings)
+        usage.is_provider_operation = False
+        return usage
     
     def synthesize(self, text: str, voice: str) -> Iterable[bytes]:
         """Generate silent audio based on text length, mimicking speech duration."""

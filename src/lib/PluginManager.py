@@ -9,7 +9,8 @@ from typing import Self
 from lib.Config import Config, save_config
 
 from .PluginSettingDefinitions import PluginSettings, ModelProviderDefinition, ParagraphSetting, SettingsGrid, ErrorSetting
-from .Logger import log
+from .Logger import log, log_internal_operation
+from .Errors import error_kind
 from .UI import emit_message
 
 from .PluginBase import PluginBase, PluginManifest
@@ -293,7 +294,9 @@ class PluginManager:
                 # application is running. Apply the same versioned initialization
                 # as at startup, and clear stale state for removed settings.
                 self._initialize_plugin_settings(module)
+                log_internal_operation("plugins", "on_settings_changed", "success", plugin_id=module.plugin_manifest.guid)
             except Exception as e:
+                log_internal_operation("plugins", "on_settings_changed", "error", error_kind=error_kind(e), plugin_id=module.plugin_manifest.guid)
                 log('error', f"Failed to execute on_settings_changed hook for {module.plugin_manifest.name}: {e}")
         self._persist_migrated_settings()
 
@@ -309,7 +312,9 @@ class PluginManager:
             return
         try:
             plugin.on_settings_button(key)
+            log_internal_operation("plugins", "settings_action", "success", plugin_id=plugin_guid)
         except Exception as e:
+            log_internal_operation("plugins", "settings_action", "error", error_kind=error_kind(e), plugin_id=plugin_guid)
             log('error', f"Plugin settings button '{key}' raised an exception: {e}")
 
     def on_chat_start(self, helper: 'PluginHelper'):
@@ -320,7 +325,9 @@ class PluginManager:
             log('debug', f"Executing on_chat_start hook for {module.plugin_manifest.name}")
             try:
                 module.on_chat_start(helper)
+                log_internal_operation("plugins", "on_chat_start", "success", plugin_id=module.plugin_manifest.guid)
             except Exception as e:
+                log_internal_operation("plugins", "on_chat_start", "error", error_kind=error_kind(e), plugin_id=module.plugin_manifest.guid)
                 log('error', f"Failed to execute on_chat_start hook for {module.plugin_manifest.name}: {e}")
 
     def on_chat_stop(self, helper: 'PluginHelper'):
@@ -331,7 +338,9 @@ class PluginManager:
             log('debug', f"Executing on_chat_stop hook for {module.plugin_manifest.name}")
             try:
                 module.on_chat_stop(helper)
+                log_internal_operation("plugins", "on_chat_stop", "success", plugin_id=module.plugin_manifest.guid)
             except Exception as e:
+                log_internal_operation("plugins", "on_chat_stop", "error", error_kind=error_kind(e), plugin_id=module.plugin_manifest.guid)
                 log('error', f"Failed to execute on_chat_stop hook for {module.plugin_manifest.name}: {e}")
 
     def create_plugin_model(self, plugin_guid: str, provider_id: str, expected_kind: str) -> LLMModel | STTModel | TTSModel | EmbeddingModel | None:

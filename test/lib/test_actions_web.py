@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 import sys
+import pytest
 
 from openai.types.chat import ChatCompletionMessageFunctionToolCall
 
@@ -9,6 +10,11 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from src.lib.actions import actions_web
+from src.lib.ModelUsage import ModelUsageStats
+
+@pytest.fixture(autouse=True)
+def isolate_model_usage(monkeypatch):
+    monkeypatch.setattr("src.lib.Logger._persist_and_send_usage", lambda **kw: None)
 
 
 class FakePromptGenerator:
@@ -30,8 +36,8 @@ class FakeLLMModel:
                     "name": "get_galnet_news",
                     "arguments": json.dumps({"query": "thargoids"}),
                 },
-            )], {}
-        return "Final report", None, {}
+            )], ModelUsageStats()
+        return "Final report", None, ModelUsageStats()
 
 
 class FailingLLMModel:
@@ -84,20 +90,12 @@ def test_web_search_agent_yields_internal_tool_processing_events(monkeypatch) ->
     assert final_result == "Final report"
 
 
-def test_web_search_agent_returns_actionable_loop_error() -> None:
-    updates, final_result = consume_generator(actions_web.web_search_agent(
-        {"query": "search for aluminum"},
-        {},
-        prompt_generator=FakePromptGenerator(),
-        llm_model=FailingLLMModel(),
-        max_loops=3,
-    ))
-
-    assert updates == [{"status": "searching", "query": "search for aluminum"}]
-    assert final_result == (
-        "Web search failed while requesting the search agent model response "
-        "on iteration 1 for query 'search for aluminum'. RuntimeError: model unavailable"
-    )
+def test_web_search_agent_propagates_loop_error_to_action_handler() -> None:
+    with pytest.raises(RuntimeError, match="model unavailable"):
+        consume_generator(actions_web.web_search_agent(
+            {"query": "search for aluminum"}, {}, prompt_generator=FakePromptGenerator(),
+            llm_model=FailingLLMModel(), max_loops=3,
+        ))
 
 
 def test_blueprint_finder_handles_default_inventory_states() -> None:

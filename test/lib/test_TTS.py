@@ -10,6 +10,184 @@ from src.lib.Models import OpenAITTSModel
 from src.plugins.EdgeTTSPlugin import EdgeTTSModel
 from src.plugins.MistralPlugin import MistralTTSModel
 import numpy as np
+from src.lib.ModelUsage import ModelUsageStats, SynthesisResult
+
+
+def usage_model(spec, use_settings=False):
+    model = MagicMock(spec=spec)
+    def synthesize(text, settings):
+        audio = model.synthesize_with_settings(text, settings) if use_settings else model.synthesize(text, settings.get("voice", ""))
+        return SynthesisResult(audio, ModelUsageStats(provider="test", model_name="test-tts", voice_name=settings.get("voice")))
+    model.synthesize_with_usage.side_effect = synthesize
+    model.synthesize_voice_with_usage.side_effect = lambda text, voice: synthesize(text, {"voice": voice})
+    return model
+
+
+@pytest.fixture(autouse=True)
+def isolate_usage(monkeypatch):
+    monkeypatch.setattr("src.lib.TTS.log_tts_usage", MagicMock())
+
+
+@pytest.mark.parametrize("availability,expected", [([4096, 0, 0], 0), ([4096, 0, 4096], 1), ([4096, 4096, 4096], 2), ([0], None)])
+def test_playback_reports_buffer_starvation_without_counting_initial_start(monkeypatch, availability, expected):
+    from src.lib.Models import TTSModel
+    class Provider(TTSModel):
+        def synthesize(self, text, voice):
+            yield from [b"\x00\x00" * 240] * 3
+    report = MagicMock()
+    monkeypatch.setattr("src.lib.TTS.log_tts_usage", report)
+    tts = TTS.__new__(TTS)
+    tts.tts_model = Provider("resolved-model", "resolved-provider")
+    tts.voice, tts.voice_settings, tts.sample_size, tts.is_aborted, tts.prebuffer_size = "voice", None, 2, False, 4
+    tts._reset_postprocessing_state = lambda: None
+    tts._get_effective_postprocessing_config = lambda *args: None
+    tts._apply_output_gain_pcm16 = lambda chunk: chunk
+    stream = MagicMock()
+    stream.get_write_available.side_effect = availability
+    tts._playback_one("hello", stream, context="assistant")
+    report.assert_called_once()
+    assert report.call_args.args == ("assistant",)
+    assert report.call_args.kwargs["model_usage"].num_underruns == expected
+    assert report.call_args.kwargs["model_usage"].model_name == "resolved-model"
+    assert report.call_args.kwargs["audio_usage"].output_audio_duration_ms == 30
+    assert stream.write.call_count == 3
+
+
+def test_playback_write_error_retry_is_not_misreported_as_buffer_starvation(monkeypatch):
+    from src.lib.Models import TTSModel
+    class Provider(TTSModel):
+        def synthesize(self, text, voice):
+            yield from [b"\x00\x00" * 240] * 2
+    report = MagicMock()
+    monkeypatch.setattr("src.lib.TTS.log_tts_usage", report)
+    tts = TTS.__new__(TTS)
+    tts.tts_model = Provider("model", "provider")
+    tts.voice, tts.voice_settings, tts.sample_size, tts.is_aborted, tts.prebuffer_size = "voice", None, 2, False, 4
+    tts._reset_postprocessing_state = lambda: None
+    tts._get_effective_postprocessing_config = lambda *args: None
+    tts._apply_output_gain_pcm16 = lambda chunk: chunk
+    stream = MagicMock()
+    stream.get_write_available.side_effect = [4096, 0]
+    stream.write.side_effect = [None, IOError("write failed"), None]
+    tts._playback_one("hello", stream)
+    assert report.call_args.kwargs["model_usage"].num_underruns == 0
+    assert report.call_args.kwargs["audio_usage"].output_audio_duration_ms == 20
+
+
+@pytest.mark.parametrize("available,expected", [(0, 0), (4096, 1)])
+def test_buffered_postprocessing_reports_usage_only_after_playback(monkeypatch, available, expected):
+    from src.lib.Models import TTSModel
+    class Provider(TTSModel):
+        def synthesize(self, text, voice):
+            yield from [b"\x00\x00" * 240] * 2
+    report = MagicMock()
+    monkeypatch.setattr("src.lib.TTS.log_tts_usage", report)
+    tts = TTS.__new__(TTS)
+    tts.tts_model = Provider("model", "provider")
+    tts.voice, tts.voice_settings, tts.sample_size, tts.is_aborted, tts.prebuffer_size = "voice", None, 2, False, 4
+    tts._reset_postprocessing_state = lambda: None
+    tts._get_effective_postprocessing_config = lambda *args: {"buffered": True}
+    tts._apply_output_gain_pcm16 = lambda chunk: chunk
+    def buffered(source, config):
+        chunks = list(source)
+        # Time/pitch processing can exhaust synthesis before the first write.
+        report.assert_not_called()
+        yield from chunks
+    tts._postprocess_audio = buffered
+    stream = MagicMock()
+    stream.get_write_available.side_effect = [4096, available]
+    tts._playback_one("hello", stream)
+    report.assert_called_once()
+    assert stream.write.call_count == 2
+    assert report.call_args.kwargs["model_usage"].num_underruns == expected
+
+
+@pytest.mark.parametrize("mode,expected", [("success", "success"), ("failure", "error"), ("cancel", "cancelled")])
+def test_stream_reports_one_terminal_outcome_and_partial_usage(monkeypatch, mode, expected):
+    from src.lib.Models import TTSModel
+    from src.lib.Errors import ModelError
+    report = MagicMock()
+    monkeypatch.setattr("src.lib.TTS.log_tts_usage", report)
+    closed = []
+    class Provider(TTSModel):
+        def synthesize(self, text, voice):
+            try:
+                yield b"\x00\x00" * 240
+                if mode == "failure":
+                    raise ModelError("private error", kind="timeout")
+                yield b"\x00\x00" * 240
+            finally:
+                closed.append(True)
+    tts = TTS.__new__(TTS)
+    tts.tts_model = Provider("actual-model", "actual-provider")
+    tts.voice, tts.voice_settings, tts.sample_size = "actual-voice", None, 2
+    stream = tts._stream_audio("hello")
+    next(stream)
+    if mode == "cancel":
+        stream.close()
+    elif mode == "failure":
+        with pytest.raises(ModelError):
+            list(stream)
+    else:
+        list(stream)
+    assert closed == [True]
+    report.assert_called_once()
+    assert report.call_args.kwargs["status"] == expected
+    assert report.call_args.kwargs["model_usage"].voice_name == "actual-voice"
+    assert report.call_args.kwargs["audio_usage"].output_audio_duration_ms > 0
+    assert report.call_args.kwargs["error_kind"] == ("timeout" if mode == "failure" else "none")
+
+
+def test_synthetic_stream_is_not_a_provider_operation(monkeypatch):
+    from src.lib.Models import TTSModel
+    report = MagicMock()
+    monkeypatch.setattr("src.lib.TTS.log_tts_usage", report)
+    class Synthetic(TTSModel):
+        def synthesis_usage(self, settings):
+            return ModelUsageStats(model_name="silent", is_provider_operation=False)
+        def synthesize(self, text, voice):
+            yield b"\x00\x00"
+    tts = TTS.__new__(TTS)
+    tts.tts_model = Synthetic("silent")
+    tts.voice, tts.voice_settings, tts.sample_size = "", None, 2
+    assert list(tts._stream_audio("hello"))
+    report.assert_not_called()
+
+
+def test_edge_background_producer_failure_reaches_consumer():
+    from src.plugins.EdgeTTSPlugin import Mp3Stream
+    failure = TimeoutError("provider timed out")
+    def events():
+        yield {"type": "audio", "data": b"x" * 2048}
+        raise failure
+    source = Mp3Stream(events(), prebuffer_size=1)
+    try:
+        assert source.read(1024) == b"x" * 1024
+        assert source.read(1024) == b"x" * 1024
+        with pytest.raises(TimeoutError) as caught:
+            source.read(1024)
+        assert caught.value is failure
+    finally:
+        source.close()
+
+
+def test_failed_synthesis_completes_waiter_and_next_item_without_requeue(mock_pyaudio, monkeypatch):
+    from src.lib.Models import TTSModel
+    from src.lib.Errors import ModelError
+    attempts = []
+    class Provider(TTSModel):
+        def synthesize(self, text, voice):
+            attempts.append(text)
+            if text == "fails":
+                raise ModelError("provider timed out", kind="timeout")
+            yield b"\x00\x00" * 240
+    tts = TTS(Provider("test"), voice="nova")
+    first = tts.say("fails")
+    second = tts.say("works")
+    assert first._completed.wait(2), "failed speech left its waiter blocked"
+    assert second._completed.wait(2), "provider failure stopped the worker"
+    assert attempts == ["fails", "works"]
+    assert tts.read_queue.empty()
 
 
 def dominant_frequency(samples: np.ndarray, sample_rate: int = 24_000) -> float:
@@ -34,6 +212,7 @@ def mock_pyaudio(monkeypatch):
     
     # Mock audio playback
     mock_stream.write = MagicMock()
+    mock_stream.get_write_available.return_value = 4096
     
     # Mock device info
     mock_audio.get_default_host_api_info.return_value = {
@@ -99,7 +278,7 @@ def mock_miniaudio(monkeypatch):
 
 def test_openai_tts_playback(mock_pyaudio, mock_openai):
     """Test OpenAI TTS playback"""
-    mock_model = MagicMock(spec=OpenAITTSModel)
+    mock_model = usage_model(OpenAITTSModel)
     mock_model.client = mock_openai
     mock_model.synthesize.return_value = [b'\x00\x00' * 1024] * ceil(2*24_000/1024)
     
@@ -116,7 +295,7 @@ def test_openai_tts_playback(mock_pyaudio, mock_openai):
 
 
 def test_tts_passes_character_voice_settings_and_applies_voice_override(mock_pyaudio):
-    mock_model = MagicMock(spec=OpenAITTSModel)
+    mock_model = usage_model(OpenAITTSModel, use_settings=True)
     mock_model.synthesize_with_settings.return_value = [b'pcm']
     tts = TTS(
         mock_model,
@@ -133,7 +312,7 @@ def test_tts_passes_character_voice_settings_and_applies_voice_override(mock_pya
 
 
 def test_tts_does_not_inject_legacy_voice_into_provider_settings(mock_pyaudio):
-    mock_model = MagicMock(spec=OpenAITTSModel)
+    mock_model = usage_model(OpenAITTSModel, use_settings=True)
     mock_model.synthesize_with_settings.return_value = [b'pcm']
     tts = TTS(
         mock_model,
@@ -149,7 +328,7 @@ def test_tts_does_not_inject_legacy_voice_into_provider_settings(mock_pyaudio):
 
 def test_openai_tts_playback_with_voice_instructions(mock_pyaudio, mock_openai):
     """Test OpenAI TTS playback with voice instructions"""
-    mock_model = MagicMock(spec=OpenAITTSModel)
+    mock_model = usage_model(OpenAITTSModel)
     mock_model.client = mock_openai
     mock_model.voice_instructions = "Speak normally..."
     mock_model.synthesize.return_value = [b'\x00\x00' * 1024] * ceil(2*24_000/1024)
@@ -271,7 +450,7 @@ def test_openai_tts_request_omits_unsupported_voice_instructions(mock_openai):
 
 def test_edge_tts_playback(mock_pyaudio, mock_miniaudio, mock_openai):
     """Test Edge-TTS playback"""
-    mock_model = MagicMock(spec=EdgeTTSModel)
+    mock_model = usage_model(EdgeTTSModel)
     mock_model.synthesize.return_value = [b'\x00\x00' * 1024, b'\x00\x00' * 1024]
     
     tts = TTS(mock_model, voice="en-US-AvaMultilingualNeural", speed=1.0)
@@ -285,7 +464,7 @@ def test_edge_tts_playback(mock_pyaudio, mock_miniaudio, mock_openai):
 
 
 def test_tts_say_returns_line_lifecycle(mock_pyaudio):
-    mock_model = MagicMock(spec=OpenAITTSModel)
+    mock_model = usage_model(OpenAITTSModel)
     mock_model.synthesize.return_value = [b'\x00\x00' * 1024]
 
     tts = TTS(mock_model, voice="nova", speed=1.0)
@@ -300,7 +479,7 @@ def test_tts_say_returns_line_lifecycle(mock_pyaudio):
 
 
 def test_tts_dropped_line_completes_without_speaking(mock_pyaudio):
-    mock_model = MagicMock(spec=OpenAITTSModel)
+    mock_model = usage_model(OpenAITTSModel)
 
     tts = TTS(mock_model, voice="nova", speed=1.0)
     line = tts.say("Hello world", drop_if=lambda: True)
