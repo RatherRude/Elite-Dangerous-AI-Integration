@@ -147,6 +147,57 @@ def test_tts_does_not_inject_legacy_voice_into_provider_settings(mock_pyaudio):
     })
 
 
+@pytest.mark.parametrize("voice_settings,voice,expected_settings", [
+    ({"voice": "commentator", "instructions": "Sound cheerful."}, None,
+     {"voice": "commentator", "instructions": "Sound cheerful."}),
+    ({"voice": "commentator", "instructions": "Sound cheerful."}, "actor",
+     {"voice": "actor", "instructions": "Sound cheerful."}),
+    ({"description": "Warm and conversational."}, "actor",
+     {"description": "Warm and conversational."}),
+    ({}, None, {}),
+    (None, None, {"voice": "default", "instructions": "Sound calm."}),
+])
+def test_tts_queued_voice_settings_override_preserves_defaults_and_postprocessing(
+    mock_pyaudio, monkeypatch, voice_settings, voice, expected_settings,
+):
+    monkeypatch.setattr("src.lib.TTS.threading.Thread.start", lambda _thread: None)
+    mock_model = MagicMock(spec=OpenAITTSModel)
+    mock_model.synthesize_with_settings.return_value = [b'\x00\x00']
+    default_settings = {"voice": "default", "instructions": "Sound calm."}
+    tts = TTS(mock_model, voice_settings=default_settings)
+    tts._postprocess_audio = MagicMock(side_effect=lambda audio, _config: audio)
+    postprocessing = {"volume": 0.5}
+    original_settings = dict(voice_settings) if voice_settings is not None else None
+    line = tts.say("Hello", voice=voice, voice_settings=voice_settings, postprocessing=postprocessing)
+    if voice_settings is not None:
+        voice_settings["queued_mutation"] = True
+
+    def stop_loop(_delay):
+        raise RuntimeError("stop playback loop")
+
+    monkeypatch.setattr("src.lib.TTS.sleep", stop_loop)
+    with pytest.raises(RuntimeError, match="stop playback loop"):
+        tts._playback_loop()
+
+    mock_model.synthesize_with_settings.assert_called_once_with("Hello", expected_settings)
+    mock_model.synthesize.assert_not_called()
+    assert tts._postprocess_audio.call_args.args[1] == map_character_tts_postprocessing(postprocessing)
+    assert tts.voice_settings == default_settings
+    assert default_settings == {"voice": "default", "instructions": "Sound calm."}
+    assert line.is_completed()
+    assert tts._normalize_queue_item("Next line")["voice_settings"] is None
+    assert tts._normalize_queue_item(None)["voice_settings"] is None
+    if voice_settings is not None:
+        voice_settings.pop("queued_mutation")
+        assert voice_settings == original_settings
+
+    mock_model.synthesize_with_settings.reset_mock()
+    tts.say("Next line")
+    with pytest.raises(RuntimeError, match="stop playback loop"):
+        tts._playback_loop()
+    mock_model.synthesize_with_settings.assert_called_once_with("Next line", default_settings)
+
+
 def test_openai_tts_playback_with_voice_instructions(mock_pyaudio, mock_openai):
     """Test OpenAI TTS playback with voice instructions"""
     mock_model = MagicMock(spec=OpenAITTSModel)
