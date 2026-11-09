@@ -534,27 +534,28 @@ class EDCoPilotPlugin(PluginBase):
             provider = self._helper._plugin_manager.get_plugin_provider(plugin_guid, provider_id)
             plugin_settings = config.get('plugin_settings', {}).get(plugin_guid, {})
 
-        def character_voice(character: dict[str, Any]):
+        def character_voice_settings(character: dict[str, Any]) -> dict[str, Any] | None:
             if self.is_edcopilot_dominant():
                 return None
             provider_settings = character.get('tts_voice_settings', {}).get(tts_provider, {})
-            settings = resolve_voice_settings(
+            return resolve_voice_settings(
                 provider.get('voice_settings_config', []) if provider else [],
                 plugin_settings,
                 provider_settings if isinstance(provider_settings, dict) else {},
             )
-            voice = settings.get('voice')
-            return voice if isinstance(voice, str) and voice else None
 
         read_commentary = self.settings.get("read_commentary", False)
         voice = self.settings.get("voice") or None
+        voice_settings = None
         post_processing = None
         avatar_url = EDCOPILOT_AVATAR_URL
-        for i,c in enumerate(config['characters']):
-            if c.get('name') == voice:
-                voice = character_voice(c)
-                post_processing = c.get('tts_postprocessing')
-                avatar_url = c.get('avatar') or EDCOPILOT_AVATAR_URL
+        for character in config['characters']:
+            if character.get('name') == voice:
+                voice_settings = character_voice_settings(character)
+                voice = None
+                post_processing = character.get('tts_postprocessing')
+                avatar_url = character.get('avatar') or EDCOPILOT_AVATAR_URL
+                break
 
         while True:
             if not self.client.pending_events.empty():
@@ -588,6 +589,7 @@ class EDCoPilotPlugin(PluginBase):
                         self._helper._assistant.tts.say(
                             text,
                             voice=voice,
+                            voice_settings=voice_settings,
                             postprocessing=post_processing,
                             on_start=on_start,
                             on_complete=on_complete,

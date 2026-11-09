@@ -155,6 +155,7 @@ class TTS:
                 "context": "speech",
                 "file_path": None,
                 "voice": None,
+                "voice_settings": None,
                 "postprocessing": None,
                 "on_start": None,
                 "on_complete": None,
@@ -168,6 +169,7 @@ class TTS:
                 "context": item.get("context", "speech"),
                 "file_path": item.get("file_path"),
                 "voice": item.get("voice"),
+                "voice_settings": item.get("voice_settings"),
                 "postprocessing": item.get("postprocessing"),
                 "postprocessing_layers": item.get("postprocessing_layers"),
                 "on_start": item.get("on_start"),
@@ -181,6 +183,7 @@ class TTS:
             "context": "speech",
             "file_path": None,
             "voice": None,
+            "voice_settings": None,
             "postprocessing": None,
             "postprocessing_layers": None,
             "on_start": None,
@@ -249,6 +252,7 @@ class TTS:
                     context = item.get("context")
                     file_path = item.get("file_path")
                     voice = item.get("voice")
+                    voice_settings = item.get("voice_settings")
                     postprocessing = item.get("postprocessing")
                     postprocessing_layers = item.get("postprocessing_layers")
                     on_start = item.get("on_start")
@@ -282,6 +286,7 @@ class TTS:
                                 voice if isinstance(voice, str) else None,
                                 cast(CharacterTTSPostprocessingConfig | None, postprocessing if isinstance(postprocessing, dict) else None),
                                 cast(list[CharacterTTSPostprocessingConfig | None] | None, postprocessing_layers if isinstance(postprocessing_layers, list) else None),
+                                voice_settings_override=voice_settings if isinstance(voice_settings, dict) else None,
                             )
                     except Exception as e:
                         self.read_queue.put(item)
@@ -311,6 +316,7 @@ class TTS:
         voice_override: str | None = None,
         postprocessing_override: CharacterTTSPostprocessingConfig | None = None,
         postprocessing_layers: list[CharacterTTSPostprocessingConfig | None] | None = None,
+        voice_settings_override: dict[str, Any] | None = None,
     ):
         # Fix numberformatting for different providers
         text = re.sub(r"\d+(,\d{3})*(\.\d+)?", self._number_to_text, text)
@@ -331,7 +337,7 @@ class TTS:
             "response_ms": None,
             "time_to_first_byte_ms": None,
         }
-        audio_stream = self._stream_audio(text, voice_override, stream_metrics)
+        audio_stream = self._stream_audio(text, voice_override, stream_metrics, voice_settings_override)
         if postprocessing:
             audio_stream = self._postprocess_audio(audio_stream, postprocessing)
 
@@ -541,6 +547,7 @@ class TTS:
         text: str,
         voice_override: str | None = None,
         metrics: dict[str, float | None] | None = None,
+        voice_settings_override: dict[str, Any] | None = None,
     ):
         started_at = time()
         if self.tts_model is None:
@@ -557,8 +564,9 @@ class TTS:
         else:
             try:
                 selected_voice = voice_override if voice_override else self.voice
-                if self.voice_settings is not None:
-                    settings = dict(self.voice_settings)
+                selected_settings = voice_settings_override if voice_settings_override is not None else self.voice_settings
+                if selected_settings is not None:
+                    settings = dict(selected_settings)
                     if voice_override is not None and "voice" in settings:
                         settings["voice"] = voice_override
                     audio = self.tts_model.synthesize_with_settings(text, settings)
@@ -1362,6 +1370,7 @@ class TTS:
         *,
         context: str = "speech",
         voice: str | None = None,
+        voice_settings: dict[str, Any] | None = None,
         postprocessing: CharacterTTSPostprocessingConfig | None = None,
         postprocessing_layers: list[CharacterTTSPostprocessingConfig | None] | None = None,
         on_start: Callable[[], None] | None = None,
@@ -1374,6 +1383,7 @@ class TTS:
                 "text": text,
                 "context": context,
                 "voice": voice,
+                "voice_settings": dict(voice_settings) if voice_settings is not None else None,
                 "postprocessing": postprocessing,
                 "postprocessing_layers": postprocessing_layers,
                 "on_start": on_start,
