@@ -401,6 +401,7 @@ def test_hybrid_first_command_and_followup(strategy, main_calls, remote_text):
 @pytest.mark.parametrize("strategy", ["reuse", "retranscribe"])
 @pytest.mark.parametrize("phrase,kind,language", [
     ("reste en \u00e9coute", "hold", "fr"),
+    ("Restes en \u00e9coute.", "hold", "fr"),
     ("keep listening", "hold", "en"),
     ("\u00c7a sera tout !", "close", "fr"),
     ("I'm done", "close", "en"),
@@ -477,6 +478,7 @@ def test_closing_substrings_do_not_close_the_session(session, phrase):
 
 @pytest.mark.parametrize("phrase", [
     "reste en \u00e9coute", "RESTE EN ECOUTE !", "Simone, reste en \u00e9coute",
+    "Restes en \u00e9coute.", "RESTES EN ECOUTE !", "Simone, restes en \u00e9coute",
     "Keep listening.", "Hey Simone, keep listening",
 ])
 def test_keep_listening_survives_idle_processing_followups_and_repeated_calls(phrase):
@@ -512,7 +514,7 @@ def test_keep_listening_survives_idle_processing_followups_and_repeated_calls(ph
     assert session.active
 
 
-@pytest.mark.parametrize("phrase", ["reste en \u00e9coute", "keep listening"])
+@pytest.mark.parametrize("phrase", ["reste en \u00e9coute", "restes en \u00e9coute", "keep listening"])
 def test_keep_listening_does_not_activate_from_standby(session, phrase):
     assert recognize(session, phrase) is None
     assert session.state == "standby"
@@ -521,6 +523,9 @@ def test_keep_listening_does_not_activate_from_standby(session, phrase):
 @pytest.mark.parametrize("phrase", [
     "Explique la phrase reste en \u00e9coute",
     "reste en \u00e9coute et pr\u00e9pare une route",
+    "Explique la phrase restes en \u00e9coute",
+    "restes en \u00e9coute et pr\u00e9pare une route",
+    "ne restes en \u00e9coute pas",
     "don't keep listening",
 ])
 def test_keep_listening_substrings_do_not_disable_timeout(phrase):

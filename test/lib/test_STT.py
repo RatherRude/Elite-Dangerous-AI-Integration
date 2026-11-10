@@ -301,14 +301,15 @@ def test_standby_audio_is_not_queued_or_logged(stt, mock_stt_model, caplog):
     mock_stt_model.transcribe.assert_called_once_with(audio)
 
 
-def test_keep_listening_audio_queues_control_then_followup_after_timeout(stt, mock_stt_model):
+@pytest.mark.parametrize("phrase", ["reste en \u00e9coute", "Restes en \u00e9coute."])
+def test_keep_listening_audio_queues_control_then_followup_after_timeout(stt, mock_stt_model, phrase):
     import speech_recognition as sr
 
     now = [0.0]
     session = VoiceActivation("Simone", 10, mock_stt_model, mock_stt_model, clock=lambda: now[0])
     stt.voice_activation = session
     audio = sr.AudioData(b'\xff\xff' * 16000, 16000, 2)
-    mock_stt_model.transcribe.return_value = "Simone, reste en \u00e9coute"
+    mock_stt_model.transcribe.return_value = f"Simone, {phrase}"
     stt._process_audio(audio, 1, session.begin_audio())
     session.end_audio()
     result = stt.resultQueue.get_nowait()
@@ -333,6 +334,7 @@ def test_keep_listening_audio_queues_control_then_followup_after_timeout(stt, mo
 
 @pytest.mark.parametrize("phrase,kind", [
     ("reste en \u00e9coute", "hold"), ("\u00c7a sera tout", "close"),
+    ("Restes en \u00e9coute.", "hold"),
 ])
 def test_hybrid_named_controls_do_not_retranscribe_or_queue_conversation(stt, mock_stt_model, phrase, kind):
     import speech_recognition as sr
