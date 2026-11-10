@@ -757,7 +757,11 @@ def liftoff(args, projected_states):
         keys.send('UI_Down', repeat=3)
         keys.send('UI_Up')
         keys.send('UI_Select')
-        return 'The ship is now undocking.'
+        return (
+            'Undocking initiated. The ship may still be inside the station after the Undocked event, '
+            'which only confirms release from the landing pad. '
+            'Leave throttle unchanged and do not boost unless the commander explicitly requested it.'
+        )
 
     if flags.get('Landed'):
         keys.send('UpThrustButton', hold=3)
@@ -1550,7 +1554,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "honk": {"weaponType": "discovery_scanner", "action":"fire"},
     })
 
-    actionManager.registerAction('setSpeed', "Set ship throttle or flight speed: full speed, half speed, percentages, reverse thrust, or a full stop.", {
+    actionManager.registerAction('setSpeed', "Set ship throttle or flight speed: full speed, half speed, percentages, reverse thrust, or a full stop. Change flight thrust only when requested by the commander, not as an automatic follow-up to liftoff or an Undocked event.", {
         "type": "object",
         "properties": {
             "speed": {
@@ -2121,7 +2125,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "docking permission": {},
     })
 
-    actionManager.registerAction('liftoff', "Launch from a station landing pad or lift off from a planetary surface.", {
+    actionManager.registerAction('liftoff', "Launch from a station landing pad or lift off from a planetary surface. A launch request alone does not authorize throttle changes or boost.", {
         "type": "object",
         "properties": {}
     }, liftoff, ['mainship', 'nomad'], permission='liftoff', cache_prefill={
