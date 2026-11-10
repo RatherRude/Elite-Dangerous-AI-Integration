@@ -201,9 +201,12 @@ def test_transcribe(stt, mock_openai, mock_vad):
 
 @pytest.mark.parametrize('manual_paused', [False, True])
 @pytest.mark.parametrize('response_paused', [False, True])
+@pytest.mark.parametrize('name_activation', [False, True])
 def test_continuous_listening_honors_independent_pause_states(
-    stt, mock_pyaudio, mock_vad, manual_paused, response_paused
+    stt, mock_pyaudio, mock_vad, mock_stt_model, manual_paused, response_paused, name_activation
 ):
+    if name_activation:
+        stt.voice_activation = VoiceActivation("Simone", 10, mock_stt_model, mock_stt_model)
     stt.pause_continuous_listening(manual_paused)
     stt.pause_continuous_listening_for_response(response_paused)
     stt.listening = True
