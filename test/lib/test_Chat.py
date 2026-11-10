@@ -14,6 +14,7 @@ import Chat as ChatModule
 
 @pytest.fixture
 def chat(monkeypatch):
+    monkeypatch.setattr("lib.actions.actions_ui.configure_plugin_ui", MagicMock())
     for name in (
         "show_chat_message",
         "log",
@@ -35,6 +36,7 @@ def chat(monkeypatch):
     chat.stt = object.__new__(ChatModule.STT)
     chat.stt.continuous_listening_paused = False
     chat.stt.continuous_listening_paused_for_response = False
+    chat.stt.voice_activation = None
     chat.stt.recording = False
     chat.stt.resultQueue = queue.Queue()
     chat.stt.listen_continuous = MagicMock()
