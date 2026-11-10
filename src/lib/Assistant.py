@@ -8,7 +8,7 @@ from openai.types.chat import ChatCompletion, ChatCompletionMessageToolCall
 from time import time
 
 from pydantic import BaseModel
-from .Models import LLMModel, EmbeddingModel, LLMError
+from .Models import LLMModel, LLMResponse, EmbeddingModel, LLMError
 from .Logger import (
     CacheUsageStats,
     PromptUsageStats,
@@ -30,7 +30,7 @@ from .Event import ConversationEvent, Event, GameEvent, StatusEvent, ToolEvent, 
 from .EventManager import EventManager
 from .ActionManager import ActionManager
 from .PromptGenerator import PromptGenerator
-from .TTS import TTS
+from .TTS import TTS, TTSLine
 from typing import Any,  Callable, final
 import yaml
 from threading import Thread
@@ -733,7 +733,8 @@ class Assistant:
                 elif isinstance(event, ConversationEvent):
                     if event.kind not in ['user', 'assistant']:
                         continue
-                    chat.append(event.timestamp +' '+ event.kind +': '+ event.content)
+                    speaker = event.character_name or event.kind
+                    chat.append(event.timestamp +' '+ speaker +': '+ event.content)
             for mem in self.short_term_memories:
                 chat.append(mem.timestamp +' [Previous Memory]: '+ mem.content)
 
@@ -815,8 +816,8 @@ class Assistant:
             self.event_manager.add_tool_call([action.model_dump()], [action_result], [action_input_desc] if action_input_desc else None)
 
 
-    def verify_action(self, user_input: str, action: ChatCompletionMessageToolCall, prompt: list, tools: list):
-        """ Verify the action prediction by sending the user input without any context to the model and check if the action is still predicted """
+    def verify_action(self, user_input: str, action: ChatCompletionMessageToolCall, tools: list, projected_states: ProjectedStates):
+        """Verify an action prediction without conversation history or memories."""
         log("debug", "Cache: Verifying action", user_input, action)
         
         cache_state = self.action_manager.has_action_in_cache(user_input, action, tools)
@@ -828,17 +829,22 @@ class Assistant:
             log("debug", "Cache: Action already confirmed in cache, skipping verification")
             return
         
-        # confirm the action by sending the user input to the model without any context
+        # Confirm the action using the same provider-specific generation contract.
 
         try:
-            _, response_actions, model_usage = self.llmModel.generate(
-                messages=[prompt[0]] + [{"role": "user", "content": user_input}],
-                tools=tools
-            )
+            request = ConversationEvent(kind='user', content=user_input)
+            response_actions = []
+            for response in self.llmModel.generate_multi_character(
+                prompt_generator=self.prompt_generator,
+                characters=self.config.get('characters', []),
+                events=[request], memories=[], pending_events=[request],
+                projected_states=projected_states, tools=tools,
+            ):
+                if response.model_usage is not None:
+                    log_llm_usage("action_verification", model_usage=response.model_usage, prompt_usage=response.prompt_usage or PromptUsageStats(), llm_model=self.llmModel)
+                if response.tool_calls:
+                    response_actions.extend(response.tool_calls)
 
-            prompt_usage = PromptUsageStats(system_chars=len(prompt[0].get('content', '') or ""), conversation_chars=len(user_input))
-            log_llm_usage("action_verification", model_usage=model_usage, prompt_usage=prompt_usage, llm_model=self.llmModel)
-            
             if response_actions:
                 self.action_manager.confirm_action_in_cache(user_input, response_actions[0], tools)
         except LLMError as e:
@@ -853,10 +859,24 @@ class Assistant:
         thread = Thread(target=self.reply_thread, args=(projected_states,), daemon=True)
         thread.start()
         
+    def _queue_reply(self, response: LLMResponse, projected_states: ProjectedStates, reasons: list[str], processed_at: float) -> TTSLine:
+        """Persist and queue a complete utterance without blocking model iteration."""
+        self.event_manager.add_conversation_event(
+            'assistant', response.text or '', reasons=reasons,
+            processed_at=processed_at, character_name=response.character_name,
+        )
+        return self.tts.say(
+            response.text or '', context="assistant",
+            postprocessing_layers=self._get_tts_postprocessing_layers(projected_states),
+            on_start=self.event_manager.add_assistant_speaking,
+            on_complete=self.event_manager.add_assistant_complete_event,
+        )
+
     @observe()
     def reply_thread(self, projected_states: ProjectedStates):
         self.reply_pending = False
         self.is_replying = True
+        speech_lines: list[TTSLine] = []
         try:
             events = self.event_manager.get_short_term_memory(150)
             events = list(reversed(events))
@@ -868,8 +888,6 @@ class Assistant:
 
             log('debug', 'Starting reply...')
             max_conversation_processed = max([event.processed_at for event in events]+[0.0])
-            prompt, prompt_usage = self.prompt_generator.generate_prompt(events=events, projected_states=projected_states, pending_events=new_events, memories=memories)
-
             user_input: list[str] = [event.content for event in new_events if isinstance(event, ConversationEvent) and event.kind == 'user']
             tool_uses: int = len([event for event in new_events if event.kind == 'tool'])
             reasons = []
@@ -920,8 +938,7 @@ class Assistant:
                 
             if predicted_actions:
                 #log('info', 'predicted_actions', predicted_actions)
-                response_text = None
-                response_actions = predicted_actions
+                responses = iter([LLMResponse(tool_calls=predicted_actions)])
                 log_action_cache_usage(
                     "assistant",
                     provider=getattr(self.llmModel, "provider_name", None),
@@ -929,59 +946,58 @@ class Assistant:
                     cache_usage=CacheUsageStats(llm_calls_saved=1),
                 )
             else:
-                start_time = time()
-                    
-                try:
-                    response_text, response_actions, model_usage = self.llmModel.generate(
-                        messages=prompt,
-                        tools=tool_list,  # pyright: ignore[reportArgumentType]
-                    )
-
-                    log_llm_usage("assistant", model_usage=model_usage, prompt_usage=prompt_usage, llm_model=self.llmModel)
-
-                    if not response_text and not response_actions:
-                        response_text = "..."
-                    end_time = time()
-                    log('debug', 'Response time LLM', end_time - start_time)
-                except LLMError as e:
-                    show_chat_message('error', 'LLM Error:', str(e))
-                    return
-
-            if response_text and not response_actions:
-                line = self.tts.say(
-                    response_text,
-                    context="assistant",
-                    postprocessing_layers=self._get_tts_postprocessing_layers(projected_states),
+                responses = self.llmModel.generate_multi_character(
+                    prompt_generator=self.prompt_generator,
+                    characters=self.config.get('characters', []),
+                    events=events, memories=memories, pending_events=new_events,
+                    projected_states=projected_states,
+                    tools=tool_list,  # pyright: ignore[reportArgumentType]
                 )
-                line.wait_for_speaking()
-                self.event_manager.add_assistant_speaking()
-                self.event_manager.add_conversation_event('assistant', response_text, reasons=reasons, processed_at=max_conversation_processed)
-                line.wait_for_completion()
-                self.event_manager.add_assistant_complete_event()
 
-            if response_actions:
-                # A toggle may have changed while the model request was in flight.
-                current_tools = self.action_manager.getToolsList(
-                    active_mode,
-                    self.config["game_actions_var"],
-                    self.config["web_search_actions_var"],
-                    self.config["ui_actions_var"],
-                    self.config.get("allowed_actions", {}),
-                    in_station,
-                ) if use_tools else []
-                available_tools = [tool for tool in tool_list if tool in current_tools]
-                self.event_manager.add_assistant_acting(processed_at=max_conversation_processed)
-                self.execute_actions(response_actions, projected_states, available_tools=available_tools)
+            start_time = time()
+            response_actions = []
+            has_output = False
+            for response in responses:
+                if response.model_usage is not None:
+                    log_llm_usage("assistant", model_usage=response.model_usage, prompt_usage=response.prompt_usage or PromptUsageStats(), llm_model=self.llmModel)
+                if response.text:
+                    has_output = True
+                    speech_lines.append(self._queue_reply(response, projected_states, reasons, max_conversation_processed))
+                if response.tool_calls:
+                    has_output = True
+                    response_actions.extend(response.tool_calls)
+                    # Recheck toggles for every yielded batch, including streaming providers.
+                    current_tools = self.action_manager.getToolsList(
+                        active_mode,
+                        self.config["game_actions_var"],
+                        self.config["web_search_actions_var"],
+                        self.config["ui_actions_var"],
+                        self.config.get("allowed_actions", {}),
+                        in_station,
+                    ) if use_tools else []
+                    available_tools = [tool for tool in tool_list if tool in current_tools]
+                    self.event_manager.add_assistant_acting(processed_at=max_conversation_processed)
+                    self.execute_actions(response.tool_calls, projected_states, available_tools=available_tools)
 
-                if not predicted_actions and self.config["use_action_cache_var"] and tool_list:
-                    if len(response_actions) == 1 and len(user_input):
-                        self.verify_action(user_input[-1], response_actions[0], prompt, tool_list)
-                    
+            if not predicted_actions:
+                log('debug', 'Response time LLM', time() - start_time)
+            if not has_output:
+                speech_lines.append(self._queue_reply(LLMResponse(text='...'), projected_states, reasons, max_conversation_processed))
+            if not predicted_actions and self.config["use_action_cache_var"] and tool_list:
+                if len(response_actions) == 1 and user_input:
+                    self.verify_action(user_input[-1], response_actions[0], tool_list, projected_states)
+
+        except LLMError as e:
+            show_chat_message('error', 'LLM Error:', str(e))
         except Exception as e:
             log("debug", "LLM error during reply:", e, traceback.format_exc())
             show_chat_message("error", "LLM error: An unknown error occurred during reply")
         finally:
-            self.is_replying = False
+            try:
+                for line in speech_lines:
+                    line.wait_for_completion()
+            finally:
+                self.is_replying = False
 
     def should_reply(self, states:dict[str, Any]):
         character = self.config['characters'][self.config['active_character_index']]

@@ -282,6 +282,56 @@ def create_model(self, provider_id: str, settings: dict[str, Any]):
 
 Provider references use `plugin:<plugin-guid>:<provider-id>`. `create_model` receives the same provider ID and the plugin's flat `plugin_settings[plugin_guid]` dictionary. The existing `LLMModel`, `STTModel`, `TTSModel`, and `EmbeddingModel` interfaces remain the model contracts; in particular, LLM implementations receive `generate(messages, tools, tool_choice)`. Optional provider metadata such as `slots` and `api_key_detection` is not required for existing plugins.
 
+### Multi-character LLM replies
+
+Assistant conversation replies use the optional `LLMModel.generate_multi_character`
+generator. **Existing plugins need no changes:** the base implementation builds the
+prompt using `PromptGenerator`, calls your existing `generate()` once, and yields
+structured `LLMResponse` objects. Its default format is `Character name: dialogue`,
+with each utterance stored independently and consecutive assistant utterances
+reconstructed as one assistant message in the next prompt.
+
+The keyword arguments are `prompt_generator`, `characters` (a sequence of character
+configurations), `events`, `memories`, `projected_states`, `pending_events`, and
+optional `tools` and `tool_choice`. Prompt construction and output parsing belong
+to the model, not the assistant orchestrator.
+
+For a different model-specific format, override these three hooks together:
+
+- `format_character_responses(responses)`: serialize a chronological group of
+  stored assistant `ConversationEvent` objects into one message's content. It is
+  called once for the whole group, so formats such as JSON arrays are supported.
+- `character_response_format(characters)`: return the output-format instructions
+  to append to the system prompt.
+- `parse_character_responses(text, characters)`: yield `LLMResponse` objects from
+  the completed text returned by `generate()`.
+
+To consume a provider's streaming API, override `generate_multi_character` itself.
+Use `prompt_generator.generate_prompt(...)` for game context, memories, character
+profiles, and prompt-usage statistics. It accepts `characters`,
+`assistant_response_formatter`, and `response_format` as optional keyword arguments
+for provider-specific formatting. For example, the streaming method can yield:
+
+```python
+from lib.Models import LLMResponse
+
+# Yield each complete utterance as soon as it is available, not token deltas.
+yield LLMResponse(character_name="A", text="Checking the route.")
+yield LLMResponse(character_name="B", text="Destination confirmed.")
+# Tool calls use the same objects as generate() and must have complete arguments.
+yield LLMResponse(tool_calls=completed_tool_calls)
+# Report each API request's usage only once, normally at the end of the stream.
+yield LLMResponse(model_usage=model_usage, prompt_usage=prompt_usage)
+```
+
+Text and tool calls may also share one `LLMResponse`; both are handled in order,
+text first. The assistant queues speech without waiting between yields, persists
+each utterance with its `character_name`, and rechecks enabled tools before every
+batch. Tool choice and availability remain the provider's inputs, not permissions
+to execute other tools. This API does not change character voice selection.
+
+### Character TTS settings
+
 TTS providers may optionally add `voice_settings_config`, using the same `SettingsGrid` format as provider settings. These values are stored per character and provider rather than in the plugin's global settings. Use `voice` as the primary field key when the provider has one; its label and field type may represent a named voice, a description, or a reference-audio path. Providers without a voice concept may omit that field, while an explicit empty list declares that the provider has no character-level voice controls. Omitting `voice_settings_config` entirely retains the legacy `synthesize(text, voice)` behavior.
 
 ### Voice settings namespace and conditions

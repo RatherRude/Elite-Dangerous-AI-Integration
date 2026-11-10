@@ -43,6 +43,20 @@ def chat(monkeypatch):
     return chat
 
 
+@pytest.mark.parametrize("character_name", [None, "A"])
+def test_assistant_chat_uses_saved_character_name(chat, monkeypatch, character_name):
+    monkeypatch.setattr(ChatModule, "send_message", MagicMock())
+    chat.previous_states = {}
+    event = ChatModule.ConversationEvent(kind="assistant", character_name=character_name, content="hi")
+
+    ChatModule.Chat.on_event(chat, event, {})
+
+    if character_name:
+        ChatModule.show_chat_message.assert_called_once_with("covas", "hi", display_name="A")
+    else:
+        ChatModule.show_chat_message.assert_called_once_with("covas", "hi")
+
+
 @pytest.mark.parametrize("start_muted", [False, True])
 @pytest.mark.parametrize("mute_during_response", [False, True])
 @pytest.mark.parametrize("secondary_only", [False, True])

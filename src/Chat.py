@@ -403,7 +403,10 @@ class Chat:
         )
         if event.kind == "assistant":
             event = cast(ConversationEvent, event)
-            show_chat_message("covas", event.content)
+            if event.character_name:
+                show_chat_message("covas", event.content, display_name=event.character_name)
+            else:
+                show_chat_message("covas", event.content)
         if event.kind == "user":
             event = cast(ConversationEvent, event)
             show_chat_message("cmdr", event.content)

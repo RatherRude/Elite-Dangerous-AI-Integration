@@ -99,6 +99,7 @@ class ConversationEvent(Event[ConversationEventKind]):
     content: str
     reasons: list[str] | None = None
     kind: ConversationEventKind
+    character_name: str | None = None
 
 
 @dataclass(kw_only=True)

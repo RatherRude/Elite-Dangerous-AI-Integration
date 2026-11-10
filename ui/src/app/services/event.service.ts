@@ -62,6 +62,7 @@ export interface StatusEvent {
 
 export interface ConversationEvent {
     content: string;
+    character_name?: string | null;
     timestamp: string;
     kind:
         | "user"

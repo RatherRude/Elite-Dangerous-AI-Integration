@@ -12,7 +12,7 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 from src.lib.Database import EventStore, KeyValueStore, ModelUsageStore, VectorStore, set_connection_for_testing
-from src.lib.Event import ToolProcessingEvent
+from src.lib.Event import ConversationEvent, ToolProcessingEvent
 import sqlite_vec
 
 # Test event classes
@@ -126,6 +126,24 @@ def test_event_store_round_trips_tool_processing_event(mock_connection: sqlite3.
     assert events[0].name == "testAction"
     assert events[0].content == {"status": "working"}
     assert events[0].text == "Working"
+
+
+def test_event_store_round_trips_character_name_and_loads_legacy_events(mock_connection: sqlite3.Connection) -> None:
+    event_store = EventStore("test_events", [ConversationEvent])
+    event_store.insert_event(ConversationEvent(kind="assistant", character_name="A", content="hi"), 2.0)
+    # Existing event JSON has no character_name property and needs no migration.
+    mock_connection.execute(
+        "INSERT INTO test_events_v1 (class, data, processed_at, memorized_at) VALUES (?, ?, ?, NULL)",
+        ("ConversationEvent", '{"kind": "assistant", "content": "Legacy reply"}', 1.0),
+    )
+    mock_connection.commit()
+
+    named, legacy = event_store.get_latest(2)
+
+    assert named.character_name == "A"
+    assert named.content == "hi"
+    assert legacy.character_name is None
+    assert legacy.content == "Legacy reply"
 
 def test_event_store_get_latest(event_store: EventStore) -> None:
     """Test retrieving latest events with limit"""

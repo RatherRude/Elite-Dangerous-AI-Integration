@@ -1,4 +1,5 @@
 from datetime import timedelta, datetime, timezone
+from collections.abc import Sequence
 from functools import lru_cache
 from typing import Any, Callable, cast, Dict, Union, List, Optional
 from pathlib import Path
@@ -14,6 +15,7 @@ import json
 
 from .Projections import get_state_dict, ProjectedStates
 from .Database import QuestDatabase
+from .Config import Character
 
 from .EventModels import (
     ApproachBodyEvent, ApproachSettlementEvent, BookTaxiEvent, BountyEvent, BuyExplorationDataEvent, CommanderEvent, CommitCrimeEvent,
@@ -2528,7 +2530,10 @@ class PromptGenerator:
         return None
 
     def conversation_message(self, event: ConversationEvent):
-        return {"role": event.kind, "content": event.content}
+        content = event.content
+        if event.kind == 'assistant' and event.character_name:
+            content = f"{event.character_name}: {content}"
+        return {"role": event.kind, "content": content}
 
     def quest_conversation_message(self, event: QuestEvent):
         action = event.content.get("action") if isinstance(event.content, dict) else None
@@ -3670,15 +3675,29 @@ class PromptGenerator:
 
     # TODO use events as passed from db, not in mem copy, pending (new not yet reated to), short_term (reacted to but not yet part of summary memory), memories (historc summaries of events)
     @observe()
-    def generate_prompt(self, events: list[Event], projected_states: ProjectedStates, pending_events: list[Event], memories: list[MemoryEvent]) -> tuple[list[dict[str, str]], PromptUsageStats]:
+    def generate_prompt(
+        self,
+        events: list[Event],
+        projected_states: ProjectedStates,
+        pending_events: list[Event],
+        memories: list[MemoryEvent],
+        *,
+        characters: Sequence[Character] | None = None,
+        assistant_response_formatter: Callable[[list[ConversationEvent]], str] | None = None,
+        response_format: str | None = None,
+    ) -> tuple[list[dict[str, str]], PromptUsageStats]:
         # Fine the most recent event
-        last_event = events[-1]
-        reference_time = datetime.fromisoformat(last_event.content.get('timestamp') if isinstance(last_event, GameEvent) else last_event.timestamp)
+        last_event = events[-1] if events else None
+        reference_time = (
+            datetime.fromisoformat(last_event.content.get('timestamp') if isinstance(last_event, GameEvent) else last_event.timestamp)
+            if last_event else datetime.now(timezone.utc)
+        )
         if not reference_time.tzinfo:
             reference_time = reference_time.astimezone()
 
         # Collect the last 50 conversational pieces
         conversational_pieces: list = list()
+        assistant_events_by_message: dict[int, ConversationEvent] = {}
         
         # Initialize usage stats
         usage_stats = PromptUsageStats()
@@ -3733,6 +3752,8 @@ class PromptGenerator:
             if isinstance(event, ConversationEvent) and event.kind in ['user', 'assistant']:
                 piece = self.conversation_message(event)
                 conversational_pieces.append(piece)
+                if event.kind == 'assistant':
+                    assistant_events_by_message[id(piece)] = event
 
             if isinstance(event, QuestEvent):
                 quest_piece = self.quest_conversation_message(event)
@@ -3796,15 +3817,34 @@ class PromptGenerator:
                 })
 
         try:
+            has_named_dialogue = any(
+                isinstance(event, ConversationEvent) and event.kind == 'assistant' and event.character_name
+                for event in events
+            ) or bool(response_format)
+            response_instruction = (
+                "You do not ask questions or initiate conversations. You respond only when addressed and "
+                + ("use a single sentence per character utterance. " if has_named_dialogue else "in a single sentence. ")
+            )
+            character_prompt = self.character_prompt
+            if characters:
+                character_prompt = '\n'.join(
+                    f"{character.get('name', 'Unnamed')}: " + character.get('character', self.character_prompt if len(characters) == 1 else '')
+                    for character in characters
+                )
             system_prompt_content = "The universe of Elite:Dangerous is your reality. Never mention it or refer to it as a game. " \
                     + "I will provide game events in parentheses; do not create new ones. Only react to game events marked with 'IMPORTANT:'.  " \
                     + "Stay consistent with the lived experience and character. Do not hallucinate any information that is not given to you. " \
                     + "Do not use markdown in your responses, and no commas in numbers. " \
                     + "Your purpose is to provide information, status updates, and execute tools as required. Only use tools you are given from me. " \
                     + "Be specific about amounts and percentages for inquiries as the commander can not see the game events' text description but lives in the universe. " \
-                    + "You do not ask questions or initiate conversations. You respond only when addressed and in a single sentence. " \
+                    + response_instruction \
                     + "Don't repeat the same words and sentences, mix it up. " \
-                    + "Your character prompt is: " + self.character_prompt.format(commander_name=self.commander_name)
+                    + "Your character prompt is: " + character_prompt.format(commander_name=self.commander_name)
+
+            if response_format is not None:
+                system_prompt_content += ' ' + response_format
+            elif has_named_dialogue:
+                system_prompt_content += " Continue using the named-character dialogue format: one 'Character name: dialogue' utterance per line."
             
             usage_stats.system_chars = len(system_prompt_content)
             conversational_pieces.append(
@@ -3818,6 +3858,36 @@ class PromptGenerator:
             log('error', 'Invalid character prompt, please keep the {commander_name} placeholder in the prompt.')
 
         conversational_pieces.reverse()  # Restore the original order
+
+        # Format complete assistant groups so providers can use formats such as a
+        # single JSON array, rather than concatenating independently formatted strings.
+        # Lifecycle events are invisible; tool calls and other messages break groups.
+        merged_pieces: list = []
+        assistant_group: list[ConversationEvent] = []
+
+        def flush_assistant_group():
+            if not assistant_group:
+                return
+            content = (
+                assistant_response_formatter(list(assistant_group)) if assistant_response_formatter
+                else '\n'.join(self.conversation_message(event)['content'] for event in assistant_group)
+            )
+            message = {'role': 'assistant', 'content': content}
+            usage_stats.conversation_chars += len(json.dumps(message)) - sum(
+                len(json.dumps(self.conversation_message(event))) for event in assistant_group
+            )
+            merged_pieces.append(message)
+            assistant_group.clear()
+
+        for piece in conversational_pieces:
+            assistant_event = assistant_events_by_message.get(id(piece))
+            if assistant_event is not None:
+                assistant_group.append(assistant_event)
+            else:
+                flush_assistant_group()
+                merged_pieces.append(piece)
+        flush_assistant_group()
+        conversational_pieces = merged_pieces
 
         #log('debug', 'states', json.dumps(projected_states))
         prompt_json = json.dumps(conversational_pieces)

@@ -1,5 +1,9 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Any, List, Optional, Iterable
+from collections.abc import Iterator, Sequence
+from dataclasses import dataclass
+from typing import Any, List, Optional, Iterable, TYPE_CHECKING
 import io
 import base64
 import json
@@ -12,12 +16,33 @@ from openai.types.audio.speech_create_params import SpeechCreateParams
 from openai import OpenAI, APIStatusError
 from openai.types.chat import ChatCompletion, ChatCompletionMessageFunctionToolCall, ChatCompletionMessageToolCall
 from openai.types import CreateEmbeddingResponse
-from .Logger import log, ModelUsageStats
+from .Logger import log, ModelUsageStats, PromptUsageStats
+
+if TYPE_CHECKING:
+    from .Config import Character
+    from .Event import ConversationEvent, Event, MemoryEvent
+    from .EventManager import ProjectedStates
+    from .PromptGenerator import PromptGenerator
 
 class LLMError(Exception):
     def __init__(self, message: str, original_error: Exception | None = None):
         super().__init__(message)
         self.original_error = original_error
+
+@dataclass(kw_only=True)
+class LLMResponse:
+    """One complete utterance, tool-call batch, or usage update from a generation.
+
+    Text is an utterance, not a token delta. Tool calls must have complete arguments.
+    Usage can be emitted separately at the end; emit each request's usage only once.
+    """
+
+    text: str | None = None
+    character_name: str | None = None
+    tool_calls: list[Any] | None = None
+    model_usage: ModelUsageStats | None = None
+    prompt_usage: PromptUsageStats | None = None
+
 
 class LLMModel(ABC):
     model_name: str
@@ -30,6 +55,82 @@ class LLMModel(ABC):
     @abstractmethod
     def generate(self, messages: List[dict], tools: Optional[List[dict]] = None, tool_choice: Optional[Any] = None) -> tuple[str | None, List[Any] | None, ModelUsageStats]:
         pass
+
+    def format_character_responses(self, responses: Sequence[ConversationEvent]) -> str:
+        """Format a consecutive group of stored assistant utterances for this model."""
+        return '\n'.join(
+            f"{response.character_name}: {response.content}" if response.character_name else response.content
+            for response in responses
+        )
+
+    def character_response_format(self, characters: Sequence[Character]) -> str | None:
+        """Provider-overridable instructions paired with history formatting and parsing."""
+        names = [character['name'] for character in characters if character.get('name')]
+        if not names:
+            return None
+        return (
+            "Write dialogue as one 'Character name: dialogue' utterance per line. "
+            "Use only these character names: " + ', '.join(names) + "."
+        )
+
+    def parse_character_responses(self, text: str, characters: Sequence[Character]) -> Iterator[LLMResponse]:
+        """Default line-label parser; providers can replace it with their own format."""
+        character_names = {character['name'] for character in characters if character.get('name')}
+        parts: list[LLMResponse] = []
+        character_name: str | None = None
+        lines: list[str] = []
+        found_label = False
+
+        for line in text.splitlines():
+            name, separator, content = line.partition(':')
+            if separator and name.strip() in character_names:
+                content_so_far = '\n'.join(lines).strip()
+                if content_so_far:
+                    parts.append(LLMResponse(character_name=character_name, text=content_so_far))
+                character_name = name.strip()
+                lines = [content.lstrip()]
+                found_label = True
+            else:
+                lines.append(line)
+
+        content_so_far = '\n'.join(lines).strip()
+        if content_so_far:
+            parts.append(LLMResponse(character_name=character_name, text=content_so_far))
+        yield from parts if found_label and parts else [LLMResponse(text=text)]
+
+    def generate_multi_character(
+        self,
+        *,
+        prompt_generator: PromptGenerator,
+        characters: Sequence[Character],
+        events: list[Event],
+        memories: list[MemoryEvent],
+        projected_states: ProjectedStates,
+        pending_events: list[Event],
+        tools: list[dict] | None = None,
+        tool_choice: Any = None,
+    ) -> Iterator[LLMResponse]:
+        """Yield structured outputs in order, with a non-streaming legacy fallback.
+
+        Providers may override this method to yield complete utterances and tool calls
+        while their API is streaming. The format/parse hooks also allow providers to
+        customize the fallback without reimplementing generation or prompt context.
+        """
+        prompt, prompt_usage = prompt_generator.generate_prompt(
+            events=events, projected_states=projected_states,
+            pending_events=pending_events, memories=memories, characters=characters,
+            assistant_response_formatter=self.format_character_responses,
+            response_format=self.character_response_format(characters),
+        )
+        kwargs: dict[str, Any] = {'messages': prompt, 'tools': tools}
+        if tool_choice is not None:
+            kwargs['tool_choice'] = tool_choice
+        text, tool_calls, model_usage = self.generate(**kwargs)
+        if text:
+            yield from self.parse_character_responses(text, characters)
+        elif not tool_calls:
+            yield LLMResponse(text='...')
+        yield LLMResponse(tool_calls=tool_calls, model_usage=model_usage, prompt_usage=prompt_usage)
 
 class EmbeddingModel(ABC):
     model_name: str
