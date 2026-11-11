@@ -32,7 +32,11 @@ Localized key names from Elite Dangerous, such as `Key_è`, `Key_ç`, `Key_à`, 
 
 Only the modifiers explicitly recorded in the `.binds` entry are sent, in their saved order. Left and right Shift, Control, and Alt remain distinct; `Key_RightAlt` is never replaced with Ctrl+Alt. Windows is used to find the physical key's scan code, not to generate a text-entry combination.
 
-If Windows reports that a key name requires Shift, Control, or Alt to produce its character, the **Actions** settings show a keyboard mapping warning. The physical key remains available with only its explicit game modifiers. This can indicate an unexpected key name or a layout mismatch. When reporting it, include the action, key name, game layout, and modifier details shown in the warning. Keys that cannot resolve at all appear separately as unsupported bindings.
+Any keyboard key can be a modifier: holding `Key_A` while pressing `Key_S` is handled the same way as holding Shift while pressing S. Text-entry modifiers reported by Windows are ignored; only the explicit modifiers saved by the game are sent.
+
+Windows resolves physical keys using the game's declared layout, even if the active OS layout differs. If the file has no `KeyboardLayout`, `en-US` is assumed. If the declared layout cannot be loaded, layout-dependent bindings are marked unsupported rather than guessed using QWERTY. The **Actions** settings show the action, key name, game layout, and failure reason to include in a bug report.
+
+The character-alias JSON translates Elite's named symbols to characters; it is not a database of keyboard layouts. Windows supplies the layout mappings. Fixed scan codes are used for non-character keys such as Shift, function keys, and navigation keys.
 
 For a full list of actions and their required keyboard buttons, see the [Actions](./20_actions.md) page.
 

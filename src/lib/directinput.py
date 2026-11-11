@@ -7,7 +7,6 @@ import ctypes
 import json
 import time
 import platform
-from dataclasses import dataclass
 from typing import final
 
 from pynput.keyboard import Controller, Key, KeyCode  # pyright: ignore[reportMissingModuleSource]
@@ -33,19 +32,8 @@ XBUTTON2 = 0x0002
 WHEEL_DELTA = 120
 
 
-@dataclass(frozen=True)
-class LayoutResolvedKey:
-    """A key resolved using the game's keyboard layout on Windows."""
-
-    virtual_key: int
-    scan_code: int
-    shift_state: int
-
-
-with open(get_asset_path("keymap_windows_layout.json"), encoding="utf-8") as file:
-    _layout_keymap = json.load(file)
-
-LAYOUT_DEPENDENT_KEY_CHARACTERS: dict[str, str] = _layout_keymap["characters"]
+with open(get_asset_path("keymap_character_aliases.json"), encoding="utf-8") as file:
+    KEY_CHARACTER_ALIASES: dict[str, str] = json.load(file)["characters"]
 
 
 def _windows_user32():
@@ -69,13 +57,17 @@ def load_keyboard_layout(locale_name: str) -> int:
     layout = user32.LoadKeyboardLayoutW(f"{locale_id:08x}", 0)
     if not layout:
         raise ValueError(f"Unable to load keyboard layout {locale_name!r}.")
+    if layout & 0xFFFF != locale_id & 0xFFFF:
+        raise ValueError(f"Windows returned a different keyboard layout for {locale_name!r}.")
     return layout
 
 
-def resolve_layout_character(character: str, layout: int) -> LayoutResolvedKey:
-    """Resolve a character to a virtual key and scancode for the game's layout."""
+def resolve_layout_character(character: str, layout: int) -> int:
+    """Resolve a physical scancode in the game's layout, without text-entry modifiers."""
     if len(character) != 1:
         raise ValueError("character must contain exactly one character")
+    if not layout:
+        raise ValueError("An explicit game keyboard layout is required.")
 
     user32 = _windows_user32()
     user32.VkKeyScanExW.argtypes = [ctypes.c_wchar, ctypes.c_void_p]
@@ -92,7 +84,6 @@ def resolve_layout_character(character: str, layout: int) -> LayoutResolvedKey:
         raise KeyError(f"Unable to resolve character {character!r} for the game layout.")
 
     virtual_key = key_info & 0xFF
-    shift_state = (key_info >> 8) & 0xFF
     scan_code = user32.MapVirtualKeyExW(virtual_key, 0, layout)
     if scan_code == 0:
         raise KeyError(
@@ -100,22 +91,22 @@ def resolve_layout_character(character: str, layout: int) -> LayoutResolvedKey:
             "for the game layout."
         )
 
-    return LayoutResolvedKey(virtual_key, scan_code, shift_state)
+    return scan_code
 
 
 def get_layout_key_character(key_name: str) -> str | None:
     """Decode named keys and literal characters such as Elite's localized Key_* names."""
-    character = LAYOUT_DEPENDENT_KEY_CHARACTERS.get(key_name)
+    character = KEY_CHARACTER_ALIASES.get(key_name)
     if character is not None:
         return character
     if key_name.startswith("Key_"):
         character = key_name.removeprefix("Key_")
         if len(character) == 1 and character.isprintable():
-            return character
+            return character.lower() if "A" <= character <= "Z" else character
     return None
 
 
-def resolve_layout_key_name(key_name: str, layout: int) -> LayoutResolvedKey:
+def resolve_layout_key_name(key_name: str, layout: int) -> int:
     """Resolve a supported Elite Dangerous key name using the game's Windows layout."""
     character = get_layout_key_character(key_name)
     if character is None:
@@ -215,11 +206,6 @@ def PressKey(keyCode: int | str):
     else:
         pynput_keyboard.press(_to_pynput_key(keyCode))
 
-
-def PressKeyLayoutAware(character: str, layout: int):
-    """Press the physical key for a character; modifiers must be sent explicitly."""
-    resolved = resolve_layout_character(character, layout)
-    PressKey(resolved.scan_code)
 
 def ReleaseKey(keyCode: int | str):
     if platform.system() == 'Windows':

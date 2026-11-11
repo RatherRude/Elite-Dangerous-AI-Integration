@@ -283,7 +283,7 @@ export class GeneralSettingsComponent implements OnDestroy {
             return "Checking keybinds";
         }
         if (this.actionsReady) {
-            return this.keybindsData.mapping_warnings?.length ? "Ready with mapping warnings" : "Ready";
+            return "Ready";
         }
 
         const counts = this.actionIssueCounts;
@@ -296,9 +296,6 @@ export class GeneralSettingsComponent implements OnDestroy {
         }
         if (counts.unsupported > 0) {
             parts.push(`${counts.unsupported} unsupported`);
-        }
-        if (this.keybindsData.mapping_warnings?.length) {
-            parts.push(`${this.keybindsData.mapping_warnings.length} mapping warnings`);
         }
         return parts.join(" / ");
     }

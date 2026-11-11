@@ -44,7 +44,6 @@ export interface BindingKeyIssue {
     platform: string;
     modifiers: string[];
     reason: string;
-    native_shift_state?: number;
 }
 
 export interface KeybindsMessages extends BaseMessage {
@@ -53,7 +52,6 @@ export interface KeybindsMessages extends BaseMessage {
     collisions: [string,string][];
     unsupported: string[];
     unresolved_keys?: BindingKeyIssue[];
-    mapping_warnings?: BindingKeyIssue[];
     start_mismatch?: boolean | { file: string | null; values: string[] } | null;
     start_values?: string[];
     start_profile?: string | null;
