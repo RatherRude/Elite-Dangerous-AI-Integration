@@ -1,6 +1,8 @@
 import pytest
 from unittest.mock import MagicMock, call
 import os
+import sys
+from types import ModuleType
 from src.lib.EDKeys import EDKeys
 from src.lib import directinput
 
@@ -170,13 +172,19 @@ def test_unicode_text_uses_original_typing_interval(mock_directinput, monkeypatc
 def test_send_text_preserves_non_windows_typing(mock_directinput, monkeypatch, system):
     keys = EDKeys.__new__(EDKeys)
     typing = MagicMock()
-    monkeypatch.setattr("pyautogui.typewrite", typing)
+    typing_module = ModuleType("pyautogui")
+    monkeypatch.setattr(typing_module, "typewrite", typing, raising=False)
+    monkeypatch.setitem(sys.modules, "pyautogui", typing_module)
+    unicode_typing = MagicMock()
+    monkeypatch.setattr("src.lib.EDKeys.SendUnicodeText", unicode_typing)
     monkeypatch.setattr("platform.system", lambda: system)
 
     keys.send_text("Wolf 597")
 
     typing.assert_called_once_with("Wolf 597", interval=0.02)
+    unicode_typing.assert_not_called()
     mock_directinput["PressKey"].assert_not_called()
+    mock_directinput["ReleaseKey"].assert_not_called()
 
 
 def test_get_bindings_loads_valid_keys(mock_directinput, binds_file):
