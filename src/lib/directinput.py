@@ -103,6 +103,24 @@ def _get_pynput_mouse_button(button: str):
         raise KeyError(f"Unsupported mouse button {button} on this platform.")
     return pynput_button
 
+def SendUnicodeText(text: str, interval: float = 0.02) -> None:
+    if platform.system() != "Windows" or SendInput is None:
+        raise RuntimeError("Unicode text input is only supported on Windows.")
+
+    encoded_characters = [character.encode("utf-16-le") for character in text]
+    for encoded in encoded_characters:
+        units = [int.from_bytes(encoded[index:index + 2], "little") for index in range(0, len(encoded), 2)]
+        inputs = (Input * (len(units) * 2))()
+        for index, unit in enumerate(units):
+            for offset, flags in enumerate((0x0004, 0x0006)):  # KEYEVENTF_UNICODE, with optional KEYEVENTF_KEYUP
+                inputs[index * 2 + offset].type = 1
+                inputs[index * 2 + offset].ii.ki = KeyBdInput(0, unit, flags, 0, None)
+
+        sent = SendInput(len(inputs), inputs, ctypes.sizeof(Input))
+        if sent != len(inputs):
+            raise RuntimeError(f"Unable to type text: Windows accepted {sent} of {len(inputs)} Unicode input events.")
+        time.sleep(interval)
+
 def PressKey(keyCode: int | str):
     if platform.system() == 'Windows':
         assert SendInput is not None

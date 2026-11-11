@@ -169,6 +169,10 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - `system_name`: String (optional)
     - `start_navigation`: Boolean (optional)
 
+    On Windows, all action text entry (including system-name searches, chat commands, recipient names, and messages)
+    uses buffered Unicode input rather than physical key combinations or clipboard changes. This avoids layout-dependent
+    text entry and dropped characters. Game shortcuts keep their existing key bindings, and Linux/macOS retain their typing fallback.
+
     <details>
     <summary>Examples</summary>
     
