@@ -432,6 +432,7 @@ class EDKeys:
             PressKey(key)
 
     def send_text(self, text: str) -> None:
+        """Send action text through Windows Unicode input or the platform typing fallback."""
         if platform.system() == "Windows":
             SendUnicodeText(text)
         else:

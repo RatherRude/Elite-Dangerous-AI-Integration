@@ -3,7 +3,6 @@ import platform
 import threading
 from time import sleep
 from typing import Any, Literal, cast
-from pyautogui import typewrite
 
 import openai
 from pydantic import BaseModel
@@ -1310,7 +1309,6 @@ def format_image(image, query=""):
 
 
 def send_message(obj, projected_states):
-    from pyautogui import typewrite
     setGameWindowActive()
 
     return_message = "No message sent"
@@ -1343,31 +1341,31 @@ def send_message(obj, projected_states):
                 raise Exception("Can not send message.")
 
             if not obj.get("channel") or obj.get("channel").lower() == "local":
-                typewrite("/l ", interval=0.02)
+                keys.send_text("/l ")
                 if chat_local_tabbed:
                     sleep(0.25)
                     keys.send('UI_Select')
                 return_message += " to local chat"
             elif obj.get("channel").lower() == "wing":
-                typewrite("/w ", interval=0.02)
+                keys.send_text("/w ")
                 if chat_wing_tabbed:
                     sleep(0.25)
                     keys.send('UI_Select')
                 return_message += " to wing chat"
             elif obj.get("channel").lower() == "system":
-                typewrite("/sy ", interval=0.02)
+                keys.send_text("/sy ")
                 if chat_system_tabbed:
                     sleep(0.25)
                     keys.send('UI_Select')
                 return_message += " to system chat"
             elif obj.get("channel").lower() == "squadron":
-                typewrite("/s ", interval=0.02)
+                keys.send_text("/s ")
                 if chat_squadron_tabbed:
                     sleep(0.25)
                     keys.send('UI_Select')
                 return_message += " to squadron chat"
             elif obj.get("channel").lower() == "commander":
-                typewrite(f"/d {obj.get('recipient')} ", interval=0.02)
+                keys.send_text(f"/d {obj.get('recipient')} ")
                 if chat_direct_tabbed:
                     sleep(0.25)
                     keys.send('UI_Select')
@@ -1376,7 +1374,7 @@ def send_message(obj, projected_states):
                 log('debug', f'invalid channel {obj.get("channel")}')
 
             sleep(0.05)
-            typewrite(chunk, interval=0.02)
+            keys.send_text(chunk)
 
             sleep(0.05)
             # send enter key
