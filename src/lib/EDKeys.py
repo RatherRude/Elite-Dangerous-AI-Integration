@@ -18,6 +18,9 @@ from .directinput import (
     ReleaseKey,
     ReleaseMouseButton,
     ScrollMouseWheel,
+    resolve_layout_key_name,
+    get_layout_key_character,
+    load_keyboard_layout,
 )
 
 """
@@ -26,6 +29,13 @@ Description:  Pulls the keybindings for specific controls from the ED Key Bindin
 
 Constraints:  This file will use the latest modified *.binds file
 """
+
+
+class UnresolvedKeyError(KeyError):
+    def __init__(self, key_name: str, role: str, reason: str):
+        super().__init__(reason)
+        self.key_name = key_name
+        self.role = role
 
 
 @final
@@ -173,9 +183,13 @@ class EDKeys:
         self.collision_candidates = ["CamTranslateRight", "CamTranslateForward"]
 
         self.latest_bindings_file = None
+        self.keyboard_layout = None
+        self.keyboard_layout_name: str | None = None
+        self.keyboard_layout_error: str | None = None
         self.latest_bindings_mtime = None
         self.missing_keys = []
         self.unsupported_keys = []
+        self.unresolved_keys: list[dict[str, Any]] = []
         self.latest_start_file = None
         self.latest_start_mtime = None
         self.latest_start_values: list[str] = []
@@ -216,6 +230,7 @@ class EDKeys:
             missing=self.missing_keys,
             collisions=collisions,
             unsupported=self.unsupported_keys,
+            unresolved_keys=self.unresolved_keys,
             start_mismatch=self.start_values_mismatch,
             start_values=self.latest_start_values,
         )
@@ -224,12 +239,27 @@ class EDKeys:
         """Returns a dict struct with the direct input equivalent of the necessary elite keybindings"""
         direct_input_keys = {}
         unsupported_keys = set()
+        unresolved_keys = []
+        self.keyboard_layout_error = None
         latest_bindings, _ = self.get_latest_keybinds()
         if not latest_bindings:
+            self.keyboard_layout = None
+            self.keyboard_layout_name = None
             self.unsupported_keys = []
+            self.unresolved_keys = []
             return {}
         bindings_tree = parse(latest_bindings)
         bindings_root = bindings_tree.getroot()
+
+        keyboard_layout = None
+        self.keyboard_layout_name = (bindings_root.findtext("KeyboardLayout") or "en-US").strip() or "en-US"
+        if platform.system() == "Windows":
+            try:
+                keyboard_layout = load_keyboard_layout(self.keyboard_layout_name)
+            except ValueError as exc:
+                self.keyboard_layout_error = str(exc)
+                log("error", "Unable to load game keyboard layout", exc)
+        self.keyboard_layout = keyboard_layout
 
         for item in bindings_root:
             selected_binding = self._select_binding(item)
@@ -239,19 +269,21 @@ class EDKeys:
             binding: None | dict[str, Any] = None
             try:
                 binding = self._prepare_binding(selected_binding)
-            except KeyError:
+            except KeyError as exc:
                 unsupported_keys.add(item.tag)
-                print(
-                    "Unrecognised key '"
-                    + (json.dumps(binding) if binding else "?")
-                    + "' for bind '"
-                    + item.tag
-                    + "'"
-                )
+                key_name = exc.key_name if isinstance(exc, UnresolvedKeyError) else selected_binding.attrib["Key"]
+                unresolved_keys.append(self._binding_key_report(item.tag, selected_binding, {
+                    "key": key_name,
+                    "role": exc.role if isinstance(exc, UnresolvedKeyError) else "key",
+                    "character": get_layout_key_character(key_name),
+                    "reason": str(exc.args[0]),
+                }))
+                log("error", f"Unrecognised key for bind {item.tag!r}", exc)
             if binding is not None:
                 direct_input_keys[item.tag] = binding
 
         self.unsupported_keys = sorted(unsupported_keys)
+        self.unresolved_keys = unresolved_keys
         if len(list(direct_input_keys.keys())) < 1:
             return {}
         else:
@@ -303,6 +335,16 @@ class EDKeys:
 
         return bindings[0]
 
+    def _binding_key_report(self, action: str, selected_binding, issue: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "action": action,
+            "binding": selected_binding.tag,
+            "layout": self.keyboard_layout_name,
+            "platform": platform.system(),
+            "modifiers": [mod.attrib.get("Key", "") for mod in selected_binding if mod.tag == "Modifier"],
+            **issue,
+        }
+
     def _prepare_binding(self, selected_binding) -> dict[str, Any]:
         key = selected_binding.attrib["Key"]
         device = selected_binding.attrib["Device"].strip()
@@ -317,14 +359,19 @@ class EDKeys:
             elif modifier.tag == "Hold":
                 hold = True
 
-        binding: dict[str, Any] = {"mods": [self.keymap[mod] for mod in mods]}
+        # Elite records physical keys and explicit modifiers, not text-entry chords.
+        # Preserve modifier order and left/right identities exactly as saved.
+        resolved_mods = [self._resolve_binding_key(mod, "modifier") for mod in mods]
 
         if device == "Keyboard":
-            binding["key"] = self.keymap[key]
+            code = self._resolve_binding_key(key, "key")
+            binding = {"key": code, "mods": resolved_mods}
         elif key in self.mouse_button_map:
+            binding = {"mods": resolved_mods}
             binding["type"] = "mouse_button"
             binding["button"] = self.mouse_button_map[key]
         elif key in self.mouse_wheel_map:
+            binding = {"mods": resolved_mods}
             binding["type"] = "mouse_wheel"
             binding["clicks"] = self.mouse_wheel_map[key]
         else:
@@ -334,6 +381,21 @@ class EDKeys:
             binding["hold"] = True
 
         return binding
+
+    def _resolve_binding_key(self, key_name: str, role: str) -> int | str:
+        character = get_layout_key_character(key_name)
+        try:
+            if platform.system() == "Windows" and character is not None:
+                if self.keyboard_layout is None:
+                    raise ValueError(self.keyboard_layout_error or "The game keyboard layout is unavailable.")
+                return resolve_layout_key_name(key_name, self.keyboard_layout)
+            if platform.system() != "Windows" and key_name not in self.keymap and character is not None:
+                return character
+            if key_name not in self.keymap:
+                raise KeyError(f"Unknown key name {key_name!r}; no native mapping is available.")
+            return self.keymap[key_name]
+        except (KeyError, ValueError) as exc:
+            raise UnresolvedKeyError(key_name, role, str(exc.args[0])) from exc
 
     def get_latest_keybinds(self):
         path_bindings = os.path.join(self.appdata_path + "/", "Options", "Bindings")
