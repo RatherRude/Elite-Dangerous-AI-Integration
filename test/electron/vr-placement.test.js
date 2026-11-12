@@ -12,13 +12,15 @@ const placementKeys = [
   'vrYawDegrees',
 ];
 
-test('seated placement uses eye-relative offsets without the world floor-height bias', () => {
+test('seated placement preserves the legacy world-space position before following recenter deltas', () => {
   const placement = getOverlayPlacement('seated', 0.9, 0.4, -0.3, -0.5, 15, 30);
   assert.equal(placement.mode, 'seated');
-  assert.deepEqual(placement.position, { x: 0.4, y: -0.3, z: -1.5 });
+  assert.deepEqual(placement.position, getOverlayPlacement('world', 0.9, 0.4, -0.3, -0.5, 15, 30).position);
   assert.deepEqual(placement.rotation, getOverlayPlacement('head', 0.9, 0, 0, 0, 15, 30).rotation);
   assert.equal(getOverlayPlacement('seated', 0.9, 0, 0, -100).position.z, -0.1);
-  assert.deepEqual(getOverlayPlacement('seated', 0.9).position, { x: 0, y: 0, z: -2 });
+  assert.deepEqual(getOverlayPlacement('seated', 0.9).position, getOverlayPlacement('world', 0.9).position);
+  assert.deepEqual(getOverlayPlacement('seated', 1.5, -0.2, 0.15, -0.42).position,
+    getOverlayPlacement('world', 1.5, -0.2, 0.15, -0.42).position);
 });
 
 test('both settings views offer seated anchoring', () => {
