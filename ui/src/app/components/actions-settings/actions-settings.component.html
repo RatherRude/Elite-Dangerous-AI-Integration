@@ -89,20 +89,22 @@
                         </mat-select>
                     </mat-form-field>
                 </div>
-                @if (config.available_action_languages.length > 0) {
-                    <div class="bindings-preference-row">
-                        <p style="margin: 0; flex: 1;">English commands are always available. Enable optional language packs to add translated command aliases.</p>
-                        <mat-form-field appearance="fill" class="bindings-field">
-                            <mat-label>Additional command languages</mat-label>
-                            <mat-select [ngModel]="config.selected_action_languages"
-                                        (ngModelChange)="onConfigChange({selected_action_languages: $event})"
-                                        multiple>
-                                @for (language of config.available_action_languages; track language.code) {
-                                    <mat-option [value]="language.code">{{ language.name }}</mat-option>
-                                }
-                            </mat-select>
-                        </mat-form-field>
-                    </div>
+                @if (actionLanguages$ | async; as actionLanguages) {
+                    @if (actionLanguages.length > 0) {
+                        <div class="bindings-preference-row">
+                            <p style="margin: 0; flex: 1;">English commands are always available. Enable optional language packs to add translated command aliases.</p>
+                            <mat-form-field appearance="fill" class="bindings-field">
+                                <mat-label>Additional command languages</mat-label>
+                                <mat-select [ngModel]="config.selected_action_languages"
+                                            (ngModelChange)="onConfigChange({selected_action_languages: $event})"
+                                            multiple>
+                                    @for (language of actionLanguages; track language.code) {
+                                        <mat-option [value]="language.code">{{ language.name }}</mat-option>
+                                    }
+                                </mat-select>
+                            </mat-form-field>
+                        </div>
+                    }
                 }
                 <div class="permission-list">
                         <ng-container *ngFor="let group of gamePermissionsGrouped">

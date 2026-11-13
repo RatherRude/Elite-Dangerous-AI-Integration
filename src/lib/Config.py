@@ -907,7 +907,6 @@ class Config(TypedDict):
     ui_actions_var: bool
     use_action_cache_var: bool
     selected_action_languages: list[str]
-    available_action_languages: list[dict[str, str]]
     allowed_actions: dict[str, bool]
     discovery_primary_var: bool
     discovery_firegroup_var: int  # 0 keeps the current firegroup; 1-8 select one
@@ -1715,7 +1714,6 @@ def load_config() -> Config:
         'ui_actions_var': True,
         'use_action_cache_var': True,
         'selected_action_languages': [],
-        'available_action_languages': available_action_languages,
         'allowed_actions': default_allowed_actions.copy(),
         'discovery_primary_var': True,
         'discovery_firegroup_var': 1,
@@ -1809,7 +1807,6 @@ def load_config() -> Config:
             if data:
                 data = migrate(data)
                 merged_config = merge_config_data(defaults, data)
-                merged_config["available_action_languages"] = available_action_languages
                 selected_languages = merged_config.get("selected_action_languages", [])
                 if not isinstance(selected_languages, list):
                     log("warn", "Invalid selected action languages; using English only")
@@ -1841,7 +1838,7 @@ def load_config() -> Config:
 def save_config(config: Config):
     config_file = Path("config.json")
     with open(config_file, 'w', encoding='utf-8') as f:
-        json.dump(config, f, indent=4)
+        json.dump({key: value for key, value in config.items() if key != "available_action_languages"}, f, indent=4)
 
 
 def assign_ptt(config: Config, controller_manager, index: int = 0):
@@ -2057,7 +2054,10 @@ def update_config(config: Config, data: dict) -> Config:
         data["agent_llm_max_tries"] = agent_tries
 
     # Now merge and save as before
-    new_config = cast(Config, {**config, **data})
+    new_config = cast(Config, {
+        key: value for key, value in {**config, **data}.items()
+        if key != "available_action_languages"
+    })
     emit_message("config", config=new_config)
     save_config(new_config)
     return new_config

@@ -1171,6 +1171,10 @@ if __name__ == "__main__":
         config = load_config()
         load_hud_color_matrix(config)
         emit_message("config", config=config)
+        emit_message("action_languages", languages=[
+            {"code": code, "name": pack["name"]}
+            for code, pack in load_action_language_packs().items()
+        ])
         system = get_system_info()
         emit_message("system", system=system)
 
