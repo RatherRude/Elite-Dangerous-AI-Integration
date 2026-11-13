@@ -26,7 +26,17 @@ Stock testing verified the original OpenVR DLL with EDVR absent. Normal recenter
 changed the seated-to-standing matrix by 0.0678 metres and -60.7388 degrees yaw;
 ordinary head movement changed none of its twelve elements. The tester confirmed
 the previous native-only prototype worked in stock Elite, including offset edits.
-The simplified implementation in this revision still needs live regression testing.
+The tester subsequently confirmed this simplified standalone recenters correctly
+in stock Elite. Restoring EDVR exposed a separate limitation: its private OpenXR
+origin moves without changing SteamVR's seated origin, so this mode alone does
+not follow EDVR recentering.
+
+On 2026-11-13, read-only SteamVR snapshots before/after a controlled EDVR recenter
+had all twelve matrix elements identical. EDVR's corresponding `seat_reset`
+reported 6.8 cm and 22.2 degrees movement. This is not a native seat-mode failure:
+the two clients are using different origins. EDVR compatibility needs an optional
+application-origin signal/adapter; it must not be claimed by the current branch.
+Do not restore the old observer or change runtime origins as an automatic fix.
 
 ## Coordinate Contract
 
