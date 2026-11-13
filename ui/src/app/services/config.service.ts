@@ -8,6 +8,14 @@ export interface ConfigMessage extends BaseMessage {
     type: "config";
     config: Config;
 }
+export interface ActionLanguage {
+    code: string;
+    name: string;
+}
+export interface ActionLanguagesMessage extends BaseMessage {
+    type: "action_languages";
+    languages: ActionLanguage[];
+}
 export interface RunningConfigMessage extends BaseMessage {
     type: 'running_config';
     config: Config;
@@ -96,6 +104,7 @@ export interface Config {
     web_search_actions_var: boolean;
     ui_actions_var: boolean;
     use_action_cache_var: boolean;
+    selected_action_languages: string[];
     allowed_actions: Record<string, boolean>;
     discovery_primary_var: boolean;
     discovery_firegroup_var: number;
@@ -148,6 +157,8 @@ export interface Config {
     providedIn: "root",
 })
 export class ConfigService {
+    private actionLanguagesSubject = new BehaviorSubject<ActionLanguage[]>([]);
+    public actionLanguages$ = this.actionLanguagesSubject.asObservable();
     private configSubject = new BehaviorSubject<Config | null>(null);
     public config$ = this.configSubject.asObservable();
 
@@ -188,7 +199,9 @@ export class ConfigService {
                 | SystemInfoMessage
                 | PluginSettingsMessage
                 | PluginModelProvidersMessage
+                | ActionLanguagesMessage
                 | KeybindsMessages =>
+                message.type === "action_languages" ||
                 message.type === "config" ||
                 message.type === "running_config" ||
                 message.type === "system" ||
@@ -196,8 +209,10 @@ export class ConfigService {
                 message.type === "plugin_model_providers" ||
                 message.type === "keybinds"
             ),
-        ).subscribe((message: ConfigMessage | RunningConfigMessage | SystemInfoMessage | PluginSettingsMessage | PluginModelProvidersMessage | KeybindsMessages) => {
-            if (message.type === "config") {
+        ).subscribe((message: ConfigMessage | RunningConfigMessage | SystemInfoMessage | PluginSettingsMessage | PluginModelProvidersMessage | ActionLanguagesMessage | KeybindsMessages) => {
+            if (message.type === "action_languages") {
+                this.actionLanguagesSubject.next(message.languages);
+            } else if (message.type === "config") {
                 this.configSubject.next(message.config);
             } else if (message.type === "running_config") {
                 this.configSubject.next(message.config);

@@ -256,6 +256,34 @@ def test_default_config_uses_plugins_and_has_no_legacy_provider_settings(monkeyp
     assert not set(ConfigModule.LEGACY_PROVIDER_SETTING_KEYS).intersection(config)
 
 
+def test_action_language_catalogue_is_not_configuration(monkeypatch, tmp_path) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(ConfigModule, "get_default_input_device_name", lambda: "")
+    monkeypatch.setattr(ConfigModule, "get_default_output_device_name", lambda: "")
+    monkeypatch.setattr(ConfigModule, "emit_message", lambda *args, **kwargs: None)
+    config = ConfigModule.load_config()
+    assert "available_action_languages" not in config
+
+    updated = ConfigModule.update_config(config, {
+        "selected_action_languages": ["fr"],
+        "available_action_languages": [{"code": "invalid", "name": "Stale"}],
+    })
+    assert updated["selected_action_languages"] == ["fr"]
+    assert "available_action_languages" not in updated
+    saved = json.loads((tmp_path / "config.json").read_text(encoding="utf-8"))
+    assert "available_action_languages" not in saved
+
+    saved["available_action_languages"] = [{"code": "invalid", "name": "Stale"}]
+    (tmp_path / "config.json").write_text(json.dumps(saved), encoding="utf-8")
+    reloaded = ConfigModule.load_config()
+    assert reloaded["selected_action_languages"] == ["fr"]
+    assert "available_action_languages" not in reloaded
+    ConfigModule.save_config(saved)
+    assert "available_action_languages" not in json.loads(
+        (tmp_path / "config.json").read_text(encoding="utf-8")
+    )
+
+
 @pytest.mark.parametrize("version", [None, 5, 12, 21])
 def test_legacy_json_config_loads_then_migrates_through_current_provider_plugins(version, monkeypatch, tmp_path) -> None:
     from lib.PluginManager import PluginManager

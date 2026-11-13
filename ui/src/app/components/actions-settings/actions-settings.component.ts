@@ -32,6 +32,7 @@ import { MatExpansionModule } from "@angular/material/expansion";
     styleUrl: "./actions-settings.component.css",
 })
 export class ActionsSettingsComponent {
+    readonly actionLanguages$ = this.configService.actionLanguages$;
     config: Config | null = null;
     configSubscription: Subscription;
     keybindsSubscription: Subscription;

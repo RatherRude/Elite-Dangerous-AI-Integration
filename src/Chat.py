@@ -61,6 +61,7 @@ def parse_plugin_provider(provider: str) -> tuple[str, str] | None:
 
 
 from lib.actions.Actions import register_actions
+from lib.actions.action_language_packs import load_action_language_packs
 from lib.ControllerManager import ControllerManager
 from lib.EDKeys import EDKeys
 from lib.Event import (
@@ -832,6 +833,11 @@ class Chat:
             ),
         )
 
+        self.action_manager.apply_language_aliases(
+            load_action_language_packs(),
+            self.config.get("selected_action_languages", []),
+        )
+
         log("info", "Actions ready.")
         show_chat_message("info", "Actions ready.")
 
@@ -1014,6 +1020,25 @@ def read_stdin(chat: Chat):
             if data.get("type") == "change_config":
                 partial = data.get("config")
                 if isinstance(partial, dict):
+                    if "selected_action_languages" in partial:
+                        try:
+                            selected_languages = partial["selected_action_languages"]
+                            if (
+                                not isinstance(selected_languages, list)
+                                or not all(isinstance(language, str) for language in selected_languages)
+                            ):
+                                raise ValueError("Selected action languages must be a list of language codes")
+                            chat.action_manager.apply_language_aliases(
+                                load_action_language_packs(),
+                                selected_languages,
+                            )
+                        except (OSError, ValueError, json.JSONDecodeError) as error:
+                            log("error", f"Failed to apply action language settings: {error}")
+                            emit_message("config", config=chat.config)
+                            partial = {
+                                key: value for key, value in partial.items()
+                                if key != "selected_action_languages"
+                            }
                     chat.config = update_config(chat.config, partial)
                     chat.assistant.config = chat.config
                     chat.plugin_manager.on_settings_changed(chat.config)
@@ -1146,6 +1171,10 @@ if __name__ == "__main__":
         config = load_config()
         load_hud_color_matrix(config)
         emit_message("config", config=config)
+        emit_message("action_languages", languages=[
+            {"code": code, "name": pack["name"]}
+            for code, pack in load_action_language_packs().items()
+        ])
         system = get_system_info()
         emit_message("system", system=system)
 
