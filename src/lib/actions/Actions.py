@@ -698,8 +698,7 @@ def landing_gear_toggle(args, projected_states):
         )
     except TimeoutError as exc:
         raise TimeoutError(
-            f"Landing gear {target_state} was not confirmed by the game within 5 seconds. "
-            "Check the LandingGearToggle keyboard or mouse binding and that the game window is active."
+            f"Landing gear {target_state} was not confirmed by the game within 5 seconds."
         ) from exc
 
     return f"Landing gear {target_state}."
@@ -2106,7 +2105,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "purge cargo": {},
     })
 
-    actionManager.registerAction('landingGearToggle', "Deploy or retract the landing gear: gear down for landing or gear up for flight. Use deploy or retract for an explicit request; toggle only when no direction is specified. Success requires confirmation from game status.", {
+    actionManager.registerAction('landingGearToggle', "Deploy, retract, or toggle the landing gear.", {
         "type": "object",
         "properties": {
             "action": {

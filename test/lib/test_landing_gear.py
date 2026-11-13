@@ -199,8 +199,9 @@ def test_timeout_is_returned_as_tool_error(actions):
     assert result['role'] == 'tool'
     assert result['name'] == 'landingGearToggle'
     assert result['content'].startswith('ERROR: TimeoutError(')
-    assert 'not confirmed by the game' in result['content']
-    assert 'LandingGearToggle keyboard or mouse binding' in result['content']
+    assert result['content'] == (
+        "ERROR: TimeoutError('Landing gear deployed was not confirmed by the game within 5 seconds.')"
+    )
 
 
 def test_tool_schema_and_cached_commands_preserve_direction(actions):

@@ -656,7 +656,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 
     - `action`: String (options: "deploy", "retract", "toggle"; default: "toggle")
     - Explicit deploy/retract requests leave the gear unchanged if it is already in the requested state.
-    - A change is reported as successful only after confirmation from game status. If no confirmation arrives within 5 seconds, the action reports an error; check the keyboard or mouse binding and game window focus.
+    - A change is reported as successful only after confirmation from game status. If no confirmation arrives within 5 seconds, the action reports an error.
 
     <details>
     <summary>Examples</summary>
