@@ -76,7 +76,8 @@ export function createSeatController(overlay, anchor, placement) {
   let stopAdapter;
   function nativePlacement(anchor, placement, seatBasis, app) {
     if (anchor !== 'seated') return placement;
-    if (app) return transformPlacement(placement, multiply(app.current, inverse(app.initial)), 'world');
+    // Both paths place the same seat-local pose; only the seat-to-world origin differs.
+    if (app) return transformPlacement(placement, multiply(app.current, inverse(seatBasis)), 'world');
     return transformPlacement(placement, inverse(seatBasis), 'seat');
   }
   const controller = {
@@ -84,11 +85,8 @@ export function createSeatController(overlay, anchor, placement) {
       if (destroyed) return false;
       const nextBasis = nextAnchor === 'seated'
         ? basis ?? validateBasis(overlay.getTrackingOriginTransform?.('seated', 'standing')) : null;
-      const nextApp = application && nextAnchor === 'seated' && configuredAnchor !== 'seated'
-        ? { ...application, initial: application.current } : application;
-      if (!overlay.setPlacement(nativePlacement(nextAnchor, nextPlacement, nextBasis, nextApp))) return false;
+      if (!overlay.setPlacement(nativePlacement(nextAnchor, nextPlacement, nextBasis, application))) return false;
       basis = nextBasis;
-      application = nextApp;
       configuredAnchor = nextAnchor;
       configuredPlacement = nextPlacement;
       return true;
@@ -98,7 +96,7 @@ export function createSeatController(overlay, anchor, placement) {
       let next = null;
       if (session && matrix) {
         const current = validateBasis({ from: 'seated', to: 'standing', matrix });
-        next = { session, current, initial: application?.session === session ? application.initial : current };
+        next = { session, current };
       }
       if (!overlay.setPlacement(nativePlacement(configuredAnchor, configuredPlacement, basis, next))) return false;
       application = next;

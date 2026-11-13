@@ -97,28 +97,39 @@ test('a failed placement does not commit a new basis or clear an existing one', 
   assert.equal(overlay.reads, 2);
 });
 
-test('EDVR origin delta preserves initial world pose, follows translation/rotation, and survives edits', () => {
-  const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0];
-  const overlay = fake(identity);
+test('EDVR and stock use the same cockpit-local pose at startup and after offset edits', () => {
+  const basis = matrix(getOverlayPlacement('world', 1, -0.8, 0.6, -0.3, 0, -24));
+  const overlay = fake(basis);
   const controller = createSeatController(overlay, 'seated', pose);
+  const stockLocal = matrix(overlay.calls.at(-1));
+  close(multiply(basis, stockLocal), matrix(pose));
   const first = matrix(getOverlayPlacement('world', 1, 2, 1, 0, 0, 35));
   controller.setApplicationOrigin('edvr-session', first);
   assert.equal(overlay.calls.at(-1).mode, 'world');
-  close(matrix(overlay.calls.at(-1)), matrix(pose));
-  // E1 = D * E0, so the rendered pose must be D * W, including rotation about origin.
+  close(matrix(overlay.calls.at(-1)), multiply(first, stockLocal));
+  // Different room origins must still use identical cockpit-local placement.
+  assert.notDeepEqual(matrix(overlay.calls.at(-1)), matrix(pose));
   const delta = matrix(getOverlayPlacement('world', 1, 1, -1, 0, 0, 60));
   controller.setApplicationOrigin('edvr-session', multiply(delta, first));
-  close(matrix(overlay.calls.at(-1)), multiply(delta, matrix(pose)));
+  close(matrix(overlay.calls.at(-1)), multiply(multiply(delta, first), stockLocal));
   const edited = getOverlayPlacement('world', 1, -2, 3, 1, 15, -20);
+  const stock = fake(basis);
+  createSeatController(stock, 'seated', edited);
+  const editedLocal = matrix(stock.calls.at(-1));
   controller.setConfiguredPlacement('seated', edited);
-  close(matrix(overlay.calls.at(-1)), multiply(delta, matrix(edited)));
+  close(matrix(overlay.calls.at(-1)), multiply(multiply(delta, first), editedLocal));
+  assert.equal(overlay.reads, 1);
   controller.setConfiguredPlacement('head', { ...pose, mode: 'head' });
   controller.setApplicationOrigin('edvr-session', first);
   assert.equal(overlay.calls.at(-1).mode, 'head');
   controller.setConfiguredPlacement('seated', pose);
-  close(matrix(overlay.calls.at(-1)), matrix(pose));
+  close(matrix(overlay.calls.at(-1)), multiply(first, stockLocal));
+  assert.equal(overlay.reads, 2);
+  controller.setApplicationOrigin('new-session', first);
+  close(matrix(overlay.calls.at(-1)), multiply(first, stockLocal));
   controller.setApplicationOrigin(null, null);
   assert.equal(overlay.calls.at(-1).mode, 'seat');
+  close(matrix(overlay.calls.at(-1)), stockLocal);
   let stopped = 0;
   controller.attachAdapter(() => stopped++);
   controller.destroy(); controller.destroy();

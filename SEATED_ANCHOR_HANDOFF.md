@@ -1,111 +1,48 @@
-# Seated Anchor: COVAS Maintainer Handoff
+# Seated Anchor
 
-## Scope and Status
+Keeps the overlay fixed relative to the cockpit when the player recenters.
+Uses the paired [electron-vr branch](https://github.com/lag0matic/electron-vr/tree/codex/seated-vr-anchor).
 
-Based on upstream `960be90a283c5d24b8c03ef7f3cb93ef4a486dcd`, without the fork's
-older model, focus-mode, and streaming experiments. AI-assisted implementation;
-maintainer review expected. 
+## Changes
 
-Requires the matching [electron-vr branch](https://github.com/lag0matic/electron-vr/tree/codex/seated-vr-anchor)
-and its [technical handoff](https://github.com/lag0matic/electron-vr/blob/codex/seated-vr-anchor/SEATED_ANCHOR_HANDOFF.md).
-Coordinate matching JavaScript/native prebuilts before merging/distributing.
-There is no dependency-version or lockfile churn in this proposal.
+| Files | Change | Reason |
+| --- | --- | --- |
+| `src/lib/Config.py`, UI config services, general/advanced settings templates | Add the saved `seated` anchor option. | Select cockpit-relative placement alongside head/world modes. |
+| `electron/vr-placement.js` | Retain the existing offset and tilt/yaw calculations. | Preserve saved placement settings. |
+| `electron/vr-seat-controller.js` | Convert the configured pose to seat coordinates; apply EDVR's origin when available. | Use the same cockpit-local placement with or without EDVR. |
+| `electron/vr-overlay-updates.js`, `electron/index.js` | Update placement, size and curvature in place; serialize overlay lifecycle changes. | Offset edits must not recreate or reset the anchor. |
+| `electron/vr-game-probe.js` | Report the running game's executable path alongside loaded-module evidence. | Identify the active EDVR session and its log directory. |
+| `electron/vr-edvr-log-adapter.js` | Read successful origin changes from the current EDVR log. | EDVR recenters its own OpenXR space without moving SteamVR's seated origin. |
 
-Luca approved generic `seat` coordinates in electron-vr. The app retains the
-saved setting `seated`, but sends raw `seat` placement to the bridge after its
-own conversion. No game-specific code is needed in electron-vr.
+## Placement
 
-## Two Frames, Without Two Observers
-
-World Locked uses SteamVR's standing origin. Stock Elite's normal recenter moves
-SteamVR's seated origin. They are distinct reference frames, so standing-world
-placement does not automatically follow the cockpit. This is not an EDVR-only
-behavior. Native seated placement lets SteamVR perform the recenter movement.
-
-Stock testing verified the original OpenVR DLL with EDVR absent. Normal recenter
-changed the seated-to-standing matrix by 0.0678 metres and -60.7388 degrees yaw;
-ordinary head movement changed none of its twelve elements. The tester confirmed
-the previous native-only prototype worked in stock Elite, including offset edits.
-The tester subsequently confirmed this simplified standalone recenters correctly
-in stock Elite. Restoring EDVR exposed a separate limitation: its private OpenXR
-origin moves without changing SteamVR's seated origin, so this mode alone does
-not follow EDVR recentering by itself. A separate COVAS-only logfile adapter is
-now prototyped; see [EDVR Log Adapter](docs/advanced/VR-EDVR-Log-Adapter.md).
-
-On 2026-11-13, read-only SteamVR snapshots before/after a controlled EDVR recenter
-had all twelve matrix elements identical. EDVR's corresponding `seat_reset`
-reported 6.8 cm and 22.2 degrees movement. This is not a native seat-mode failure:
-the two clients are using different origins. EDVR compatibility needs an optional
-application-origin signal/adapter. The new optional adapter uses that log signal,
-but still needs a visible cockpit test before claiming EDVR compatibility.
-Do not restore the old observer or change runtime origins as an automatic fix.
-
-## Coordinate Contract
-
-Keep the existing configured world pose, including tilt/yaw:
+`W` is the configured world pose. `B` is SteamVR's seated-to-standing transform,
+captured when entering seated mode. The shared seat-local pose is:
 
 ```text
-x = horizontalOffset - 0.5
-y = 1.4 + verticalOffset - (720 / 1280) / 2
-z = -max(0.1, 2 + distanceOffset)
+S = inverse(B) * W
+Stock Elite: send S using electron-vr mode 'seat'
+EDVR: send E * S using mode 'world', where E is EDVR's current STAGE origin
 ```
 
-On entering Seated Anchor, capture seated-to-standing transform B once. Convert
-the configured world pose W to seat-local pose S = inverse(B) * W. Send S with
-`mode: 'seat'`; initial visual position is unchanged. SteamVR then updates the
-effective world placement as its seated origin changes, independently of paints.
+Offset edits update W without replacing B. Both paths therefore retain the same
+cockpit-local position and rotation. Native curvature is unchanged.
 
-Retain B during position/angle edits. Re-sampling B on every edit would reset the
-anchor and reproduce the original bug. Leaving seated mode clears B after a
-successful placement; reentering captures the then-current origin. Recreating an
-overlay establishes a new basis. Head/world policies are unchanged.
+## EDVR Adapter
 
-The generic seated path has no timer, head-pose inference, paid vision call, input interception,
-EDVR observer, shared-memory transport, or OpenXR layer change in the net proposal.
-The bridge retains native OpenVR curvature.
+Activates only for one verified running EDVR process whose current log confirms
+`SteamVR/OpenXR` and `STAGE`. Existing records establish the current origin;
+historical recenter sequences are not replayed. Fresh successful records update
+the pose. The reader polls every 250 ms, buffers partial lines, and stops with the
+overlay. Unsupported frames, missing logs or loss of the process disable it.
 
-The optional EDVR adapter is entirely in COVAS and polls a verified live process's
-log every 250 ms (process detection is cached for up to five seconds). Its STAGE
-origin delta is applied using generic world placement; it does not alter the
-native bridge, swap OpenXR layers, or change SteamVR's origin. Stock Elite keeps
-the direct native-seat path.
+No EDVR-specific code, observer or IPC was added to electron-vr.
 
-## Files and Ownership
+## Verification
 
-- `src/lib/Config.py` and UI config services: accept the app setting `seated`.
-- General/advanced settings templates: offer Seated Anchor alongside head/world.
-- `electron/vr-placement.js`: keep legacy configuration-space position/rotation.
-- `electron/vr-seat-controller.js`: validate/capture B, convert poses, retain basis.
-- `electron/vr-overlay-updates.js`: apply position/size/curvature changes in place.
-- `electron/index.js`: wrap initialized overlays, clean up failures, serialize lifecycle requests.
-- `test/electron/vr-seat-controller.test.js`: conversion, invalid origins, mode changes, basis retention and failed updates.
-- Existing placement/lifecycle tests: compatibility and no controller replacement on edits.
+55 Electron tests pass. Cockpit checks passed for stock Elite and EDVR, including
+offset edits, looking up/down and recentering while turned 90 degrees. The
+corrected starting placement was checked with a temporary border, now removed.
 
-No personality, LLM, TTS, STT, or game-control changes are included.
-
-## Limits and Validation
-
-The paired bridge supports seat coordinates on direct OpenVR. OpenXR rendering,
-macOS backends, and Linux host relay explicitly reject them; COVAS reports missing
-origin support rather than pretending to anchor correctly. Native Linux OpenVR
-uses the same API but has not been physically tested. No Linux observer transport
-is necessary for stock Elite's demonstrated signal; host relay is separate work.
-
-Games that recenter only their private camera may not expose a seated-origin
-change. This feature follows the runtime, not arbitrary game cameras.
-
-Automated checks cover arbitrary origin rotations/translations, unchanged initial
-world pose, native seat conversion, offset edits retaining B, failed updates,
-head/world pass-through, fresh basis on reentry, and cleanup. Run all tests under
-`test/electron` and build the paired bridge/native addon.
-
-This revision passes all 46 Electron tests and the main-process syntax check.
-The paired bridge passes its Windows native/TypeScript builds, 38 selected JS
-tests, and an invisible SteamVR API check for raw seat placement, origin inversion,
-head/world/seat switches, and native curvature. Visible cockpit behavior for the
-refactor still needs the live check below; Linux remains untested physically.
-
-Live checks before rollout: static image; ordinary head motion; recenter; offset
-edits then recenter; curvature; head/world/seat switching; overlay and game restart.
-Use the isolated app/profile. No OpenXR layer swap or EDVR observer is needed.
-Earlier experimental observers remain only in branch history, not the base diff.
+Tests: `test/electron/vr-seat-controller.test.js`, `vr-edvr-log-adapter.test.js`,
+`vr-placement.test.js` and `vr-overlay-updates.test.js`.
