@@ -423,8 +423,6 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 
 16. **Toggle night vision**
 
-    With the French language pack enabled, "vision nocturne", "active la vision nocturne", and "désactive la vision nocturne" are aliases for this ship action. All three toggle the current state, like the English command.
-
     <details>
     <summary>Examples</summary>
     
@@ -584,9 +582,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - let's go
     </details>
 
-    Optional translated command aliases can be enabled in **Settings → Actions → Additional command languages**. English commands remain available regardless of this setting.
-
-    The French pack includes "passe en vitesse de croisière" and the transcription variant "passe en vitesse de coisière". These aliases use exact phrase matching and require the action cache to be enabled.
+    Optional translated command aliases can be enabled in **Settings → Actions → Additional command languages**. English commands remain available regardless of this setting. Translated aliases use exact phrase matching and require the action cache to be enabled.
 
     <details>
     <summary>Required Keyboard Binds</summary>
@@ -602,7 +598,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 
 ### Adding an action language pack
 
-Language packs are JSON files in `src/lib/actions/languages/`, named with their language code (for example, `fr.json`). Each pack has a display `name` and an `aliases` array; every alias groups spoken `phrases` in a non-empty array sharing the same registered `action` and `arguments`. Packs add aliases only—English commands remain the defaults, and a translated alias cannot override an English command.
+Language packs are JSON files in `src/lib/actions/languages/`, named with their language code. Each pack has a display `name` and an `aliases` array; every alias groups spoken `phrases` in a non-empty array sharing the same registered `action` and `arguments`. Packs add aliases only—English commands remain the defaults, and a translated alias cannot override an English command.
 
 2. **Target next system in route**
 
@@ -617,8 +613,6 @@ Language packs are JSON files in `src/lib/actions/languages/`, named with their 
     - next in route
     </details>
 
-    With the French language pack enabled, "continue la route" and "continue la navigation" also target the next system in the route using your configured `TargetNextRouteSystem` binding. These commands do not initiate an FSD jump.
-
     <details>
     <summary>Required Keyboard Binds</summary>
 
@@ -626,8 +620,6 @@ Language packs are JSON files in `src/lib/actions/languages/`, named with their 
     </details>
 
 3. **Toggle cargo scoop**
-
-    With the French language pack enabled, "ouvre la soute" and "ferme la soute" are aliases for this ship action. Both toggle the current state, like "open cargo scoop" and "close cargo scoop".
 
     <details>
     <summary>Examples</summary>
