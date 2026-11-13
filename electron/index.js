@@ -14,6 +14,7 @@ import {VROverlay} from '@covas-labs/electron-vr';
 import { describeVrStatus } from './vr-status.js';
 import { getOverlayPlacement, normalizeVrPlacementOptions } from './vr-placement.js';
 import { updateExistingVrOverlay } from './vr-overlay-updates.js';
+import { createSeatController } from './vr-seat-controller.js';
 import { createGameProbe } from './vr-game-probe.js';
 import { assessRestart, buildVrDiagnostics, createFrameHealthTracker, createSceneTracker } from './vr-diagnostics.js';
 import {
@@ -967,12 +968,22 @@ async function createVrOverlayWindow(opts) {
       : refreshedCompatibility.launch.message);
   }
 
-  activeVrOverlay = vrOverlay;
+  let controller;
+  try {
+    controller = createSeatController(vrOverlay, opts.vrAnchor,
+      getOverlayPlacement(opts.vrAnchor, opts.vrSizeMeters, opts.vrHorizontalOffset,
+        opts.vrVerticalOffset, opts.vrDistanceOffset, opts.vrTiltDegrees, opts.vrYawDegrees));
+  } catch (error) {
+    vrOverlay.destroy();
+    if (!overlayWindow.isDestroyed()) overlayWindow.destroy();
+    throw error;
+  }
+  activeVrOverlay = controller;
   return {
     kind: 'vr',
     window: overlayWindow,
     windows: [overlayWindow],
-    controller: vrOverlay,
+    controller,
     runtimeInfo,
     cleanedUp: false,
   };

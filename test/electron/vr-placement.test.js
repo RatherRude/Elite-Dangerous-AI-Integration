@@ -12,9 +12,9 @@ const placementKeys = [
   'vrYawDegrees',
 ];
 
-test('seated placement preserves the legacy world-space position before following recenter deltas', () => {
+test('seated configuration starts at the legacy world pose before seat conversion', () => {
   const placement = getOverlayPlacement('seated', 0.9, 0.4, -0.3, -0.5, 15, 30);
-  assert.equal(placement.mode, 'seated');
+  assert.equal(placement.mode, 'world');
   assert.deepEqual(placement.position, getOverlayPlacement('world', 0.9, 0.4, -0.3, -0.5, 15, 30).position);
   assert.deepEqual(placement.rotation, getOverlayPlacement('head', 0.9, 0, 0, 0, 15, 30).rotation);
   assert.equal(getOverlayPlacement('seated', 0.9, 0, 0, -100).position.z, -0.1);

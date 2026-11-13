@@ -7,11 +7,12 @@ const options = { mode: 'both', screenId: 2, vrAnchor: 'seated', vrSizeMeters: 1
   vrDistanceOffset: -0.42, vrTiltDegrees: 5, vrYawDegrees: 0 };
 test('offset edits update the existing controller without replacing its anchor', () => {
   const calls = [];
-  const controller = { setPlacement: value => { calls.push(value); return true; },
+  const controller = { setConfiguredPlacement: (anchor, value) => { calls.push({ anchor, ...value }); return true; },
     destroy: () => assert.fail('must not destroy the overlay') };
   assert.equal(updateExistingVrOverlay({ controller }, options, { ...options, vrHorizontalOffset: 0.25 }), true);
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].mode, 'seated');
+  assert.equal(calls[0].anchor, 'seated');
+  assert.equal(calls[0].mode, 'world');
   assert.equal(calls[0].position.x, -0.25);
 });
 test('identical requests retain the controller without resetting any property', () => {
@@ -31,6 +32,6 @@ test('window or backend changes still require normal reconstruction', () => {
   assert.equal(updateExistingVrOverlay({ controller: {}, cleanedUp: true }, options, options), false);
 });
 test('failed native updates report failure instead of silently replacing the overlay', () => {
-  assert.throws(() => updateExistingVrOverlay({ controller: { setPlacement: () => false } }, options,
+  assert.throws(() => updateExistingVrOverlay({ controller: { setConfiguredPlacement: () => false } }, options,
     { ...options, vrHorizontalOffset: 0.1 }), /placement/);
 });

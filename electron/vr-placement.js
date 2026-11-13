@@ -30,7 +30,7 @@ export function getOverlayPlacement(vrAnchor, vrSizeMeters, horizontalOffset = 0
     const widthOffset = 0.5;
     const heightOffset = (720 / 1280) / 2;
     return {
-      mode: vrAnchor,
+      mode: 'world',
       position: { x: horizontalOffset - widthOffset, y: 1.4 + verticalOffset - heightOffset, z: -distance },
       rotation,
     };

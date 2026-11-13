@@ -15,7 +15,7 @@ export function updateExistingVrOverlay(overlay, previous, next) {
     throw new Error('Could not update VR overlay curvature.');
   }
   const placementKeys = ['vrAnchor', 'vrHorizontalOffset', 'vrVerticalOffset', 'vrDistanceOffset', 'vrTiltDegrees', 'vrYawDegrees'];
-  if (placementKeys.some(key => previous[key] !== next[key]) && !controller.setPlacement(
+  if (placementKeys.some(key => previous[key] !== next[key]) && !controller.setConfiguredPlacement(next.vrAnchor,
       getOverlayPlacement(next.vrAnchor, next.vrSizeMeters, next.vrHorizontalOffset, next.vrVerticalOffset,
         next.vrDistanceOffset, next.vrTiltDegrees, next.vrYawDegrees))) {
     throw new Error('Could not update VR overlay placement.');
