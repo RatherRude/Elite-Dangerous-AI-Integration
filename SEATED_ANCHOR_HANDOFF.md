@@ -4,7 +4,7 @@
 
 Based on upstream `960be90a283c5d24b8c03ef7f3cb93ef4a486dcd`, without the fork's
 older model, focus-mode, and streaming experiments. AI-assisted implementation;
-maintainer review expected. Working install and settings remain untouched.
+maintainer review expected. 
 
 Requires the matching [electron-vr branch](https://github.com/lag0matic/electron-vr/tree/codex/seated-vr-anchor)
 and its [technical handoff](https://github.com/lag0matic/electron-vr/blob/codex/seated-vr-anchor/SEATED_ANCHOR_HANDOFF.md).
