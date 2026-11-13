@@ -29,13 +29,15 @@ the previous native-only prototype worked in stock Elite, including offset edits
 The tester subsequently confirmed this simplified standalone recenters correctly
 in stock Elite. Restoring EDVR exposed a separate limitation: its private OpenXR
 origin moves without changing SteamVR's seated origin, so this mode alone does
-not follow EDVR recentering.
+not follow EDVR recentering by itself. A separate COVAS-only logfile adapter is
+now prototyped; see [EDVR Log Adapter](docs/advanced/VR-EDVR-Log-Adapter.md).
 
 On 2026-11-13, read-only SteamVR snapshots before/after a controlled EDVR recenter
 had all twelve matrix elements identical. EDVR's corresponding `seat_reset`
 reported 6.8 cm and 22.2 degrees movement. This is not a native seat-mode failure:
 the two clients are using different origins. EDVR compatibility needs an optional
-application-origin signal/adapter; it must not be claimed by the current branch.
+application-origin signal/adapter. The new optional adapter uses that log signal,
+but still needs a visible cockpit test before claiming EDVR compatibility.
 Do not restore the old observer or change runtime origins as an automatic fix.
 
 ## Coordinate Contract
@@ -58,9 +60,15 @@ anchor and reproduce the original bug. Leaving seated mode clears B after a
 successful placement; reentering captures the then-current origin. Recreating an
 overlay establishes a new basis. Head/world policies are unchanged.
 
-There is no timer, head-pose inference, paid vision call, input interception,
+The generic seated path has no timer, head-pose inference, paid vision call, input interception,
 EDVR observer, shared-memory transport, or OpenXR layer change in the net proposal.
 The bridge retains native OpenVR curvature.
+
+The optional EDVR adapter is entirely in COVAS and polls a verified live process's
+log every 250 ms (process detection is cached for up to five seconds). Its STAGE
+origin delta is applied using generic world placement; it does not alter the
+native bridge, swap OpenXR layers, or change SteamVR's origin. Stock Elite keeps
+the direct native-seat path.
 
 ## Files and Ownership
 

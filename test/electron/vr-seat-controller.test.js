@@ -96,3 +96,31 @@ test('a failed placement does not commit a new basis or clear an existing one', 
   controller.setConfiguredPlacement('seated', pose);
   assert.equal(overlay.reads, 2);
 });
+
+test('EDVR origin delta preserves initial world pose, follows translation/rotation, and survives edits', () => {
+  const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0];
+  const overlay = fake(identity);
+  const controller = createSeatController(overlay, 'seated', pose);
+  const first = matrix(getOverlayPlacement('world', 1, 2, 1, 0, 0, 35));
+  controller.setApplicationOrigin('edvr-session', first);
+  assert.equal(overlay.calls.at(-1).mode, 'world');
+  close(matrix(overlay.calls.at(-1)), matrix(pose));
+  // E1 = D * E0, so the rendered pose must be D * W, including rotation about origin.
+  const delta = matrix(getOverlayPlacement('world', 1, 1, -1, 0, 0, 60));
+  controller.setApplicationOrigin('edvr-session', multiply(delta, first));
+  close(matrix(overlay.calls.at(-1)), multiply(delta, matrix(pose)));
+  const edited = getOverlayPlacement('world', 1, -2, 3, 1, 15, -20);
+  controller.setConfiguredPlacement('seated', edited);
+  close(matrix(overlay.calls.at(-1)), multiply(delta, matrix(edited)));
+  controller.setConfiguredPlacement('head', { ...pose, mode: 'head' });
+  controller.setApplicationOrigin('edvr-session', first);
+  assert.equal(overlay.calls.at(-1).mode, 'head');
+  controller.setConfiguredPlacement('seated', pose);
+  close(matrix(overlay.calls.at(-1)), matrix(pose));
+  controller.setApplicationOrigin(null, null);
+  assert.equal(overlay.calls.at(-1).mode, 'seat');
+  let stopped = 0;
+  controller.attachAdapter(() => stopped++);
+  controller.destroy(); controller.destroy();
+  assert.equal(stopped, 1);
+});

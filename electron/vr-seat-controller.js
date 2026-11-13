@@ -37,14 +37,27 @@ function rotationQuaternion(m) {
   return { x: x / length, y: y / length, z: z / length, w: w / length };
 }
 
-function toSeatPlacement(world, basis) {
-  const p = [world.position.x - basis[3], world.position.y - basis[7], world.position.z - basis[11]];
+function inverse(m) {
+  return Array.from({ length: 12 }, (_, i) => {
+    const r = Math.floor(i / 4), c = i % 4;
+    return c === 3 ? -(m[r] * m[3] + m[4+r] * m[7] + m[8+r] * m[11]) : m[c*4+r];
+  });
+}
+
+function multiply(a, b) {
+  return Array.from({ length: 12 }, (_, i) => {
+    const r = Math.floor(i / 4), c = i % 4;
+    return a[r*4] * b[c] + a[r*4+1] * b[4+c] + a[r*4+2] * b[8+c] + (c === 3 ? a[r*4+3] : 0);
+  });
+}
+
+function transformPlacement(world, matrix, mode) {
+  const p = [world.position.x, world.position.y, world.position.z];
   const position = {};
-  for (const [c, axis] of ['x', 'y', 'z'].entries()) {
-    position[axis] = basis[c] * p[0] + basis[4 + c] * p[1] + basis[8 + c] * p[2];
+  for (const [r, axis] of ['x', 'y', 'z'].entries()) {
+    position[axis] = matrix[r*4] * p[0] + matrix[r*4+1] * p[1] + matrix[r*4+2] * p[2] + matrix[r*4+3];
   }
-  const q = rotationQuaternion(basis);
-  const a = { x: -q.x, y: -q.y, z: -q.z, w: q.w };
+  const a = rotationQuaternion(matrix);
   const b = world.rotation;
   const rotation = {
     x: a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
@@ -52,23 +65,46 @@ function toSeatPlacement(world, basis) {
     z: a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w,
     w: a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z,
   };
-  return { mode: 'seat', position, rotation };
+  return { mode, position, rotation };
 }
 
 // COVAS offsets retain their legacy world convention; electron-vr receives seat-local coordinates.
 export function createSeatController(overlay, anchor, placement) {
   let basis = null;
   let destroyed = false;
+  let configuredAnchor, configuredPlacement, application = null;
+  let stopAdapter;
+  function nativePlacement(anchor, placement, seatBasis, app) {
+    if (anchor !== 'seated') return placement;
+    if (app) return transformPlacement(placement, multiply(app.current, inverse(app.initial)), 'world');
+    return transformPlacement(placement, inverse(seatBasis), 'seat');
+  }
   const controller = {
     setConfiguredPlacement(nextAnchor, nextPlacement) {
       if (destroyed) return false;
       const nextBasis = nextAnchor === 'seated'
         ? basis ?? validateBasis(overlay.getTrackingOriginTransform?.('seated', 'standing')) : null;
-      const nativePlacement = nextBasis ? toSeatPlacement(nextPlacement, nextBasis) : nextPlacement;
-      if (!overlay.setPlacement(nativePlacement)) return false;
+      const nextApp = application && nextAnchor === 'seated' && configuredAnchor !== 'seated'
+        ? { ...application, initial: application.current } : application;
+      if (!overlay.setPlacement(nativePlacement(nextAnchor, nextPlacement, nextBasis, nextApp))) return false;
       basis = nextBasis;
+      application = nextApp;
+      configuredAnchor = nextAnchor;
+      configuredPlacement = nextPlacement;
       return true;
     },
+    setApplicationOrigin(session, matrix) {
+      if (destroyed) return false;
+      let next = null;
+      if (session && matrix) {
+        const current = validateBasis({ from: 'seated', to: 'standing', matrix });
+        next = { session, current, initial: application?.session === session ? application.initial : current };
+      }
+      if (!overlay.setPlacement(nativePlacement(configuredAnchor, configuredPlacement, basis, next))) return false;
+      application = next;
+      return true;
+    },
+    attachAdapter(stop) { stopAdapter?.(); stopAdapter = stop; },
     setSizeMeters: value => overlay.setSizeMeters(value),
     setCurvature: value => overlay.setCurvature(value),
     getRuntimeInfo: () => overlay.getRuntimeInfo(),
@@ -77,6 +113,7 @@ export function createSeatController(overlay, anchor, placement) {
     destroy() {
       if (!destroyed) {
         destroyed = true;
+        stopAdapter?.();
         overlay.destroy();
       }
     },

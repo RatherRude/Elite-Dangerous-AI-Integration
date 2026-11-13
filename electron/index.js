@@ -15,6 +15,7 @@ import { describeVrStatus } from './vr-status.js';
 import { getOverlayPlacement, normalizeVrPlacementOptions } from './vr-placement.js';
 import { updateExistingVrOverlay } from './vr-overlay-updates.js';
 import { createSeatController } from './vr-seat-controller.js';
+import { createEdvrLogAdapter } from './vr-edvr-log-adapter.js';
 import { createGameProbe } from './vr-game-probe.js';
 import { assessRestart, buildVrDiagnostics, createFrameHealthTracker, createSceneTracker } from './vr-diagnostics.js';
 import {
@@ -979,6 +980,12 @@ async function createVrOverlayWindow(opts) {
     throw error;
   }
   activeVrOverlay = controller;
+  const edvrAdapter = createEdvrLogAdapter({
+    probe: detectEliteProcess,
+    onOrigin: (session, matrix) => controller.setApplicationOrigin(session, matrix),
+    onStatus: status => logger.info({ status }, 'EDVR seated-anchor logfile adapter'),
+  });
+  controller.attachAdapter(() => edvrAdapter.stop());
   return {
     kind: 'vr',
     window: overlayWindow,

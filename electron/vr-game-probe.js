@@ -24,7 +24,9 @@ $result = @($games | ForEach-Object {
       @{ name = $module.ModuleName; path = $module.FileName; product = $product }
     })
   } catch { $modulesAvailable = $false }
-  @{ pid = $game.Id; startedAt = $startedAt; modulesAvailable = $modulesAvailable; modules = $modules }
+  $executablePath = $null
+  try { $executablePath = $game.Path } catch {}
+  @{ pid = $game.Id; startedAt = $startedAt; executablePath = $executablePath; modulesAvailable = $modulesAvailable; modules = $modules }
 })
 ConvertTo-Json -InputObject $result -Depth 5 -Compress
 `;
@@ -60,6 +62,7 @@ export function normalizeGameProbe(games, checkedAt = Date.now()) {
     checkedAt,
     processes: games.map(game => ({
       pid: Number(game.pid),
+      executablePath: typeof game.executablePath === 'string' ? game.executablePath : null,
       startedAt: Number.isFinite(Date.parse(game.startedAt)) ? Date.parse(game.startedAt) : null,
       modulesAvailable: Boolean(game.modulesAvailable),
       ...identifyVrModules(game.modules),
