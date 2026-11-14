@@ -12,6 +12,7 @@ finish-args:
   # Network access
   - --share=network
   # Audio access
+  # Native libpulse clients use the host PulseAudio / pipewire-pulse socket.
   - --socket=pulseaudio
   # File access
   - --filesystem=home:rw
@@ -41,6 +42,7 @@ modules:
         path: ui/src/assets/EDAI_logo_transparent_512.png
         dest-filename: EDAI_logo_transparent_512.png
     build-commands:
+      - test -n "$(find /usr/lib -name libpulse.so.0 -print -quit)"
       # Create directories
       - mkdir -p /app/bin
       - mkdir -p /app/lib/covas-next-ui

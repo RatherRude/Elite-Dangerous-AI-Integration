@@ -897,7 +897,7 @@ class Chat:
                 log("error", e, traceback.format_exc())
                 break
 
-        # Teardown TTS
+        self.stt.quit()
         self.tts.quit()
 
         # Execute plugin chat stop hooks

@@ -7,6 +7,16 @@ from pathlib import Path
 import pysilero_vad
 import samplerate
 import sqlite_vec
+from PyInstaller.depend.bindepend import resolve_library_path
+
+
+def get_linux_audio_binaries() -> list[tuple[str, str]]:
+    if platform.system() != 'Linux':
+        return []
+    library = resolve_library_path('libpulse.so.0')
+    if not library:
+        raise RuntimeError('Linux builds require libpulse.so.0 (Debian/Ubuntu: libpulse0)')
+    return [(library, '.')]
 
 
 def get_sqlite_vec_binary() -> tuple[str, str]:
@@ -52,7 +62,7 @@ a = Analysis(
         get_sqlite_vec_binary(),
         get_audiostretchy_binary(),
         get_samplerate_binary(),
-    ],
+    ] + get_linux_audio_binaries(),
     datas=[('./src', '.'), (str(Path(pysilero_vad.__file__).resolve().parent / 'models' / 'silero_vad.onnx'), './pysilero_vad/models')],
     hiddenimports=['comtypes.stream', 'audiostretchy.stretch', 'audiostretchy.interface.tdhs', 'samplerate'],
     hookspath=[],

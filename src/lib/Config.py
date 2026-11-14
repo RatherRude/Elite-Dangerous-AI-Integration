@@ -1837,6 +1837,13 @@ def assign_ptt(config: Config, controller_manager, index: int = 0):
 
 
 def get_input_device_names() -> list[str]:
+    if sys.platform.startswith('linux'):
+        from .LinuxAudio import get_device_names
+        try:
+            return get_device_names(recording=True)
+        except OSError as error:
+            log('error', 'Unable to enumerate PulseAudio microphones', error)
+            return []
     import pyaudio
     try:
         p = pyaudio.PyAudio()
@@ -1864,6 +1871,13 @@ def get_default_input_device_name() -> str:
 
 
 def get_output_device_names() -> list[str]:
+    if sys.platform.startswith('linux'):
+        from .LinuxAudio import get_device_names
+        try:
+            return get_device_names(recording=False)
+        except OSError as error:
+            log('error', 'Unable to enumerate PulseAudio outputs', error)
+            return []
     import pyaudio
     try:
         p = pyaudio.PyAudio()
