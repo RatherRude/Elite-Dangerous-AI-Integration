@@ -13,6 +13,9 @@ import { WebSocketServer } from 'ws';
 import {VROverlay} from '@covas-labs/electron-vr';
 import { describeVrStatus } from './vr-status.js';
 import { getOverlayPlacement, normalizeVrPlacementOptions } from './vr-placement.js';
+import { updateExistingVrOverlay } from './vr-overlay-updates.js';
+import { createSeatController } from './vr-seat-controller.js';
+import { createEdvrLogAdapter } from './vr-edvr-log-adapter.js';
 import { createGameProbe } from './vr-game-probe.js';
 import { assessRestart, buildVrDiagnostics, createFrameHealthTracker, createSceneTracker } from './vr-diagnostics.js';
 import {
@@ -212,7 +215,7 @@ function normalizeOverlayOptions(opts = {}) {
     vrSizeMeters: Number.isFinite(opts.vrSizeMeters) && opts.vrSizeMeters > 0
       ? opts.vrSizeMeters
       : 0.9,
-    vrAnchor: opts.vrAnchor === 'world' ? 'world' : 'head',
+    vrAnchor: ['world', 'seated'].includes(opts.vrAnchor) ? opts.vrAnchor : 'head',
     ...normalizeVrPlacementOptions(opts),
     vrCurvature,
     standaloneTransparent: opts.standaloneTransparent !== false,
@@ -966,12 +969,28 @@ async function createVrOverlayWindow(opts) {
       : refreshedCompatibility.launch.message);
   }
 
-  activeVrOverlay = vrOverlay;
+  let controller;
+  try {
+    controller = createSeatController(vrOverlay, opts.vrAnchor,
+      getOverlayPlacement(opts.vrAnchor, opts.vrSizeMeters, opts.vrHorizontalOffset,
+        opts.vrVerticalOffset, opts.vrDistanceOffset, opts.vrTiltDegrees, opts.vrYawDegrees));
+  } catch (error) {
+    vrOverlay.destroy();
+    if (!overlayWindow.isDestroyed()) overlayWindow.destroy();
+    throw error;
+  }
+  activeVrOverlay = controller;
+  const edvrAdapter = createEdvrLogAdapter({
+    probe: detectEliteProcess,
+    onOrigin: (session, matrix) => controller.setApplicationOrigin(session, matrix),
+    onStatus: status => logger.info({ status }, 'EDVR seated-anchor logfile adapter'),
+  });
+  controller.attachAdapter(() => edvrAdapter.stop());
   return {
     kind: 'vr',
     window: overlayWindow,
     windows: [overlayWindow],
-    controller: vrOverlay,
+    controller,
     runtimeInfo,
     cleanedUp: false,
   };
@@ -1377,42 +1396,64 @@ app.whenReady().then(async ()=>{
   const backend = new BackendService();
   const mainWindow = createMainWindow();
   let floatingOverlay = null;
+  let floatingOverlayOptions = null;
+  let overlayOperation = Promise.resolve();
   ipcMain.handle('send_json_line', (...args)=>backend.sendJsonLine(...args));
   ipcMain.handle('start_process', (...args)=>{
-    // Close existing overlay on process start (handles reload scenarios)
-    if (floatingOverlay) {
-      disposeOverlay(floatingOverlay, backend);
-      floatingOverlay = null;
-    }
-    return backend.startProcess(mainWindow, ...args);
+    const operation = overlayOperation.then(() => {
+      if (floatingOverlay) {
+        disposeOverlay(floatingOverlay, backend);
+        floatingOverlay = null;
+      }
+      floatingOverlayOptions = null;
+      return backend.startProcess(mainWindow, ...args);
+    });
+    overlayOperation = operation.catch(() => {});
+    return operation;
   });
   ipcMain.handle('stop_process', (...args)=>backend.stopProcess(mainWindow, ...args));
-  ipcMain.handle('create_floating_overlay', async (event, opts) => {
-    if (floatingOverlay) {
-      // Always destroy existing overlay to apply new settings
-      disposeOverlay(floatingOverlay, backend);
-      floatingOverlay = null;
-    }
-    floatingOverlay = await createManagedOverlay(opts);
-    const activeOverlay = floatingOverlay;
-    if (floatingOverlay.runtimeInfo) {
-      logger.info('VR overlay runtime info:', floatingOverlay.runtimeInfo);
-    }
-    for (const window of floatingOverlay.windows ?? [floatingOverlay.window]) {
-      backend.attachWindow(window);
-      window.on('closed', () => {
-        disposeOverlay(activeOverlay, backend);
-        if (floatingOverlay === activeOverlay) {
-          floatingOverlay = null;
-        }
-      });
-    }
+  ipcMain.handle('create_floating_overlay', (event, opts) => {
+    const operation = overlayOperation.then(async () => {
+      const normalized = normalizeOverlayOptions(opts);
+      if (updateExistingVrOverlay(floatingOverlay, floatingOverlayOptions, normalized)) {
+        floatingOverlayOptions = normalized;
+        logger.info('Updated VR overlay in place; anchor preserved.');
+        return;
+      }
+      if (floatingOverlay) {
+        disposeOverlay(floatingOverlay, backend);
+        floatingOverlay = null;
+      }
+      floatingOverlay = await createManagedOverlay(opts);
+      floatingOverlayOptions = normalized;
+      const activeOverlay = floatingOverlay;
+      if (floatingOverlay.runtimeInfo) {
+        logger.info('VR overlay runtime info:', floatingOverlay.runtimeInfo);
+      }
+      for (const window of floatingOverlay.windows ?? [floatingOverlay.window]) {
+        backend.attachWindow(window);
+        window.on('closed', () => {
+          disposeOverlay(activeOverlay, backend);
+          if (floatingOverlay === activeOverlay) {
+            floatingOverlay = null;
+            floatingOverlayOptions = null;
+          }
+        });
+      }
+    });
+    overlayOperation = operation.catch(() => {});
+    return operation;
   });
-  ipcMain.handle('destroy_floating_overlay', async (event) => {
-    if (floatingOverlay) {
-      disposeOverlay(floatingOverlay, backend);
-      floatingOverlay = null;
-    }
+  ipcMain.handle('destroy_floating_overlay', (event) => {
+    const operation = overlayOperation.then(() => {
+      if (floatingOverlay) {
+        disposeOverlay(floatingOverlay, backend);
+        floatingOverlay = null;
+      }
+      floatingOverlayOptions = null;
+    });
+    overlayOperation = operation.catch(() => {});
+    return operation;
   });
   ipcMain.handle('start_remote_interface', async (event, opts = {}) => {
     if (remoteInterface) {

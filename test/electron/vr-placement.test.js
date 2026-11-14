@@ -12,6 +12,25 @@ const placementKeys = [
   'vrYawDegrees',
 ];
 
+test('seated configuration starts at the legacy world pose before seat conversion', () => {
+  const placement = getOverlayPlacement('seated', 0.9, 0.4, -0.3, -0.5, 15, 30);
+  assert.equal(placement.mode, 'world');
+  assert.deepEqual(placement.position, getOverlayPlacement('world', 0.9, 0.4, -0.3, -0.5, 15, 30).position);
+  assert.deepEqual(placement.rotation, getOverlayPlacement('head', 0.9, 0, 0, 0, 15, 30).rotation);
+  assert.equal(getOverlayPlacement('seated', 0.9, 0, 0, -100).position.z, -0.1);
+  assert.deepEqual(getOverlayPlacement('seated', 0.9).position, getOverlayPlacement('world', 0.9).position);
+  assert.deepEqual(getOverlayPlacement('seated', 1.5, -0.2, 0.15, -0.42).position,
+    getOverlayPlacement('world', 1.5, -0.2, 0.15, -0.42).position);
+});
+
+test('both settings views offer seated anchoring', () => {
+  for (const settings of ['general-settings', 'advanced-settings']) {
+    const template = fs.readFileSync(new URL(
+      `../../ui/src/app/components/${settings}/${settings}.component.html`, import.meta.url), 'utf8');
+    assert.match(template, /<mat-option value="seated">Seated Anchor<\/mat-option>/);
+  }
+});
+
 test('preserves manually configured positions and angles beyond the slider ranges', () => {
   for (const key of placementKeys) {
     for (const value of [-1000, -180, -1.9, -0.75, 0, 1.5, 180, 1000]) {

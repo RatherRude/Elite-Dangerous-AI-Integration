@@ -131,7 +131,7 @@ export interface Config {
     overlay_standalone_transparent: boolean;
     overlay_standalone_background_color: string;
     overlay_vr_size_meters: number;
-    overlay_vr_anchor: "head" | "world";
+    overlay_vr_anchor: "head" | "world" | "seated";
     overlay_vr_horizontal_offset: number;
     overlay_vr_vertical_offset: number;
     overlay_vr_distance_offset: number;
