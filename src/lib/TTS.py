@@ -15,12 +15,12 @@ import wave
 from audiostretchy.stretch import AudioStretch
 import miniaudio
 import numpy as np
-import pyaudio
 import samplerate
 import strip_markdown
 from numpy.typing import NDArray
 from num2words import num2words
 
+from .Audio import PCMOutput
 from .Config import (
     CharacterTTSChorusConfig,
     CharacterTTSDistortionConfig,
@@ -124,16 +124,16 @@ class TTS:
             postprocessing_config or get_default_character_tts_postprocessing(),
         )
         
-        self.p = pyaudio.PyAudio()
+        self._shutdown = threading.Event()
+        self._queue_lock = threading.Lock()
         self.output_device = output_device
         self.output_volume_multiplier = max(0.0, min(1.5, float(output_volume_multiplier)))
         self.read_queue = queue.Queue()
         self.is_aborted = False
         self._is_playing = False
         self.prebuffer_size = 4
-        self.output_format = pyaudio.paInt16
         self.frames_per_buffer = 1024
-        self.sample_size = self.p.get_sample_size(self.output_format)
+        self.sample_size = 2
         self._lp_state = LowpassState()
         self._hp_state = HighpassState()
         self._chorus_state = ChorusState(buffer=np.zeros(int(24_000 * 0.1), dtype=np.float32))
@@ -145,6 +145,7 @@ class TTS:
 
         thread = threading.Thread(target=self._playback_thread)
         thread.daemon = True
+        self._thread = thread
         thread.start()
 
     def _normalize_queue_item(self, item: Any) -> dict[str, Any]:
@@ -200,113 +201,100 @@ class TTS:
         np.clip(arr, -32768.0, 32767.0, out=arr)
         return arr.astype(np.int16).tobytes()
 
-    def _get_output_device_index(self) -> Optional[int]: #Rewert from String to Index
-        if not isinstance(self.output_device, str) or not self.output_device:
-            return None
-        substring_match: Optional[int] = None
-        for i in range(self.p.get_device_count()):
-            dev_info = self.p.get_device_info_by_index(i)
-            device_name = dev_info.get('name', '')
-            if not isinstance(device_name, str):
-                continue
-            if device_name == self.output_device:
-                return i
-            if substring_match is None and self.output_device in device_name:
-                substring_match = i
-        return substring_match
-
     def _playback_thread(self):
         backoff = 1
-        while True:
+        while not self._shutdown.is_set():
             try:
                 self._playback_loop()
             except Exception as e:
                 log('error', 'An error occurred during speech synthesis', e, traceback.format_exc())
                 show_chat_message('error', 'An error occurred during speech synthesis:', e)
-                sleep(backoff)
+                self._shutdown.wait(min(backoff, 30))
                 log('info', 'Attempting to restart audio playback after failure')
                 backoff *= 2
 
     def _playback_loop(self):
-        output_index = self._get_output_device_index()
-        stream = self.p.open(
-            format=self.output_format,
-            channels=1,
-            rate=24_000,
-            frames_per_buffer=self.frames_per_buffer,
-            output=True,
-            output_device_index=output_index  
+        stream = PCMOutput(
+            self.output_device,
+            interrupted=lambda: self.is_aborted or self._shutdown.is_set(),
         )
-        while True:
-            self.is_aborted = False
-            stream.start_stream()
-            while not self.is_aborted:
-                if not self.read_queue.empty():
+        while not self._shutdown.is_set():
+            with self._queue_lock:
+                try:
+                    queued_item = self.read_queue.get_nowait()
+                except queue.Empty:
+                    queued_item = None
+                if queued_item is not None:
+                    self.is_aborted = False
                     self._is_playing = True
-                    item = self._normalize_queue_item(self.read_queue.get())
-                    item_type = item.get("type")
-                    text = item.get("text")
-                    context = item.get("context")
-                    file_path = item.get("file_path")
-                    voice = item.get("voice")
-                    postprocessing = item.get("postprocessing")
-                    postprocessing_layers = item.get("postprocessing_layers")
-                    on_start = item.get("on_start")
-                    on_complete = item.get("on_complete")
-                    drop_if = item.get("drop_if")
-                    line = item.get("line")
-                    if callable(drop_if) and drop_if():
-                        if isinstance(line, TTSLine):
-                            line.mark_completed()
-                        continue
-                    requeued = False
-                    try:
-                        if isinstance(line, TTSLine):
-                            line.mark_speaking()
-                        if callable(on_start):
-                            try:
-                                on_start()
-                            except Exception as callback_error:
-                                log('warn', 'TTS on_start callback failed', callback_error)
-                        if item_type == "audio_file":
-                            if not isinstance(file_path, str) or not file_path:
-                                continue
-                            self._playback_audio_file(file_path, stream)
-                        else:
-                            if not isinstance(text, str) or not text:
-                                continue
-                            self._playback_one(
-                                text,
-                                stream,
-                                context if isinstance(context, str) else "speech",
-                                voice if isinstance(voice, str) else None,
-                                cast(CharacterTTSPostprocessingConfig | None, postprocessing if isinstance(postprocessing, dict) else None),
-                                cast(list[CharacterTTSPostprocessingConfig | None] | None, postprocessing_layers if isinstance(postprocessing_layers, list) else None),
-                            )
-                    except Exception as e:
-                        self.read_queue.put(item)
-                        requeued = True
-                        raise e
-                    finally:
-                        if isinstance(line, TTSLine) and not requeued:
-                            line.mark_completed()
-                        if callable(on_complete):
-                            try:
-                                on_complete()
-                            except Exception as callback_error:
-                                log('warn', 'TTS on_complete callback failed', callback_error)
-
+            if queued_item is None:
+                self._shutdown.wait(0.02)
+                continue
+            item = self._normalize_queue_item(queued_item)
+            item_type = item.get("type")
+            text = item.get("text")
+            context = item.get("context")
+            file_path = item.get("file_path")
+            voice = item.get("voice")
+            postprocessing = item.get("postprocessing")
+            postprocessing_layers = item.get("postprocessing_layers")
+            on_start = item.get("on_start")
+            on_complete = item.get("on_complete")
+            drop_if = item.get("drop_if")
+            line = item.get("line")
+            if callable(drop_if) and drop_if():
+                if isinstance(line, TTSLine):
+                    line.mark_completed()
                 self._is_playing = False
-
-                sleep(0.1)
-            self._is_playing = False
-            stream.stop_stream()
+                continue
+            requeued = False
+            try:
+                if isinstance(line, TTSLine):
+                    line.mark_speaking()
+                if callable(on_start):
+                    try:
+                        on_start()
+                    except Exception as callback_error:
+                        log('warn', 'TTS on_start callback failed', callback_error)
+                if item_type == "audio_file":
+                    if not isinstance(file_path, str) or not file_path:
+                        continue
+                    self._playback_audio_file(file_path, stream)
+                else:
+                    if not isinstance(text, str) or not text:
+                        continue
+                    self._playback_one(
+                        text,
+                        stream,
+                        context if isinstance(context, str) else "speech",
+                        voice if isinstance(voice, str) else None,
+                        cast(CharacterTTSPostprocessingConfig | None, postprocessing if isinstance(postprocessing, dict) else None),
+                        cast(list[CharacterTTSPostprocessingConfig | None] | None, postprocessing_layers if isinstance(postprocessing_layers, list) else None),
+                    )
+                stream.finish()
+            except Exception as e:
+                if not self.is_aborted and not self._shutdown.is_set():
+                    self.read_queue.put(item)
+                    requeued = True
+                raise e
+            finally:
+                try:
+                    stream.close()
+                finally:
+                    self._is_playing = False
+                    if isinstance(line, TTSLine) and not requeued:
+                        line.mark_completed()
+                    if callable(on_complete):
+                        try:
+                            on_complete()
+                        except Exception as callback_error:
+                            log('warn', 'TTS on_complete callback failed', callback_error)
 
     @observe()
     def _playback_one(
         self,
         text: str,
-        stream: pyaudio.Stream,
+        stream: PCMOutput,
         context: str = "speech",
         voice_override: str | None = None,
         postprocessing_override: CharacterTTSPostprocessingConfig | None = None,
@@ -319,9 +307,6 @@ class TTS:
         start_time = time()
         first_byte_time = None
         total_audio_bytes = 0
-        first_chunk = True
-        underflow_count = 0
-        empty_buffer_available = stream.get_write_available()
         self._reset_postprocessing_state()
         postprocessing = self._get_effective_postprocessing_config(
             postprocessing_override,
@@ -342,26 +327,7 @@ class TTS:
                 log('debug', f'Response time TTS', first_byte_time - start_time)
             if self.is_aborted:
                 break
-            try:
-                if not first_chunk:
-                    available = stream.get_write_available()
-                    # log('debug', 'tts write available', available)
-                    if available == empty_buffer_available:
-                        raise IOError('underflow')
-                stream.write(
-                    self._apply_output_gain_pcm16(chunk),
-                    exception_on_underflow=False,
-                )  # this may throw for various system reasons
-                first_chunk = False
-            except IOError as e:
-                if not first_chunk:
-                    underflow_count += 1
-                    # log('debug', 'tts underflow detected', underflow_count)
-                stream.write(self._apply_output_gain_pcm16(chunk), exception_on_underflow=False)
-        
-        if underflow_count > 0:
-            self.prebuffer_size *= 2
-            log('debug', 'tts underflow detected, total', underflow_count, 'increasing prebuffer size to', self.prebuffer_size)
+            stream.write(self._apply_output_gain_pcm16(chunk))
 
         output_audio_duration_ms = 0.0
         if total_audio_bytes > 0:
@@ -575,7 +541,7 @@ class TTS:
                 show_chat_message('error', 'TTS synthesis error:', str(e))
 
     @observe()
-    def _playback_audio_file(self, file_path: str, stream: pyaudio.Stream):
+    def _playback_audio_file(self, file_path: str, stream: PCMOutput):
         resolved = Path(file_path)
         if not resolved.exists():
             raise FileNotFoundError(f"Audio file not found: {resolved}")
@@ -592,7 +558,6 @@ class TTS:
                 break
             stream.write(
                 self._apply_output_gain_pcm16(frame.tobytes()),
-                exception_on_underflow=False,
             )
 
     def _number_to_text(self, match: re.Match[str]):
@@ -1413,13 +1378,16 @@ class TTS:
         )
 
     def abort(self):
-        while not self.read_queue.empty():
-            item = self._normalize_queue_item(self.read_queue.get())
-            line = item.get("line")
-            if isinstance(line, TTSLine):
-                line.mark_completed()
-
-        self.is_aborted = True
+        with self._queue_lock:
+            self.is_aborted = True
+            while True:
+                try:
+                    item = self._normalize_queue_item(self.read_queue.get_nowait())
+                except queue.Empty:
+                    break
+                line = item.get("line")
+                if isinstance(line, TTSLine):
+                    line.mark_completed()
 
     def get_is_playing(self):
         return self._is_playing or not self.read_queue.empty()
@@ -1433,7 +1401,12 @@ class TTS:
             sleep(0.2)
 
     def quit(self):
-        pass
+        self._shutdown.set()
+        self.abort()
+        if threading.current_thread() is not self._thread:
+            self._thread.join(timeout=2)
+        if self._thread.is_alive():
+            log('warn', 'Audio worker is still waiting for a backend or synthesis call to return')
 
 
 if __name__ == "__main__":

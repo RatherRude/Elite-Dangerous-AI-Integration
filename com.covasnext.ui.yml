@@ -11,7 +11,7 @@ finish-args:
   - --share=ipc
   # Network access
   - --share=network
-  # Audio access
+  # SoundCard uses the PulseAudio protocol, including PipeWire's pulse server.
   - --socket=pulseaudio
   # File access
   - --filesystem=home:rw

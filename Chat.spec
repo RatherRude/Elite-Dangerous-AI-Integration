@@ -7,6 +7,7 @@ from pathlib import Path
 import pysilero_vad
 import samplerate
 import sqlite_vec
+from PyInstaller.utils.hooks import collect_data_files
 
 
 def get_sqlite_vec_binary() -> tuple[str, str]:
@@ -53,7 +54,7 @@ a = Analysis(
         get_audiostretchy_binary(),
         get_samplerate_binary(),
     ],
-    datas=[('./src', '.'), (str(Path(pysilero_vad.__file__).resolve().parent / 'models' / 'silero_vad.onnx'), './pysilero_vad/models')],
+    datas=collect_data_files('soundcard') + [('./src', '.'), (str(Path(pysilero_vad.__file__).resolve().parent / 'models' / 'silero_vad.onnx'), './pysilero_vad/models')],
     hiddenimports=['comtypes.stream', 'audiostretchy.stretch', 'audiostretchy.interface.tdhs', 'samplerate'],
     hookspath=[],
     hooksconfig={},

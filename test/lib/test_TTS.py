@@ -3,6 +3,7 @@ from math import ceil
 from httpx import Response
 import pytest
 from unittest.mock import MagicMock
+import threading
 from time import sleep
 from src.lib.Config import map_character_tts_postprocessing
 from src.lib.TTS import TTS
@@ -27,32 +28,22 @@ def band_rms(samples: np.ndarray, sample_rate: int, min_hz: float, max_hz: float
     return float(np.sqrt(np.mean(filtered * filtered)))
 
 @pytest.fixture
-def mock_pyaudio(monkeypatch):
-    """Mock PyAudio functionality"""
-    mock_audio = MagicMock()
-    mock_stream = MagicMock()
-    
-    # Mock audio playback
-    mock_stream.write = MagicMock()
-    
-    # Mock device info
-    mock_audio.get_default_host_api_info.return_value = {
-        'index': 0,
-        'deviceCount': 2
-    }
-    mock_audio.get_device_info_by_host_api_device_index.return_value = {
-        'name': 'TestDevice',
-        'index': 1
-    }
-    mock_audio.get_sample_size.return_value = 2
-    mock_audio.open.return_value = mock_stream
-    
-    monkeypatch.setattr('pyaudio.PyAudio', lambda: mock_audio)
-    monkeypatch.setattr('src.lib.TTS.pyaudio.PyAudio', lambda: mock_audio)
-    return {
-        'audio': mock_audio,
-        'stream': mock_stream
-    }
+def mock_audio_output(monkeypatch):
+    instances = []
+    original_init = TTS.__init__
+
+    def initialize(instance, *args, **kwargs):
+        original_init(instance, *args, **kwargs)
+        instances.append(instance)
+
+    monkeypatch.setattr(TTS, '__init__', initialize)
+    factory = MagicMock()
+    stream = MagicMock()
+    factory.return_value = stream
+    monkeypatch.setattr('src.lib.TTS.PCMOutput', factory)
+    yield {'audio': factory, 'stream': stream}
+    for instance in instances:
+        instance.quit()
 
 def gen_audio_response(data: bytes):
     """Generate audio response"""
@@ -97,7 +88,7 @@ def mock_miniaudio(monkeypatch):
     monkeypatch.setattr('miniaudio.stream_any', mock_stream.stream_any)
     return mock_stream
 
-def test_openai_tts_playback(mock_pyaudio, mock_openai):
+def test_openai_tts_playback(mock_audio_output, mock_openai):
     """Test OpenAI TTS playback"""
     mock_model = MagicMock(spec=OpenAITTSModel)
     mock_model.client = mock_openai
@@ -109,13 +100,13 @@ def test_openai_tts_playback(mock_pyaudio, mock_openai):
     while not mock_model.synthesize.called:
         sleep(0.1)
     
-    while not mock_pyaudio['stream'].write.call_count == ceil(2*24_000/1024):
+    while not mock_audio_output['stream'].write.call_count == ceil(2*24_000/1024):
         sleep(0.1)
         
-    assert mock_pyaudio['stream'].write.call_count == ceil(2*24_000/1024)
+    assert mock_audio_output['stream'].write.call_count == ceil(2*24_000/1024)
 
 
-def test_tts_passes_character_voice_settings_and_applies_voice_override(mock_pyaudio):
+def test_tts_passes_character_voice_settings_and_applies_voice_override(mock_audio_output):
     mock_model = MagicMock(spec=OpenAITTSModel)
     mock_model.synthesize_with_settings.return_value = [b'pcm']
     tts = TTS(
@@ -132,7 +123,7 @@ def test_tts_passes_character_voice_settings_and_applies_voice_override(mock_pya
     mock_model.synthesize.assert_not_called()
 
 
-def test_tts_does_not_inject_legacy_voice_into_provider_settings(mock_pyaudio):
+def test_tts_does_not_inject_legacy_voice_into_provider_settings(mock_audio_output):
     mock_model = MagicMock(spec=OpenAITTSModel)
     mock_model.synthesize_with_settings.return_value = [b'pcm']
     tts = TTS(
@@ -147,7 +138,7 @@ def test_tts_does_not_inject_legacy_voice_into_provider_settings(mock_pyaudio):
     })
 
 
-def test_openai_tts_playback_with_voice_instructions(mock_pyaudio, mock_openai):
+def test_openai_tts_playback_with_voice_instructions(mock_audio_output, mock_openai):
     """Test OpenAI TTS playback with voice instructions"""
     mock_model = MagicMock(spec=OpenAITTSModel)
     mock_model.client = mock_openai
@@ -160,10 +151,10 @@ def test_openai_tts_playback_with_voice_instructions(mock_pyaudio, mock_openai):
     while not mock_model.synthesize.called:
         sleep(0.1)
 
-    while not mock_pyaudio['stream'].write.call_count == ceil(2 * 24_000 / 1024):
+    while not mock_audio_output['stream'].write.call_count == ceil(2 * 24_000 / 1024):
         sleep(0.1)
 
-    assert mock_pyaudio['stream'].write.call_count == ceil(2 * 24_000 / 1024)
+    assert mock_audio_output['stream'].write.call_count == ceil(2 * 24_000 / 1024)
 
 
 def test_mistral_tts_streams_base64_float32_pcm():
@@ -269,7 +260,7 @@ def test_openai_tts_request_omits_unsupported_voice_instructions(mock_openai):
     request = mock_openai.audio.speech.with_streaming_response.create.call_args.kwargs
     assert "instructions" not in request
 
-def test_edge_tts_playback(mock_pyaudio, mock_miniaudio, mock_openai):
+def test_edge_tts_playback(mock_audio_output, mock_miniaudio, mock_openai):
     """Test Edge-TTS playback"""
     mock_model = MagicMock(spec=EdgeTTSModel)
     mock_model.synthesize.return_value = [b'\x00\x00' * 1024, b'\x00\x00' * 1024]
@@ -277,14 +268,14 @@ def test_edge_tts_playback(mock_pyaudio, mock_miniaudio, mock_openai):
     tts = TTS(mock_model, voice="en-US-AvaMultilingualNeural", speed=1.0)
     tts.say("Hello world")
     
-    while not mock_pyaudio['stream'].write.call_count >= 2:
+    while not mock_audio_output['stream'].write.call_count >= 2:
         sleep(0.1)
     
     assert mock_model.synthesize.call_count == 1
-    assert mock_pyaudio['stream'].write.call_count == 2
+    assert mock_audio_output['stream'].write.call_count == 2
 
 
-def test_tts_say_returns_line_lifecycle(mock_pyaudio):
+def test_tts_say_returns_line_lifecycle(mock_audio_output):
     mock_model = MagicMock(spec=OpenAITTSModel)
     mock_model.synthesize.return_value = [b'\x00\x00' * 1024]
 
@@ -299,7 +290,7 @@ def test_tts_say_returns_line_lifecycle(mock_pyaudio):
     assert line.is_completed()
 
 
-def test_tts_dropped_line_completes_without_speaking(mock_pyaudio):
+def test_tts_dropped_line_completes_without_speaking(mock_audio_output):
     mock_model = MagicMock(spec=OpenAITTSModel)
 
     tts = TTS(mock_model, voice="nova", speed=1.0)
@@ -312,7 +303,48 @@ def test_tts_dropped_line_completes_without_speaking(mock_pyaudio):
     assert mock_model.synthesize.call_count == 0
 
 
-def test_postprocess_audio_applies_volume_and_distortion(mock_pyaudio):
+def test_completion_waits_for_backend_finish(mock_audio_output):
+    entered = threading.Event()
+    release = threading.Event()
+
+    def finish():
+        entered.set()
+        assert release.wait(2)
+
+    mock_audio_output['stream'].finish.side_effect = finish
+    mock_model = MagicMock(spec=OpenAITTSModel)
+    mock_model.synthesize.return_value = [bytes(2)]
+    tts = TTS(mock_model)
+    completed = threading.Event()
+    line = tts.say('Short clip', on_complete=completed.set)
+    try:
+        assert entered.wait(2)
+        assert not line.is_completed()
+        assert not completed.is_set()
+    finally:
+        release.set()
+    line.wait_for_completion()
+    assert completed.wait(2)
+    mock_audio_output['stream'].close.assert_called()
+
+
+def test_auxiliary_audio_file_uses_pcm_output(mock_audio_output, monkeypatch, tmp_path):
+    path = tmp_path / 'clip.wav'
+    path.touch()
+    import miniaudio
+    monkeypatch.setattr(miniaudio, 'stream_file', MagicMock(return_value=[np.array([32767, -32768], dtype=np.int16)]))
+    tts = TTS(None)
+    tts._playback_audio_file(str(path), mock_audio_output['stream'])
+    mock_audio_output['stream'].write.assert_called_once_with(np.array([32767, -32768], dtype=np.int16).tobytes())
+
+
+def test_quit_stops_worker(mock_audio_output):
+    tts = TTS(None)
+    tts.quit()
+    assert not tts._thread.is_alive()
+
+
+def test_postprocess_audio_applies_volume_and_distortion(mock_audio_output):
     """Test TTS postprocessing reshapes synthesized audio"""
     tts = TTS(
         None,
@@ -339,7 +371,7 @@ def test_postprocess_audio_applies_volume_and_distortion(mock_pyaudio):
     assert np.max(np.abs(processed)) <= np.iinfo(np.int16).max
 
 
-def test_postprocess_audio_distortion_mix_blends_dry_and_wet(mock_pyaudio):
+def test_postprocess_audio_distortion_mix_blends_dry_and_wet(mock_audio_output):
     """Test distortion mix interpolates between dry and distorted output"""
     source = np.array([4000, -4000, 12000, -12000], dtype=np.int16)
     base_config = {
@@ -398,7 +430,7 @@ def test_postprocess_audio_distortion_mix_blends_dry_and_wet(mock_pyaudio):
     assert np.all(np.abs(half.astype(np.float32) - dry.astype(np.float32)) < np.abs(wet.astype(np.float32) - dry.astype(np.float32)))
 
 
-def test_postprocess_audio_distortion_stabilizes_output_level(mock_pyaudio):
+def test_postprocess_audio_distortion_stabilizes_output_level(mock_audio_output):
     """Test distortion compensates output level toward the dry signal"""
     source = np.array([1000, -1000, 4000, -4000, 9000, -9000], dtype=np.int16)
     processed = np.frombuffer(
@@ -425,7 +457,7 @@ def test_postprocess_audio_distortion_stabilizes_output_level(mock_pyaudio):
     assert 0.8 <= processed_rms / dry_rms <= 1.2
 
 
-def test_postprocess_audio_reverb_adds_tail(mock_pyaudio):
+def test_postprocess_audio_reverb_adds_tail(mock_audio_output):
     """Test reverb adds an audible tail beyond the source chunk"""
     tts = TTS(None)
     source = np.zeros(1024, dtype=np.int16)
@@ -450,7 +482,7 @@ def test_postprocess_audio_reverb_adds_tail(mock_pyaudio):
     assert np.max(np.abs(tail_chunk)) > 0
 
 
-def test_postprocess_audio_chorus_is_chunk_consistent(mock_pyaudio):
+def test_postprocess_audio_chorus_is_chunk_consistent(mock_audio_output):
     """Test chorus block processing stays consistent across chunk boundaries"""
     sample_rate = 24_000
     time_axis = np.arange(2048, dtype=np.float32) / sample_rate
@@ -483,7 +515,7 @@ def test_postprocess_audio_chorus_is_chunk_consistent(mock_pyaudio):
     assert np.max(np.abs(whole_audio - split_audio)) <= 2.0
 
 
-def test_postprocess_audio_lowpass_reduces_high_frequency_energy(mock_pyaudio):
+def test_postprocess_audio_lowpass_reduces_high_frequency_energy(mock_audio_output):
     """Test lowpass attenuates highs while preserving low-frequency content"""
     tts = TTS(None)
     sample_rate = 24_000
@@ -518,7 +550,7 @@ def test_postprocess_audio_lowpass_reduces_high_frequency_energy(mock_pyaudio):
     assert filtered_high / max(filtered_low, 1e-6) < original_high / max(original_low, 1e-6) * 0.4
 
 
-def test_postprocess_audio_highpass_reduces_low_frequency_energy(mock_pyaudio):
+def test_postprocess_audio_highpass_reduces_low_frequency_energy(mock_audio_output):
     """Test highpass attenuates lows while preserving high-frequency content"""
     tts = TTS(None)
     sample_rate = 24_000
@@ -553,7 +585,7 @@ def test_postprocess_audio_highpass_reduces_low_frequency_energy(mock_pyaudio):
     assert filtered_high / max(filtered_low, 1e-6) > original_high / max(original_low, 1e-6) * 2.5
 
 
-def test_reverb_tail_highpass_reduces_low_end_over_time(mock_pyaudio):
+def test_reverb_tail_highpass_reduces_low_end_over_time(mock_audio_output):
     """Test tail highpass keeps reducing sustained low energy over time"""
     tts = TTS(None)
     constant_signal = np.full(2048, 0.5, dtype=np.float32)
@@ -565,7 +597,7 @@ def test_reverb_tail_highpass_reduces_low_end_over_time(mock_pyaudio):
     assert abs(float(second[-1])) < 0.01
 
 
-def test_reverb_tail_highpass_preserves_more_highs_than_lows(mock_pyaudio):
+def test_reverb_tail_highpass_preserves_more_highs_than_lows(mock_audio_output):
     """Test continuous tail highpass reduces lows more than highs"""
     tts = TTS(None)
     sample_rate = 24_000
@@ -586,7 +618,7 @@ def test_reverb_tail_highpass_preserves_more_highs_than_lows(mock_pyaudio):
     assert shaped_high / max(shaped_low, 1e-6) > original_high / max(original_low, 1e-6)
 
 
-def test_postprocess_audio_glitch_repeats_previous_chunk(mock_pyaudio, monkeypatch):
+def test_postprocess_audio_glitch_repeats_previous_chunk(mock_audio_output, monkeypatch):
     """Test glitch effect replays recent synthesized audio"""
     monkeypatch.setattr("src.lib.TTS.random.random", lambda: 0.0)
     monkeypatch.setattr("src.lib.TTS.random.randint", lambda _a, _b: 2)
@@ -613,7 +645,7 @@ def test_postprocess_audio_glitch_repeats_previous_chunk(mock_pyaudio, monkeypat
     assert processed_chunks[2] == first + first
 
 
-def test_glitch_effect_applies_base_and_burst_detune(mock_pyaudio, monkeypatch):
+def test_glitch_effect_applies_base_and_burst_detune(mock_audio_output, monkeypatch):
     """Test glitch effect adds subtle base detune and stronger glitch detune"""
     monkeypatch.setattr("src.lib.TTS.random.random", lambda: 0.0)
     monkeypatch.setattr("src.lib.TTS.random.randint", lambda _a, _b: 2)
@@ -692,7 +724,7 @@ def test_reverb_config_maps_mix_and_tail():
     assert config["effects"]["reverb"]["tail"] == pytest.approx(0.42)
 
 
-def test_merge_effect_settings_combines_character_and_environment_layers(mock_pyaudio):
+def test_merge_effect_settings_combines_character_and_environment_layers(mock_audio_output):
     """Test layered postprocessing merges additive effect settings"""
     tts = TTS(None)
 
@@ -753,7 +785,7 @@ def test_merge_effect_settings_combines_character_and_environment_layers(mock_py
     assert merged["effects"]["reverb"]["tail"] == pytest.approx(0.25)
 
 
-def test_time_pitch_effect_stretches_audio_without_changing_pitch(mock_pyaudio):
+def test_time_pitch_effect_stretches_audio_without_changing_pitch(mock_audio_output):
     """Test time stretch preserves dominant pitch while changing duration"""
     tts = TTS(None)
     sample_rate = 24_000
@@ -774,7 +806,7 @@ def test_time_pitch_effect_stretches_audio_without_changing_pitch(mock_pyaudio):
     assert dominant_frequency(processed, sample_rate) == pytest.approx(440.0, abs=20.0)
 
 
-def test_time_pitch_effect_shifts_pitch_without_changing_duration(mock_pyaudio):
+def test_time_pitch_effect_shifts_pitch_without_changing_duration(mock_audio_output):
     """Test pitch shift changes dominant pitch while preserving duration"""
     tts = TTS(None)
     sample_rate = 24_000
@@ -795,7 +827,7 @@ def test_time_pitch_effect_shifts_pitch_without_changing_duration(mock_pyaudio):
     assert dominant_frequency(processed, sample_rate) == pytest.approx(880.0, abs=35.0)
 
 
-def test_time_pitch_effect_combines_independent_pitch_and_time(mock_pyaudio):
+def test_time_pitch_effect_combines_independent_pitch_and_time(mock_audio_output):
     """Test combined time-pitch keeps requested duration and pitch targets"""
     tts = TTS(None)
     sample_rate = 24_000
