@@ -1,5 +1,8 @@
+import ast
 import sys
 from contextlib import contextmanager
+from importlib.metadata import distribution
+from itertools import chain, repeat
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
@@ -122,6 +125,87 @@ def test_output_conversion_short_clip_completion_and_cleanup(backend, clock):
     assert player.play.call_count > 1
     backend.speaker.player.return_value.__exit__.assert_called_once()
     output.close()
+    backend.session.exit.assert_called_once()
+
+
+@pytest.mark.parametrize('platform,module', [('linux', 'pulseaudio'), ('darwin', 'coreaudio'), ('win32', 'mediafoundation')])
+def test_playback_wait_option_matches_pinned_backend_signature(backend, clock, monkeypatch, platform, module):
+    source = distribution('SoundCard').locate_file(f'soundcard/{module}.py').read_text()
+    player_class = next(node for node in ast.parse(source).body if isinstance(node, ast.ClassDef) and node.name == '_Player')
+    play = next(node for node in player_class.body if isinstance(node, ast.FunctionDef) and node.name == 'play')
+    parameters = [argument.arg for argument in play.args.args]
+    assert parameters == (['self', 'data', 'wait'] if module == 'coreaudio' else ['self', 'data'])
+
+    calls = []
+
+    def play_without_wait(data):
+        calls.append({})
+
+    def play_with_wait(data, wait=True):
+        calls.append({'wait': wait})
+
+    player = backend.speaker.player.return_value.__enter__.return_value
+    player.play = play_with_wait if 'wait' in parameters else play_without_wait
+    monkeypatch.setattr(Audio.sys, 'platform', platform)
+    if platform == 'darwin':
+        monkeypatch.setattr(Audio, 'device_id', lambda device: str(device.id))
+    if platform == 'win32':
+        monkeypatch.setattr(Audio.PCMOutput, '_write_wasapi', staticmethod(play_without_wait))
+    output = Audio.PCMOutput('sink-usb', lambda: False)
+    output.write(bytes(1024))
+    output.finish()
+    assert len(calls) > 2
+    assert calls == ([{'wait': False}] * len(calls) if module == 'coreaudio' else [{}] * len(calls))
+
+
+@pytest.mark.parametrize('frames', [3, 32, 480, 512])
+@pytest.mark.parametrize('channels', [1, 2, 6])
+def test_wasapi_acquires_and_releases_only_copied_frames(backend, clock, monkeypatch, frames, channels):
+    import cffi
+
+    ffi = cffi.FFI()
+    monkeypatch.setitem(sys.modules, 'soundcard.mediafoundation', SimpleNamespace(_ffi=ffi))
+    monkeypatch.setattr(Audio.sys, 'platform', 'win32')
+    player = backend.speaker.player.return_value.__enter__.return_value
+    player.channelmap = list(range(channels))
+    player._render_available_frames.side_effect = chain([0, 2], repeat(4096))
+    buffer = ffi.new('float[]', [13.5] * (4096 * channels))
+    player._render_buffer.return_value = [buffer]
+    written = []
+
+    def release(count):
+        written.append(np.frombuffer(ffi.buffer(buffer, count * channels * 4), dtype=np.float32).copy())
+
+    player._render_release.side_effect = release
+    samples = np.arange(frames, dtype='<i2')
+    output = Audio.PCMOutput('sink-usb', lambda: False)
+    output.write(samples.tobytes())
+    acquired = [call.args[0] for call in player._render_buffer.call_args_list]
+    released = [call.args[0] for call in player._render_release.call_args_list]
+    assert acquired == released
+    assert sum(released) == frames
+    assert max(released) <= 480
+    np.testing.assert_allclose(np.concatenate(written).reshape(-1, channels), np.repeat(samples[:, None] / 32768, channels, axis=1))
+    assert buffer[480 * channels] == 13.5
+    player.play.assert_not_called()
+    output.close()
+    backend.speaker.player.return_value.__exit__.assert_called_once()
+    backend.session.exit.assert_called_once()
+
+
+def test_wasapi_interrupt_while_waiting_for_render_space(backend, clock, monkeypatch):
+    monkeypatch.setitem(sys.modules, 'soundcard.mediafoundation', SimpleNamespace(_ffi=MagicMock()))
+    monkeypatch.setattr(Audio.sys, 'platform', 'win32')
+    aborted = [False]
+    player = backend.speaker.player.return_value.__enter__.return_value
+    player.channelmap = [0, 1]
+    player._render_available_frames.return_value = 0
+    monkeypatch.setattr(Audio, 'sleep', lambda duration: aborted.__setitem__(0, True))
+    output = Audio.PCMOutput('sink-usb', lambda: aborted[0])
+    output.write(bytes(1024))
+    output.finish()
+    player._render_buffer.assert_not_called()
+    player._render_release.assert_not_called()
     backend.session.exit.assert_called_once()
 
 

@@ -223,6 +223,8 @@ class TTS:
         )
         while not self._shutdown.is_set():
             with self._queue_lock:
+                if self._shutdown.is_set():
+                    break
                 try:
                     queued_item = self.read_queue.get_nowait()
                 except queue.Empty:
@@ -278,9 +280,10 @@ class TTS:
                     )
                 stream.finish()
             except Exception as e:
-                if not self.is_aborted and not self._shutdown.is_set():
-                    self.read_queue.put(item)
-                    requeued = True
+                with self._queue_lock:
+                    if not self.is_aborted and not self._shutdown.is_set():
+                        self.read_queue.put(item)
+                        requeued = True
                 raise e
             finally:
                 try:
@@ -1343,20 +1346,24 @@ class TTS:
         drop_if: Callable[[], bool] | None = None,
     ) -> TTSLine:
         line = TTSLine()
-        self.read_queue.put(
-            {
-                "text": text,
-                "context": context,
-                "voice": voice,
-                "voice_settings": dict(voice_settings) if voice_settings is not None else None,
-                "postprocessing": postprocessing,
-                "postprocessing_layers": postprocessing_layers,
-                "on_start": on_start,
-                "on_complete": on_complete,
-                "drop_if": drop_if,
-                "line": line,
-            },
-        )
+        with self._queue_lock:
+            if self._shutdown.is_set():
+                line.mark_completed()
+                return line
+            self.read_queue.put(
+                {
+                    "text": text,
+                    "context": context,
+                    "voice": voice,
+                    "voice_settings": dict(voice_settings) if voice_settings is not None else None,
+                    "postprocessing": postprocessing,
+                    "postprocessing_layers": postprocessing_layers,
+                    "on_start": on_start,
+                    "on_complete": on_complete,
+                    "drop_if": drop_if,
+                    "line": line,
+                },
+            )
         return line
 
     def play_audio_file(
@@ -1367,17 +1374,20 @@ class TTS:
         on_complete: Callable[[], None] | None = None,
         drop_if: Callable[[], bool] | None = None,
     ):
-        self.read_queue.put(
-            {
-                "type": "audio_file",
-                "file_path": file_path,
-                "text": "",
-                "voice": None,
-                "on_start": on_start,
-                "on_complete": on_complete,
-                "drop_if": drop_if,
-            },
-        )
+        with self._queue_lock:
+            if self._shutdown.is_set():
+                return
+            self.read_queue.put(
+                {
+                    "type": "audio_file",
+                    "file_path": file_path,
+                    "text": "",
+                    "voice": None,
+                    "on_start": on_start,
+                    "on_complete": on_complete,
+                    "drop_if": drop_if,
+                },
+            )
 
     def set_postprocessing_config(
         self,

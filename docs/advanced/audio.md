@@ -24,8 +24,10 @@ Windows saves WASAPI endpoint IDs and Linux saves PulseAudio source/sink names.
 macOS SoundCard IDs are transient CoreAudio object numbers, so COVAS instead saves
 the persistent CoreAudio device UID with a `coreaudio:` prefix. This small metadata
 adapter uses SoundCard's private CoreAudio property helper; the pinned dependency
-and UID test must be reviewed when upgrading SoundCard. No custom audio I/O
-backend is used.
+and UID test must be reviewed when upgrading SoundCard. Windows playback also
+uses SoundCard's private render-buffer helpers to work around 0.4.6 acquiring and
+releasing more frames than it copies on short writes. Acquisition and release are
+both limited to the actual remaining frames; review this workaround on upgrades.
 
 ## Setup and packaging
 
@@ -65,6 +67,12 @@ first audio and closes it on completion, failure, or interruption. Line completi
 callbacks run after the completion padding/close, not immediately after the last
 speech bytes are submitted.
 
+Every playback submission explicitly requests `wait=False` through the adapter.
+The adapter forwards that option only when the writer's signature supports it:
+CoreAudio accepts it, while PulseAudio and WASAPI do not. Thus macOS queues short
+blocks without waiting for each callback to empty the queue; the existing adapter
+pacing applies on all platforms without passing unsupported backend arguments.
+
 SoundCard has **no portable public cancel/drain API**. Its Linux context exit
 drains queued playback before disconnecting; its Windows exit stops/releases the
 client, and macOS closes the AudioUnit without a portable drain. Normal completion
@@ -87,7 +95,8 @@ the call returns. These are real limitations, not immediate-cancellation promise
 
 Hardware-free tests cover exact routing, duplicate names, defaults, missing
 devices, CoreAudio UID metadata, multichannel/downmixed capture, PCM conversion,
-small final clips, bounded writes, interruption, and cleanup. Before shipping on
+small final clips, partial WASAPI render writes, explicit non-waiting playback,
+bounded writes, interruption, shutdown submission races, and cleanup. Before shipping on
 each OS, verify real microphone permission, mono/stereo/multichannel endpoints,
 non-default output routing with the system default unchanged, short clips, long
 speech interruption, unplug/replug, and application shutdown. In particular, test

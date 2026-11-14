@@ -2,6 +2,7 @@
 
 import sys
 from contextlib import contextmanager
+from inspect import signature
 from time import monotonic, sleep
 
 import numpy as np
@@ -119,6 +120,8 @@ class PCMOutput:
             context = device.player(samplerate=self.samplerate, channels=device.channels, blocksize=self.blocksize)
             self._player = context.__enter__()
             self._context = context
+            self._writer = self._write_wasapi if sys.platform == "win32" else self._player.play
+            self._writer_parameters = signature(self._writer).parameters
             self._deadline = monotonic()
         except BaseException:
             self._session.__exit__(*sys.exc_info())
@@ -135,8 +138,28 @@ class PCMOutput:
                 break
             block = samples[offset:offset + self.blocksize]
             self._deadline = max(self._deadline, monotonic()) + len(block) / self.samplerate
-            self._player.play(block)
+            self._play(block, wait=False)
             self._wait_until(self._deadline - self.blocksize / self.samplerate)
+
+    def _play(self, samples, *, wait):
+        options = {"wait": wait}
+        self._writer(samples, **{name: value for name, value in options.items() if name in self._writer_parameters})
+
+    def _write_wasapi(self, samples):
+        """Work around SoundCard 0.4.6 releasing more frames than it copies."""
+        from soundcard.mediafoundation import _ffi
+
+        data = np.repeat(samples[:, None], len(self._player.channelmap), axis=1)
+        while len(data) and not self.interrupted():
+            frames = min(len(data), self._player._render_available_frames())
+            if frames == 0:
+                sleep(0.001)
+                continue
+            payload = data[:frames].tobytes()
+            buffer = self._player._render_buffer(frames)
+            _ffi.memmove(buffer[0], payload, len(payload))
+            self._player._render_release(frames)
+            data = data[frames:]
 
     def _wait_until(self, deadline):
         while not self.interrupted():

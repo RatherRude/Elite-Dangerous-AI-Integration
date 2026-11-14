@@ -395,6 +395,63 @@ def test_quit_stops_worker(mock_audio_output):
     assert not tts._thread.is_alive()
 
 
+def test_submissions_after_quit_are_not_queued(mock_audio_output):
+    model = MagicMock(spec=OpenAITTSModel)
+    tts = TTS(model)
+    tts.quit()
+    on_start = MagicMock()
+    on_complete = MagicMock()
+    line = tts.say('Too late', on_start=on_start, on_complete=on_complete)
+    tts.play_audio_file('late.wav', on_start=on_start, on_complete=on_complete)
+    assert line.is_completed()
+    assert line.wait_for_speaking() is False
+    line.wait_for_completion()
+    assert not tts.has_queued_items()
+    assert not tts.get_is_playing()
+    model.synthesize.assert_not_called()
+    on_start.assert_not_called()
+    on_complete.assert_not_called()
+
+
+@pytest.mark.parametrize('submission', ['speech', 'audio_file'])
+def test_shutdown_drains_submission_already_holding_queue_lock(mock_audio_output, monkeypatch, submission):
+    tts = TTS(None)
+    entered = threading.Event()
+    release = threading.Event()
+    original_put = tts.read_queue.put
+    lines = []
+
+    def blocked_put(item):
+        entered.set()
+        assert release.wait(2)
+        original_put(item)
+
+    def submit():
+        if submission == 'speech':
+            lines.append(tts.say('Racing shutdown'))
+        else:
+            tts.play_audio_file('racing.wav')
+
+    monkeypatch.setattr(tts.read_queue, 'put', blocked_put)
+    producer = threading.Thread(target=submit)
+    shutdown = threading.Thread(target=tts.quit)
+    producer.start()
+    try:
+        assert entered.wait(2)
+        shutdown.start()
+        assert tts._shutdown.wait(2)
+    finally:
+        release.set()
+        producer.join(2)
+        if shutdown.ident is not None:
+            shutdown.join(2)
+    assert not producer.is_alive()
+    assert not shutdown.is_alive()
+    assert not tts._thread.is_alive()
+    assert not tts.has_queued_items()
+    assert all(line.is_completed() for line in lines)
+
+
 def test_postprocess_audio_applies_volume_and_distortion(mock_audio_output):
     """Test TTS postprocessing reshapes synthesized audio"""
     tts = TTS(
