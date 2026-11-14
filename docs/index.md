@@ -6,6 +6,8 @@ Welcome to the setup guide for COVAS:NEXT! Follow the steps below to get up and 
 
 - **Microphone:** You will need a working microphone to interact with the AI and preferably a headset to prevent the AI from hearing itself.
 
+For device selection, Linux audio-server setup, and platform caveats, see [Audio devices](advanced/audio.md).
+
 - **Antivirus Software:** Some antivirus software may flag the application as a virus due to **a false positive**. This can be very annoying and you may need to add an exception in your antivirus software or disable it, if you encounter this issue.
 
 Also, please check our [FAQ](./10_faq.md) for additional information.

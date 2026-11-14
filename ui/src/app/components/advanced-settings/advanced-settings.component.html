@@ -272,7 +272,7 @@
                             [(ngModel)]="config.input_device_name"
                             (ngModelChange)="onConfigChange({input_device_name: $event})">
                             @for (device of system?.input_device_names; track device) {
-                                <mat-option [value]="device">{{ device }}</mat-option>
+                                <mat-option [value]="device">{{ system?.input_device_labels?.[device] || device }}</mat-option>
                             }
                         </mat-select>
                     </mat-form-field>
@@ -353,7 +353,7 @@
                             [(ngModel)]="config.output_device_name"
                             (ngModelChange)="onConfigChange({output_device_name: $event})">
                             @for (device of system?.output_device_names; track device) {
-                                <mat-option [value]="device">{{ device }}</mat-option>
+                                <mat-option [value]="device">{{ system?.output_device_labels?.[device] || device }}</mat-option>
                             }
                         </mat-select>
                     </mat-form-field>

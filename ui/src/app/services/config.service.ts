@@ -60,6 +60,8 @@ export interface SystemInfo {
     os: string;
     input_device_names: string[];
     output_device_names: string[];
+    input_device_labels?: Record<string, string>;
+    output_device_labels?: Record<string, string>;
     hud_color_matrix?: number[][];
     hud_accent_color?: string;
     hud_secondary_color?: string;

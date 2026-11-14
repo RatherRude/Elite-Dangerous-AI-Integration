@@ -4,10 +4,10 @@ import traceback
 from time import sleep, time
 from typing import Literal, final
 
-import pyaudio
 import speech_recognition as sr
 from pysilero_vad import SileroVoiceActivityDetector
 
+from .Audio import PCMInput
 from .Logger import (
     AudioUsageStats,
     LatencyUsageStats,
@@ -48,8 +48,8 @@ class STT:
         self.continuous_listening_paused_for_response = False
 
         self.rate=16000
-        self.sample_width = pyaudio.get_sample_size(pyaudio.paInt16)
-        self.frames_per_buffer=self.vad.chunk_bytes() // pyaudio.get_sample_size(pyaudio.paInt16)
+        self.sample_width = 2
+        self.frames_per_buffer=self.vad.chunk_bytes() // 2
 
         self.vad_threshold = 0.2
         self.phrase_end_pause = 1.0
@@ -73,10 +73,11 @@ class STT:
         """
         # print('Running STT in PTT mode')
         log('debug', 'listen_once_thread start')
-        source = self._get_microphone()
+        source = None
         self.recording = True
         text = None
         try:
+            source = self._get_microphone()
             timestamp = time()
             frames = []
             while self.listening:
@@ -84,12 +85,21 @@ class STT:
                 if len(buffer) == 0: break  # reached end of the stream
                 frames.append(buffer)
             source.close()
+            source = None
 
             audio_raw = b''.join(frames)
             audio_data = sr.AudioData(audio_raw, self.rate, self.sample_width)
             text = self._transcribe(audio_data)
+        except Exception as error:
+            log('error', 'Speech recognition error', error, traceback.format_exc())
+            show_chat_message('error', 'Speech recognition error:', error)
         finally:
-            self.recording = False
+            try:
+                if source is not None:
+                    source.close()
+            finally:
+                self.listening = False
+                self.recording = False
         
         if text:
             self.resultQueue.put(STTResult(text, audio_data, timestamp))
@@ -116,95 +126,61 @@ class STT:
                 backoff *= 2
 
     def _listen_continuous_loop(self):
-        source: pyaudio.Stream = self._get_microphone()
-        timestamp = time()
-        frames = []
-        activity = []
-        while self.listening:
-            buffer = self._read_stream_buffer(source)
-            if self.continuous_listening_paused or self.continuous_listening_paused_for_response:
-                self.recording = False
-                continue
-            if len(buffer) == 0: break  # reached end of the stream
-            frames.append(buffer)
-            frames_duration = len(frames) * self.frames_per_buffer / self.rate
-            activity.append(self.vad(buffer))
-            if frames_duration > 0.5:
-                #log('debug','checking for voice activity in', frames_duration, 'seconds of audio')
-                audio_raw = b''.join(frames)
-                if all([v < self.vad_threshold for v in activity]):
-                    # no voice detected in the recording so far, so clear the buffer
-                    # and keep only last 0.1 seconds of audio for the next iteration
-                    #log('debug','no voice detected, clearing buffer')
-                    keep = int(0.1 * self.rate / self.frames_per_buffer)
-                    frames = frames[-keep:]
-                    activity = activity[-keep:]
-                    timestamp = time()
+        source: PCMInput = self._get_microphone()
+        try:
+            timestamp = time()
+            frames = []
+            activity = []
+            while self.listening:
+                buffer = self._read_stream_buffer(source)
+                if self.continuous_listening_paused or self.continuous_listening_paused_for_response:
+                    self.recording = False
                     continue
-                else:
-                    self.recording = True
-                    # we have voice activity in current recording
-                    # check if there is voice in the last phrase_end_pause seconds
-                    #log('debug','voice detected, checking for pause in the last phrase_end_pause seconds')
-                    end_slice = int(self.phrase_end_pause * self.rate / self.frames_per_buffer)
-                    activity_end_slice = activity[-end_slice:]
-                    if all([v < self.vad_threshold for v in activity_end_slice]):
-                        # no voice in the last 0.5 seconds, so we know the user has stopped speaking
-                        # so we can transcribe the audio
-                        #log('debug','no voice detected in the last 0.5 seconds, transcribing')
-                        audio_data = sr.AudioData(audio_raw, self.rate, self.sample_width)
-                        text = self._transcribe(audio_data)
-                        frames = []
-                        activity = []
-                        if text:
-                            self.resultQueue.put(STTResult(text, audio_data, timestamp))
-                        self.recording = False
-        source.close()
-        self.recording = False
+                if len(buffer) == 0: break  # reached end of the stream
+                frames.append(buffer)
+                frames_duration = len(frames) * self.frames_per_buffer / self.rate
+                activity.append(self.vad(buffer))
+                if frames_duration > 0.5:
+                    #log('debug','checking for voice activity in', frames_duration, 'seconds of audio')
+                    audio_raw = b''.join(frames)
+                    if all([v < self.vad_threshold for v in activity]):
+                        # no voice detected in the recording so far, so clear the buffer
+                        # and keep only last 0.1 seconds of audio for the next iteration
+                        #log('debug','no voice detected, clearing buffer')
+                        keep = int(0.1 * self.rate / self.frames_per_buffer)
+                        frames = frames[-keep:]
+                        activity = activity[-keep:]
+                        timestamp = time()
+                        continue
+                    else:
+                        self.recording = True
+                        # we have voice activity in current recording
+                        # check if there is voice in the last phrase_end_pause seconds
+                        #log('debug','voice detected, checking for pause in the last phrase_end_pause seconds')
+                        end_slice = int(self.phrase_end_pause * self.rate / self.frames_per_buffer)
+                        activity_end_slice = activity[-end_slice:]
+                        if all([v < self.vad_threshold for v in activity_end_slice]):
+                            # no voice in the last 0.5 seconds, so we know the user has stopped speaking
+                            # so we can transcribe the audio
+                            #log('debug','no voice detected in the last 0.5 seconds, transcribing')
+                            audio_data = sr.AudioData(audio_raw, self.rate, self.sample_width)
+                            text = self._transcribe(audio_data)
+                            frames = []
+                            activity = []
+                            if text:
+                                self.resultQueue.put(STTResult(text, audio_data, timestamp))
+                            self.recording = False
+        finally:
+            try:
+                source.close()
+            finally:
+                self.recording = False
 
-    def _read_stream_buffer(self, source: pyaudio.Stream) -> bytes:
-        try:
-            return source.read(self.frames_per_buffer, exception_on_overflow=False)
-        except TypeError:
-            return source.read(self.frames_per_buffer)
-        except OSError as e:
-            if getattr(e, 'errno', None) == -9981:
-                log('warn', 'Audio input overflow detected, dropping one microphone chunk')
-                return b'\x00' * self.frames_per_buffer * self.sample_width
-            raise
+    def _read_stream_buffer(self, source: PCMInput) -> bytes:
+        return source.read(self.frames_per_buffer)
 
-    def _get_microphone(self) -> pyaudio.Stream:
-        audio = pyaudio.PyAudio()
-
-        host_api = audio.get_default_host_api_info()
-
-        try:
-            device_index = 0
-            for i in range(host_api.get('deviceCount')):
-                device = audio.get_device_info_by_host_api_device_index(host_api.get('index'), i)
-                if device['name'] == self.input_device_name:
-                    device_index = device.get('index')
-                    break
-
-            source = audio.open(
-                input_device_index=device_index,
-                format=pyaudio.paInt16,
-                channels=1,
-                rate=self.rate,
-                input=True,
-                frames_per_buffer=self.frames_per_buffer
-            )
-        except Exception as e:
-            log('error', 'Failed to open microphone', e, traceback.format_exc())
-            log('error', 'Fallback to default microphone')
-            source = audio.open(
-                format=pyaudio.paInt16,
-                channels=1,
-                rate=self.rate,
-                input=True,
-                frames_per_buffer=self.frames_per_buffer
-            )
-        return source
+    def _get_microphone(self) -> PCMInput:
+        return PCMInput(self.input_device_name, samplerate=self.rate, blocksize=self.frames_per_buffer)
 
     @observe()
     def _transcribe(self, audio: sr.AudioData) -> str:
