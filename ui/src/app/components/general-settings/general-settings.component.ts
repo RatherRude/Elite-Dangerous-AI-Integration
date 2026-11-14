@@ -220,11 +220,13 @@ export class GeneralSettingsComponent implements OnDestroy {
     }
 
     get inputDeviceName(): string {
-        return this.config?.input_device_name?.trim() || "Default input device";
+        const identifier = this.config?.input_device_name?.trim();
+        return (identifier && (this.system?.input_device_labels?.[identifier] || identifier)) || "Default input device";
     }
 
     get outputDeviceName(): string {
-        return this.config?.output_device_name?.trim() || "Default output device";
+        const identifier = this.config?.output_device_name?.trim();
+        return (identifier && (this.system?.output_device_labels?.[identifier] || identifier)) || "Default output device";
     }
 
     get overlayModeLabel(): string {

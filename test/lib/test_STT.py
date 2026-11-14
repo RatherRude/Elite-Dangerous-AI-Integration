@@ -2,7 +2,6 @@ import time
 from typing import Mapping
 import pytest
 from unittest.mock import MagicMock, patch, ANY
-import pyaudio
 import io
 import queue
 from time import sleep
@@ -20,36 +19,18 @@ def read_voice(x):
     return b'\xff\xff' * x
 
 @pytest.fixture
-def mock_pyaudio(monkeypatch):
-    """Mock PyAudio functionality"""
-    mock_audio = MagicMock()
+def mock_audio_input(monkeypatch):
     mock_stream = MagicMock()
-    
-    # Mock audio data that simulates no audio
     mock_stream.read.side_effect = read_no_voice
-    
-    # Mock device info
-    mock_audio.get_default_host_api_info.return_value = {
-        'index': 0,
-        'deviceCount': 2
-    }
-    mock_audio.get_device_info_by_host_api_device_index.return_value = {
-        'name': 'TestDevice',
-        'index': 1
-    }
-    mock_audio.open.return_value = mock_stream
-    
-    monkeypatch.setattr('pyaudio.PyAudio', lambda: mock_audio)
-    return {
-        'audio': mock_audio,
-        'stream': mock_stream
-    }
+    factory = MagicMock(return_value=mock_stream)
+    monkeypatch.setattr('src.lib.STT.PCMInput', factory)
+    return {'audio': factory, 'stream': mock_stream}
 
 @pytest.fixture
 def mock_vad():
     """Mock SileroVAD"""
     mock = MagicMock()
-    
+
     # Make the VAD callable - returns voice activity score based on audio content
     # This is used by _listen_continuous_loop which calls self.vad(buffer)
     def vad_call_side_effect(audio_bytes):
@@ -58,7 +39,7 @@ def mock_vad():
             return 1.0  # Voice detected (above threshold)
         return 0.0  # No voice (below threshold)
     mock.side_effect = vad_call_side_effect
-    
+
     # process_chunks is used by _transcribe to filter silent audio
     def process_chunks_side_effect(audio_bytes):
         if audio_bytes and audio_bytes[0] != 0:
@@ -92,107 +73,87 @@ def mock_openai():
     return mock
 
 @pytest.fixture
-def stt(mock_stt_model, mock_vad, mock_vad_detector, mock_pyaudio, monkeypatch):
+def stt(mock_stt_model, mock_vad, mock_vad_detector, mock_audio_input, monkeypatch):
     """Create STT instance with mocked dependencies"""
     monkeypatch.setattr('pysilero_vad.SileroVoiceActivityDetector', mock_vad_detector)
     stt =  STT(mock_stt_model, "TestDevice")
     stt.vad = mock_vad
     return stt
 
-def test_get_microphone_device_selection(mock_pyaudio, stt):
-    """Test microphone device selection"""
+def test_get_microphone_device_selection(mock_audio_input, stt):
     stream = stt._get_microphone()
-    
-    mock_pyaudio['audio'].open.assert_called_once_with(
-        input_device_index=1,
-        format=pyaudio.paInt16,
-        channels=1,
-        rate=16000,
-        input=True,
-        frames_per_buffer=512
-    )
-    assert stream == mock_pyaudio['stream']
+    mock_audio_input['audio'].assert_called_once_with('TestDevice', samplerate=16000, blocksize=512)
+    assert stream == mock_audio_input['stream']
 
-def test_get_microphone_fallback(mock_pyaudio, stt):
-    """Test fallback to default device"""
-    mock_pyaudio['audio'].open.side_effect = [Exception("Device error"), mock_pyaudio['stream']]
-    
-    stream = stt._get_microphone()
-    
-    assert mock_pyaudio['audio'].open.call_count == 2
-    assert stream == mock_pyaudio['stream']
-    # Verify second call uses default device
-    mock_pyaudio['audio'].open.assert_called_with(
-        format=pyaudio.paInt16,
-        channels=1,
-        rate=16000,
-        input=True,
-        frames_per_buffer=512
-    )
 
-def test_continuous_listening(stt, mock_pyaudio: dict[str, MagicMock], mock_vad: MagicMock, mock_openai, monkeypatch):
+def test_get_microphone_does_not_fall_back(mock_audio_input, stt):
+    mock_audio_input['audio'].side_effect = ValueError('Device missing')
+    with pytest.raises(ValueError, match='Device missing'):
+        stt._get_microphone()
+    assert mock_audio_input['audio'].call_count == 1
+
+def test_continuous_listening(stt, mock_audio_input: dict[str, MagicMock], mock_vad: MagicMock, mock_openai, monkeypatch):
     """Test continuous listening flow"""
     monkeypatch.setattr('src.lib.STT.STT._transcribe', lambda self, audio: "Test transcription sdf")
-    mock_pyaudio['stream'].read.side_effect = read_no_voice
-    
+    mock_audio_input['stream'].read.side_effect = read_no_voice
+
     stt.listen_continuous()
     mock_vad.return_value = 0.1
-    
+
     # Wait for audio to be read
-    while mock_pyaudio['stream'].read.call_count < 1:
+    while mock_audio_input['stream'].read.call_count < 1:
         sleep(0.001)
-    
+
     # Simulate receiving voice
-    mock_pyaudio['stream'].read.reset()
-    mock_pyaudio['stream'].read.side_effect = read_voice
-    while mock_pyaudio['stream'].read.call_count < 16000 * 4 / 1600: # 4 seconds of audio
+    mock_audio_input['stream'].read.reset()
+    mock_audio_input['stream'].read.side_effect = read_voice
+    while mock_audio_input['stream'].read.call_count < 16000 * 4 / 1600: # 4 seconds of audio
         sleep(0.001)
     # Voice ends after 4 seconds
-    mock_pyaudio['stream'].read.side_effect = read_no_voice
-    
+    mock_audio_input['stream'].read.side_effect = read_no_voice
+
     # Wait for transcription
     while stt.resultQueue.empty():
         sleep(0.001)
-    
+
     # Check if transcription was requested
     #assert mock_openai.audio.transcriptions.create.called
-    
+
     # Verify result in queue
     result = stt.resultQueue.get()
     assert isinstance(result, STTResult)
     assert result.text == "Test transcription sdf"
 
-def test_push_to_talk(stt, mock_pyaudio, mock_openai, monkeypatch):
+def test_push_to_talk(stt, mock_audio_input, mock_openai, monkeypatch):
     """Test push-to-talk flow"""
     monkeypatch.setattr('src.lib.STT.STT._transcribe', lambda self, audio: "Test transcription asd")
-    mock_pyaudio['stream'].read.side_effect = read_voice
+    mock_audio_input['stream'].read.side_effect = read_voice
     sleep(0.01)  # Simulate button press duration
-    
+
     # Start listening
     stt.listen_once_start()
-    while mock_pyaudio['stream'].read.call_count < 16000 * 4 / 1600: # 4 seconds of audio
+    while mock_audio_input['stream'].read.call_count < 16000 * 4 / 1600: # 4 seconds of audio
         sleep(0.001)
     stt.listen_once_end()
-    
+
     # Wait for transcription
     while stt.resultQueue.empty():
         sleep(0.001)
-    
+
     # Check result
     result = stt.resultQueue.get()
     assert isinstance(result, STTResult)
     assert result.text == "Test transcription asd"
 
 def test_transcribe(stt, mock_openai, mock_vad):
-    """Test VAD filtering of silent audio"""  
+    """Test VAD filtering of silent audio"""
     import speech_recognition as sr
-    import pyaudio
-    
-    audio = sr.AudioData(b'\x00\x00' * 16000, 16000, pyaudio.get_sample_size(pyaudio.paInt16))
+
+    audio = sr.AudioData(b'\x00\x00' * 16000, 16000, 2)
     res = stt._transcribe(audio)
     assert res == ''
-    
-    audio = sr.AudioData(b'\xff\xff' * 16000, 16000, pyaudio.get_sample_size(pyaudio.paInt16))
+
+    audio = sr.AudioData(b'\xff\xff' * 16000, 16000, 2)
     res = stt._transcribe(audio)
     assert res == 'Test transcription via API'
 
@@ -200,7 +161,7 @@ def test_transcribe(stt, mock_openai, mock_vad):
 @pytest.mark.parametrize('manual_paused', [False, True])
 @pytest.mark.parametrize('response_paused', [False, True])
 def test_continuous_listening_honors_independent_pause_states(
-    stt, mock_pyaudio, mock_vad, manual_paused, response_paused
+    stt, mock_audio_input, mock_vad, manual_paused, response_paused
 ):
     stt.pause_continuous_listening(manual_paused)
     stt.pause_continuous_listening_for_response(response_paused)
@@ -211,7 +172,7 @@ def test_continuous_listening_honors_independent_pause_states(
         stt.listening = False
         return b'\xff\xff' * stt.frames_per_buffer
 
-    mock_pyaudio['stream'].read.side_effect = read_buffer
+    mock_audio_input['stream'].read.side_effect = read_buffer
 
     stt._listen_continuous_loop()
 
@@ -222,46 +183,29 @@ def test_continuous_listening_honors_independent_pause_states(
     else:
         mock_vad.assert_called_once()
     assert stt.recording is False
-    mock_pyaudio['stream'].close.assert_called_once()
+    mock_audio_input['stream'].close.assert_called_once()
 
 
-def test_read_stream_buffer_disables_overflow_exceptions(stt):
+def test_read_stream_buffer(stt):
     source = MagicMock()
     source.read.return_value = b'audio'
-
-    buffer = stt._read_stream_buffer(source)
-
-    assert buffer == b'audio'
-    source.read.assert_called_once_with(stt.frames_per_buffer, exception_on_overflow=False)
+    assert stt._read_stream_buffer(source) == b'audio'
+    source.read.assert_called_once_with(stt.frames_per_buffer)
 
 
-def test_read_stream_buffer_falls_back_for_streams_without_overflow_kwarg(stt):
-    class LegacyStream:
-        def __init__(self):
-            self.calls = []
-
-        def read(self, frames_per_buffer, exception_on_overflow=True):
-            self.calls.append((frames_per_buffer, exception_on_overflow))
-            if len(self.calls) == 1:
-                raise TypeError('unexpected keyword argument')
-            return b'legacy-audio'
-
-    source = LegacyStream()
-
-    buffer = stt._read_stream_buffer(source)
-
-    assert buffer == b'legacy-audio'
-    assert source.calls == [
-        (stt.frames_per_buffer, False),
-        (stt.frames_per_buffer, True),
-    ]
+def test_continuous_read_failure_closes_source(stt, mock_audio_input):
+    stt.listening = True
+    mock_audio_input['stream'].read.side_effect = RuntimeError('Disconnected')
+    with pytest.raises(RuntimeError, match='Disconnected'):
+        stt._listen_continuous_loop()
+    mock_audio_input['stream'].close.assert_called_once()
+    assert not stt.recording
 
 
-def test_read_stream_buffer_handles_input_overflow(stt):
-    source = MagicMock()
-    source.read.side_effect = OSError(-9981, 'Input overflowed')
-
-    buffer = stt._read_stream_buffer(source)
-
-    assert buffer == b'\x00' * stt.frames_per_buffer * stt.sample_width
-    
+def test_push_to_talk_read_failure_closes_source(stt, mock_audio_input):
+    stt.listening = True
+    mock_audio_input['stream'].read.side_effect = RuntimeError('Disconnected')
+    stt._listen_once_thread()
+    mock_audio_input['stream'].close.assert_called_once()
+    assert not stt.listening
+    assert not stt.recording

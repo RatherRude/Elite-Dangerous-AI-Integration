@@ -1836,64 +1836,37 @@ def assign_ptt(config: Config, controller_manager, index: int = 0):
     return config
 
 
-def get_input_device_names() -> list[str]:
-    import pyaudio
+def get_audio_device_labels(direction: str) -> dict[str, str]:
+    from .Audio import DEFAULT_DEVICE, device_labels
     try:
-        p = pyaudio.PyAudio()
-        default_name = p.get_default_input_device_info()["name"]
-        mic_names = [default_name]
-        host_api = p.get_default_host_api_info()
-        for i in range(host_api.get('deviceCount')):
-            device = p.get_device_info_by_host_api_device_index(host_api.get('index'), i)
-            if device['maxInputChannels'] > 0:
-                name = device['name']
-                mic_names.append(name)
-        p.terminate()
-        return sorted(set(mic_names), key=mic_names.index)
-    except Exception as e:
-        log('error', 'Error getting input device names', e, traceback.format_exc())
-        return []
+        return device_labels(direction)
+    except Exception as error:
+        log('error', f'Error getting audio {direction} devices', error, traceback.format_exc())
+        return {DEFAULT_DEVICE: "System default"}
+
+
+def get_input_device_names() -> list[str]:
+    return list(get_audio_device_labels("input"))
 
 
 def get_default_input_device_name() -> str:
-    devices = get_input_device_names()
-    if 'pulse' in devices:
-        # If PulseAudio is available on linux, its a save bet
-        return 'pulse'
-    return devices[0] if devices else ""
+    return "default"
 
 
 def get_output_device_names() -> list[str]:
-    import pyaudio
-    try:
-        p = pyaudio.PyAudio()
-        default_speaker_name = p.get_default_output_device_info()["name"]
-        speaker_names = [default_speaker_name]
-        host_api = p.get_default_host_api_info()
-        for i in range(host_api.get('deviceCount')):
-            output_device = p.get_device_info_by_host_api_device_index(host_api.get('index'), i)
-            if output_device['maxOutputChannels'] > 0:
-                name = output_device['name']
-                speaker_names.append(name)
-        p.terminate()
-        return sorted(set(speaker_names), key=speaker_names.index)
-    except Exception as e:
-        log('error', 'Error getting output device names', e, traceback.format_exc())
-        return []
+    return list(get_audio_device_labels("output"))
 
 
 def get_default_output_device_name() -> str:
-    devices = get_output_device_names()
-    if 'pulse' in devices:
-        # If PulseAudio is available on linux, its a save bet
-        return 'pulse'
-    return devices[0] if devices else ""
+    return "default"
 
 
 class SystemInfo(TypedDict):
     os: str
     input_device_names: list[str]
     output_device_names: list[str]
+    input_device_labels: dict[str, str]
+    output_device_labels: dict[str, str]
     hud_color_matrix: list[list[float]]
     hud_accent_color: str
     hud_secondary_color: str
@@ -1901,10 +1874,14 @@ class SystemInfo(TypedDict):
 
 def get_system_info() -> SystemInfo:
     hud_color = _hud_color_matrix or HudColorMatrix.identity()
+    inputs = get_audio_device_labels("input")
+    outputs = get_audio_device_labels("output")
     return {
         "os": platform.system(),
-        "input_device_names": get_input_device_names(),
-        "output_device_names": get_output_device_names(),
+        "input_device_names": list(inputs),
+        "input_device_labels": inputs,
+        "output_device_names": list(outputs),
+        "output_device_labels": outputs,
         "hud_color_matrix": hud_color.matrix,
         "hud_accent_color": hud_color.shift_primary_color(),
         "hud_secondary_color": hud_color.shift_secondary_color(),
