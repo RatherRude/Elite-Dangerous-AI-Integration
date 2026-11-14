@@ -40,6 +40,7 @@ def chat(monkeypatch):
     chat.stt.listen_continuous = MagicMock()
     chat.stt.listen_once_start = MagicMock()
     chat.stt.listen_once_end = MagicMock()
+    chat.stt.quit = MagicMock()
     return chat
 
 
@@ -81,6 +82,7 @@ def test_toggle_listening_preserves_manual_state_during_responses(
     monkeypatch.setattr(ChatModule, "sleep", tick)
 
     ChatModule.Chat.run(chat)
+    chat.stt.quit.assert_called_once()
 
     assert startup_states == [start_muted]
     manual_states = [
@@ -116,5 +118,6 @@ def test_push_to_mute_stays_muted_until_release_during_responses(chat, monkeypat
     monkeypatch.setattr(ChatModule, "sleep", tick)
 
     ChatModule.Chat.run(chat)
+    chat.stt.quit.assert_called_once()
 
     assert observed_states == [False, True, True, False]

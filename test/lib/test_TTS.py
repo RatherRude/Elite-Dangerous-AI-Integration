@@ -29,6 +29,7 @@ def band_rms(samples: np.ndarray, sample_rate: int, min_hz: float, max_hz: float
 @pytest.fixture
 def mock_pyaudio(monkeypatch):
     """Mock PyAudio functionality"""
+    monkeypatch.setattr('sys.platform', 'darwin')
     mock_audio = MagicMock()
     mock_stream = MagicMock()
     

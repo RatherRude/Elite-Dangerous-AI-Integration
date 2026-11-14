@@ -22,6 +22,7 @@ def read_voice(x):
 @pytest.fixture
 def mock_pyaudio(monkeypatch):
     """Mock PyAudio functionality"""
+    monkeypatch.setattr('sys.platform', 'darwin')
     mock_audio = MagicMock()
     mock_stream = MagicMock()
     

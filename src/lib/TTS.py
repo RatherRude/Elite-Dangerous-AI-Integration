@@ -2,6 +2,7 @@ import queue
 import math
 import re
 import random
+import sys
 import threading
 import traceback
 from collections import deque
@@ -34,6 +35,7 @@ from .Config import (
 from .Logger import log, observe, show_chat_message
 from .Logger import AudioUsageStats, LatencyUsageStats, TextUsageStats, log_tts_usage
 from .Models import TTSModel, OpenAITTSModel
+from .LinuxAudio import PulseStream
 
 
 class TTSLine:
@@ -124,7 +126,9 @@ class TTS:
             postprocessing_config or get_default_character_tts_postprocessing(),
         )
         
-        self.p = pyaudio.PyAudio()
+        self.p = None if sys.platform.startswith('linux') else pyaudio.PyAudio()
+        self._shutdown = threading.Event()
+        self._stream = None
         self.output_device = output_device
         self.output_volume_multiplier = max(0.0, min(1.5, float(output_volume_multiplier)))
         self.read_queue = queue.Queue()
@@ -133,7 +137,7 @@ class TTS:
         self.prebuffer_size = 4
         self.output_format = pyaudio.paInt16
         self.frames_per_buffer = 1024
-        self.sample_size = self.p.get_sample_size(self.output_format)
+        self.sample_size = pyaudio.get_sample_size(self.output_format)
         self._lp_state = LowpassState()
         self._hp_state = HighpassState()
         self._chorus_state = ChorusState(buffer=np.zeros(int(24_000 * 0.1), dtype=np.float32))
@@ -145,6 +149,7 @@ class TTS:
 
         thread = threading.Thread(target=self._playback_thread)
         thread.daemon = True
+        self._thread = thread
         thread.start()
 
     def _normalize_queue_item(self, item: Any) -> dict[str, Any]:
@@ -217,19 +222,35 @@ class TTS:
 
     def _playback_thread(self):
         backoff = 1
-        while True:
+        while not self._shutdown.is_set():
             try:
                 self._playback_loop()
             except Exception as e:
+                if self._shutdown.is_set():
+                    break
                 log('error', 'An error occurred during speech synthesis', e, traceback.format_exc())
                 show_chat_message('error', 'An error occurred during speech synthesis:', e)
-                sleep(backoff)
+                if self._shutdown.wait(min(backoff, 30)):
+                    break
                 log('info', 'Attempting to restart audio playback after failure')
                 backoff *= 2
 
     def _playback_loop(self):
+        stream = self._open_output_stream()
+        self._stream = stream
+        try:
+            if not self._shutdown.is_set():
+                self._run_playback(stream)
+        finally:
+            stream.close()
+            self._stream = None
+            self._is_playing = False
+
+    def _open_output_stream(self):
+        if sys.platform.startswith('linux'):
+            return PulseStream(self.output_device, rate=24_000, frames_per_buffer=self.frames_per_buffer)
         output_index = self._get_output_device_index()
-        stream = self.p.open(
+        return self.p.open(
             format=self.output_format,
             channels=1,
             rate=24_000,
@@ -237,10 +258,11 @@ class TTS:
             output=True,
             output_device_index=output_index  
         )
-        while True:
+    def _run_playback(self, stream):
+        while not self._shutdown.is_set():
             self.is_aborted = False
             stream.start_stream()
-            while not self.is_aborted:
+            while not self.is_aborted and not self._shutdown.is_set():
                 if not self.read_queue.empty():
                     self._is_playing = True
                     item = self._normalize_queue_item(self.read_queue.get())
@@ -283,6 +305,8 @@ class TTS:
                                 cast(CharacterTTSPostprocessingConfig | None, postprocessing if isinstance(postprocessing, dict) else None),
                                 cast(list[CharacterTTSPostprocessingConfig | None] | None, postprocessing_layers if isinstance(postprocessing_layers, list) else None),
                             )
+                        if sys.platform.startswith('linux') and not self.is_aborted:
+                            stream.drain()
                     except Exception as e:
                         self.read_queue.put(item)
                         requeued = True
@@ -300,7 +324,8 @@ class TTS:
 
                 sleep(0.1)
             self._is_playing = False
-            stream.stop_stream()
+            if not self._shutdown.is_set():
+                stream.stop_stream()
 
     @observe()
     def _playback_one(
@@ -1433,7 +1458,13 @@ class TTS:
             sleep(0.2)
 
     def quit(self):
-        pass
+        self._shutdown.set()
+        self.abort()
+        if sys.platform.startswith('linux') and self._stream is not None:
+            self._stream.close()
+        self._thread.join(timeout=6)
+        if self.p is not None and not self._thread.is_alive():
+            self.p.terminate()
 
 
 if __name__ == "__main__":

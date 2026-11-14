@@ -1,7 +1,8 @@
 import queue
+import sys
 import threading
 import traceback
-from time import sleep, time
+from time import time
 from typing import Literal, final
 
 import pyaudio
@@ -18,6 +19,7 @@ from .Logger import (
     show_chat_message,
 )
 from .Models import STTModel, LLMError
+from .LinuxAudio import PulseStream
 
 
 @final
@@ -46,6 +48,9 @@ class STT:
         self.required_word = required_word
         self.continuous_listening_paused = False
         self.continuous_listening_paused_for_response = False
+        self._shutdown = threading.Event()
+        self._source = None
+        self._thread = None
 
         self.rate=16000
         self.sample_width = pyaudio.get_sample_size(pyaudio.paInt16)
@@ -61,7 +66,8 @@ class STT:
         if self.listening:
             return
         self.listening = True
-        threading.Thread(target=self._listen_once_thread, daemon=True).start()
+        self._thread = threading.Thread(target=self._listen_once_thread, daemon=True)
+        self._thread.start()
 
     def listen_once_end(self):
         log('debug', 'listen_once_end')
@@ -73,10 +79,12 @@ class STT:
         """
         # print('Running STT in PTT mode')
         log('debug', 'listen_once_thread start')
-        source = self._get_microphone()
-        self.recording = True
+        source = None
         text = None
         try:
+            source = self._get_microphone()
+            self._source = source
+            self.recording = True
             timestamp = time()
             frames = []
             while self.listening:
@@ -84,11 +92,21 @@ class STT:
                 if len(buffer) == 0: break  # reached end of the stream
                 frames.append(buffer)
             source.close()
-
+            source = None
+            self._source = None
             audio_raw = b''.join(frames)
             audio_data = sr.AudioData(audio_raw, self.rate, self.sample_width)
-            text = self._transcribe(audio_data)
+            if not self._shutdown.is_set():
+                text = self._transcribe(audio_data)
+        except Exception as error:
+            self.listening = False
+            if not self._shutdown.is_set():
+                log('error', 'Microphone capture failed', error, traceback.format_exc())
+                show_chat_message('error', 'Microphone capture failed:', str(error))
         finally:
+            if source is not None:
+                source.close()
+            self._source = None
             self.recording = False
         
         if text:
@@ -100,7 +118,8 @@ class STT:
         if self.stt_model is None:
             return
         self.listening = True
-        threading.Thread(target=self._listen_continuous_thread, daemon=True).start()
+        self._thread = threading.Thread(target=self._listen_continuous_thread, daemon=True)
+        self._thread.start()
                         
     def _listen_continuous_thread(self):
         backoff = 1
@@ -109,14 +128,26 @@ class STT:
                 self._listen_continuous_loop()
             except Exception as e:
                 self.recording = False
+                if self._shutdown.is_set():
+                    break
                 log('error', 'An error occurred during speech recognition', e, traceback.format_exc())
                 show_chat_message('error', 'Speech recognition error:', e)
-                sleep(backoff)
+                if self._shutdown.wait(min(backoff, 30)):
+                    break
                 log('info', 'Attempting to restart speech recognition after failure')
                 backoff *= 2
 
     def _listen_continuous_loop(self):
-        source: pyaudio.Stream = self._get_microphone()
+        source = self._get_microphone()
+        self._source = source
+        try:
+            self._capture_continuous(source)
+        finally:
+            source.close()
+            self._source = None
+            self.recording = False
+
+    def _capture_continuous(self, source):
         timestamp = time()
         frames = []
         activity = []
@@ -159,8 +190,6 @@ class STT:
                         if text:
                             self.resultQueue.put(STTResult(text, audio_data, timestamp))
                         self.recording = False
-        source.close()
-        self.recording = False
 
     def _read_stream_buffer(self, source: pyaudio.Stream) -> bytes:
         try:
@@ -173,7 +202,9 @@ class STT:
                 return b'\x00' * self.frames_per_buffer * self.sample_width
             raise
 
-    def _get_microphone(self) -> pyaudio.Stream:
+    def _get_microphone(self) -> pyaudio.Stream | PulseStream:
+        if sys.platform.startswith('linux'):
+            return PulseStream(self.input_device_name, rate=self.rate, recording=True, frames_per_buffer=self.frames_per_buffer)
         audio = pyaudio.PyAudio()
 
         host_api = audio.get_default_host_api_info()
@@ -262,6 +293,14 @@ class STT:
 
     def pause_continuous_listening_for_response(self, pause: bool):
         self.continuous_listening_paused_for_response = pause
+
+    def quit(self):
+        self.listening = False
+        self._shutdown.set()
+        if sys.platform.startswith('linux') and self._source is not None:
+            self._source.close()
+        if self._thread is not None:
+            self._thread.join(timeout=6)
 
 # if __name__ == "__main__":
 #     openai_audio = openai.OpenAI()
