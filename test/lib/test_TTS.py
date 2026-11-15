@@ -156,6 +156,7 @@ def test_tts_queued_voice_settings_override_preserves_defaults_and_postprocessin
     mock_model.synthesize_with_settings.return_value = [b'\x00\x00']
     default_settings = {"voice": "default", "instructions": "Sound calm."}
     tts = TTS(mock_model, voice_settings=default_settings)
+    monkeypatch.setattr(tts._thread, "join", MagicMock())
     tts._postprocess_audio = MagicMock(side_effect=lambda audio, _config: audio)
     postprocessing = {"volume": 0.5}
     original_settings = dict(voice_settings) if voice_settings is not None else None
