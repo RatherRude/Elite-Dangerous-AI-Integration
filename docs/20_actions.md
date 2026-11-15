@@ -69,6 +69,8 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 
     - `speed`: String (options: "Minus100", "Minus75", "Minus50", "Minus25", "Zero", "25", "50", "75", "100")
 
+    Throttle changes require a commander request; they are not an automatic follow-up to undocking. Explicit speed commands remain available after release from the landing pad.
+
     <details>
     <summary>Examples</summary>
     
@@ -719,6 +721,8 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     </details>
 
 8. **Undock ship**
+
+    Initiates undocking without commanding forward throttle or boost. The `Undocked` event means release from the landing pad, not that the ship has exited the station. The assistant is instructed to leave throttle and automated undocking alone unless you explicitly request an additional speed or boost command.
 
     <details>
     <summary>Examples</summary>
