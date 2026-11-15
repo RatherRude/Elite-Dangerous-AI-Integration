@@ -7,18 +7,26 @@ PortAudio audio path and no need to install PortAudio development headers.
 
 ## Selecting devices
 
-Choose input and output independently in Settings. Each entry displays the device
-name and its exact ID; the saved configuration fields `input_device_name` and
+Choose input and output independently in Settings. Each entry displays only the
+device name; the saved configuration fields `input_device_name` and
 `output_device_name` now contain IDs, despite their historical names. Duplicate
 display names do not identify the same device. Playback opens the selected sink
 directly without changing the system's default output.
 
 `System default` saves `default` and resolves the current default whenever a new
 recording or playback stream opens. Empty/absent selections and the old `pulse`
-alias also intentionally follow the system default. An explicit missing ID is an
-error, never a reason to choose another device. Disconnecting/recreating a device
-can require selecting it again. Old saved human-readable device names must also
-be reselected after upgrading; names and substrings are not matched automatically.
+alias also intentionally follow the system default. Preflight checks the saved
+selection against the available devices. Unavailable selections turn the sound
+input/output preflight indicator and device field red, with a reminder to reselect
+the device after upgrading or reconnect it. Old saved human-readable device names
+must be reselected after upgrading; names and substrings are not matched automatically.
+
+Starting with an unavailable selection logs a warning and opens the current
+system default for that direction instead. This does not overwrite the saved
+selection: the warning remains visible until it is changed or the device returns.
+Input and output fall back independently, without changing the OS defaults. If
+there is no system default, opening the stream still reports an error. A failure
+to open an available device is not treated as a missing-device fallback.
 
 Windows saves WASAPI endpoint IDs and Linux saves PulseAudio source/sink names.
 macOS SoundCard IDs are transient CoreAudio object numbers, so COVAS instead saves

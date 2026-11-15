@@ -32,6 +32,7 @@ import { filterProvidersForSlot, llmProviderSummary, modelProviderLabel, ModelPr
 import { ApiKeyDetectionService } from "../../services/api-key-detection.service";
 import { ConfirmationDialogComponent } from "../confirmation-dialog/confirmation-dialog.component";
 import { ChatService } from "../../services/chat.service";
+import { audioDeviceAvailable, audioDeviceLabel } from "../../services/audio-devices";
 
 export type GeneralSettingsTarget =
     | "commander"
@@ -220,14 +221,23 @@ export class GeneralSettingsComponent implements OnDestroy {
     }
 
     get inputDeviceName(): string {
-        const identifier = this.config?.input_device_name?.trim();
-        return (identifier && (this.system?.input_device_labels?.[identifier] || identifier)) || "Default input device";
+        return audioDeviceLabel(this.config?.input_device_name, this.system?.input_device_labels);
     }
 
     get outputDeviceName(): string {
-        const identifier = this.config?.output_device_name?.trim();
-        return (identifier && (this.system?.output_device_labels?.[identifier] || identifier)) || "Default output device";
+        return audioDeviceLabel(this.config?.output_device_name, this.system?.output_device_labels);
     }
+
+    get inputDeviceAvailable(): boolean {
+        return audioDeviceAvailable(this.config?.input_device_name, this.system?.input_device_names);
+    }
+
+    get outputDeviceAvailable(): boolean {
+        return audioDeviceAvailable(this.config?.output_device_name, this.system?.output_device_names);
+    }
+
+    readonly inputDeviceErrorStateMatcher = { isErrorState: () => !this.inputDeviceAvailable };
+    readonly outputDeviceErrorStateMatcher = { isErrorState: () => !this.outputDeviceAvailable };
 
     get overlayModeLabel(): string {
         switch (this.config?.overlay_mode) {
@@ -254,11 +264,11 @@ export class GeneralSettingsComponent implements OnDestroy {
     }
 
     get soundInputReady(): boolean {
-        return !!this.config && this.config.stt_provider !== "none" && !!this.config.input_device_name?.trim();
+        return !!this.config && this.config.stt_provider !== "none" && this.inputDeviceAvailable;
     }
 
     get soundOutputReady(): boolean {
-        return !!this.config && this.config.tts_provider !== "none" && !!this.config.output_device_name?.trim();
+        return !!this.config && this.config.tts_provider !== "none" && this.outputDeviceAvailable;
     }
 
     get actionsReady(): boolean {

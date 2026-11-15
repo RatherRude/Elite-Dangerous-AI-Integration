@@ -16,6 +16,7 @@ from src.lib import Audio
 def backend(monkeypatch):
     microphone = MagicMock(id="source-usb", name="USB", channels=2)
     speaker = MagicMock(id="sink-usb", name="USB", channels=2)
+    microphone.name = speaker.name = 'USB'
     soundcard = MagicMock()
     soundcard.all_microphones.return_value = [microphone]
     soundcard.all_speakers.return_value = [speaker]
@@ -47,10 +48,33 @@ def test_exact_independent_device_routing(backend, direction, identifier):
 
 
 @pytest.mark.parametrize('selection', ['USB', 'usb', 'sink', 'removed-device', 'source-usb'])
-def test_output_selection_never_matches_names_substrings_or_other_direction(backend, selection):
-    with pytest.raises(ValueError, match='select a device again'):
-        Audio.resolve_device(backend.soundcard, selection, 'output')
+def test_invalid_output_selection_uses_default_without_fuzzy_matching(backend, selection):
+    default = MagicMock(id='system-default')
+    backend.soundcard.default_speaker.return_value = default
+    assert Audio.resolve_device(backend.soundcard, selection, 'output') is default
+    backend.soundcard.default_speaker.assert_called_once()
+    backend.soundcard.get_speaker.assert_not_called()
+    backend.soundcard.default_microphone.assert_not_called()
+
+
+def test_invalid_input_selection_uses_default_and_warns(backend, monkeypatch):
+    from src.lib import Logger
+
+    warning = MagicMock()
+    monkeypatch.setattr(Logger, 'log', warning)
+    assert Audio.resolve_device(backend.soundcard, 'old microphone name', 'input') is backend.microphone
+    backend.soundcard.default_microphone.assert_called_once()
     backend.soundcard.default_speaker.assert_not_called()
+    assert warning.call_args.args[0] == 'warn'
+    assert 'system default' in warning.call_args.args[1]
+
+
+@pytest.mark.parametrize('direction', ['input', 'output'])
+def test_invalid_selection_without_default_reports_error(backend, direction):
+    backend.soundcard.default_microphone.return_value = None
+    backend.soundcard.default_speaker.return_value = None
+    with pytest.raises(RuntimeError, match=f'No default audio {direction}'):
+        Audio.resolve_device(backend.soundcard, 'removed-device', direction)
 
 
 @pytest.mark.parametrize('selection', Audio.DEFAULT_ALIASES)
@@ -61,10 +85,23 @@ def test_intentional_default_aliases(backend, selection, direction):
 
 
 def test_duplicate_names_remain_distinct(backend):
-    backend.soundcard.all_speakers.return_value.append(MagicMock(id='sink-other', name='USB'))
+    other = MagicMock(id='sink-other')
+    other.name = 'USB'
+    backend.soundcard.all_speakers.return_value.append(other)
     labels = Audio.device_labels('output')
     assert list(labels) == ['default', 'sink-usb', 'sink-other']
-    assert labels['sink-usb'] != labels['sink-other']
+    assert labels['sink-usb'] == labels['sink-other'] == 'USB'
+    assert Audio.resolve_device(backend.soundcard, 'sink-other', 'output').id == 'sink-other'
+
+
+def test_invalid_device_fallback_opens_streams_on_default(backend):
+    source = Audio.PCMInput('legacy microphone')
+    backend.microphone.recorder.assert_called_once()
+    source.close()
+    output = Audio.PCMOutput('legacy speaker', lambda: False)
+    output._open()
+    backend.speaker.player.assert_called_once()
+    output.close()
 
 
 def test_mac_persistent_uid_not_transient_object_id(monkeypatch):

@@ -55,7 +55,7 @@ def device_labels(direction: str) -> dict[str, str]:
         labels = {DEFAULT_DEVICE: "System default"}
         for device in devices:
             identifier = device_id(device)
-            labels[identifier] = f"{device.name} [{identifier}]"
+            labels[identifier] = device.name
         return labels
 
 
@@ -68,7 +68,10 @@ def resolve_device(soundcard, selection, direction: str):
     devices = soundcard.all_microphones() if direction == "input" else soundcard.all_speakers()
     matches = [device for device in devices if device_id(device) == selection]
     if len(matches) != 1:
-        raise ValueError(f"Audio {direction} device {selection!r} is unavailable; select a device again in Settings")
+        from .Logger import log
+
+        log('warn', f"Saved audio {direction} device is unavailable; using system default. Select a device again in Settings.")
+        return resolve_device(soundcard, DEFAULT_DEVICE, direction)
     return matches[0]
 
 
