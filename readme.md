@@ -6,6 +6,10 @@
 |
 [Download latest version](https://github.com/RatherRude/Elite-Dangerous-AI-Integration/releases)
 
+Plugin developers: see [Plugin development](docs/plugins/Development.md) and
+[Plugin UI and Runtime Integration](docs/plugins/ui-integration.md) for settings,
+translations, declarative views, structured interactions, and live updates.
+
 
 [![A Day in the Life of a Bounty Hunter](./docs/screen/video_thumb.png)](https://www.youtube.com/watch?v=nvuCwwixvxw)
 
