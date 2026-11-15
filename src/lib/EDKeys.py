@@ -21,6 +21,7 @@ from .directinput import (
     resolve_layout_key_name,
     get_layout_key_character,
     load_keyboard_layout,
+    SendUnicodeText,
 )
 
 """
@@ -491,6 +492,15 @@ class EDKeys:
             ReleaseKey(key)
         else:
             PressKey(key)
+
+    def send_text(self, text: str) -> None:
+        """Send action text through Windows Unicode input or the platform typing fallback."""
+        if platform.system() == "Windows":
+            SendUnicodeText(text)
+        else:
+            from pyautogui import typewrite
+
+            typewrite(text, interval=0.02)
 
     def get_collisions(self, key_name: str) -> list[str]:
         key = self.keys.get(key_name)
