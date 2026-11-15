@@ -19,7 +19,10 @@ alias also intentionally follow the system default. Preflight checks the saved
 selection against the available devices. Unavailable selections turn the sound
 input/output preflight indicator and device field red, with a reminder to reselect
 the device after upgrading or reconnect it. Old saved human-readable device names
-must be reselected after upgrading; names and substrings are not matched automatically.
+are automatically upgraded to IDs when exactly one available device's full name
+starts with the saved name. This also handles names truncated by the old audio
+API. Input and output are matched separately, and the upgraded IDs are saved.
+Missing or ambiguous names are left unchanged and must be reselected manually.
 
 Starting with an unavailable selection logs a warning and opens the current
 system default for that direction instead. This does not overwrite the saved

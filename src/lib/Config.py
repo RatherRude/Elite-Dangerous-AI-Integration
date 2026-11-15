@@ -1800,6 +1800,11 @@ def load_config() -> Config:
             if data:
                 data = migrate(data)
                 merged_config = merge_config_data(defaults, data)
+                if migrate_audio_devices(merged_config):
+                    try:
+                        save_config(merged_config)
+                    except OSError as error:
+                        log('warn', 'Could not save upgraded audio device selections', error)
                 
                 print(f"Configuration loaded successfully. Commander: {merged_config.get('commander_name')}, Characters: {len(merged_config.get('characters', []))}")
                 return cast(Config, merged_config)  # pyright: ignore[reportInvalidCast]
@@ -1843,6 +1848,29 @@ def get_audio_device_labels(direction: str) -> dict[str, str]:
     except Exception as error:
         log('error', f'Error getting audio {direction} devices', error, traceback.format_exc())
         return {DEFAULT_DEVICE: "System default"}
+
+
+def migrate_audio_devices(data: dict) -> bool:
+    from .Audio import DEFAULT_ALIASES, DEFAULT_DEVICE
+
+    changed = False
+    for direction in ('input', 'output'):
+        field = f'{direction}_device_name'
+        selection = data.get(field)
+        if not isinstance(selection, str) or selection in DEFAULT_ALIASES:
+            continue
+        labels = get_audio_device_labels(direction)
+        if selection in labels:
+            continue
+        matches = [
+            identifier for identifier, name in labels.items()
+            if identifier != DEFAULT_DEVICE and name.startswith(selection)
+        ]
+        if len(matches) == 1:
+            data[field] = matches[0]
+            changed = True
+            log('info', f'Upgraded saved audio {direction} device selection: {labels[matches[0]]}')
+    return changed
 
 
 def get_input_device_names() -> list[str]:
@@ -1991,6 +2019,7 @@ def update_config(config: Config, data: dict) -> Config:
         data.pop(key, None)
 
     data = cast_int_float(config, data)
+    migrate_audio_devices(data)
 
     if "output_volume_multiplier" in data:
         try:
