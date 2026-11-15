@@ -940,7 +940,7 @@ class Config(TypedDict):
     overlay_standalone_transparent: bool
     overlay_standalone_background_color: str
     overlay_vr_size_meters: float
-    overlay_vr_anchor: Literal['head', 'world']
+    overlay_vr_anchor: Literal['head', 'world', 'seated']
     overlay_vr_horizontal_offset: float
     overlay_vr_vertical_offset: float
     overlay_vr_distance_offset: float
