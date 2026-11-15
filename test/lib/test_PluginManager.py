@@ -167,14 +167,16 @@ def test_running_backup_import_applies_and_persists_plugin_migrations(
         assert settings["llm_reasoning_effort"] == "none"
     assert plugin.settings == settings
     assert saved == [imported]
-    assert emitted == [("config", {"config": imported})]
+    assert [message for message in emitted if message[0] == "config"] == [("config", {"config": imported})]
+    assert any(kind == "plugin_ui" for kind, _ in emitted)
     assert manager.settings_migrated is False
 
     # Ordinary subsequent updates must not repeat migrations or restore defaults.
     if plugin_type is GoogleAIStudioPlugin:
         settings["llm_custom_temperature"] = False
     manager.on_settings_changed(imported)
-    assert len(saved) == 1 and len(emitted) == 1
+    assert len(saved) == 1
+    assert len([message for message in emitted if message[0] == "config"]) == 1
     assert plugin.settings == settings
 
 

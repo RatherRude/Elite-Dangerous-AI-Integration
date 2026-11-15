@@ -72,6 +72,7 @@ export interface CharacterTTSPostprocessingConfig {
 
 export interface Character {
     name: string;
+    first_name: string;
     character: string;
     personality_preset: string;
     personality_verbosity: number;
