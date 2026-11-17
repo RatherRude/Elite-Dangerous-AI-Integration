@@ -83,7 +83,7 @@ class PluginManager:
         namespace = self._namespaces[plugin]
         settings = plugin.get_ui_settings()
         if settings is not None:
-            settings = deepcopy(settings)
+            settings = namespace.presentation(settings)
             settings['key'] = namespace.guid
         return settings
 
@@ -269,7 +269,7 @@ class PluginManager:
                 if module.model_providers is not None:
                     for provider in module.model_providers:
                         plugin_provider = PluginModelProvider(**{
-                            **deepcopy(provider),
+                            **namespace.presentation(provider),
                             'plugin_guid': namespace.guid,
                             'is_builtin': namespace.guid in self.builtin_plugin_guids,
                         })
@@ -329,7 +329,7 @@ class PluginManager:
     def publish_plugin_ui(self, plugin: PluginBase, *, broadcast: bool = True) -> None:
         namespace = self._namespaces[plugin]
         guid = namespace.guid
-        views = deepcopy(plugin.get_ui_views())
+        views = namespace.presentation(plugin.get_ui_views())
         ids = [view['id'] for view in views]
         if len(ids) != len(set(ids)) or any(not view_id or ':' in view_id for view_id in ids):
             raise ValueError('Plugin UI view IDs must be unique, nonempty and contain no colon')
@@ -340,13 +340,14 @@ class PluginManager:
             self.plugin_settings_configs[guid] = settings
         self.plugin_ui[guid] = {
             'views': views,
+            'translations': namespace.translations(plugin.get_ui_translations()),
             'state': self._get_ui_state(plugin),
         }
         for provider in self.plugin_model_providers:
             if provider['plugin_guid'] == guid:
                 definition = next((item for item in plugin.model_providers or [] if item['id'] == provider['id']), None)
                 if definition is not None:
-                    provider.update(deepcopy(definition))
+                    provider.update(namespace.presentation(definition))
         if broadcast:
             self.broadcast_plugin_ui()
 
@@ -430,13 +431,17 @@ class PluginManager:
             if action == 'ui_changed':
                 result = self._on_ui_changed(plugin, payload)
             else:
-                result = deepcopy(plugin.on_ui_action(action, payload))
+                result = self._namespaces[plugin].presentation(plugin.on_ui_action(action, payload))
             self._refresh_plugin_setting_contents(plugin)
             plugin.publish_ui()
             emit_message('plugin_ui_result', request_id=request_id, plugin_guid=plugin_guid, success=True, result=result)
         except Exception as error:
             log('error', f'Plugin UI action {action} failed: {error}')
-            emit_message('plugin_ui_result', request_id=request_id, plugin_guid=plugin_guid, success=False, error=str(error))
+            try:
+                error_text = self._namespaces[plugin].translation_key(str(error)) if plugin is not None else str(error)
+            except ValueError:
+                error_text = 'common.invalidAction'
+            emit_message('plugin_ui_result', request_id=request_id, plugin_guid=plugin_guid, success=False, error=error_text)
 
     def _persist_migrated_settings(self) -> None:
         if self.settings_migrated:

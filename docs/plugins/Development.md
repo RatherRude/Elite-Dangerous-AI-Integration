@@ -2,9 +2,13 @@
 
 Do you want to build a plugin, to expand on COVAS' features? This page will help you get started.
 
+For plugin-provided views, translations, UI actions, and event-driven updates,
+see [Plugin UI and Runtime Integration](ui-integration.md). It documents the
+generic framework available in this checkout, with a complete working example.
+
 ## Prerequisites
 
-- **COVAS:NEXT Project**: Ensure you have the project running from source, as described in [CONTRIBUTING.md](./CONTRIBUTING.md).
+- **COVAS:NEXT Project**: Ensure you have the project running from source, as described in [CONTRIBUTING.md](https://github.com/RatherRude/Elite-Dangerous-AI-Integration/blob/main/CONTRIBUTING.md).
 
 # The easy way to get started
 
@@ -35,60 +39,38 @@ You can create a git repository, and even include other assets or libraries in t
 Create a new class implementing `PluginBase` like this:
 
 ```python
-# Main plugin class
-# This is the class that will be loaded by the PluginManager.
-class ExamplePlugin(PluginBase):
+from lib.PluginBase import PluginBase, PluginManifest
+from lib.PluginHelper import PluginHelper
+from lib.PluginSettingDefinitions import PluginSettings, SettingsGrid
+from lib.PluginUIDefinitions import Toggle
 
-    # Define the plugin settings
-    # This is the settings that will be shown in the UI for this plugin.
-    settings_config = PluginSettings(
-            key="MediaPlayerPlugin",
-            label="Example Plugin Settings",
-            icon="wrench", # Uses Material Icons, like the built-in settings-tabs.
-            grids=[
-                SettingsGrid(
-                    key="general",
-                    label="General",
-                    fields=[
-                        ToggleSetting(
-                            key="my_bool_setting",
-                            label="Boolean Setting",
-                            type="toggle",
-                            readonly = False,
-                            placeholder = None,
-                            default_value = False
-                        ),
-                    ]
-                ),
-            ]
+
+class ExamplePlugin(PluginBase):
+    def __init__(self, plugin_manifest: PluginManifest):
+        super().__init__(plugin_manifest)
+        self.settings_config = PluginSettings(
+            key="settings", label="@title", icon="settings",
+            grids=[SettingsGrid(
+                key="general", label="@general",
+                fields=[Toggle(
+                    key="my_bool_setting", label="@enabled", type="toggle",
+                    readonly=False, placeholder=None, default_value=False,
+                )],
+            )],
         )
 
-    @override
+    def get_ui_translations(self):
+        return {
+            "en": {"title": "Example plugin", "general": "General", "enabled": "Enabled"},
+            "fr": {"title": "Plugin d’exemple", "general": "Général", "enabled": "Activé"},
+        }
+
     def on_chat_start(self, helper: PluginHelper):
-        """Called when chat starts - register all actions, projections, sideeffects, etc. here"""
+        # Register actions, events, projections, side effects, and status generators here.
+        self.enabled = self.settings.get("my_bool_setting", False)
 
-        # Access plugin settings
-        my_bool_setting = self.settings.get("my_bool_setting", False)
-
-        # Register actions
-        # helper.register_action(...)
-
-        # Register custom events
-        # helper.register_event(...)
-
-        # Register projections
-        # helper.register_projection(...)
-
-        # Register sideeffects
-        # helper.register_sideeffect(...)
-
-        # Register status generators
-        # helper.register_status_generator(...)
-        pass
-
-    @override
     def on_chat_stop(self, helper: PluginHelper):
-        """Called when chat stops - cleanup resources here"""
+        # Clean up runtime resources here.
         pass
 ```
 
@@ -97,15 +79,59 @@ And a manifest file like this: (**The GUID must be unique. Generate a new one fo
 ```json
 {
   "guid": "babe1f36-bc38-4b62-8cda-80a7a68835f6",
-  "name": "Hello World - Example Plugin",
+  "name": "Example Plugin",
   "version": "0.0.1",
   "author": "John Doe",
   "description": "A sample plugin",
-  "entrypoint": "HelloWorld.py"
+  "entrypoint": "YourPlugin.py"
 }
 ```
 
+## Updating plugin settings from Python
+
+For derived view/status data, update plugin-owned state and publish it without
+persisting a configuration change:
+
+```python
+self.publish_ui()
+```
+
+`get_ui_views()` and `get_ui_settings()` return the latest presentation. See the
+[UI guide](ui-integration.md#lifecycle-and-public-hooks) for their lifecycle.
+`publish_ui()` refreshes both contexts, including dynamic options, text and
+progress indicators. `publish_settings()` remains a deprecated alias.
+The shared typed components from `lib.PluginUIDefinitions` work in settings
+`fields` and view `content`. Historical names such as `ToggleSetting` and
+`TextSetting` remain exact aliases at their original import path.
+
+The public API for a persisted setting is bound to the registered plugin:
+
+```python
+self.update_setting("status", "@importCompleted")
+```
+
+The manager persists the value in `config.json`, emits the normal `config` message,
+and calls the plugin's optional `on_settings_changed()` hook. The hook is also called
+when settings are changed from the UI. Plugins should keep durable application data
+in their dedicated `plugin_data/<guid>` directory rather than in plugin settings.
+Setting keys are flat local keys, not configuration paths. The core selects the
+owner from its registration registry and stores the value unchanged; local
+translation references are qualified only when exporting presentation. For
+example, `@importCompleted` becomes `plugin.<registered-guid>.importCompleted`
+in a status paragraph. Normal plugin input edits use the shared
+`on_ui_changed(key, value, state)` callback in both settings and views. Its default
+implementation persists declared settings and calls `on_settings_changed()`,
+preserving existing plugins. Override it to keep search/filter input transient
+or explicitly persist selected preferences with `update_setting()`. The state
+snapshot includes all current inputs; buttons can read it with `get_ui_state()`.
+The historical configuration transport remains supported; UI publication
+must not be used as a substitute for saving a setting or plugin database change.
+
 The `PluginBase` base class has the following methods that can be overridden:
+
+- `on_registered(self)`:
+   Called once after the core assigns the plugin's namespace. Use
+   `self.get_plugin_data_path()` here for configuration-state data initialization.
 
 - `on_chat_start(self, helper: PluginHelper)`:  
    Called when the chat is started. This is where you should register all plugin functionality:
@@ -120,10 +146,21 @@ The `PluginBase` base class has the following methods that can be overridden:
 - `on_chat_stop(self, helper: PluginHelper)`:  
    Called when the chat is stopped. Use this to perform any cleanup or finalization needed by your plugin.
 
-- `on_settings_button(self, key: str)`:
-   Called when the user clicks a `ButtonSetting` in the plugin settings UI. The button's `key` identifies which button was clicked.
+- `on_settings_button(self, key: str, value: str | None = None)`:
+    Called for settings buttons, grid header actions, and list row actions.
+    Row actions use `<action>:<row-key>`; inline edits pass the edited value.
+- `on_settings_changed(self)`:
+    Called after configuration changes; refresh derived content as needed.
+- `on_ui_changed(self, key, value, state)`:
+    Called for an input edit in settings or views, with a detached snapshot of
+    current inputs. Delegate to `super()` to retain default settings persistence.
+- `get_ui_views()`, `get_ui_settings()`, `get_ui_translations()`, and `on_ui_action(action, payload)`:
+    Optional generic UI contributions and structured interactions. See the
+    [UI guide](ui-integration.md) for types and examples.
 
-The `PluginHelper` instance provides utilities for registering actions, projections, side effects, and more. You can access most of the internal features you need from the `helper` object, such as `send_key()`, various event handler registrations, and more.
+Use the public `PluginHelper` methods below for runtime integration. In particular,
+use `get_current_state()` instead of reaching into `_event_manager`, and the
+`PluginBase` publication hooks instead of mutating manager registries.
 
 ## Conditional settings
 
@@ -267,12 +304,12 @@ precedence over values copied by the legacy handoff.
 Plugins can register model providers by assigning `self.model_providers` in their constructor. Each provider definition requires `kind`, `id`, `label`, and `settings_config`. The optional `slots` field limits where a provider appears; omitting it preserves the existing kind-based behavior.
 
 ```python
-self.model_providers = [{
-    "kind": "llm",
-    "id": "llm",
-    "label": "Example LLM",
-    "settings_config": [],
-}]
+from typing import Any
+from lib.PluginSettingDefinitions import ModelProviderDefinition
+
+self.model_providers = [ModelProviderDefinition(
+    kind="llm", id="llm", label="Example LLM", settings_config=[],
+)]
 
 def create_model(self, provider_id: str, settings: dict[str, Any]):
     if provider_id == "llm":
@@ -324,22 +361,20 @@ Nested defaults are included even while their fields are hidden. A condition's
 not substituted into UI condition comparisons.
 
 ```python
-self.model_providers = [{
-    "kind": "tts",
-    "id": "tts",
-    "label": "Example TTS",
-    "settings_config": [],
-    "voice_settings_config": [{
-        "key": "voice",
-        "label": "Voice",
-        "fields": [TextSetting(
-            key="voice",
-            label="Reference audio path",
-            type="text",
-            default_value="",
+from lib.PluginSettingDefinitions import ModelProviderDefinition, SettingsGrid, TextSetting
+
+self.model_providers = [ModelProviderDefinition(
+    kind="tts", id="tts", label="Example TTS", settings_config=[],
+    voice_settings_config=[SettingsGrid(
+        key="voice",
+        label="Voice",
+        fields=[TextSetting(
+            key="voice", label="Reference audio path", type="text",
+            readonly=False, placeholder=None, default_value="",
+            max_length=None, min_length=None,
         )],
-    }],
-}]
+    )],
+)]
 ```
 
 Existing implementations only need `synthesize(text, voice)`. Providers that require additional character voice fields may override `synthesize_with_settings(text, settings)`; its default implementation forwards `settings["voice"]` to `synthesize`.
@@ -360,6 +395,11 @@ The `PluginHelper` class provides several methods for interacting with the COVAS
 
 ### State Management
 
+- `helper.get_current_state()`:
+    Return `(processed_events, projected_states)`. Projection values may be
+    Pydantic models; treat shared state as read-only. Use the initial snapshot to
+    populate a runtime view before receiving new events.
+
 - `helper.register_projection(projection: Projection)`:  
    Register a projection to maintain state over time. Projections are used to track and update state in response to events.
 
@@ -379,8 +419,11 @@ The `PluginHelper` class provides several methods for interacting with the COVAS
 
 ### Action & Status
 
-- `helper.register_action(name, description, parameters, method, action_type="ship", input_template=None)`:  
-   Register an action that the AI can execute.
+- `helper.register_action(name, description, parameters, method, action_type="ship", input_template=None)`:
+    Register an action that the AI can execute.
+    `parameters` is a Pydantic model class. The callback receives the validated
+    model and projection states; its returned string is consumed by the assistant.
+    UI action callbacks are separate and may return JSON-serializable results.
 
 - `helper.register_status_generator(status_generator: Callable[[dict[str, dict]], list[tuple[str, Any]]])`:  
    Register a status generator callback for adding information to the model's status context. The callable takes the current projected states and returns a list of (title, content) tuples.
@@ -392,19 +435,25 @@ The `PluginHelper` class provides several methods for interacting with the COVAS
 
 ### Data & Assets
 
-- `helper.get_plugin_data_path(plugin_manifest: PluginManifest) -> str`:  
-   Get the absolute path to your plugin's data directory.
+- `helper.get_plugin_data_path() -> str`:
+   Get the absolute path to the registered plugin's data directory. The same
+   directory is available before Run through `self.get_plugin_data_path()`.
+   The legacy manifest argument is accepted only when it matches the owner.
 
 ### A note on events
 
-For events to work properly, you need to register your event classes in the constructor, like this:
+The current base constructor accepts only the manifest:
 
 ```python
 class HelloWorld(PluginBase):
     def __init__(self, plugin_manifest: PluginManifest):
-        super().__init__(plugin_manifest, [MyValueChangedEvent]) # Provide a list of event classes here. This is used for deserializing stored events.
-...
+        super().__init__(plugin_manifest)
 ```
+
+Use `PluginEvent` for custom payloads and register its handling during Run. Live
+events can update a view through `publish_ui()`. Historic `GameEvent`s update
+projections but are skipped by the normal side-effect dispatch; use current
+projection state to seed a runtime UI rather than expecting callback replay.
 
 ### Registering Custom Plugin Events
 
@@ -413,22 +462,29 @@ To handle custom plugin events, use the `helper.register_event()` method in `on_
 ```python
 def on_chat_start(self, helper: PluginHelper):
     helper.register_event(
-        name="my_event",
+        name="value_changed",
         should_reply_check=lambda event: True,  # or your custom logic
-        prompt_generator=lambda event: f"The new value is now {event.data['key']}"
+        prompt_generator=lambda event: f"The new value is now {event.plugin_event_content['key']}"
     )
 ```
 
 Then dispatch your custom event using:
 
 ```python
+from lib.Event import PluginEvent
+
 helper.dispatch_event(PluginEvent(
-    plugin_event_name="my_event",
-    data={"key": "value"}
+    plugin_event_name="value_changed",
+    plugin_event_content={"key": "value"}
 ))
 ```
 
 **Note:** The `dispatch_event()` method validates that the event is of type `PluginEvent` and will raise a `ValueError` if it's not.
+
+The manager supplies a separate bound helper to each plugin. Registration and
+dispatch qualify the local event name with the registered namespace; event
+callbacks receive the local name. Identical local names in different plugins do
+not collide. Plugins must not prefix event names with their manifest GUID.
 
 For further details or questions, [Join our Discord](https://discord.gg/9c58jxVuAT).
 
@@ -448,7 +504,12 @@ Remember to clean up references etc. in `on_chat_stop()`.
 | Function          | Execution time                                                                                                                                                                                                                         |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `__init__`        | The constructor is executed immediately upon loading the entrypoint file. Use this for initialization that doesn't require the `PluginHelper`.                                                                                         |
-| `settings_config` | Settings are defined as a class property and registered right after all plugins have been loaded.                                                                                                                                      |
-| `settings`        | The current settings for the plugin are available as a class property. These are updated when the user changes settings in the UI.                                                                                                     |
+| `on_registered()` | Called once with a core-owned namespace and data path, before UI contributions are read. |
+| `settings_config` | Settings may be defined on the instance; the default `get_ui_settings()` exports them during registration/publication. |
+| `settings` | An instance dictionary populated from persisted configuration after construction and refreshed when configuration changes. |
 | `on_chat_start()` | This function is executed when the chat assistant is started.<br>**All registration should happen here:** register actions, projections, sideeffects, custom events, and status generators using the provided `PluginHelper` instance. |
 | `on_chat_stop()`  | This function runs when the user stops the chat assistant. Use this for any cleanup between chat sessions.                                                                                                                             |
+| `get_ui_views()` / `get_ui_translations()` | Read at registration and UI publication; usable before Run without a runtime helper. |
+| `get_ui_settings()` | Read when registering or republishing the exported settings schema. |
+| `on_ui_action()` | Called for a GUID-routed UI command in configuration or runtime. |
+| `publish_ui()` / `publish_settings()` | Explicitly publish changed presentation after events or background work; no configuration persistence. |

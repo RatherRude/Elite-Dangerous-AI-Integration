@@ -57,7 +57,18 @@ SHOW_UI_PREFILLS = {
 
 
 def _navigation_labels(manager, target: str, label: str) -> dict[str, str]:
-    return {'en': label, 'fr': label}
+    guid = target.split(':', 2)[1]
+    prefix = f'plugin.{guid}.'
+    if not label.startswith(prefix):
+        return {'en': label, 'fr': label}
+    labels = {}
+    for language, translations in manager.plugin_ui[guid]['translations'].items():
+        value = translations
+        for segment in label.removeprefix(prefix).split('.'):
+            value = value.get(segment) if isinstance(value, dict) else None
+        if isinstance(value, str) and value:
+            labels[language] = value
+    return labels
 
 
 def _navigation_key(action_manager, name):

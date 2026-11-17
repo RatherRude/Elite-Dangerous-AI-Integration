@@ -3,6 +3,7 @@ import { BehaviorSubject } from "rxjs";
 import { TranslateService } from "@ngx-translate/core";
 import { TauriService } from "./tauri.service";
 import { RegisteredUIView, PluginUIView } from "./plugin-ui";
+import { TRANSLATIONS } from "./i18n-translations";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { resolveSettingText } from "./setting-text";
 
@@ -16,6 +17,7 @@ export class PluginUIService {
   private readonly viewsSubject = new BehaviorSubject<RegisteredUIView[]>([]);
   readonly views$ = this.viewsSubject.asObservable();
   private readonly pending = new Map<string, {resolve: (result: unknown) => void; reject: (error: Error) => void; timer: ReturnType<typeof setTimeout>}>();
+  private languages = new Set<string>();
   private states: Record<string, Record<string, unknown>> = {};
   private readonly edits = new Map<string, Map<string, {value: unknown}>>();
 
@@ -26,6 +28,8 @@ export class PluginUIService {
         this.viewsSubject.next([]);
         this.states = {};
         this.edits.clear();
+        for (const lang of this.languages) this.translate.setTranslation(lang, TRANSLATIONS[lang] ?? TRANSLATIONS['en']);
+        this.languages.clear();
         for (const pending of this.pending.values()) {
           clearTimeout(pending.timer);
           pending.reject(new Error("common.actionError"));
@@ -34,8 +38,14 @@ export class PluginUIService {
       } else if (message.type === "plugin_ui") {
         const views: RegisteredUIView[] = [];
         const states: Record<string, Record<string, unknown>> = {};
-        for (const [guid, contribution] of Object.entries(message["plugins"] ?? {}) as [string, {views: PluginUIView[]; state?: Record<string, unknown>}][]) {
+        for (const lang of this.languages) this.translate.setTranslation(lang, TRANSLATIONS[lang] ?? TRANSLATIONS['en']);
+        this.languages.clear();
+        for (const [guid, contribution] of Object.entries(message["plugins"] ?? {}) as [string, {views: PluginUIView[]; translations: Record<string, object>; state?: Record<string, unknown>}][]) {
           states[guid] = contribution.state ?? {};
+          for (const [lang, translations] of Object.entries(contribution.translations)) {
+            this.languages.add(lang);
+            this.translate.setTranslation(lang, {plugin: {[guid]: translations}}, true);
+          }
           views.push(...contribution.views.map(view => ({...view, pluginGuid: guid, target: `plugin:${guid}:${view.id}`})));
         }
         this.states = states;

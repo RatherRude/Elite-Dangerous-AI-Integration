@@ -136,6 +136,9 @@ class PluginBase(ABC):
     def get_ui_settings(self) -> PluginSettings | None:
         return self.settings_config
 
+    def get_ui_translations(self) -> dict[str, dict[str, Any]]:
+        return {}
+
     def on_ui_action(self, action: str, payload: dict[str, Any]) -> Any:
         if action == 'settings_button':
             key = payload.get('key')

@@ -24,15 +24,19 @@ describe("generic plugin UI transport", () => {
     service = new PluginUIService(tauri, translate, snackBar);
   });
 
-  const contribution = (guid: string, order: number) => ({views: [{id: "dashboard", label: `plugin.${guid}.title`, order, sections: []}]});
+  const contribution = (guid: string, order: number) => ({views: [{id: "dashboard", label: `plugin.${guid}.title`, order, sections: []}],
+    translations: {en: {title: `Panel ${guid}`}, fr: {title: `Panneau ${guid}`}}});
 
-  it("registers unrelated plugins, clears removed contributions", () => {
+  it("registers unrelated plugins, translates before run and clears removed contributions", () => {
     let views: RegisteredUIView[] = [];
     service.views$.subscribe(value => views = value);
     output.next({type: "plugin_ui", timestamp: "", index: 1, plugins: {alpha: contribution("alpha", 2), beta: contribution("beta", 1)}});
     expect(views.map(view => view.target)).toEqual(["plugin:beta:dashboard", "plugin:alpha:dashboard"]);
+    translate.use("fr");
+    expect(translate.instant("plugin.alpha.title")).toBe("Panneau alpha");
     output.next({type: "plugin_ui", timestamp: "", index: 2, plugins: {beta: contribution("beta", 1)}});
     expect(views.length).toBe(1);
+    expect(translate.instant("plugin.alpha.title")).toBe("plugin.alpha.title");
     output.next({type: "ready", timestamp: "", index: 3});
     expect(views).toEqual([]);
   });
@@ -66,9 +70,10 @@ describe("generic plugin UI transport", () => {
   });
 
   it("shows a translated action notification once, without replaying publications or duplicate results", async () => {
-    translate.setTranslation("en", {plugin: {alpha: {added: "{{name}} added"}}});
     translate.use("en");
-    output.next({type: "plugin_ui", timestamp: "", index: 1, plugins: {alpha: {views: []}}});
+    output.next({type: "plugin_ui", timestamp: "", index: 1, plugins: {
+      alpha: {views: [], translations: {en: {added: "{{name}} added"}}},
+    }});
     const result = service.invoke("alpha", "add");
     const request = tauri.send_command.calls.mostRecent().args[0];
     const reply = {type: "plugin_ui_result", timestamp: "", index: 2,
@@ -77,7 +82,9 @@ describe("generic plugin UI transport", () => {
     output.next(reply);
     await result;
     expect(snackBar.open).toHaveBeenCalledOnceWith("Item added", undefined, {duration: 4000});
-    output.next({type: "plugin_ui", timestamp: "", index: 3, plugins: {alpha: {views: []}}});
+    output.next({type: "plugin_ui", timestamp: "", index: 3, plugins: {
+      alpha: {views: [], translations: {en: {added: "{{name}} added"}}},
+    }});
     output.next(reply);
     expect(snackBar.open).toHaveBeenCalledTimes(1);
   });
@@ -97,6 +104,19 @@ describe("generic plugin UI transport", () => {
     expect(snackBar.open).toHaveBeenCalledOnceWith("Action failed", undefined, {duration: 5000});
   });
   }
+
+  it("contains every translation dictionary inside its registered owner", () => {
+    translate.setTranslation("en", {common: {cancel: "Core cancel"}});
+    translate.use("en");
+    output.next({type: "plugin_ui", timestamp: "", index: 1, plugins: {
+      alpha: {views: [], translations: {en: {common: {cancel: "Alpha cancel"}, plugin: {beta: {title: "Forged beta"}}}}},
+      beta: contribution("beta", 1),
+    }});
+    expect(translate.instant("common.cancel")).toBe("Core cancel");
+    expect(translate.instant("plugin.beta.title")).toBe("Panel beta");
+    expect(translate.instant("plugin.alpha.common.cancel")).toBe("Alpha cancel");
+    expect(translate.instant("plugin.alpha.plugin.beta.title")).toBe("Forged beta");
+  });
 
   it("shares input state, sends edits and accepts authoritative dynamic publications", async () => {
     output.next({type: "plugin_ui", timestamp: "", index: 1, plugins: {
