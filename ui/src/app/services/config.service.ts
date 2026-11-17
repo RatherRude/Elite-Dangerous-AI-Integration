@@ -34,11 +34,24 @@ export interface RefreshSystemInfoMessage extends BaseCommand {
     type: "refresh_system_info";
 }
 
+export interface BindingKeyIssue {
+    action: string;
+    binding: string;
+    key: string;
+    role: 'key' | 'modifier';
+    character: string | null;
+    layout: string | null;
+    platform: string;
+    modifiers: string[];
+    reason: string;
+}
+
 export interface KeybindsMessages extends BaseMessage {
     type: "keybinds";
     missing: string[];
     collisions: [string,string][];
     unsupported: string[];
+    unresolved_keys?: BindingKeyIssue[];
     start_mismatch?: boolean | { file: string | null; values: string[] } | null;
     start_values?: string[];
     start_profile?: string | null;
@@ -60,6 +73,8 @@ export interface SystemInfo {
     os: string;
     input_device_names: string[];
     output_device_names: string[];
+    input_device_labels?: Record<string, string>;
+    output_device_labels?: Record<string, string>;
     hud_color_matrix?: number[][];
     hud_accent_color?: string;
     hud_secondary_color?: string;

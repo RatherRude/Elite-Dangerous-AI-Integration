@@ -58,6 +58,23 @@
                         </div>
                         <div class="keybind-warning-content">
                             {{ keybindsData.unsupported.join(', ') }}
+                            @if (keybindsData.unresolved_keys?.length) {
+                                <p>These bindings could not be resolved natively. Include the details below when
+                                    <a href="https://github.com/RatherRude/Elite-Dangerous-AI-Integration/issues/new" target="_blank" rel="noopener noreferrer">reporting a keyboard mapping issue</a>.
+                                </p>
+                                <ul>
+                                    @for (issue of keybindsData.unresolved_keys; track $index) {
+                                        <li>
+                                            <strong>{{ issue.action }}</strong> ({{ issue.binding }}):
+                                            {{ issue.role }} <code>{{ issue.key }}</code>
+                                            @if (issue.character !== null) { — character “{{ issue.character }}” }
+                                            — layout {{ issue.layout || 'unknown' }}, {{ issue.platform }}.
+                                            @if (issue.modifiers.length) { Modifiers: {{ issue.modifiers.join(', ') }}. }
+                                            {{ issue.reason }}
+                                        </li>
+                                    }
+                                </ul>
+                            }
                         </div>
                     </div>
                 }

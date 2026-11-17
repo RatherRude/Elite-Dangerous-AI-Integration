@@ -4,12 +4,15 @@
 # http://www.gamespp.com/directx/directInputKeyboardScanCodes.html
 
 import ctypes
+import json
 import time
 import platform
 from typing import final
 
 from pynput.keyboard import Controller, Key, KeyCode  # pyright: ignore[reportMissingModuleSource]
 from pynput.mouse import Button, Controller as MouseController  # pyright: ignore[reportMissingModuleSource]
+
+from .Config import get_asset_path
 
 SendInput = ctypes.windll.user32.SendInput if 'windll' in dir(ctypes) else None
 pynput_keyboard = Controller()
@@ -27,6 +30,88 @@ MOUSEEVENTF_WHEEL = 0x0800
 XBUTTON1 = 0x0001
 XBUTTON2 = 0x0002
 WHEEL_DELTA = 120
+
+
+with open(get_asset_path("keymap_character_aliases.json"), encoding="utf-8") as file:
+    KEY_CHARACTER_ALIASES: dict[str, str] = json.load(file)["characters"]
+
+
+def _windows_user32():
+    if platform.system() != "Windows" or not hasattr(ctypes, "windll"):
+        raise RuntimeError("Layout-aware keyboard input is only supported on Windows.")
+    return ctypes.windll.user32
+
+
+def load_keyboard_layout(locale_name: str) -> int:
+    """Load the .binds locale's keyboard layout without requesting activation."""
+    user32 = _windows_user32()
+    locale_name_to_lcid = ctypes.windll.kernel32.LocaleNameToLCID
+    locale_name_to_lcid.argtypes = [ctypes.c_wchar_p, ctypes.c_uint]
+    locale_name_to_lcid.restype = ctypes.c_uint
+    locale_id = locale_name_to_lcid(locale_name, 0)
+    if not locale_id:
+        raise ValueError(f"Unknown keyboard layout locale {locale_name!r}.")
+
+    user32.LoadKeyboardLayoutW.argtypes = [ctypes.c_wchar_p, ctypes.c_uint]
+    user32.LoadKeyboardLayoutW.restype = ctypes.c_void_p
+    layout = user32.LoadKeyboardLayoutW(f"{locale_id:08x}", 0)
+    if not layout:
+        raise ValueError(f"Unable to load keyboard layout {locale_name!r}.")
+    if layout & 0xFFFF != locale_id & 0xFFFF:
+        raise ValueError(f"Windows returned a different keyboard layout for {locale_name!r}.")
+    return layout
+
+
+def resolve_layout_character(character: str, layout: int) -> int:
+    """Resolve a physical scancode in the game's layout, without text-entry modifiers."""
+    if len(character) != 1:
+        raise ValueError("character must contain exactly one character")
+    if not layout:
+        raise ValueError("An explicit game keyboard layout is required.")
+
+    user32 = _windows_user32()
+    user32.VkKeyScanExW.argtypes = [ctypes.c_wchar, ctypes.c_void_p]
+    user32.VkKeyScanExW.restype = ctypes.c_short
+    user32.MapVirtualKeyExW.argtypes = [
+        ctypes.c_uint,
+        ctypes.c_uint,
+        ctypes.c_void_p,
+    ]
+    user32.MapVirtualKeyExW.restype = ctypes.c_uint
+
+    key_info = user32.VkKeyScanExW(character, layout)
+    if key_info == -1:
+        raise KeyError(f"Unable to resolve character {character!r} for the game layout.")
+
+    virtual_key = key_info & 0xFF
+    scan_code = user32.MapVirtualKeyExW(virtual_key, 0, layout)
+    if scan_code == 0:
+        raise KeyError(
+            f"Unable to resolve a scancode for character {character!r} "
+            "for the game layout."
+        )
+
+    return scan_code
+
+
+def get_layout_key_character(key_name: str) -> str | None:
+    """Decode named keys and literal characters such as Elite's localized Key_* names."""
+    character = KEY_CHARACTER_ALIASES.get(key_name)
+    if character is not None:
+        return character
+    if key_name.startswith("Key_"):
+        character = key_name.removeprefix("Key_")
+        if len(character) == 1 and character.isprintable():
+            return character.lower() if "A" <= character <= "Z" else character
+    return None
+
+
+def resolve_layout_key_name(key_name: str, layout: int) -> int:
+    """Resolve a supported Elite Dangerous key name using the game's Windows layout."""
+    character = get_layout_key_character(key_name)
+    if character is None:
+        raise ValueError(f"{key_name} is not a layout-dependent key.")
+    return resolve_layout_character(character, layout)
 
 WINDOWS_MOUSE_BUTTONS = {
     "left": (MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, 0),
@@ -103,6 +188,24 @@ def _get_pynput_mouse_button(button: str):
         raise KeyError(f"Unsupported mouse button {button} on this platform.")
     return pynput_button
 
+def SendUnicodeText(text: str, interval: float = 0.02) -> None:
+    if platform.system() != "Windows" or SendInput is None:
+        raise RuntimeError("Unicode text input is only supported on Windows.")
+
+    encoded_characters = [character.encode("utf-16-le") for character in text]
+    for encoded in encoded_characters:
+        units = [int.from_bytes(encoded[index:index + 2], "little") for index in range(0, len(encoded), 2)]
+        inputs = (Input * (len(units) * 2))()
+        for index, unit in enumerate(units):
+            for offset, flags in enumerate((0x0004, 0x0006)):  # KEYEVENTF_UNICODE, with optional KEYEVENTF_KEYUP
+                inputs[index * 2 + offset].type = 1
+                inputs[index * 2 + offset].ii.ki = KeyBdInput(0, unit, flags, 0, None)
+
+        sent = SendInput(len(inputs), inputs, ctypes.sizeof(Input))
+        if sent != len(inputs):
+            raise RuntimeError(f"Unable to type text: Windows accepted {sent} of {len(inputs)} Unicode input events.")
+        time.sleep(interval)
+
 def PressKey(keyCode: int | str):
     if platform.system() == 'Windows':
         assert SendInput is not None
@@ -120,6 +223,7 @@ def PressKey(keyCode: int | str):
         SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
     else:
         pynput_keyboard.press(_to_pynput_key(keyCode))
+
 
 def ReleaseKey(keyCode: int | str):
     if platform.system() == 'Windows':
