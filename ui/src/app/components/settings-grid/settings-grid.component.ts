@@ -1,7 +1,13 @@
-import { Component, Input, Output, EventEmitter } from "@angular/core";
+import { Component, Input, Output, EventEmitter, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { SettingsFieldComponent } from "../settings-field/settings-field.component";
-import { SettingsGrid, SettingBase, SettingCondition, matchesSettingCondition } from "../../services/plugin-settings";
+import { UIGrid } from "../../services/plugin-ui";
+import { TranslateService } from "@ngx-translate/core";
+import { resolveSettingText } from "../../services/setting-text";
+import { MatExpansionModule } from "@angular/material/expansion";
+import { MatButtonModule } from "@angular/material/button";
+import { MatIconModule } from "@angular/material/icon";
+import { PluginContentComponent } from "../plugin-content/plugin-content.component";
+import { MatTooltipModule } from "@angular/material/tooltip";
 
 /**
  * A reusable component for rendering a settings grid with a label and fields.
@@ -12,30 +18,38 @@ import { SettingsGrid, SettingBase, SettingCondition, matchesSettingCondition } 
     standalone: true,
     imports: [
         CommonModule,
-        SettingsFieldComponent,
+        MatExpansionModule,
+        MatButtonModule,
+        MatIconModule,
+        PluginContentComponent,
+        MatTooltipModule,
     ],
     templateUrl: "./settings-grid.component.html",
     styleUrl: "./settings-grid.component.css",
 })
 export class SettingsGridComponent {
+    private readonly translate = inject(TranslateService);
+
     /**
      * The settings grid definition containing label and fields.
      */
-    @Input() grid!: SettingsGrid;
+    @Input() grid!: UIGrid;
     
     /**
      * A function to get the current value for a field key.
      * Signature: (fieldKey: string, defaultValue: any) => any
      */
-    @Input() getValue!: (fieldKey: string, defaultValue: any) => any;
+    @Input() getValue: (fieldKey: string, defaultValue: unknown) => unknown = (_key, fallback) => fallback;
     
     /**
      * A function to set a new value for a field key.
      * Signature: (fieldKey: string, value: any) => void
      */
-    @Input() setValue!: (fieldKey: string, value: any) => void;
+    @Input() setValue: (fieldKey: string, value: unknown) => void = (key, value) =>
+        this.uiAction.emit({action: "ui_changed", payload: {key, value}});
 
-    @Input() onButtonClick?: (fieldKey: string) => void;
+    @Input() onButtonClick?: (fieldKey: string, value?: string) => void;
+    @Output() uiAction = new EventEmitter<{action: string; payload: Record<string, unknown>}>();
     
     /**
      * Optional: Header level for the grid label (default: h3).
@@ -48,19 +62,8 @@ export class SettingsGridComponent {
      */
     @Input() gridClass: string = 'settings-grid';
 
-    onFieldChange(field: SettingBase, value: any): void {
-        this.setValue(field.key, value);
+    resolve(value: string | null | undefined): string {
+        return resolveSettingText(this.translate, value);
     }
 
-    getFieldValue(field: SettingBase): any {
-        return this.getValue(field.key, field.default_value);
-    }
-
-    matchesCondition(condition: SettingCondition): boolean {
-        return matchesSettingCondition(condition, this.getValue(condition.key, undefined));
-    }
-
-    handleButtonClick(field: SettingBase): void {
-        this.onButtonClick?.(field.key);
-    }
 }
