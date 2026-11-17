@@ -198,3 +198,26 @@ def ui_fields(elements: list[UIComponent]) -> Iterator[UIComponent]:
                 for row in element.get('items', []):
                     yield from ui_fields(row.get('summary', []))
                     yield from ui_fields(row.get('details', []))
+
+
+class UIViewSection(TypedDict):
+    key: str
+    label: str
+    voice_aliases: NotRequired[list[str]]
+    grids: NotRequired[list[str]]
+    content: NotRequired[list[UIComponent]]
+
+
+class PluginUIView(TypedDict):
+    id: str
+    label: str
+    voice_aliases: NotRequired[list[str]]
+    description: NotRequired[str]
+    icon: NotRequired[str]
+    order: NotRequired[int]
+    modes: NotRequired[list[Literal['configuring', 'running']]]
+    sections: list[UIViewSection]
+
+
+def view_target(plugin_guid: str, view_id: str) -> str:
+    return f'plugin:{plugin_guid}:{view_id}'

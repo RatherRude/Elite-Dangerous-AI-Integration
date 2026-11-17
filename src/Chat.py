@@ -837,6 +837,8 @@ class Chat:
 
         # Execute plugin helper ready hooks
         self.plugin_manager.on_chat_start(self.plugin_helper)
+        from lib.actions.actions_ui import configure_plugin_ui
+        configure_plugin_ui(self.plugin_manager, self.action_manager)
         show_chat_message("info", "Plugins ready.")
 
         # Cue the user that we're ready to go.
@@ -1011,6 +1013,9 @@ def read_stdin(chat: Chat):
         line = sys.stdin.readline().strip()
         if line:
             data = json.loads(line)
+            if data.get("type") == "ui_section_result":
+                from lib.actions.actions_ui import handle_ui_section_result
+                handle_ui_section_result(data)
             if data.get("type") == "change_config":
                 partial = data.get("config")
                 if isinstance(partial, dict):

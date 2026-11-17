@@ -2,6 +2,7 @@ import { TestBed } from "@angular/core/testing";
 import { TranslateModule, TranslateService } from "@ngx-translate/core";
 import { SettingsFieldComponent } from "./settings-field.component";
 import { ListSetting } from "../../services/plugin-settings";
+import { UISectionService } from "../../services/ui-section.service";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ConfirmationDialogService } from "../../services/confirmation-dialog.service";
 import { of } from "rxjs";
@@ -77,6 +78,13 @@ describe("generic list settings", () => {
         expect(details.open).toBeFalse();
         expect(details.textContent).toContain("Full progress");
         details.querySelector("summary")!.click();
+        expect(details.open).toBeTrue();
+        const sections = TestBed.inject(UISectionService);
+        sections.apply(root, {request_id: "collapse-row", expanded: false, name: "First"},
+            () => fixture.detectChanges());
+        expect(details.open).toBeFalse();
+        sections.apply(root, {request_id: "expand-row", expanded: true, name: "one"},
+            () => fixture.detectChanges());
         expect(details.open).toBeTrue();
     });
 

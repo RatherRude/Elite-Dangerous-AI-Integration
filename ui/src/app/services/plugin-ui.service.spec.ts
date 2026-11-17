@@ -3,6 +3,7 @@ import { TranslateModule, TranslateService } from "@ngx-translate/core";
 import { Subject } from "rxjs";
 import { BaseMessage, TauriService } from "./tauri.service";
 import { PluginUIService } from "./plugin-ui.service";
+import { RegisteredUIView } from "./plugin-ui";
 import { MatSnackBar } from "@angular/material/snack-bar";
 
 describe("generic plugin UI transport", () => {
@@ -21,6 +22,19 @@ describe("generic plugin UI transport", () => {
     tauri.send_command.and.resolveTo();
     snackBar = jasmine.createSpyObj<MatSnackBar>("MatSnackBar", ["open"]);
     service = new PluginUIService(tauri, translate, snackBar);
+  });
+
+  const contribution = (guid: string, order: number) => ({views: [{id: "dashboard", label: `plugin.${guid}.title`, order, sections: []}]});
+
+  it("registers unrelated plugins, clears removed contributions", () => {
+    let views: RegisteredUIView[] = [];
+    service.views$.subscribe(value => views = value);
+    output.next({type: "plugin_ui", timestamp: "", index: 1, plugins: {alpha: contribution("alpha", 2), beta: contribution("beta", 1)}});
+    expect(views.map(view => view.target)).toEqual(["plugin:beta:dashboard", "plugin:alpha:dashboard"]);
+    output.next({type: "plugin_ui", timestamp: "", index: 2, plugins: {beta: contribution("beta", 1)}});
+    expect(views.length).toBe(1);
+    output.next({type: "ready", timestamp: "", index: 3});
+    expect(views).toEqual([]);
   });
 
   it("waits for backend results and routes payloads to the owning GUID", async () => {
@@ -54,7 +68,7 @@ describe("generic plugin UI transport", () => {
   it("shows a translated action notification once, without replaying publications or duplicate results", async () => {
     translate.setTranslation("en", {plugin: {alpha: {added: "{{name}} added"}}});
     translate.use("en");
-    output.next({type: "plugin_ui", timestamp: "", index: 1, plugins: {alpha: {}}});
+    output.next({type: "plugin_ui", timestamp: "", index: 1, plugins: {alpha: {views: []}}});
     const result = service.invoke("alpha", "add");
     const request = tauri.send_command.calls.mostRecent().args[0];
     const reply = {type: "plugin_ui_result", timestamp: "", index: 2,
@@ -63,7 +77,7 @@ describe("generic plugin UI transport", () => {
     output.next(reply);
     await result;
     expect(snackBar.open).toHaveBeenCalledOnceWith("Item added", undefined, {duration: 4000});
-    output.next({type: "plugin_ui", timestamp: "", index: 3, plugins: {alpha: {}}});
+    output.next({type: "plugin_ui", timestamp: "", index: 3, plugins: {alpha: {views: []}}});
     output.next(reply);
     expect(snackBar.open).toHaveBeenCalledTimes(1);
   });
@@ -86,8 +100,8 @@ describe("generic plugin UI transport", () => {
 
   it("shares input state, sends edits and accepts authoritative dynamic publications", async () => {
     output.next({type: "plugin_ui", timestamp: "", index: 1, plugins: {
-      alpha: {state: {search: "", enabled: false, choice: null}},
-      beta: {state: {search: "other"}},
+      alpha: {...contribution("alpha", 0), state: {search: "", enabled: false, choice: null}},
+      beta: {...contribution("beta", 0), state: {search: "other"}},
     }});
     expect(service.getValue("alpha", "enabled", true)).toBeFalse();
     expect(service.getValue("alpha", "choice", "fallback")).toBeNull();
@@ -99,7 +113,7 @@ describe("generic plugin UI transport", () => {
     expect(service.getValue("alpha", "search", "")).toBe("filter");
     expect(service.getValue("beta", "search", "")).toBe("other");
     output.next({type: "plugin_ui", timestamp: "", index: 2, plugins: {
-      alpha: {state: {search: "filter", enabled: true}},
+      alpha: {...contribution("alpha", 0), state: {search: "filter", enabled: true}},
     }});
     output.next({type: "plugin_ui_result", timestamp: "", index: 3,
       request_id: command["request_id"], success: true});
@@ -113,7 +127,7 @@ describe("generic plugin UI transport", () => {
 
   it("rolls back rejected inputs without losing a different pending edit", async () => {
     output.next({type: "plugin_ui", timestamp: "", index: 1, plugins: {
-      alpha: {state: {search: "before", enabled: false}},
+      alpha: {...contribution("alpha", 0), state: {search: "before", enabled: false}},
     }});
     const failure = service.change("alpha", "search", "bad");
     const request = tauri.send_command.calls.mostRecent().args[0];
@@ -135,14 +149,14 @@ describe("generic plugin UI transport", () => {
     const second = service.change("alpha", "search", "filter");
     const secondRequest = tauri.send_command.calls.mostRecent().args[0];
     output.next({type: "plugin_ui", timestamp: "", index: 1, plugins: {
-      alpha: {state: {search: "f"}},
+      alpha: {...contribution("alpha", 0), state: {search: "f"}},
     }});
     output.next({type: "plugin_ui_result", timestamp: "", index: 2,
       request_id: firstRequest["request_id"], success: true});
     await first;
     expect(service.getValue("alpha", "search", "")).toBe("filter");
     output.next({type: "plugin_ui", timestamp: "", index: 3, plugins: {
-      alpha: {state: {search: "normalized"}},
+      alpha: {...contribution("alpha", 0), state: {search: "normalized"}},
     }});
     output.next({type: "plugin_ui_result", timestamp: "", index: 4,
       request_id: secondRequest["request_id"], success: true});

@@ -15,7 +15,7 @@ from .UI import emit_message
 
 from .PluginBase import PluginBase, PluginManifest
 from .PluginNamespace import PluginNamespace
-from .PluginUIDefinitions import UIComponent, ui_fields
+from .PluginUIDefinitions import UIComponent, ui_fields, view_target
 from .Models import LLMModel, STTModel, TTSModel, EmbeddingModel
 
 from typing import TYPE_CHECKING
@@ -42,6 +42,7 @@ class PluginManager:
         self.PLUGIN_DEPENDENCIES_FOLDER: str = "deps"
         self.config = config
         self.plugin_ui: dict[str, dict[str, Any]] = {}
+        self.ui_action_manager = None
         self._namespaces: dict[PluginBase, PluginNamespace] = {}
         self._owners: dict[str, PluginBase] = {}
         self._ui_values: dict[PluginBase, dict[str, Any]] = {}
@@ -328,12 +329,17 @@ class PluginManager:
     def publish_plugin_ui(self, plugin: PluginBase, *, broadcast: bool = True) -> None:
         namespace = self._namespaces[plugin]
         guid = namespace.guid
+        views = deepcopy(plugin.get_ui_views())
+        ids = [view['id'] for view in views]
+        if len(ids) != len(set(ids)) or any(not view_id or ':' in view_id for view_id in ids):
+            raise ValueError('Plugin UI view IDs must be unique, nonempty and contain no colon')
         settings = self._settings_presentation(plugin)
         if settings is None:
             self.plugin_settings_configs.pop(guid, None)
         else:
             self.plugin_settings_configs[guid] = settings
         self.plugin_ui[guid] = {
+            'views': views,
             'state': self._get_ui_state(plugin),
         }
         for provider in self.plugin_model_providers:
@@ -372,7 +378,7 @@ class PluginManager:
 
     def _get_ui_state(self, plugin: PluginBase) -> dict[str, Any]:
         settings = self._setting_inputs(plugin)
-        fields = settings
+        fields = {**settings, **self._input_fields(plugin.get_ui_views())}
         state = {key: field.get('default_value') for key, field in fields.items()}
         state.update({key: value for key, value in plugin.settings.items() if key in fields})
         state.update({key: value for key, value in self._ui_values[plugin].items() if key in fields})
@@ -380,7 +386,7 @@ class PluginManager:
 
     def _on_ui_changed(self, plugin: PluginBase, payload: dict[str, Any]) -> None:
         key = payload.get('key')
-        fields = self._setting_inputs(plugin)
+        fields = {**self._setting_inputs(plugin), **self._input_fields(plugin.get_ui_views())}
         if not isinstance(key, str) or key not in fields or 'value' not in payload or fields[key].get('readonly'):
             raise ValueError('common.invalidAction')
         value = deepcopy(payload['value'])
@@ -394,7 +400,7 @@ class PluginManager:
             raise
 
     def _set_ui_value(self, plugin: PluginBase, key: str, value: Any) -> None:
-        fields = self._setting_inputs(plugin)
+        fields = {**self._setting_inputs(plugin), **self._input_fields(plugin.get_ui_views())}
         if not isinstance(key, str) or key not in fields or fields[key].get('readonly'):
             raise ValueError('common.invalidAction')
         self._ui_values[plugin][key] = deepcopy(value)
@@ -404,6 +410,17 @@ class PluginManager:
         emit_message('plugin_settings_configs', plugin_settings_configs=self.plugin_settings_configs,
                      has_plugin_settings=bool(self.plugin_settings_configs))
         emit_message('plugin_model_providers', providers=self.plugin_model_providers)
+        if self.ui_action_manager is not None:
+            from .actions.actions_ui import configure_plugin_ui
+            configure_plugin_ui(self, self.ui_action_manager)
+
+    def get_ui_targets(self, mode: str = 'running') -> dict[str, dict[str, Any]]:
+        return {
+            view_target(guid, view['id']): view
+            for guid, contribution in self.plugin_ui.items()
+            for view in contribution['views']
+            if mode in view.get('modes', ['running'])
+        }
 
     def on_ui_action(self, plugin_guid: str, action: str, payload: dict[str, Any], request_id: str) -> None:
         plugin = self._owners.get(plugin_guid)

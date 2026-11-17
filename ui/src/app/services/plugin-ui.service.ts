@@ -1,6 +1,8 @@
 import { Injectable } from "@angular/core";
+import { BehaviorSubject } from "rxjs";
 import { TranslateService } from "@ngx-translate/core";
 import { TauriService } from "./tauri.service";
+import { RegisteredUIView, PluginUIView } from "./plugin-ui";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { resolveSettingText } from "./setting-text";
 
@@ -11,6 +13,8 @@ function isNotificationParams(value: unknown): value is Record<string, string | 
 
 @Injectable({providedIn: "root"})
 export class PluginUIService {
+  private readonly viewsSubject = new BehaviorSubject<RegisteredUIView[]>([]);
+  readonly views$ = this.viewsSubject.asObservable();
   private readonly pending = new Map<string, {resolve: (result: unknown) => void; reject: (error: Error) => void; timer: ReturnType<typeof setTimeout>}>();
   private states: Record<string, Record<string, unknown>> = {};
   private readonly edits = new Map<string, Map<string, {value: unknown}>>();
@@ -19,6 +23,7 @@ export class PluginUIService {
     private readonly snackBar: MatSnackBar) {
     tauri.output$.subscribe(message => {
       if (message.type === "ready") {
+        this.viewsSubject.next([]);
         this.states = {};
         this.edits.clear();
         for (const pending of this.pending.values()) {
@@ -27,11 +32,14 @@ export class PluginUIService {
         }
         this.pending.clear();
       } else if (message.type === "plugin_ui") {
+        const views: RegisteredUIView[] = [];
         const states: Record<string, Record<string, unknown>> = {};
-        for (const [guid, contribution] of Object.entries(message["plugins"] ?? {}) as [string, {state?: Record<string, unknown>}][]) {
+        for (const [guid, contribution] of Object.entries(message["plugins"] ?? {}) as [string, {views: PluginUIView[]; state?: Record<string, unknown>}][]) {
           states[guid] = contribution.state ?? {};
+          views.push(...contribution.views.map(view => ({...view, pluginGuid: guid, target: `plugin:${guid}:${view.id}`})));
         }
         this.states = states;
+        this.viewsSubject.next(views.sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.target.localeCompare(b.target)));
       } else if (message.type === "plugin_ui_result") {
         const pending = this.pending.get(message["request_id"]);
         if (!pending) return;

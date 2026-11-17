@@ -4,6 +4,7 @@ from typing import Any, ClassVar, cast
 
 
 from .PluginSettingDefinitions import PluginSettings, ModelProviderDefinition
+from .PluginUIDefinitions import PluginUIView
 
 
 from typing import TYPE_CHECKING
@@ -128,6 +129,9 @@ class PluginBase(ABC):
         if self._manager is None:
             raise RuntimeError('Plugin is not registered')
         return self._manager._get_owned_data_path(self)
+
+    def get_ui_views(self) -> list[PluginUIView]:
+        return []
 
     def get_ui_settings(self) -> PluginSettings | None:
         return self.settings_config

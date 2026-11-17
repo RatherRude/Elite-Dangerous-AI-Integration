@@ -150,3 +150,27 @@ export interface ListRow {
   summary?: UIComponent[];
   highlighted?: boolean;
 }
+
+export interface UIViewSection {
+  key: string;
+  label: string;
+  voice_aliases?: string[];
+  grids?: string[];
+  content?: UINode[];
+}
+
+export interface PluginUIView {
+  id: string;
+  label: string;
+  voice_aliases?: string[];
+  description?: string;
+  icon?: string;
+  order?: number;
+  modes?: ("configuring" | "running")[];
+  sections: UIViewSection[];
+}
+
+export interface RegisteredUIView extends PluginUIView {
+  pluginGuid: string;
+  target: string;
+}
