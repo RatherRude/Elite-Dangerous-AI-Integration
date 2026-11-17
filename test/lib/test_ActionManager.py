@@ -173,7 +173,7 @@ def test_permissionless_actions_remain_available() -> None:
     ]
 
 
-def test_selected_language_aliases_are_applied_and_removed() -> None:
+def test_aliases_from_all_language_packs_are_applied_and_replaced() -> None:
     manager = ActionManager()
 
     class MemoryCache:
@@ -222,7 +222,15 @@ def test_selected_language_aliases_are_applied_and_removed() -> None:
     )
     tools = manager.getToolsList("mainship", True, False, False)
 
-    manager.apply_language_aliases(load_action_language_packs(), ["fr"])
+    packs = load_action_language_packs()
+    packs["test"] = {
+        "aliases": [{
+            "phrase": "continue route in another language",
+            "action": "target_next_system_in_route",
+            "arguments": {},
+        }]
+    }
+    manager.apply_language_aliases(packs)
     expected_aliases = {
         "vitesse de croisière": ("FsdJump", {"jump_type": "supercruise"}),
         "passer en vitesse de croisière": ("FsdJump", {"jump_type": "supercruise"}),
@@ -241,11 +249,13 @@ def test_selected_language_aliases_are_applied_and_removed() -> None:
         assert prediction is not None
         assert prediction[0].function.name == action_name
         assert json.loads(prediction[0].function.arguments) == arguments
+    assert manager.predict_action("continue route in another language", tools) is not None
 
-    manager.apply_language_aliases(load_action_language_packs(), [])
+    manager.apply_language_aliases({})
 
     for phrase in expected_aliases:
         assert manager.predict_action(phrase, tools) is None
+    assert manager.predict_action("continue route in another language", tools) is None
     assert manager.predict_action("supercruise", tools) is not None
     assert manager.predict_action("continue route", tools) is not None
     assert manager.predict_action("night vision", tools) is not None
@@ -267,8 +277,10 @@ def test_language_pack_rejects_invalid_phrases(
         load_action_language_packs()
 
 
-def test_language_alias_cannot_override_an_english_command() -> None:
+def test_language_alias_conflicting_with_english_command_is_skipped(monkeypatch: pytest.MonkeyPatch) -> None:
     manager = ActionManager()
+    warnings: list[str] = []
+    monkeypatch.setattr("src.lib.ActionManager.log", lambda level, message: warnings.append(message))
     manager.registerAction(
         "FsdJump",
         "Enter supercruise",
@@ -277,19 +289,63 @@ def test_language_alias_cannot_override_an_english_command() -> None:
         cache_prefill={"supercruise": {"jump_type": "supercruise"}},
     )
 
-    with pytest.raises(ValueError, match="conflicts with an English command"):
-        manager.apply_language_aliases(
-            {
-                "fr": {
-                    "aliases": [{
-                        "phrase": "supercruise",
-                        "action": "FsdJump",
-                        "arguments": {"jump_type": "next_system"},
-                    }]
-                }
-            },
-            ["fr"],
-        )
+    manager.apply_language_aliases({
+        "fr": {
+            "aliases": [{
+                "phrase": "supercruise",
+                "action": "FsdJump",
+                "arguments": {"jump_type": "next_system"},
+            }]
+        }
+    })
+
+    tools = manager.getToolsList("mainship", True, False, False)
+    prediction = manager.predict_action("supercruise", tools)
+    assert prediction is not None
+    assert json.loads(prediction[0].function.arguments) == {"jump_type": "supercruise"}
+    assert any("conflicts with an English command" in warning for warning in warnings)
+
+
+def test_ambiguous_language_alias_is_skipped_without_affecting_other_aliases(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    manager = ActionManager()
+
+    class MemoryCache:
+        def __init__(self) -> None:
+            self.values: dict[str, object] = {}
+
+        def get(self, key: str, default: object = None) -> object:
+            return self.values.get(key, default)
+
+        def set(self, key: str, value: object) -> None:
+            self.values[key] = value
+
+        def delete(self, key: str) -> None:
+            self.values.pop(key, None)
+
+    manager.action_cache = MemoryCache()  # type: ignore[assignment]
+    warnings: list[str] = []
+    monkeypatch.setattr("src.lib.ActionManager.log", lambda level, message: warnings.append(message))
+    for action_name in ("firstAction", "secondAction"):
+        manager.registerAction(action_name, action_name, {}, lambda args, states: "done")
+
+    manager.apply_language_aliases({
+        "fr": {"aliases": [
+            {"phrase": "phrase commune", "action": "firstAction", "arguments": {}},
+            {"phrase": "autre phrase", "action": "firstAction", "arguments": {}},
+        ]},
+        "de": {"aliases": [
+            {"phrase": "phrase commune", "action": "secondAction", "arguments": {}},
+        ]},
+    })
+
+    tools = manager.getToolsList("ship", True, False, False)
+    assert manager.predict_action("phrase commune", tools) is None
+    prediction = manager.predict_action("autre phrase", tools)
+    assert prediction is not None
+    assert prediction[0].function.name == "firstAction"
+    assert any("Skipping ambiguous command alias" in warning for warning in warnings)
 
 
 def test_station_actions_require_docked_status() -> None:

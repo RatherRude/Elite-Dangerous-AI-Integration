@@ -313,15 +313,9 @@ class ActionManager:
     def apply_language_aliases(
         self,
         language_packs: dict[str, dict[str, Any]],
-        selected_languages: list[str],
     ) -> None:
-        aliases: list[tuple[str, str, dict[str, Any], dict]] = []
-        seen_phrases: dict[str, tuple[str, str]] = {}
-
-        for language in selected_languages:
-            pack = language_packs.get(language)
-            if pack is None:
-                raise ValueError(f"Unknown action language pack: {language}")
+        candidates: dict[str, dict[tuple[str, str], tuple[str, str, dict[str, Any]]]] = {}
+        for language, pack in language_packs.items():
             pack_aliases = pack.get("aliases")
             if not isinstance(pack_aliases, list):
                 raise ValueError(f"Invalid aliases in action language pack: {language}")
@@ -336,20 +330,25 @@ class ActionManager:
                 target = (action_name, json.dumps(arguments, sort_keys=True))
                 base_targets = self.base_action_aliases.get(clean_phrase, set())
                 if base_targets and target not in base_targets:
-                    raise ValueError(f"Language alias conflicts with an English command: {phrase}")
-                existing_target = seen_phrases.get(clean_phrase)
-                if existing_target is not None and existing_target != target:
-                    raise ValueError(f"Conflicting action language aliases for: {phrase}")
-                seen_phrases[clean_phrase] = target
-
+                    log("warn", f"Skipping command alias '{phrase}' because it conflicts with an English command.")
+                    continue
                 if target in base_targets:
                     continue
+                candidates.setdefault(clean_phrase, {}).setdefault(
+                    target, (phrase, action_name, arguments)
+                )
 
-                registered_action = self.actions.get(action_name)
-                if registered_action is None:
-                    log("debug", f"Skipping alias '{phrase}' for unavailable action '{action_name}'")
-                    continue
-                aliases.append((phrase, action_name, arguments, registered_action["tool"]))
+        aliases: list[tuple[str, str, dict[str, Any], dict]] = []
+        for clean_phrase, targets in candidates.items():
+            if len(targets) > 1:
+                log("warn", f"Skipping ambiguous command alias '{clean_phrase}' because language packs map it to different actions.")
+                continue
+            phrase, action_name, arguments = next(iter(targets.values()))
+            registered_action = self.actions.get(action_name)
+            if registered_action is None:
+                log("debug", f"Skipping alias '{phrase}' for unavailable action '{action_name}'")
+                continue
+            aliases.append((phrase, action_name, arguments, registered_action["tool"]))
 
         previous_keys = self.action_cache.get(self.LANGUAGE_ALIAS_CACHE_KEY, [])
         if isinstance(previous_keys, list):
@@ -373,7 +372,7 @@ class ActionManager:
             cache_keys.append(input_hash)
 
         self.action_cache.set(self.LANGUAGE_ALIAS_CACHE_KEY, cache_keys)
-        log("info", f"Loaded aliases for action languages: {', '.join(selected_languages) or 'English only'}")
+        log("info", f"Loaded command aliases from {len(language_packs)} language pack(s).")
 
     def has_action_in_cache(self, user_input: str, action: ChatCompletionMessageFunctionToolCall, tool_list) -> Literal["suggested", "confirmed", False]:
         """
