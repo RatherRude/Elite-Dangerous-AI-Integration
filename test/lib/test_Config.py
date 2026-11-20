@@ -29,6 +29,105 @@ def isolate_audio_devices(monkeypatch):
     monkeypatch.setattr(ConfigModule, "get_default_output_device_name", lambda: "output")
 
 
+@pytest.fixture(autouse=True)
+def mock_audio_device_enumeration(monkeypatch):
+    monkeypatch.setattr(ConfigModule, 'get_audio_device_labels', lambda direction: {'default': 'System default'})
+
+
+@pytest.fixture
+def audio_device_labels(monkeypatch):
+    labels = {
+        'input': {'default': 'System default', 'source-usb': 'USB microphone (Full device name)'},
+        'output': {'default': 'System default', 'sink-usb': 'USB speakers (Full device name)'},
+    }
+    monkeypatch.setattr(ConfigModule, 'get_audio_device_labels', labels.__getitem__)
+    return labels
+
+
+@pytest.mark.parametrize('selection', ['USB microphone', 'USB microphone (Full device name)'])
+def test_audio_device_migration_upgrades_unique_full_or_truncated_name(audio_device_labels, selection):
+    data = {'input_device_name': selection, 'output_device_name': 'USB speakers'}
+    assert ConfigModule.migrate_audio_devices(data) is True
+    assert data == {'input_device_name': 'source-usb', 'output_device_name': 'sink-usb'}
+    assert ConfigModule.migrate_audio_devices(data) is False
+
+
+@pytest.mark.parametrize('selection', [None, '', 'pulse', 'default', 'source-usb', 'missing microphone', 'microphone', 'usb microphone'])
+def test_audio_device_migration_preserves_defaults_ids_and_unmatched_names(audio_device_labels, selection):
+    data = {'input_device_name': selection}
+    assert ConfigModule.migrate_audio_devices(data) is False
+    assert data == {'input_device_name': selection}
+
+
+def test_audio_device_migration_rejects_ambiguous_prefixes_and_duplicate_names(audio_device_labels):
+    audio_device_labels['input']['source-other'] = 'USB microphone (Another device)'
+    data = {'input_device_name': 'USB microphone', 'output_device_name': 'USB speakers'}
+    assert ConfigModule.migrate_audio_devices(data) is True
+    assert data == {'input_device_name': 'USB microphone', 'output_device_name': 'sink-usb'}
+    audio_device_labels['input']['source-other'] = audio_device_labels['input']['source-usb']
+    data['input_device_name'] = audio_device_labels['input']['source-usb']
+    assert ConfigModule.migrate_audio_devices(data) is False
+    assert data['input_device_name'] == audio_device_labels['input']['source-usb']
+
+
+def test_audio_device_migration_prioritizes_exact_ids_and_ignores_default_label(audio_device_labels):
+    audio_device_labels['input']['source-other'] = 'source-usb matches a name too'
+    data = {'input_device_name': 'source-usb', 'output_device_name': 'System'}
+    assert ConfigModule.migrate_audio_devices(data) is False
+    assert data == {'input_device_name': 'source-usb', 'output_device_name': 'System'}
+
+
+def test_audio_device_migration_does_not_match_the_other_direction(audio_device_labels):
+    data = {'input_device_name': 'USB speakers', 'output_device_name': 'USB microphone'}
+    assert ConfigModule.migrate_audio_devices(data) is False
+    assert data == {'input_device_name': 'USB speakers', 'output_device_name': 'USB microphone'}
+
+
+def test_load_config_persists_audio_migration_and_preserves_ambiguous_selection(audio_device_labels, monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    config = ConfigModule.load_config()
+    config['commander_name'] = 'Audio migration test'
+    config['input_device_name'] = 'USB microphone'
+    config['output_device_name'] = 'USB speakers'
+    audio_device_labels['output']['sink-other'] = 'USB speakers (Another device)'
+    ConfigModule.save_config(config)
+
+    loaded = ConfigModule.load_config()
+    assert loaded['commander_name'] == 'Audio migration test'
+    assert loaded['input_device_name'] == 'source-usb'
+    assert loaded['output_device_name'] == 'USB speakers'
+    assert json.loads(Path('config.json').read_text()) == loaded
+    assert ConfigModule.load_config() == loaded
+
+
+def test_backup_import_upgrades_audio_selections_before_save_and_emit(audio_device_labels, monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    config = ConfigModule.load_config()
+    messages = []
+    monkeypatch.setattr(ConfigModule, 'emit_message', lambda kind, **payload: messages.append(payload))
+    updated = ConfigModule.update_config(config, {'input_device_name': 'USB microphone', 'output_device_name': 'USB speakers'})
+    assert updated['input_device_name'] == 'source-usb'
+    assert updated['output_device_name'] == 'sink-usb'
+    assert messages[-1]['config'] == updated
+    assert json.loads(Path('config.json').read_text()) == updated
+
+
+def test_audio_migration_preserves_loaded_config_if_save_fails(audio_device_labels, monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    config = ConfigModule.load_config()
+    config['commander_name'] = 'Keep loaded settings'
+    config['input_device_name'] = 'USB microphone'
+    ConfigModule.save_config(config)
+
+    def fail_save(config):
+        raise OSError('Read-only config')
+
+    monkeypatch.setattr(ConfigModule, 'save_config', fail_save)
+    loaded = ConfigModule.load_config()
+    assert loaded['commander_name'] == 'Keep loaded settings'
+    assert loaded['input_device_name'] == 'source-usb'
+
+
 def test_action_defaults_match_registered_permissions() -> None:
     actions_source = (
         ROOT_DIR / "src" / "lib" / "actions" / "Actions.py"

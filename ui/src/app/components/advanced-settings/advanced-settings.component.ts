@@ -1,5 +1,6 @@
 import { Component, ElementRef, EventEmitter, OnDestroy, Output, ViewChild } from "@angular/core";
 import { CommonModule } from "@angular/common";
+import { audioDeviceAvailable } from "../../services/audio-devices";
 import {
     MatError,
     MatFormField,
@@ -92,6 +93,16 @@ type AdvancedSettingsPanel = "commander" | "llm" | "agent-llm" | "stt" | "tts" |
     styleUrl: "./advanced-settings.component.css",
 })
 export class AdvancedSettingsComponent implements OnDestroy {
+    get inputDeviceAvailable(): boolean {
+        return audioDeviceAvailable(this.config?.input_device_name, this.system?.input_device_names);
+    }
+
+    get outputDeviceAvailable(): boolean {
+        return audioDeviceAvailable(this.config?.output_device_name, this.system?.output_device_names);
+    }
+
+    readonly inputDeviceErrorStateMatcher = { isErrorState: () => !this.inputDeviceAvailable };
+    readonly outputDeviceErrorStateMatcher = { isErrorState: () => !this.outputDeviceAvailable };
     @Output() questEditorOpen = new EventEmitter<void>();
     @ViewChild("commanderNameInput") private commanderNameInput?: ElementRef<HTMLInputElement>;
     @ViewChild("commanderNameField", { read: ElementRef }) private commanderNameField?: ElementRef<HTMLElement>;

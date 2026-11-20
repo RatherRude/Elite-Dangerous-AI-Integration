@@ -45,6 +45,8 @@ The **Read out EDCoPilot commentary** setting lets COVAS:NEXT voice EDCoPilot co
 
 If EDCoPilot sends an interrupting phrase, COVAS:NEXT stops its current TTS before reading the EDCoPilot commentary. You can set **EDCoPilot Voice** to choose which COVAS:NEXT character voice should read EDCoPilot commentary.
 
+When you select a character by name, commentary uses that character's full voice settings for the current TTS provider, including provider-specific instructions and options, along with the character's TTS post-processing settings.
+
 ## React to EDCoPilot Commentary
 
 The **React to EDCoPilot commentary** setting lets EDCoPilot commentary become an event that COVAS:NEXT can react to.

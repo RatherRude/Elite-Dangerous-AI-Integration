@@ -55,7 +55,7 @@ a = Analysis(
         get_samplerate_binary(),
     ],
     # RapidOCR loads config.yaml and its ONNX models relative to the package.
-    datas=[
+    datas=collect_data_files('soundcard') + [
         ('./src', '.'),
         (str(Path(pysilero_vad.__file__).resolve().parent / 'models' / 'silero_vad.onnx'), './pysilero_vad/models'),
     ] + collect_data_files('rapidocr_onnxruntime')

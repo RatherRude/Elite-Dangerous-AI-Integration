@@ -212,11 +212,14 @@
                                         <mat-form-field class="sound-devices-input">
                                             <mat-label>Input Device</mat-label>
                                             <mat-select [(ngModel)]="config.input_device_name"
+                                                        [errorStateMatcher]="inputDeviceErrorStateMatcher"
+                                                        [placeholder]="inputDeviceAvailable ? 'System default' : 'Unavailable device'"
                                                         (ngModelChange)="onConfigChange({input_device_name: $event})">
                                                 @for (device of system?.input_device_names; track device) {
-                                                    <mat-option [value]="device">{{ device }}</mat-option>
+                                                    <mat-option [value]="device">{{ system?.input_device_labels?.[device] || 'Audio device' }}</mat-option>
                                                 }
                                             </mat-select>
+                                            <mat-error>Saved input device is unavailable. Select it again after upgrading or reconnect it. System default will be used until then.</mat-error>
                                         </mat-form-field>
                                         <button
                                             mat-icon-button
@@ -271,11 +274,14 @@
                                             <mat-form-field>
                                                 <mat-label>Output Device</mat-label>
                                                 <mat-select [(ngModel)]="config.output_device_name"
+                                                            [errorStateMatcher]="outputDeviceErrorStateMatcher"
+                                                            [placeholder]="outputDeviceAvailable ? 'System default' : 'Unavailable device'"
                                                             (ngModelChange)="onConfigChange({output_device_name: $event})">
                                                     @for (device of system?.output_device_names; track device) {
-                                                        <mat-option [value]="device">{{ device }}</mat-option>
+                                                        <mat-option [value]="device">{{ system?.output_device_labels?.[device] || 'Audio device' }}</mat-option>
                                                     }
                                                 </mat-select>
+                                                <mat-error>Saved output device is unavailable. Select it again after upgrading or reconnect it. System default will be used until then.</mat-error>
                                             </mat-form-field>
                                             <div
                                                 class="output-volume-row"
@@ -534,6 +540,18 @@
                                     }
                                     @if (keybindsData.unsupported.length > 0) {
                                         <p class="preflight-helper-text"><strong>Unsupported:</strong> {{ keybindsData.unsupported.join(', ') }}</p>
+                                        @if (keybindsData.unresolved_keys?.length) {
+                                            <div class="preflight-issue-section">
+                                                <strong>Unresolved keyboard mappings:</strong>
+                                                <ul>
+                                                    @for (issue of keybindsData.unresolved_keys; track $index) {
+                                                        <li>{{ issue.action }}: {{ issue.role }} <code>{{ issue.key }}</code>
+                                                            ({{ issue.layout || 'unknown' }}, {{ issue.platform }}) — {{ issue.reason }}</li>
+                                                    }
+                                                </ul>
+                                                <p class="preflight-helper-text">Include these details in a keyboard mapping bug report. Full details are available in Actions settings.</p>
+                                            </div>
+                                        }
                                     }
 
                                     @if (enabledActionTypes.length > 0) {
