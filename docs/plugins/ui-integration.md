@@ -111,15 +111,17 @@ language, their stable keys and `voice_aliases`. For example:
 UIViewSection(
     key="session",
     label="@progress.title",
-    voice_aliases=["progression du vaisseau", "suivi des ameliorations", "ship upgrade progress"],
+    voice_aliases=["ship progress", "upgrade tracking", "ship upgrade progress"],
     grids=["session"],
 )
 ```
 
-The GUI may display **Progress** while French voice requests select this same
-subtab. Exact French/English display requests, including `affiche-moi`,
-`montre-moi` and `show me`, are resolved locally from published plugin metadata
-before the action cache or model, even when the action cache is disabled.
+The GUI may display **Progress** while a voice request uses an alias such as
+**upgrade tracking** to select the same subtab. Aliases are independent of the
+displayed label and may use a different language.
+The local resolver currently supports English and French display commands.
+Exact requests such as `show me upgrade tracking` are resolved from published
+plugin metadata before the action cache or model, even when the action cache is disabled.
 They open the requested view/subtab first; the assistant may then give a spoken
 summary, but a status-reading operation alone does not fulfill a display request.
 No domain-specific plugin names are embedded in this local resolver.
@@ -298,8 +300,9 @@ Use translated text for UI chrome and status messages. Literal fallbacks are
 useful for data such as user-defined names. Core strings such as `common.cancel`
 may be reused. Backend error strings surfaced in the UI should also be keys.
 
-The host uses `@ngx-translate/core` with bundled English/French dictionaries in
-`ui/src/app/services/i18n-translations.ts` and an inline loader. English is the
+The host uses `@ngx-translate/core` with bundled dictionaries in
+`ui/src/app/i18n/en.json` and `ui/src/app/i18n/fr.json`, imported by
+`ui/src/app/services/i18n-translations.ts` and served by an inline loader. English is the
 initial language; `TranslateService.use(language)` selects another loaded language.
 Settings strings that look like dot-separated translation keys are resolved with
 their parameters. Literal labels from existing plugins continue to display as-is.
