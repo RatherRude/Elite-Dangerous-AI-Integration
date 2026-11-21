@@ -10,6 +10,7 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 import Chat as ChatModule
+from lib.Event import PluginEvent
 
 
 @pytest.fixture
@@ -41,6 +42,21 @@ def chat(monkeypatch):
     chat.stt.listen_once_start = MagicMock()
     chat.stt.listen_once_end = MagicMock()
     return chat
+
+
+@pytest.mark.parametrize(("metadata", "expected"), [
+    ({}, {}),
+    ({"display_name": "Pilot", "display_color": "#123456"},
+     {"display_name": "Pilot", "display_color": "#123456"}),
+    ({"display_name": [], "display_color": " "}, {}),
+])
+def test_plugin_chat_presentation_is_optional(chat, monkeypatch, metadata, expected):
+    monkeypatch.setattr(ChatModule, "send_message", MagicMock())
+    event = PluginEvent(plugin_event_name="PluginNotice", plugin_event_content={"text": "Hello", **metadata})
+    ChatModule.Chat.on_event(chat, event, {})
+    ChatModule.show_chat_message.assert_called_once_with(
+        "plugin", "Hello", plugin_event_name="PluginNotice", avatar_url=None, **expected,
+    )
 
 
 @pytest.mark.parametrize("start_muted", [False, True])

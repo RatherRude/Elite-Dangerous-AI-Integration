@@ -441,11 +441,16 @@ class Chat:
             plugin_content = event.plugin_event_content if isinstance(event.plugin_event_content, dict) else {}
             plugin_message = plugin_content.get("text")
             avatar_url = plugin_content.get("avatar_url")
+            presentation = {
+                key: value for key in ("display_name", "display_color")
+                if isinstance(value := plugin_content.get(key), str) and value.strip()
+            }
             show_chat_message(
                 "plugin",
                 plugin_message if isinstance(plugin_message, str) and plugin_message.strip() else event.plugin_event_name,
                 plugin_event_name=event.plugin_event_name,
                 avatar_url=avatar_url if isinstance(avatar_url, str) and avatar_url else None,
+                **presentation,
             )
         if event.kind == "quest":
             event = cast(QuestEvent, event)
@@ -1023,6 +1028,8 @@ def read_stdin(chat: Chat):
                         )
             if data.get("type") == "submit_input":
                 chat.submit_input(data["input"])
+            if data.get("type") == "change_plugin_character":
+                chat.plugin_manager.update_plugin_character(data.get("plugin_guid"), data.get("character"))
             if data.get("type") == "run_action":
                 chat.run_action(data["action"], data.get("arguments"))
             if data.get("type") == "plugin_settings_button":
@@ -1198,6 +1205,8 @@ if __name__ == "__main__":
                     )
                 if data.get("type") == "change_character":
                     config = update_character(config, data)
+                if data.get("type") == "change_plugin_character":
+                    plugin_manager.update_plugin_character(data.get("plugin_guid"), data.get("character"))
                 if data.get("type") == "reset_game_events":
                     config = reset_game_events(config, data["character_index"])
                 if data.get("type") == "clear_history":

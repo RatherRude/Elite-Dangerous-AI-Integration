@@ -2,6 +2,9 @@ import traceback
 import importlib
 import json
 import os
+from copy import deepcopy
+from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 import sys
 from typing import Self
@@ -35,6 +38,7 @@ class PluginManager:
         self.builtin_plugin_guids: set[str] = set()
         self.failed_plugins: list[dict] = []
         self.settings_migrated = False
+        self._has_broadcast_characters = False
         self.PLUGIN_FOLDER: str = "plugins"
         self.PLUGIN_DEPENDENCIES_FOLDER: str = "deps"
         self.config = config
@@ -60,10 +64,96 @@ class PluginManager:
             plugin.migrate_settings(plugin.settings, settings_version)
             settings_version += 1
             plugin.settings['settings_version'] = settings_version
+        if plugin.character is not None:
+            self._initialize_plugin_character(plugin)
         if plugin.settings != previous_settings:
             self.config.setdefault('plugin_settings', {})[guid] = plugin.settings
             self.settings_migrated = True
         return plugin
+
+    def _initialize_plugin_character(self, plugin: PluginBase) -> None:
+        previous_character = plugin.character
+        previous_settings = plugin.settings
+        try:
+            path = self._character_path(plugin.plugin_manifest.guid)
+            plugin.character = deepcopy(previous_character)
+            plugin.settings = deepcopy(previous_settings)
+            plugin.initialize_character(self.config)
+            if not isinstance(plugin.character, dict):
+                raise ValueError('Plugin character must be an object')
+
+            stored = None
+            if path.exists():
+                stored = json.loads(path.read_text(encoding='utf-8'))
+                if not isinstance(stored, dict):
+                    raise ValueError('Saved plugin character must be an object')
+                plugin.character.update({key: stored[key] for key in plugin.character if key in stored})
+            if plugin.character != stored:
+                self._save_character(plugin)
+        except Exception as error:
+            plugin.character = previous_character
+            plugin.settings = previous_settings
+            log('error', f'Failed to load character for {plugin.plugin_manifest.name}: {error}')
+
+    def _character_path(self, guid: str) -> Path:
+        if not isinstance(guid, str) or not guid or guid in {'.', '..'} or any(char in guid for char in '/\\:'):
+            raise ValueError('Invalid plugin GUID')
+        return Path('plugin_data') / guid / 'character.json'
+
+    def _save_character(self, plugin: PluginBase) -> None:
+        path = self._character_path(plugin.plugin_manifest.guid)
+        contents = json.dumps(plugin.character, indent=4, allow_nan=False)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = None
+        try:
+            with NamedTemporaryFile(mode='w', encoding='utf-8', dir=path.parent, delete=False) as file:
+                temporary = Path(file.name)
+                file.write(contents)
+            temporary.replace(path)
+        finally:
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)
+
+    def broadcast_characters(self) -> None:
+        characters = []
+        for plugin in self.plugin_list.values():
+            if plugin.character is None:
+                continue
+            try:
+                active = plugin.is_character_active()
+            except Exception as error:
+                log('error', f'Failed to check character availability for {plugin.plugin_manifest.name}: {error}')
+                active = False
+            characters.append({
+                'plugin_guid': plugin.plugin_manifest.guid,
+                'character': plugin.character,
+                'active': active,
+                'settings_config': plugin.character_settings_config or [],
+                'default_avatar': plugin.character_default_avatar,
+            })
+        if characters or self._has_broadcast_characters:
+            emit_message('plugin_characters', characters=characters)
+            self._has_broadcast_characters = bool(characters)
+
+    def update_plugin_character(self, plugin_guid: object, character: object) -> None:
+        if not isinstance(plugin_guid, str) or not isinstance(character, dict):
+            return
+        plugin = next((plugin for plugin in self.plugin_list.values() if plugin.plugin_manifest.guid == plugin_guid), None)
+        if plugin is None or plugin.character is None:
+            return
+        previous = plugin.character
+        try:
+            plugin.character = {key: deepcopy(character.get(key, value)) for key, value in previous.items()}
+            self._save_character(plugin)
+        except Exception as error:
+            plugin.character = previous
+            log('error', f'Failed to save character for {plugin.plugin_manifest.name}: {error}')
+        else:
+            try:
+                plugin.on_character_changed()
+            except Exception as error:
+                log('error', f'Character changed hook failed for {plugin.plugin_manifest.name}: {error}')
+        self.broadcast_characters()
 
     def load_plugin_module(self, manifest: 'PluginManifest', file_path: str) -> 'PluginBase':
         # Get the module name from file name
@@ -274,6 +364,7 @@ class PluginManager:
         
         # Broadcast model providers to UI
         emit_message("plugin_model_providers", providers=self.plugin_model_providers)
+        self.broadcast_characters()
 
     def _persist_migrated_settings(self) -> None:
         if self.settings_migrated:
@@ -296,6 +387,7 @@ class PluginManager:
             except Exception as e:
                 log('error', f"Failed to execute on_settings_changed hook for {module.plugin_manifest.name}: {e}")
         self._persist_migrated_settings()
+        self.broadcast_characters()
 
     def on_settings_button(self, plugin_guid: str, key: str):
         """Route a plugin settings button click to its owning plugin."""
