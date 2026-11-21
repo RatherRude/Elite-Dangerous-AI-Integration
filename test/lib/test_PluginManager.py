@@ -107,15 +107,76 @@ def test_character_save_failure_keeps_previous_state(character_manager, monkeypa
     assert emitted.call_args.kwargs["characters"][0]["character"] == plugin.character
 
 
-def test_character_load_failure_keeps_legacy_settings_and_file(character_manager):
-    manager, _, path = character_manager
+def test_character_downgrade_preserves_newer_fields_without_exposing_them(character_manager):
+    manager, emitted, path = character_manager
+    manifest = PluginManifest('{"guid": "character"}')
     path.parent.mkdir(parents=True)
-    path.write_text('[]')
-    plugin = manager._initialize_plugin_settings(CharacterPlugin(PluginManifest('{"guid": "character"}')))
+    original = b'{ "name": "Saved", "new_field": {"items": [1, 2]} }\n'
+    path.write_bytes(original)
+    plugin = manager._initialize_plugin_settings(CharacterPlugin(manifest))
+    manager.plugin_list[manifest.guid] = plugin
+    manager.register_settings()
+
+    assert path.read_bytes() == original
+    assert emitted.call_args.kwargs["characters"][0]["character"] == {
+        "name": "Saved", "custom": {"enabled": False},
+    }
+    manager.update_plugin_character(manifest.guid, {"name": "Edited", "new_field": "Ignored"})
+    assert "new_field" not in emitted.call_args.kwargs["characters"][0]["character"]
+    assert json.loads(path.read_text())["new_field"] == {"items": [1, 2]}
+
+    class NewerCharacterPlugin(CharacterPlugin):
+        character = {**CharacterPlugin.character, "new_field": {}}
+
+    reloaded = PluginManager(manager.config)._initialize_plugin_settings(NewerCharacterPlugin(manifest))
+    assert reloaded.character == {"name": "Edited", "custom": {"enabled": False}, "new_field": {"items": [1, 2]}}
+
+
+def test_character_load_failure_blocks_updates_until_successful_retry(character_manager):
+    manager, emitted, path = character_manager
+    manifest = PluginManifest('{"guid": "character"}')
+    path.parent.mkdir(parents=True)
+    unreadable = b'{bad JSON\n'
+    path.write_bytes(unreadable)
+    plugin = manager._initialize_plugin_settings(CharacterPlugin(manifest))
+    manager.plugin_list[manifest.guid] = plugin
+    plugin.on_character_changed = MagicMock()
+    manager.register_settings()
+    manager.update_plugin_character(manifest.guid, {"name": "Ignored"})
 
     assert plugin.character["name"] == "Default"
     assert plugin.settings["legacy_name"] == "Migrated"
-    assert path.read_text() == '[]'
+    assert path.read_bytes() == unreadable
+    assert all(call.args[0] != "plugin_characters" for call in emitted.call_args_list)
+    plugin.on_character_changed.assert_not_called()
+
+    repaired = b'{ "name": "Recovered", "custom": {"enabled": true} }\n'
+    path.write_bytes(repaired)
+    manager.on_settings_changed(manager.config)
+    assert path.read_bytes() == repaired
+    assert emitted.call_args.kwargs["characters"][0]["character"]["name"] == "Recovered"
+    manager.update_plugin_character(manifest.guid, {"name": "Edited"})
+    assert json.loads(path.read_bytes()) == {"name": "Edited", "custom": {"enabled": True}}
+    plugin.on_character_changed.assert_called_once_with()
+
+
+@pytest.mark.parametrize("patch", [{}, {"unknown": True}, {"name": "Migrated", "custom": {"enabled": False}}])
+def test_character_noop_updates_do_not_save_or_call_hook(character_manager, monkeypatch, patch):
+    manager, emitted, path = character_manager
+    manifest = PluginManifest('{"guid": "character"}')
+    plugin = manager._initialize_plugin_settings(CharacterPlugin(manifest))
+    manager.plugin_list[manifest.guid] = plugin
+    plugin.on_character_changed = MagicMock()
+    save = MagicMock(wraps=manager._save_character)
+    monkeypatch.setattr(manager, "_save_character", save)
+    original = path.read_bytes()
+
+    manager.update_plugin_character(manifest.guid, patch)
+
+    assert path.read_bytes() == original
+    save.assert_not_called()
+    plugin.on_character_changed.assert_not_called()
+    emitted.assert_not_called()
 
 
 def test_non_character_plugins_and_invalid_updates_are_unchanged(character_manager):
