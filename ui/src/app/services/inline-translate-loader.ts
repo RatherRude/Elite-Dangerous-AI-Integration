@@ -7,8 +7,7 @@ import { TRANSLATIONS } from "./i18n-translations";
 export class InlineTranslateLoader implements TranslateLoader {
     getTranslation(lang: string): Observable<object> {
         return of(
-            (TRANSLATIONS as Record<string, object>)[lang] ??
-                (TRANSLATIONS as Record<string, object>)["en"],
+            TRANSLATIONS[lang] ?? TRANSLATIONS["en"],
         );
     }
 }
