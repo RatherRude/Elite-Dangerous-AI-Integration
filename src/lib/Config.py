@@ -4,7 +4,7 @@ from pathlib import Path
 import platform
 from threading import Semaphore
 import traceback
-from typing import Any, Literal, TypedDict, Dict, cast, List
+from typing import Any, Literal, NotRequired, TypedDict, Dict, cast, List
 import os
 import sys
 from urllib.parse import urlparse
@@ -887,6 +887,7 @@ class Config(TypedDict):
     commander_name: str
     characters: List[Character]
     active_character_index: int
+    active_characters: NotRequired[list[int]]
     llm_provider: str
     agent_llm_provider: str
     agent_llm_max_tries: int
@@ -1698,6 +1699,7 @@ def load_config() -> Config:
         'commander_name': "",
         'characters': [],
         'active_character_index': 0,  # -1 means using the default legacy character
+        'active_characters': [],
         'api_key': "",
         'vision_var': False,
         'ptt_var': 'voice_activation',
@@ -1958,6 +1960,11 @@ def update_character(config: Config, data: UpdateCharacterRequest) -> Config:
             if 0 <= index < len(config.get("characters", [])):
                 deleted_name = config["characters"][index].get("name", "unknown")
                 config["characters"].pop(index)
+                if isinstance(config.get('active_characters'), list):
+                    config['active_characters'] = [
+                        member - int(member > index) for member in config['active_characters']
+                        if type(member) is int and member != index
+                    ]
                 print(f"Deleted character at index {index}: {deleted_name}")
                 # Adjust active index if needed
                 if config["active_character_index"] == index:
@@ -1974,10 +1981,13 @@ def update_character(config: Config, data: UpdateCharacterRequest) -> Config:
             if -1 <= index < len(config.get("characters", [])):
                 config["active_character_index"] = index
 
-    return update_config(old_config, {
+    changed = {
         "active_character_index": config["active_character_index"],
         "characters": config["characters"]
-    })
+    }
+    if 'active_characters' in config:
+        changed['active_characters'] = config['active_characters']
+    return update_config(old_config, changed)
 
 def cast_int_float(current: dict, data: dict) -> dict:
     result = {}

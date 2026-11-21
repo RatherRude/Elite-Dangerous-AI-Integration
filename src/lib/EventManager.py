@@ -146,7 +146,7 @@ class EventManager:
         self.short_term_memory = EventStore('events', self.event_classes)
         self.projection_store = KeyValueStore('projections')
         self.long_term_memory = VectorStore('memory')
-        self._processing_lock = threading.Lock()
+        self._processing_lock = threading.RLock()
         self._timer_interval = 10.0
         self._timer_stop_event = threading.Event()
         self._timer_thread = threading.Thread(target=self._run_projection_timer, daemon=True)
@@ -197,9 +197,10 @@ class EventManager:
 
     def add_conversation_event(self, role: Literal['user', 'assistant'], content: str, processed_at: float = 0.0,
                                reasons: list[str] | None = None, *, character_name: str | None = None,
+                               character_index: int | None = None,
                                character_color: str | None = None, avatar_url: str | None = None,
                                plugin_guid: str | None = None, plugin_event_name: str | None = None):
-        event = ConversationEvent(kind=role, content=content, reasons=reasons, character_name=character_name,
+        event = ConversationEvent(kind=role, content=content, reasons=reasons, character_name=character_name, character_index=character_index,
                                   character_color=character_color, avatar_url=avatar_url, plugin_guid=plugin_guid,
                                   plugin_event_name=plugin_event_name)
         if role == 'assistant' and plugin_guid is None:
@@ -221,9 +222,10 @@ class EventManager:
         self.incoming.put(event)
         # log('debug', event)
 
-    def add_assistant_acting(self, processed_at: float):
+    def add_assistant_acting(self, processed_at: float | None = None):
         event = ConversationEvent(kind='assistant_acting', content='')
-        self.short_term_memory.replied_before(processed_at)
+        if processed_at is not None:
+            self.short_term_memory.replied_before(processed_at)
         self.incoming.put(event)
 
     def add_play_sound(
@@ -289,7 +291,10 @@ class EventManager:
         if not isinstance(source, GameEvent) or not source.historic:
             self.pending.append(event)
 
-    def add_tool_call(self, request: list[dict[str, Any]], results: list[dict[str, Any]], text: list[str] | None = None):
+    def add_tool_call(self, request: list[dict[str, Any]], results: list[dict[str, Any]], text: list[str] | None = None,
+                      *, processed_at: float | None = None):
+        if processed_at is not None:
+            self.short_term_memory.replied_before(processed_at)
         event = ToolEvent(request=request, results=results, text=text)
         self.incoming.put(event)
 
@@ -364,6 +369,11 @@ class EventManager:
         for projection in self.projections:
             projected_states[projection.__class__.__name__] = projection.state
         return self.processed, projected_states
+
+    @property
+    def processing_lock(self):
+        """Serialize turn publication with event processing and its database writes."""
+        return self._processing_lock
 
     def update_projections(self, event: Event, save_later: bool = False) -> list[ProjectedEvent]:
         projected_events: list[ProjectedEvent] = []

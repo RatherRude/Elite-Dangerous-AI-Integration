@@ -1,6 +1,7 @@
 from pathlib import Path
 import queue
 import sys
+from threading import RLock
 from unittest.mock import MagicMock
 
 import pytest
@@ -12,6 +13,7 @@ if str(SRC_DIR) not in sys.path:
 
 from lib.ActionManager import ActionManager
 from lib.Assistant import Assistant
+from lib.CharacterManager import CharacterManager
 from lib.Event import ConversationEvent
 from lib.EventManager import EventManager
 from lib.PluginBase import PluginManifest
@@ -30,6 +32,8 @@ def commentary_plugin(monkeypatch):
     event_manager = EventManager.__new__(EventManager)
     event_manager.incoming = queue.Queue()
     event_manager.short_term_memory = MagicMock()
+    event_manager.projections = []
+    event_manager.processed = []
     assistant.event_manager = event_manager
     assistant.tts = MagicMock()
     plugin._helper._assistant = assistant
@@ -53,7 +57,9 @@ def commentary_plugin(monkeypatch):
         }],
     }
     assistant.config = plugin._helper._config
-    assistant.plugin_manager = plugin._helper._plugin_manager
+    assistant.characters = CharacterManager(assistant.config, plugin._helper._plugin_manager)
+    assistant._turn_lock = RLock()
+    assistant._generation = assistant._last_reset = 0
     plugin.client = MagicMock()
     plugin.client.pending_events = queue.Queue()
     plugin.client.pending_events.put(MagicMock(
@@ -90,11 +96,11 @@ def test_commentary_uses_full_character_voice_settings(commentary_plugin, stored
 
     kwargs = commentary_plugin._helper._assistant.tts.say.call_args.kwargs
     assert commentary_plugin._helper._assistant.tts.say.call_args.args == ("EDCoPilot commentary",)
-    assert kwargs["voice"] is None
+    assert kwargs["voice"] == stored_settings.get('voice', '')
     assert kwargs["voice_settings"] == {
-        "stability": 0.5, "instructions": "Global style", "model": "tts-model", **stored_settings,
+        "voice": "", "stability": 0.5, "instructions": "Global style", "model": "tts-model", **stored_settings,
     }
-    assert kwargs["postprocessing"] == character["tts_postprocessing"]
+    assert kwargs["postprocessing_layers"][0]['volume'] == character["tts_postprocessing"]['volume']
     incoming = commentary_plugin._helper._event_manager.incoming
     assert incoming.empty()
     kwargs["on_start"]()
@@ -117,11 +123,11 @@ def test_commentary_preserves_raw_voice_and_default_settings(commentary_plugin, 
         commentary_plugin.process_edcopilot_events()
 
     kwargs = commentary_plugin._helper._assistant.tts.say.call_args.kwargs
-    assert kwargs["voice"] is None
-    assert kwargs["voice_settings"] == ({
+    assert kwargs["voice"] == voice
+    assert kwargs["voice_settings"] == {
         "voice": voice, "stability": 0.5, "instructions": "Global style", "model": "tts-model",
-    } if voice else None)
-    assert kwargs["postprocessing"] is None
+    }
+    assert kwargs["postprocessing_layers"][0]['volume'] == 1.0
 
 
 def test_commentary_does_not_apply_character_voice_settings_in_dominant_mode(commentary_plugin):
@@ -134,9 +140,9 @@ def test_commentary_does_not_apply_character_voice_settings_in_dominant_mode(com
         commentary_plugin.process_edcopilot_events()
 
     kwargs = commentary_plugin._helper._assistant.tts.say.call_args.kwargs
-    assert kwargs["voice"] is None
-    assert kwargs["voice_settings"] is None
-    assert kwargs["postprocessing"] == {"volume": 0.5}
+    assert kwargs["voice"] == ''
+    assert kwargs["voice_settings"] == {'voice': ''}
+    assert kwargs["postprocessing_layers"][0]['volume'] == 0.5
 
 
 def test_commentary_uses_legacy_voice_if_profile_migration_has_not_succeeded(commentary_plugin):
@@ -145,7 +151,7 @@ def test_commentary_uses_legacy_voice_if_profile_migration_has_not_succeeded(com
         plugin.process_edcopilot_events()
     kwargs = plugin._helper._assistant.tts.say.call_args.kwargs
     assert kwargs['voice_settings']['model'] == 'tts-model'
-    assert kwargs['postprocessing'] == {'volume': 0.5}
+    assert kwargs['postprocessing_layers'][0]['volume'] == 0.5
 
 
 def test_edcopilot_migration_persists_legacy_controls_and_retains_saved_edits(commentary_plugin, monkeypatch, tmp_path):

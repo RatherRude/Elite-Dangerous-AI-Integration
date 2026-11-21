@@ -190,6 +190,84 @@ def test_tts_queued_voice_settings_override_preserves_defaults_and_postprocessin
     mock_model.synthesize_with_settings.assert_called_once_with("Next line", default_settings)
 
 
+@pytest.mark.parametrize('interrupted', [False, True])
+def test_line_speed_is_restored_after_synthesis(mock_audio_output, interrupted):
+    model = MagicMock(spec=OpenAITTSModel)
+    model.speed = 1.25
+    observed = []
+
+    def synthesize(text, settings):
+        observed.append((text, model.speed, settings))
+        yield b'pcm'
+
+    model.synthesize_with_settings.side_effect = synthesize
+    tts = TTS(model, voice_settings={'voice': 'pilot'})
+    plugin_line = tts._stream_audio('Plugin', voice_settings_override={}, speed=0.75)
+    if interrupted:
+        next(plugin_line)
+        plugin_line.close()
+    else:
+        assert list(plugin_line) == [b'pcm']
+    assert model.speed == 1.25
+    assert list(tts._stream_audio('Pilot')) == [b'pcm']
+    assert observed == [('Plugin', 0.75, {}), ('Pilot', 1.25, {'voice': 'pilot'})]
+
+
+def test_interruption_keeps_only_opted_in_waiting_lines_in_order(mock_audio_output, monkeypatch):
+    monkeypatch.setattr(threading.Thread, 'start', lambda _thread: None)
+    tts = TTS(None)
+    monkeypatch.setattr(tts._thread, 'join', MagicMock())
+    spoken = []
+    first = tts.say('First alert', retain_on_interrupt=True, on_start=lambda: spoken.append('first'))
+    dropped = tts.say('Old answer', on_start=lambda: spoken.append('old'))
+    second = tts.say('Second alert', retain_on_interrupt=True, on_start=lambda: spoken.append('second'))
+    tts.set_playback_paused(True)
+    tts.abort(preserve_retained=True)
+    tts.abort(preserve_retained=True)
+    assert dropped.is_completed() and not dropped.is_speaking()
+    assert not first.is_completed() and not second.is_completed()
+
+    def idle(_duration):
+        if not spoken:
+            assert not first.is_speaking() and not second.is_speaking()
+            tts.set_playback_paused(False)
+        else:
+            tts._shutdown.set()
+
+    monkeypatch.setattr(tts._shutdown, 'wait', idle)
+    monkeypatch.setattr(tts, '_playback_one', MagicMock())
+    tts._playback_loop()
+    assert spoken == ['first', 'second']
+    assert first.is_completed() and second.is_completed()
+
+
+def test_shutdown_drops_even_retained_lines(mock_audio_output, monkeypatch):
+    monkeypatch.setattr(threading.Thread, 'start', lambda _thread: None)
+    tts = TTS(None)
+    monkeypatch.setattr(tts._thread, 'join', MagicMock())
+    alert = tts.say('Important', retain_on_interrupt=True)
+    tts.quit()
+    assert alert.is_completed() and not alert.is_speaking()
+    assert not tts.has_queued_items()
+
+
+def test_queued_line_snapshots_settings_and_can_disable_all_effects(mock_audio_output, monkeypatch):
+    monkeypatch.setattr('src.lib.TTS.threading.Thread.start', lambda _thread: None)
+    tts = TTS(None, postprocessing_config={'volume': 0.4})
+    monkeypatch.setattr(tts._thread, 'join', MagicMock())
+    effects = [{'volume': 0.6}]
+    voice_settings = {'options': {'voice': 'original'}}
+    tts.say('Pilot', speed=1.5, voice_settings=voice_settings, postprocessing_layers=effects)
+    effects[0]['volume'] = 1.8
+    voice_settings['options']['voice'] = 'changed'
+    queued = tts._normalize_queue_item(tts.read_queue.get_nowait())
+    assert queued['speed'] == 1.5
+    assert queued['postprocessing_layers'] == [{'volume': 0.6}]
+    assert queued['voice_settings'] == {'options': {'voice': 'original'}}
+    assert tts._get_effective_postprocessing_config(None, []) == map_character_tts_postprocessing(None)
+    assert tts._get_effective_postprocessing_config(None)['volume'] == 0.4
+
+
 def test_openai_tts_playback_with_voice_instructions(mock_audio_output, mock_openai):
     """Test OpenAI TTS playback with voice instructions"""
     mock_model = MagicMock(spec=OpenAITTSModel)

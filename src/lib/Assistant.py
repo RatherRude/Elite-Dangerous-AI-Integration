@@ -1,4 +1,3 @@
-import copy
 import json
 import traceback
 from collections.abc import Iterator
@@ -19,20 +18,14 @@ from .Logger import (
     observe,
     show_chat_message,
 )
-from .Config import (
-    Config,
-    CharacterTTSPostprocessingConfig,
-    TTS_ENVIRONMENT_EFFECTS_IN_SRV,
-    TTS_ENVIRONMENT_EFFECTS_ON_FOOT,
-    TTS_ENVIRONMENT_EFFECTS_OVERHEATING,
-)
+from .Config import Config
+from .CharacterManager import CharacterManager, ResolvedCharacter
 from .Database import QuestDatabase, QuestState
-from .Event import ConversationEvent, Event, GameEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent, MemoryEvent, QuestEvent, PluginEvent
+from .Event import ConversationEvent, Event, GameEvent, StatusEvent, ToolEvent, PluginEvent, ProjectedEvent, MemoryEvent, QuestEvent
 from .EventManager import EventManager
 from .ActionManager import ActionManager
 from .PromptGenerator import PromptGenerator
 from .TTS import TTS, TTSLine
-from .PluginSettingDefinitions import resolve_voice_settings
 from typing import Any, Callable, TYPE_CHECKING, final
 import yaml
 from threading import Thread
@@ -41,14 +34,14 @@ from .Projections import get_state_dict, ProjectedStates
 from .QuestCatalogManager import remove_orphaned_quest_states
 
 if TYPE_CHECKING:
-    from .PluginManager import PluginManager
+    from .PluginBase import PluginBase
 
 FALLBACK_STAGE_ID = "__fallback__"
 
 @final
 class Assistant:
-    def __init__(self, config: Config, enabled_game_events: list[str], event_manager: EventManager, action_manager: ActionManager, llmModel: LLMModel, tts: TTS, prompt_generator: PromptGenerator, embeddingModel: EmbeddingModel | None = None, disabled_game_events: list[str] | None = None, plugin_manager: 'PluginManager | None' = None):
-        self.plugin_manager = plugin_manager
+    def __init__(self, config: Config, enabled_game_events: list[str], event_manager: EventManager, action_manager: ActionManager, llmModel: LLMModel, tts: TTS, prompt_generator: PromptGenerator, embeddingModel: EmbeddingModel | None = None, disabled_game_events: list[str] | None = None, characters: CharacterManager | None = None):
+        self.characters = characters if characters is not None else CharacterManager(config)
         self.config = config
         self.enabled_game_events = enabled_game_events
         self.disabled_game_events = disabled_game_events if disabled_game_events is not None else []
@@ -58,6 +51,9 @@ class Assistant:
         self.tts = tts
         self.prompt_generator = prompt_generator
         self.embeddingModel = embeddingModel
+        self._turn_lock = event_manager.processing_lock
+        self._generation = 0
+        self._last_reset = 0
         self.is_replying = False
         self.reply_pending = False
         self.pending: list[Event] = []
@@ -77,8 +73,12 @@ class Assistant:
             if event_type in self.disabled_game_events:
                 return
 
-        self.pending.append(event)
-        self.reply_pending = self.should_reply(projected_states)
+        with self._turn_lock:
+            generation = self._generation
+            self.pending.append(event)
+            should_reply = self.should_reply(projected_states)
+            if self._is_current(generation):
+                self.reply_pending = should_reply
 
         if isinstance(event, MemoryEvent):
             self.short_term_memories.append(event)
@@ -152,16 +152,27 @@ class Assistant:
             log('error', 'Quest processing failed', e, traceback.format_exc())
 
     def clear_conversation_state(self):
-        self.pending = [
-            event for event in self.pending
-            if not isinstance(event, (ConversationEvent, ToolEvent))
-        ]
-        self.reply_pending = False
+        with self._turn_lock:
+            self._invalidate_response(preserve_retained=False)
 
     def reset_runtime_state(self):
-        self.pending = []
+        with self._turn_lock:
+            self._invalidate_response(preserve_retained=False)
+            self.short_term_memories = []
+
+    def interrupt_response(self) -> None:
+        """Discard obsolete output, but leave unanswered history for the next trigger."""
+        with self._turn_lock:
+            self._invalidate_response(preserve_retained=True)
+
+    def _invalidate_response(self, *, preserve_retained: bool) -> None:
+        self._generation += 1
+        if not preserve_retained:
+            self._last_reset = self._generation
+        self.is_replying = False
         self.reply_pending = False
-        self.short_term_memories = []
+        self.pending = []
+        self.tts.abort(preserve_retained=preserve_retained)
 
     def _get_quests_path(self) -> Path:
         return Path(__file__).resolve().parent.parent / "data" / "quests.yaml"
@@ -169,181 +180,83 @@ class Assistant:
     def _get_quest_audio_dir(self) -> Path:
         return Path(__file__).resolve().parent.parent / "data" / "audio"
 
-    def _get_active_character_tts_postprocessing(self) -> CharacterTTSPostprocessingConfig | None:
-        characters = self.config.get('characters') or []
-        if not characters:
+    def queue_model_line(self, response: LLMResponse, projected_states: ProjectedStates | None = None, *,
+                         reasons: list[str] | None = None, processed_at: float = 0.0) -> TTSLine | None:
+        if not response.text or not response.text.strip():
             return None
-        idx = self.config.get('active_character_index', 0)
-        idx = max(0, min(idx, len(characters) - 1))
-        character = characters[idx] if isinstance(characters[idx], dict) else None
-        postprocessing = character.get('tts_postprocessing') if character else None
-        return postprocessing if isinstance(postprocessing, dict) else None
+        with self._turn_lock:
+            character = self.characters.resolve_model(response.character_name)
+            if character is None:
+                log('warn', f'Skipping utterance for inactive or unknown speaker: {response.character_name!r}')
+                return None
+            return self._queue_line(response.text, character, projected_states, reasons=reasons, processed_at=processed_at)
 
-    def _get_active_character(self) -> dict[str, Any] | None:
-        characters = self.config.get('characters') or []
-        if not characters:
+    queue_utterance = queue_model_line
+
+    def queue_plugin_line(self, plugin: 'PluginBase', response: LLMResponse, *, reaction_event: PluginEvent | None = None,
+                          speak: bool = True, interrupt: bool = False, use_profile_voice: bool = True,
+                          profile_overrides: dict[str, Any] | None = None, retain_on_interrupt: bool = False) -> TTSLine | None:
+        if not response.text or not response.text.strip():
             return None
-        idx = self.config.get('active_character_index', 0)
-        idx = max(0, min(idx, len(characters) - 1))
-        character = characters[idx]
-        return character if isinstance(character, dict) else None
-
-    def _get_environment_tts_postprocessing_layers(
-        self,
-        projected_states: ProjectedStates,
-    ) -> list[CharacterTTSPostprocessingConfig]:
-        current_status = get_state_dict(projected_states, "CurrentStatus")
-        loadout = get_state_dict(projected_states, "Loadout")
-        character = self._get_active_character() or {}
-        flags = current_status.get("flags", {}) if isinstance(current_status, dict) else {}
-        flags2 = current_status.get("flags2", {}) if isinstance(current_status, dict) else {}
-        hull_health = loadout.get("HullHealth") if isinstance(loadout, dict) else None
-        damage_effects_enabled = bool(character.get("tts_environment_damage_effects_var", True))
-        helmet_effects_enabled = bool(character.get("tts_environment_helmet_effects_var", True))
-        srv_effects_enabled = bool(character.get("tts_environment_srv_effects_var", True))
-
-        layers: list[CharacterTTSPostprocessingConfig] = []
-        if damage_effects_enabled and isinstance(flags, dict) and flags.get("OverHeating"):
-            layers.append(TTS_ENVIRONMENT_EFFECTS_OVERHEATING)
-        elif damage_effects_enabled and isinstance(hull_health, (int, float)) and float(hull_health) <= 0.75:
-            layers.append(self._get_scaled_damage_tts_postprocessing(float(hull_health)))
-        if srv_effects_enabled and isinstance(flags, dict) and flags.get("InSRV"):
-            layers.append(TTS_ENVIRONMENT_EFFECTS_IN_SRV)
-        if helmet_effects_enabled and isinstance(flags2, dict) and flags2.get("OnFoot"):
-            layers.append(TTS_ENVIRONMENT_EFFECTS_ON_FOOT)
-        return layers
-
-    def _get_scaled_damage_tts_postprocessing(
-        self,
-        hull_health: float,
-    ) -> CharacterTTSPostprocessingConfig:
-        intensity = 1.0 - max(0.0, min(1.0, hull_health))
-        scaled = copy.deepcopy(TTS_ENVIRONMENT_EFFECTS_OVERHEATING)
-        effects = scaled.get("effects", {})
-
-        distortion = effects.get("distortion") if isinstance(effects, dict) else None
-        if isinstance(distortion, dict) and distortion.get("enabled"):
-            if isinstance(distortion.get("drive"), (int, float)):
-                distortion["drive"] = float(distortion["drive"]) * intensity
-            if isinstance(distortion.get("mix"), (int, float)):
-                distortion["mix"] = min(1.0, float(distortion["mix"]) * intensity)
-            if isinstance(distortion.get("clip"), (int, float)) and float(distortion["clip"]) > 0.0:
-                distortion["clip"] = max(0.05, float(distortion["clip"]) / intensity)
-
-        glitch = effects.get("glitch") if isinstance(effects, dict) else None
-        if isinstance(glitch, dict) and glitch.get("enabled"):
-            if isinstance(glitch.get("probability"), (int, float)):
-                glitch["probability"] = min(1.0, float(glitch["probability"]) * intensity)
-            if isinstance(glitch.get("repeat_min"), (int, float)):
-                glitch["repeat_min"] = max(1, int(round(float(glitch["repeat_min"]) * intensity)))
-            if isinstance(glitch.get("repeat_max"), (int, float)):
-                glitch["repeat_max"] = max(1, int(round(float(glitch["repeat_max"]) * intensity)))
-            if isinstance(glitch.get("min_seconds"), (int, float)):
-                glitch["min_seconds"] = float(glitch["min_seconds"]) * intensity
-            if isinstance(glitch.get("max_seconds"), (int, float)):
-                glitch["max_seconds"] = float(glitch["max_seconds"]) * intensity
-            if isinstance(glitch.get("detune_base"), (int, float)):
-                glitch["detune_base"] = float(glitch["detune_base"]) * intensity
-            if isinstance(glitch.get("detune_peak"), (int, float)):
-                glitch["detune_peak"] = float(glitch["detune_peak"]) * intensity
-
-            repeat_min = glitch.get("repeat_min")
-            repeat_max = glitch.get("repeat_max")
-            if isinstance(repeat_min, int) and isinstance(repeat_max, int) and repeat_max < repeat_min:
-                glitch["repeat_max"] = repeat_min
-
-            min_seconds = glitch.get("min_seconds")
-            max_seconds = glitch.get("max_seconds")
-            if isinstance(min_seconds, (int, float)) and isinstance(max_seconds, (int, float)) and max_seconds < min_seconds:
-                glitch["max_seconds"] = min_seconds
-
-        return scaled
-
-    def _get_tts_postprocessing_layers(
-        self,
-        projected_states: ProjectedStates,
-    ) -> list[CharacterTTSPostprocessingConfig | None]:
-        layers: list[CharacterTTSPostprocessingConfig | None] = [
-            self._get_active_character_tts_postprocessing(),
-        ]
-        layers.extend(self._get_environment_tts_postprocessing_layers(projected_states))
-        return layers
-
-    def _utterance_voice(self, profile: dict[str, Any], use_provider_defaults: bool) -> tuple[str | None, dict[str, Any] | None]:
-        provider_ref = self.config.get('tts_provider', '')
-        references = profile.get('tts_voice_settings')
-        stored = references.get(provider_ref) if isinstance(references, dict) else None
-        overrides = dict(stored) if isinstance(stored, dict) else {}
-        legacy_voice = profile.get('tts_voice')
-        if isinstance(legacy_voice, str) and legacy_voice:
-            overrides.setdefault('voice', legacy_voice)
-        parts = provider_ref.split(':', 2)
-        manager = getattr(self, 'plugin_manager', None)
-        if manager and len(parts) == 3 and parts[0] == 'plugin' and (use_provider_defaults or stored is not None or overrides):
-            provider = manager.get_plugin_provider(parts[1], parts[2])
-            if provider is not None:
-                return None, resolve_voice_settings(
-                    provider.get('voice_settings_config') or [],
-                    self.config.get('plugin_settings', {}).get(parts[1], {}),
-                    overrides,
-                )
-        voice = overrides.get('voice')
-        return (voice if isinstance(voice, str) and voice else None), None
-
-    def queue_utterance(
-        self, response: LLMResponse, projected_states: ProjectedStates | None = None, *,
-        reasons: list[str] | None = None, processed_at: float = 0.0,
-        profile: dict[str, Any] | None = None, plugin_guid: str | None = None,
-        reaction_event: PluginEvent | None = None, speak: bool = True, use_profile_voice: bool = True,
-    ) -> TTSLine | None:
-        """Queue one complete line immediately; record it when playback starts (or now if silent)."""
-        text = response.text
-        if not text or not text.strip():
+        if not plugin.plugin_manifest.guid.strip():
+            log('warn', 'Skipping plugin utterance without a plugin GUID')
             return None
-        character_name = response.character_name
-        if profile is None and character_name:
-            profile = next((candidate for candidate in self.config.get('characters', [])
-                            if candidate.get('name') == character_name), None)
-        if plugin_guid and profile and not character_name:
-            character_name = profile.get('name')
-        profile = copy.deepcopy(profile) if profile is not None else None
-        color = profile.get('color') if profile else None
-        avatar = profile.get('avatar') if profile and speak else None
+        with self._turn_lock:
+            character = self.characters.resolve_plugin(plugin, profile_overrides)
+            if speak and interrupt:
+                self.interrupt_response()
+            _, states = self.event_manager.get_current_state() if speak else (None, None)
+            return self._queue_line(response.text, character, states, reaction_event=reaction_event,
+                                    speak=speak, use_profile_voice=use_profile_voice, retain_on_interrupt=retain_on_interrupt)
+
+    def _queue_line(self, text: str, character: ResolvedCharacter, states: ProjectedStates | None, *,
+                    reasons: list[str] | None = None, processed_at: float = 0.0,
+                    reaction_event: PluginEvent | None = None, speak: bool = True,
+                    use_profile_voice: bool = True, retain_on_interrupt: bool = False) -> TTSLine | None:
+        generation = self._generation
         recorded = False
+
+        def was_interrupted() -> bool:
+            return generation < self._last_reset if retain_on_interrupt else generation != self._generation
+
+        def drop_if() -> bool:
+            with self._turn_lock:
+                return was_interrupted()
 
         def record() -> None:
             nonlocal recorded
-            if recorded:
-                return
-            recorded = True
-            if speak:
-                self.event_manager.add_assistant_speaking()
-            self.event_manager.add_conversation_event(
-                'assistant', text, processed_at=processed_at, reasons=reasons, character_name=character_name,
-                character_color=color, avatar_url=avatar, plugin_guid=plugin_guid,
-                plugin_event_name=reaction_event.plugin_event_name if reaction_event else None,
-            )
-            if reaction_event is not None:
-                self.event_manager.incoming.put(replace(reaction_event, plugin_guid=plugin_guid, has_conversation_line=True))
+            with self._turn_lock:
+                if recorded or was_interrupted():
+                    return
+                recorded = True
+                if speak:
+                    self.event_manager.add_assistant_speaking()
+                self.event_manager.add_conversation_event(
+                    'assistant', text, processed_at=processed_at, reasons=reasons, character_name=character.name,
+                    character_color=character.profile.get('color'), avatar_url=character.profile.get('avatar') if speak else None,
+                    character_index=character.crew_index, plugin_guid=character.plugin_guid,
+                    plugin_event_name=reaction_event.plugin_event_name if reaction_event else None,
+                )
+                if reaction_event is not None:
+                    self.event_manager.incoming.put(replace(reaction_event, plugin_guid=character.plugin_guid, has_conversation_line=True))
 
         if not speak:
             record()
             return None
 
         def complete() -> None:
-            if not self.tts.has_queued_items():
-                self.event_manager.add_assistant_complete_event()
+            with self._turn_lock:
+                if recorded and generation >= self._last_reset and not self.tts.has_queued_items():
+                    self.event_manager.add_assistant_complete_event()
 
-        voice, voice_settings = self._utterance_voice(profile, plugin_guid is None) if profile is not None and use_profile_voice else (None, None)
-        postprocessing = profile.get('tts_postprocessing') if profile else None
-        states = projected_states if projected_states is not None else {}
-        if plugin_guid:
-            return self.tts.say(text, voice=voice, voice_settings=voice_settings, postprocessing=postprocessing or None,
-                                on_start=record, on_complete=complete)
-        layers = (self._get_tts_postprocessing_layers(states) if profile is None else
-                  [postprocessing, *self._get_environment_tts_postprocessing_layers(states)])
-        return self.tts.say(text, context='assistant', voice=voice, voice_settings=voice_settings,
-                            postprocessing_layers=layers, on_start=record, on_complete=complete)
+        settings = self.characters.playback(character, states, use_profile_voice=use_profile_voice)
+        plugin_options = {'retain_on_interrupt': retain_on_interrupt} if character.plugin_guid else {}
+        return self.tts.say(text, context='speech' if character.plugin_guid else 'assistant',
+                            on_start=record, on_complete=complete, drop_if=drop_if, **settings.kwargs(), **plugin_options)
+
+    def _play_special(self, text: str, states: ProjectedStates, *, context: str) -> TTSLine:
+        settings = self.characters.playback(self.characters.primary, states)
+        return self.tts.say(text, context=context, **settings.kwargs())
 
     def _resolve_quest_audio_path(self, file_name: str) -> Path | None:
         normalized_name = file_name.replace("\\", "/")
@@ -866,45 +779,66 @@ class Assistant:
 
     @observe()
     def execute_actions(self, actions: list[ChatCompletionMessageToolCall], projected_states: ProjectedStates, available_tools: list[dict] | None = None):
-        action_descriptions: list[str | None] = []
-        action_results: list[Any] = []
+        self._execute_actions(actions, projected_states, available_tools)
+
+    def _execute_actions(self, actions: list[ChatCompletionMessageToolCall], projected_states: ProjectedStates,
+                         available_tools: list[dict] | None, *, generation: int | None = None,
+                         processed_at: float | None = None):
+        def report_processing(tool_call_id: str, name: str, content: object) -> None:
+            with self._turn_lock:
+                if self._is_current(generation):
+                    self.event_manager.add_tool_processing(tool_call_id, name, content)
+
+        announced_acting = False
         for action in actions:
+            with self._turn_lock:
+                if not self._is_current(generation):
+                    return
             if available_tools is not None and not any(
                 tool.get("function", {}).get("name") == action.function.name for tool in available_tools
             ):
                 log('error', f"Model requested unavailable tool: {action.function.name}")
                 continue
             action_input_desc = self.action_manager.getActionDesc(action, projected_states)
-            action_descriptions.append(action_input_desc)
-            if action_input_desc:
-                spoken_action_desc = (
-                    "Searching"
-                    if self.config.get("mute_search", False) and action.function.name == "web_search_agent"
-                    else action_input_desc
-                )
-                self.tts.say(
-                    spoken_action_desc,
-                    context="assistant_acting",
-                    postprocessing_layers=self._get_tts_postprocessing_layers(projected_states),
-                )
+            with self._turn_lock:
+                if not self._is_current(generation):
+                    return
+                if generation is not None and not announced_acting:
+                    self.event_manager.add_assistant_acting()
+                    announced_acting = True
+                if action_input_desc:
+                    spoken_action_desc = (
+                        "Searching"
+                        if self.config.get("mute_search", False) and action.function.name == "web_search_agent"
+                        else action_input_desc
+                    )
+                    self._play_special(spoken_action_desc, projected_states, context="assistant_acting")
             action_result = self.action_manager.runAction(
                 action,
                 projected_states,
-                processing_callback=self.event_manager.add_tool_processing,
+                processing_callback=report_processing,
             )
-            action_results.append(action_result)
+            with self._turn_lock:
+                if not self._is_current(generation):
+                    return
+                self.event_manager.add_tool_call(
+                    [action.model_dump()], [action_result], [action_input_desc] if action_input_desc else None,
+                    processed_at=processed_at,
+                )
 
-            self.event_manager.add_tool_call([action.model_dump()], [action_result], [action_input_desc] if action_input_desc else None)
 
-
-    def verify_action(self, user_input: str, action: ChatCompletionMessageToolCall, prompt: list, tools: list):
+    def verify_action(self, user_input: str, action: ChatCompletionMessageToolCall, prompt: list, tools: list,
+                      *, generation: int | None = None):
         """ Verify the action prediction by sending the user input without any context to the model and check if the action is still predicted """
         log("debug", "Cache: Verifying action", user_input, action)
         
-        cache_state = self.action_manager.has_action_in_cache(user_input, action, tools)
-        if cache_state == False:
-            self.action_manager.suggest_action_for_cache(user_input, action, tools)
-            return
+        with self._turn_lock:
+            if not self._is_current(generation):
+                return
+            cache_state = self.action_manager.has_action_in_cache(user_input, action, tools)
+            if cache_state is False:
+                self.action_manager.suggest_action_for_cache(user_input, action, tools)
+                return
         
         if cache_state == "confirmed":
             log("debug", "Cache: Action already confirmed in cache, skipping verification")
@@ -921,30 +855,47 @@ class Assistant:
             prompt_usage = PromptUsageStats(system_chars=len(prompt[0].get('content', '') or ""), conversation_chars=len(user_input))
             log_llm_usage("action_verification", model_usage=model_usage, prompt_usage=prompt_usage, llm_model=self.llmModel)
             
-            if response_actions:
-                self.action_manager.confirm_action_in_cache(user_input, response_actions[0], tools)
+            with self._turn_lock:
+                if response_actions and self._is_current(generation):
+                    self.action_manager.confirm_action_in_cache(user_input, response_actions[0], tools)
         except LLMError as e:
             log("error", "Cache: error during action verification:", e, traceback.format_exc())
             return
 
 
-    def reply(self, projected_states: ProjectedStates):
-        if self.is_replying:
-            log('debug', 'Cache: Reply already in progress, skipping new reply')
-            return
-        thread = Thread(target=self.reply_thread, args=(projected_states,), daemon=True)
-        thread.start()
-        
-    @observe()
-    def reply_thread(self, projected_states: ProjectedStates):
-        self.reply_pending = False
-        self.is_replying = True
-        try:
-            events = self.event_manager.get_short_term_memory(150)
-            events = list(reversed(events))
-            new_events = [event for event in events if event.responded_at == None]
+    def _is_current(self, generation: int | None) -> bool:
+        return generation is None or generation == self._generation
+
+    def _reserve_reply(self) -> tuple[int, list[Event]] | None:
+        with self._turn_lock:
+            if self.is_replying or not self.reply_pending:
+                return None
+            events = list(reversed(self.event_manager.get_short_term_memory(150)))
+            self.is_replying = True
+            self.reply_pending = False
             self.pending = []
-            
+            return self._generation, events
+
+    def reply(self, projected_states: ProjectedStates) -> Thread | None:
+        turn = self._reserve_reply()
+        if turn is None:
+            return None
+        thread = Thread(target=self._run_reply, args=(projected_states, *turn), daemon=True)
+        thread.start()
+        return thread
+
+    def reply_thread(self, projected_states: ProjectedStates) -> None:
+        turn = self._reserve_reply()
+        if turn is not None:
+            self._run_reply(projected_states, *turn)
+
+    @observe()
+    def _run_reply(self, projected_states: ProjectedStates, generation: int, events: list[Event]):
+        try:
+            with self._turn_lock:
+                if not self._is_current(generation):
+                    return
+            new_events = [event for event in events if event.responded_at is None]
             memories = self.event_manager.get_latest_memories(limit=5)
 
 
@@ -1012,7 +963,9 @@ class Assistant:
                 )
             else:
                 start_time = time()
-                    
+                with self._turn_lock:
+                    if not self._is_current(generation):
+                        return
                 try:
                     response_text, response_actions, model_usage = self.llmModel.generate(
                         messages=prompt,
@@ -1026,12 +979,17 @@ class Assistant:
                     end_time = time()
                     log('debug', 'Response time LLM', end_time - start_time)
                 except LLMError as e:
-                    show_chat_message('error', 'LLM Error:', str(e))
+                    with self._turn_lock:
+                        if self._is_current(generation):
+                            show_chat_message('error', 'LLM Error:', str(e))
                     return
 
             if response_text and not response_actions:
-                line = self.queue_utterance(LLMResponse(text=response_text), projected_states, reasons=reasons,
-                                            processed_at=max_conversation_processed)
+                with self._turn_lock:
+                    if not self._is_current(generation):
+                        return
+                    response = response_text if isinstance(response_text, LLMResponse) else LLMResponse(text=response_text)
+                    line = self.queue_model_line(response, projected_states, reasons=reasons, processed_at=max_conversation_processed)
                 if line is not None:
                     line.wait_for_completion()
 
@@ -1046,21 +1004,25 @@ class Assistant:
                     in_station,
                 ) if use_tools else []
                 available_tools = [tool for tool in tool_list if tool in current_tools]
-                self.event_manager.add_assistant_acting(processed_at=max_conversation_processed)
-                self.execute_actions(response_actions, projected_states, available_tools=available_tools)
+                self._execute_actions(response_actions, projected_states, available_tools, generation=generation,
+                                      processed_at=max_conversation_processed)
 
                 if not predicted_actions and self.config["use_action_cache_var"] and tool_list:
                     if len(response_actions) == 1 and len(user_input):
-                        self.verify_action(user_input[-1], response_actions[0], prompt, tool_list)
+                        self.verify_action(user_input[-1], response_actions[0], prompt, tool_list, generation=generation)
                     
         except Exception as e:
             log("debug", "LLM error during reply:", e, traceback.format_exc())
-            show_chat_message("error", "LLM error: An unknown error occurred during reply")
+            with self._turn_lock:
+                if self._is_current(generation):
+                    show_chat_message("error", "LLM error: An unknown error occurred during reply")
         finally:
-            self.is_replying = False
+            with self._turn_lock:
+                if self._is_current(generation):
+                    self.is_replying = False
 
     def should_reply(self, states:dict[str, Any]):
-        character = self.config['characters'][self.config['active_character_index']]
+        character = self.characters.primary_profile
         if len(self.pending) == 0:
             return False
 
@@ -1176,10 +1138,10 @@ class Assistant:
                 "arguments": json.dumps(args)
             }
         }]
-        self.tts.say(
+        self._play_special(
             spoken_search_text,
+            projected_states,
             context="web_search",
-            postprocessing_layers=self._get_tts_postprocessing_layers(projected_states),
         )
         
         try:

@@ -303,7 +303,7 @@ class EDCoPilotPlugin(PluginBase):
         self.character_default_avatar = EDCOPILOT_AVATAR_URL
         self.character = {
             'name': 'EDCoPilot', 'avatar': EDCOPILOT_AVATAR_URL, 'color': '#9c27b0',
-            'tts_voice_settings': {}, 'tts_postprocessing': {}, 'tts_voice': '',
+            'tts_voice_settings': {}, 'tts_postprocessing': {}, 'tts_voice': '', 'tts_speed': '1.0',
             'read_commentary': False, 'react_to_commentary': False,
         }
         self.character_settings_config = [SettingsGrid(
@@ -427,7 +427,7 @@ class EDCoPilotPlugin(PluginBase):
                        if candidate.get('name') == legacy_voice), None) if legacy_voice else None
         if source is None:
             return {'tts_voice': legacy_voice}
-        fields = {key: deepcopy(source[key]) for key in ('avatar', 'color', 'tts_voice_settings', 'tts_postprocessing')
+        fields = {key: deepcopy(source[key]) for key in ('avatar', 'color', 'tts_voice_settings', 'tts_postprocessing', 'tts_speed')
                   if key in source and source[key] is not None}
         fields['tts_voice'] = ''
         provider = config.get('tts_provider')
@@ -506,8 +506,7 @@ class EDCoPilotPlugin(PluginBase):
         """Send configuration to EDCoPilot"""
         if self.provider:
             is_edcopilot_dominant = self.is_edcopilot_dominant()
-            config = self._helper._config
-            character = config['characters'][config['active_character_index']]
+            character = self._helper._assistant.characters.primary_profile
 
             enabled_game_events: list[str] = []
             disabled_events: list[str] = []

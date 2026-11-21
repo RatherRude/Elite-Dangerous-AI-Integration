@@ -112,18 +112,11 @@ class PluginHelper():
 
     def queue_utterance(self, plugin: 'PluginBase', response: LLMResponse, *, reaction_event: PluginEvent | None = None,
                         speak: bool = True, interrupt: bool = False, use_profile_voice: bool = True,
-                        profile_overrides: dict[str, Any] | None = None) -> TTSLine | None:
+                        profile_overrides: dict[str, Any] | None = None, retain_on_interrupt: bool = False) -> TTSLine | None:
         """Submit one line from a plugin without waiting for playback or another line."""
-        if not response.text or not response.text.strip():
-            return None
-        profile = {**(plugin.character or {}), **(profile_overrides or {})}
-        if not profile.get('avatar') and plugin.character_default_avatar:
-            profile['avatar'] = plugin.character_default_avatar
-        if interrupt and speak:
-            self._assistant.tts.abort()
-        return self._assistant.queue_utterance(
-            response, profile=profile, plugin_guid=plugin.plugin_manifest.guid,
-            reaction_event=reaction_event, speak=speak, use_profile_voice=use_profile_voice,
+        return self._assistant.queue_plugin_line(
+            plugin, response, reaction_event=reaction_event, speak=speak, interrupt=interrupt,
+            use_profile_voice=use_profile_voice, profile_overrides=profile_overrides, retain_on_interrupt=retain_on_interrupt,
         )
 
     def send_key(self, key_name: str, *args, **kwargs):

@@ -102,6 +102,7 @@ class ConversationEvent(Event[ConversationEventKind]):
     reasons: list[str] | None = None
     kind: ConversationEventKind
     character_name: str | None = None
+    character_index: int | None = None
     character_color: str | None = None
     avatar_url: str | None = None
     plugin_guid: str | None = None

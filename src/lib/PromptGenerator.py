@@ -13,6 +13,7 @@ import humanize
 import json
 
 from .Projections import get_state_dict, ProjectedStates
+from .CharacterManager import CharacterManager
 from .Database import QuestDatabase
 
 from .EventModels import (
@@ -67,7 +68,7 @@ class PromptGenerator:
         lower = min(80, math.floor(health * 5) * 20)
         return f"between {lower}% and {lower + 20}% (journal updates in 20% steps; exact current value unavailable)"
     
-    def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str], system_db: SystemDatabase, weapon_types: list[dict] | None = None, disabled_game_events: list[str] | None = None):
+    def __init__(self, commander_name: str, character_prompt: str | CharacterManager, important_game_events: list[str], system_db: SystemDatabase, weapon_types: list[dict] | None = None, disabled_game_events: list[str] | None = None):
         self.registered_prompt_event_handlers: list[Callable[[Event], str|None]] = []
         self.registered_status_generators: list[Callable[[ProjectedStates], list[tuple[str, Any]]]] = []
         self.commander_name = commander_name
@@ -3796,6 +3797,7 @@ class PromptGenerator:
                 })
 
         try:
+            primary_prompt = self.character_prompt.primary.prompt if isinstance(self.character_prompt, CharacterManager) else self.character_prompt
             system_prompt_content = "The universe of Elite:Dangerous is your reality. Never mention it or refer to it as a game. " \
                     + "I will provide game events in parentheses; do not create new ones. Only react to game events marked with 'IMPORTANT:'.  " \
                     + "Stay consistent with the lived experience and character. Do not hallucinate any information that is not given to you. " \
@@ -3804,7 +3806,7 @@ class PromptGenerator:
                     + "Be specific about amounts and percentages for inquiries as the commander can not see the game events' text description but lives in the universe. " \
                     + "You do not ask questions or initiate conversations. You respond only when addressed and in a single sentence. " \
                     + "Don't repeat the same words and sentences, mix it up. " \
-                    + "Your character prompt is: " + self.character_prompt.format(commander_name=self.commander_name)
+                    + "Your character prompt is: " + primary_prompt.format(commander_name=self.commander_name)
             
             usage_stats.system_chars = len(system_prompt_content)
             conversational_pieces.append(
