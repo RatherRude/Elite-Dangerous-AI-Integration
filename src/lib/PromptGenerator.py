@@ -3730,7 +3730,7 @@ class PromptGenerator:
                         piece = message
                         conversational_pieces.append(piece)
 
-            if isinstance(event, ConversationEvent) and event.kind in ['user', 'assistant']:
+            if isinstance(event, ConversationEvent) and event.kind in ['user', 'assistant'] and not event.plugin_event_name:
                 piece = self.conversation_message(event)
                 conversational_pieces.append(piece)
 

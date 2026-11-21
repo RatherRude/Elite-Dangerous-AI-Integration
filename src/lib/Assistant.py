@@ -2,13 +2,14 @@ import copy
 import json
 import traceback
 from collections.abc import Iterator
+from dataclasses import replace
 from pathlib import Path
 from datetime import datetime
 from openai.types.chat import ChatCompletion, ChatCompletionMessageToolCall
 from time import time
 
 from pydantic import BaseModel
-from .Models import LLMModel, EmbeddingModel, LLMError
+from .Models import LLMModel, EmbeddingModel, LLMError, LLMResponse
 from .Logger import (
     CacheUsageStats,
     PromptUsageStats,
@@ -26,23 +27,28 @@ from .Config import (
     TTS_ENVIRONMENT_EFFECTS_OVERHEATING,
 )
 from .Database import QuestDatabase, QuestState
-from .Event import ConversationEvent, Event, GameEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent, MemoryEvent, QuestEvent
+from .Event import ConversationEvent, Event, GameEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent, MemoryEvent, QuestEvent, PluginEvent
 from .EventManager import EventManager
 from .ActionManager import ActionManager
 from .PromptGenerator import PromptGenerator
-from .TTS import TTS
-from typing import Any,  Callable, final
+from .TTS import TTS, TTSLine
+from .PluginSettingDefinitions import resolve_voice_settings
+from typing import Any, Callable, TYPE_CHECKING, final
 import yaml
 from threading import Thread
 from .actions.Actions import engine_boost, set_speed, fire_weapons, get_visuals
 from .Projections import get_state_dict, ProjectedStates
 from .QuestCatalogManager import remove_orphaned_quest_states
 
+if TYPE_CHECKING:
+    from .PluginManager import PluginManager
+
 FALLBACK_STAGE_ID = "__fallback__"
 
 @final
 class Assistant:
-    def __init__(self, config: Config, enabled_game_events: list[str], event_manager: EventManager, action_manager: ActionManager, llmModel: LLMModel, tts: TTS, prompt_generator: PromptGenerator, embeddingModel: EmbeddingModel | None = None, disabled_game_events: list[str] | None = None):
+    def __init__(self, config: Config, enabled_game_events: list[str], event_manager: EventManager, action_manager: ActionManager, llmModel: LLMModel, tts: TTS, prompt_generator: PromptGenerator, embeddingModel: EmbeddingModel | None = None, disabled_game_events: list[str] | None = None, plugin_manager: 'PluginManager | None' = None):
+        self.plugin_manager = plugin_manager
         self.config = config
         self.enabled_game_events = enabled_game_events
         self.disabled_game_events = disabled_game_events if disabled_game_events is not None else []
@@ -262,6 +268,82 @@ class Assistant:
         ]
         layers.extend(self._get_environment_tts_postprocessing_layers(projected_states))
         return layers
+
+    def _utterance_voice(self, profile: dict[str, Any], use_provider_defaults: bool) -> tuple[str | None, dict[str, Any] | None]:
+        provider_ref = self.config.get('tts_provider', '')
+        references = profile.get('tts_voice_settings')
+        stored = references.get(provider_ref) if isinstance(references, dict) else None
+        overrides = dict(stored) if isinstance(stored, dict) else {}
+        legacy_voice = profile.get('tts_voice')
+        if isinstance(legacy_voice, str) and legacy_voice:
+            overrides.setdefault('voice', legacy_voice)
+        parts = provider_ref.split(':', 2)
+        manager = getattr(self, 'plugin_manager', None)
+        if manager and len(parts) == 3 and parts[0] == 'plugin' and (use_provider_defaults or stored is not None or overrides):
+            provider = manager.get_plugin_provider(parts[1], parts[2])
+            if provider is not None:
+                return None, resolve_voice_settings(
+                    provider.get('voice_settings_config') or [],
+                    self.config.get('plugin_settings', {}).get(parts[1], {}),
+                    overrides,
+                )
+        voice = overrides.get('voice')
+        return (voice if isinstance(voice, str) and voice else None), None
+
+    def queue_utterance(
+        self, response: LLMResponse, projected_states: ProjectedStates | None = None, *,
+        reasons: list[str] | None = None, processed_at: float = 0.0,
+        profile: dict[str, Any] | None = None, plugin_guid: str | None = None,
+        reaction_event: PluginEvent | None = None, speak: bool = True, use_profile_voice: bool = True,
+    ) -> TTSLine | None:
+        """Queue one complete line immediately; record it when playback starts (or now if silent)."""
+        text = response.text
+        if not text or not text.strip():
+            return None
+        character_name = response.character_name
+        if profile is None and character_name:
+            profile = next((candidate for candidate in self.config.get('characters', [])
+                            if candidate.get('name') == character_name), None)
+        if plugin_guid and profile and not character_name:
+            character_name = profile.get('name')
+        profile = copy.deepcopy(profile) if profile is not None else None
+        color = profile.get('color') if profile else None
+        avatar = profile.get('avatar') if profile and speak else None
+        recorded = False
+
+        def record() -> None:
+            nonlocal recorded
+            if recorded:
+                return
+            recorded = True
+            if speak:
+                self.event_manager.add_assistant_speaking()
+            self.event_manager.add_conversation_event(
+                'assistant', text, processed_at=processed_at, reasons=reasons, character_name=character_name,
+                character_color=color, avatar_url=avatar, plugin_guid=plugin_guid,
+                plugin_event_name=reaction_event.plugin_event_name if reaction_event else None,
+            )
+            if reaction_event is not None:
+                self.event_manager.incoming.put(replace(reaction_event, plugin_guid=plugin_guid, has_conversation_line=True))
+
+        if not speak:
+            record()
+            return None
+
+        def complete() -> None:
+            if not self.tts.has_queued_items():
+                self.event_manager.add_assistant_complete_event()
+
+        voice, voice_settings = self._utterance_voice(profile, plugin_guid is None) if profile is not None and use_profile_voice else (None, None)
+        postprocessing = profile.get('tts_postprocessing') if profile else None
+        states = projected_states if projected_states is not None else {}
+        if plugin_guid:
+            return self.tts.say(text, voice=voice, voice_settings=voice_settings, postprocessing=postprocessing or None,
+                                on_start=record, on_complete=complete)
+        layers = (self._get_tts_postprocessing_layers(states) if profile is None else
+                  [postprocessing, *self._get_environment_tts_postprocessing_layers(states)])
+        return self.tts.say(text, context='assistant', voice=voice, voice_settings=voice_settings,
+                            postprocessing_layers=layers, on_start=record, on_complete=complete)
 
     def _resolve_quest_audio_path(self, file_name: str) -> Path | None:
         normalized_name = file_name.replace("\\", "/")
@@ -948,16 +1030,10 @@ class Assistant:
                     return
 
             if response_text and not response_actions:
-                line = self.tts.say(
-                    response_text,
-                    context="assistant",
-                    postprocessing_layers=self._get_tts_postprocessing_layers(projected_states),
-                )
-                line.wait_for_speaking()
-                self.event_manager.add_assistant_speaking()
-                self.event_manager.add_conversation_event('assistant', response_text, reasons=reasons, processed_at=max_conversation_processed)
-                line.wait_for_completion()
-                self.event_manager.add_assistant_complete_event()
+                line = self.queue_utterance(LLMResponse(text=response_text), projected_states, reasons=reasons,
+                                            processed_at=max_conversation_processed)
+                if line is not None:
+                    line.wait_for_completion()
 
             if response_actions:
                 # A toggle may have changed while the model request was in flight.

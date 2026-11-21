@@ -147,16 +147,16 @@ class PluginManager:
             emit_message('plugin_characters', characters=characters)
             self._has_broadcast_characters = bool(characters)
 
-    def update_plugin_character(self, plugin_guid: object, character: object) -> None:
+    def update_plugin_character(self, plugin_guid: object, character: object) -> bool:
         if not isinstance(plugin_guid, str) or not isinstance(character, dict):
-            return
+            return False
         plugin = next((plugin for plugin in self.plugin_list.values() if plugin.plugin_manifest.guid == plugin_guid), None)
         if plugin is None or plugin.character is None or self._loaded_characters.get(plugin_guid) is not plugin:
-            return
+            return False
         previous = plugin.character
         updated = {key: character.get(key, value) for key, value in previous.items()}
         if updated == previous:
-            return
+            return True
         try:
             path = self._character_path(plugin_guid)
             stored = self._read_character(path) or {}
@@ -164,13 +164,15 @@ class PluginManager:
             self._save_character(path, {**stored, **updated})
         except Exception as error:
             log('error', f'Failed to save character for {plugin.plugin_manifest.name}: {error}')
-        else:
-            plugin.character = updated
-            try:
-                plugin.on_character_changed()
-            except Exception as error:
-                log('error', f'Character changed hook failed for {plugin.plugin_manifest.name}: {error}')
+            self.broadcast_characters()
+            return False
+        plugin.character = updated
+        try:
+            plugin.on_character_changed()
+        except Exception as error:
+            log('error', f'Character changed hook failed for {plugin.plugin_manifest.name}: {error}')
         self.broadcast_characters()
+        return True
 
     def load_plugin_module(self, manifest: 'PluginManifest', file_path: str) -> 'PluginBase':
         # Get the module name from file name

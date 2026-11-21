@@ -98,7 +98,7 @@ def test_character_save_failure_keeps_previous_state(character_manager, monkeypa
     plugin.on_character_changed = MagicMock()
     before = path.read_bytes()
     monkeypatch.setattr(Path, "replace", MagicMock(side_effect=OSError("write failed")))
-    manager.update_plugin_character(manifest.guid, {"name": "Not saved"})
+    assert manager.update_plugin_character(manifest.guid, {"name": "Not saved"}) is False
 
     assert plugin.character["name"] == "Migrated"
     assert path.read_bytes() == before
@@ -171,7 +171,7 @@ def test_character_noop_updates_do_not_save_or_call_hook(character_manager, monk
     monkeypatch.setattr(manager, "_save_character", save)
     original = path.read_bytes()
 
-    manager.update_plugin_character(manifest.guid, patch)
+    assert manager.update_plugin_character(manifest.guid, patch) is True
 
     assert path.read_bytes() == original
     save.assert_not_called()

@@ -348,6 +348,18 @@ Existing implementations only need `synthesize(text, voice)`. Providers that req
 
 The `PluginHelper` class provides several methods for interacting with the COVAS:NEXT system:
 
+### Plugin characters and speech
+
+Set `self.character` to a dictionary on your `PluginBase` instance to opt in. Declare the fields you use, such as `name`, `avatar`, `color`, `tts_voice_settings` (keyed by `plugin:<guid>:<provider>`), and `tts_postprocessing`. `character_settings_config` can describe additional fields. The manager stores the profile separately in `plugin_data/<guid>/character.json`.
+
+```python
+from lib.PluginHelper import LLMResponse
+
+helper.queue_utterance(self, LLMResponse(text="Ready to depart", character_name="Navigator"))
+```
+
+Submit each complete line as it arrives; playback does not block the caller. The line is recorded with its speaker and plugin GUID when playback starts, or immediately without a speaking avatar with `speak=False` if the plugin already plays it. To let the assistant react, pass a `reaction_event` registered with `register_event`. Do not also dispatch it yourself: the helper emits it once, separately from chat display.
+
 ### Event Management
 
 - `helper.register_event(name: str, should_reply_check: Callable[[PluginEvent], bool], prompt_generator: Callable[[PluginEvent], str])`:  

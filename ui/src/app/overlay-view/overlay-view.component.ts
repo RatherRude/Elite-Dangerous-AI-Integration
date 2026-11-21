@@ -4,7 +4,7 @@ import { TauriService } from "../services/tauri.service";
 import { Subscription, combineLatest } from "rxjs";
 import { CommonModule } from "@angular/common";
 import {PngTuberService} from "../services/pngtuber.service";
-import {ChatMessage, ChatService} from "../services/chat.service";
+import {ChatMessage, ChatService, chatSpeakerName} from "../services/chat.service";
 import {AvatarService} from "../services/avatar.service";
 import {CharacterService} from "../services/character.service";
 import {Config, ConfigService} from "../services/config.service";
@@ -102,7 +102,7 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
           return;
         }
         const avatarRef = msg.avatar_id ?? msg.avatar_url;
-        if (msg.role === "npc_message" || (msg.plugin_event_name === "EdCoPilotEvent" && avatarRef)) {
+        if (msg.role === "npc_message" || msg.role === 'covas' || (msg.role === 'plugin' && avatarRef)) {
           void this.setScriptedAvatar(avatarRef);
         }
       }),
@@ -411,10 +411,5 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     }
   }
 
-  public getDisplayName(msg: ChatMessage): string {
-    if (msg.role?.toLowerCase() === "plugin") {
-      return msg.plugin_event_name === "EdCoPilotEvent" ? "EDCoPilot" : msg.plugin_event_name || "plugin";
-    }
-    return msg.display_name || msg.role;
-  }
+  readonly getDisplayName = chatSpeakerName;
 }

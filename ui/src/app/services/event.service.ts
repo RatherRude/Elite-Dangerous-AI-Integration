@@ -62,6 +62,11 @@ export interface StatusEvent {
 
 export interface ConversationEvent {
     content: string;
+    character_name?: string | null;
+    character_color?: string | null;
+    avatar_url?: string | null;
+    plugin_guid?: string | null;
+    plugin_event_name?: string | null;
     timestamp: string;
     kind:
         | "user"

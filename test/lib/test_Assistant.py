@@ -12,6 +12,7 @@ from src.lib.Assistant import Assistant
 from src.lib.ActionManager import ActionManager
 from src.lib.Event import ConversationEvent, ExternalEvent, GameEvent, PluginEvent, ProjectedEvent, StatusEvent, ToolEvent
 from src.lib.Logger import ModelUsageStats, PromptUsageStats
+from src.lib.Models import LLMResponse
 from openai.types.chat import ChatCompletionMessageFunctionToolCall
 
 
@@ -34,6 +35,40 @@ def make_assistant(events):
     assistant.llmModel.generate.return_value = (None, None, ModelUsageStats())
     assistant.tts = MagicMock()
     return assistant
+
+
+def test_attributed_lines_queue_in_order_and_use_each_speakers_voice():
+    assistant = make_assistant([])
+    provider = 'plugin:provider:tts'
+    assistant.config.update({
+        'tts_provider': provider,
+        'plugin_settings': {'provider': {'model': 'shared'}},
+        'characters': [
+            {'name': 'Pilot', 'tts_voice_settings': {provider: {'voice': 'pilot'}}},
+            {'name': 'Navigator', 'tts_voice_settings': {provider: {'voice': 'navigator'}}},
+        ],
+    })
+    assistant.plugin_manager = MagicMock()
+    assistant.plugin_manager.get_plugin_provider.return_value = {'voice_settings_config': []}
+    pilot_line, navigator_line = MagicMock(), MagicMock()
+    assistant.tts.say.side_effect = [pilot_line, navigator_line]
+
+    assert assistant.queue_utterance(LLMResponse(text='Ready', character_name='Pilot')) is pilot_line
+    assert assistant.queue_utterance(LLMResponse(text='Departing', character_name='Navigator')) is navigator_line
+    assert not pilot_line.mock_calls and not navigator_line.mock_calls
+    assistant.event_manager.add_conversation_event.assert_not_called()
+
+    calls = assistant.tts.say.call_args_list
+    assert [call.args[0] for call in calls] == ['Ready', 'Departing']
+    assert [call.kwargs['voice_settings'] for call in calls] == [
+        {'model': 'shared', 'voice': 'pilot'}, {'model': 'shared', 'voice': 'navigator'},
+    ]
+    for call in calls:
+        call.kwargs['on_start']()
+    history = assistant.event_manager.add_conversation_event.call_args_list
+    assert [(call.args[1], call.kwargs['character_name']) for call in history] == [
+        ('Ready', 'Pilot'), ('Departing', 'Navigator'),
+    ]
 
 
 @pytest.mark.parametrize("event", [

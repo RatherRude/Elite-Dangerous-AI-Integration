@@ -92,6 +92,8 @@ class PluginEvent(Event[Literal['plugin']]):
     plugin_event_content: Any
     plugin_event_name: str
     kind: Literal['plugin'] = 'plugin'
+    plugin_guid: str | None = None
+    has_conversation_line: bool = False
 
 
 @dataclass(kw_only=True)
@@ -99,6 +101,11 @@ class ConversationEvent(Event[ConversationEventKind]):
     content: str
     reasons: list[str] | None = None
     kind: ConversationEventKind
+    character_name: str | None = None
+    character_color: str | None = None
+    avatar_url: str | None = None
+    plugin_guid: str | None = None
+    plugin_event_name: str | None = None
 
 
 @dataclass(kw_only=True)

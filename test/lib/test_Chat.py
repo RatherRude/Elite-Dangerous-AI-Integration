@@ -10,7 +10,7 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 import Chat as ChatModule
-from lib.Event import PluginEvent
+from lib.Event import ConversationEvent, PluginEvent
 
 
 @pytest.fixture
@@ -57,6 +57,30 @@ def test_plugin_chat_presentation_is_optional(chat, monkeypatch, metadata, expec
     ChatModule.show_chat_message.assert_called_once_with(
         "plugin", "Hello", plugin_event_name="PluginNotice", avatar_url=None, **expected,
     )
+
+
+def test_attributed_plugin_line_displays_once_with_its_origin(chat, monkeypatch):
+    monkeypatch.setattr(ChatModule, "send_message", MagicMock())
+    ChatModule.Chat.on_event(chat, ConversationEvent(
+        kind='assistant', content='Hello', character_name='Navigator', character_color='#123456',
+        avatar_url='navigator.png', plugin_guid='navigation', plugin_event_name='NavNotice',
+    ), {})
+    ChatModule.Chat.on_event(chat, PluginEvent(
+        plugin_event_name='NavNotice', plugin_event_content={'text': 'Hello'},
+        plugin_guid='navigation', has_conversation_line=True,
+    ), {})
+    ChatModule.show_chat_message.assert_called_once_with(
+        'plugin', 'Hello', display_name='Navigator', display_color='#123456',
+        avatar_url='navigator.png', plugin_guid='navigation', plugin_event_name='NavNotice',
+    )
+
+
+def test_silent_plugin_line_omits_avatar_from_chat(chat, monkeypatch):
+    monkeypatch.setattr(ChatModule, 'send_message', MagicMock())
+    ChatModule.Chat.on_event(chat, ConversationEvent(
+        kind='assistant', content='Telemetry only', character_name='Navigator', plugin_guid='navigation',
+    ), {})
+    assert 'avatar_url' not in ChatModule.show_chat_message.call_args.kwargs
 
 
 @pytest.mark.parametrize("start_muted", [False, True])

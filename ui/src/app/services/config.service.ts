@@ -1,8 +1,31 @@
 import { Injectable } from "@angular/core";
-import { BehaviorSubject, filter, Observable } from "rxjs";
+import { BehaviorSubject, filter, firstValueFrom, Observable, timeout } from "rxjs";
 import { BaseCommand, type BaseMessage, TauriService } from "./tauri.service";
 import { ModelProviderDefinition, PluginModelProvidersMessage, PluginSettings, PluginSettingsMessage } from "./plugin-settings";
 import { ScreenInfo } from "../models/screen-info";
+import type { SettingsGrid } from "./plugin-settings";
+import type { CharacterTTSPostprocessingConfig } from "./character.service";
+
+export interface PluginCharacterProfile extends Record<string, any> {
+    name?: string;
+    avatar?: string;
+    color?: string;
+    tts_voice_settings?: Record<string, Record<string, any>>;
+    tts_postprocessing?: CharacterTTSPostprocessingConfig;
+}
+
+export interface PluginCharacter {
+    plugin_guid: string;
+    character: PluginCharacterProfile;
+    default_avatar?: string | null;
+    active: boolean;
+    settings_config: SettingsGrid[];
+}
+
+export interface PluginCharactersMessage extends BaseMessage {
+    type: "plugin_characters";
+    characters: PluginCharacter[];
+}
 
 export interface ConfigMessage extends BaseMessage {
     type: "config";
@@ -191,8 +214,13 @@ export class ConfigService {
     >([]);
     public plugin_model_providers$ = this.plugin_model_providers_subject
         .asObservable();
+    private pluginCharactersSubject = new BehaviorSubject<PluginCharacter[]>([]);
+    public pluginCharacters$ = this.pluginCharactersSubject.asObservable();
 
     constructor(private tauriService: TauriService) {
+        this.tauriService.output$.pipe(filter(message => message.type === 'ready')).subscribe(() => {
+            this.pluginCharactersSubject.next([]);
+        });
         // Subscribe to config messages from the TauriService
         this.tauriService.output$.pipe(
             filter((
@@ -203,15 +231,17 @@ export class ConfigService {
                 | SystemInfoMessage
                 | PluginSettingsMessage
                 | PluginModelProvidersMessage
+                | PluginCharactersMessage
                 | KeybindsMessages =>
                 message.type === "config" ||
                 message.type === "running_config" ||
                 message.type === "system" ||
                 message.type === "plugin_settings_configs" ||
                 message.type === "plugin_model_providers" ||
+                message.type === "plugin_characters" ||
                 message.type === "keybinds"
             ),
-        ).subscribe((message: ConfigMessage | RunningConfigMessage | SystemInfoMessage | PluginSettingsMessage | PluginModelProvidersMessage | KeybindsMessages) => {
+        ).subscribe((message: ConfigMessage | RunningConfigMessage | SystemInfoMessage | PluginSettingsMessage | PluginModelProvidersMessage | PluginCharactersMessage | KeybindsMessages) => {
             if (message.type === "config") {
                 this.configSubject.next(message.config);
             } else if (message.type === "running_config") {
@@ -239,6 +269,8 @@ export class ConfigService {
                 this.plugin_model_providers_subject.next(message.providers);
             } else if (message.type === "keybinds") {
                 this.keybinds_subject.next(message);
+            } else if (message.type === "plugin_characters") {
+                this.pluginCharactersSubject.next(message.characters);
             }
         });
     }
@@ -318,6 +350,22 @@ export class ConfigService {
             key,
         };
         await this.tauriService.send_command(message);
+    }
+
+    public async updatePluginCharacter(pluginGuid: string, character: PluginCharacter['character']): Promise<void> {
+        const requestId = crypto.randomUUID();
+        const acknowledgement = firstValueFrom(this.tauriService.output$.pipe(
+            filter(message => message.type === 'plugin_character_saved' && message['request_id'] === requestId),
+            timeout(10000),
+        ));
+        const [result] = await Promise.all([acknowledgement, this.tauriService.send_command({
+            type: 'change_plugin_character',
+            timestamp: new Date().toISOString(),
+            request_id: requestId,
+            plugin_guid: pluginGuid,
+            character,
+        })]);
+        if (!result['saved']) throw new Error('Plugin character was not saved');
     }
 
     public getPluginSetting(key: string): any | null {

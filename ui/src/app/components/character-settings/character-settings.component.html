@@ -1,4 +1,17 @@
 <div class="settings-grid">
+    @if (pluginCharacters$ | async; as profiles) {
+        @if (profiles.length && !editMode) {
+            <section class="character-management-section" aria-label="Plugin characters">
+                <h3>Plugin characters</h3>
+                <p>These characters speak for their plugins. Editing one does not change your assistant.</p>
+                @for (profile of profiles; track profile.plugin_guid) {
+                    <button mat-stroked-button (click)="editPluginCharacter(profile)">
+                        Edit {{ profile.character.name || profile.plugin_guid }}{{ profile.active ? '' : ' (inactive)' }}
+                    </button>
+                }
+            </section>
+        }
+    }
     @if (config && activeCharacter) {
         <div [class.editing-active]="editMode">
             <!-- Character Management Section -->

@@ -351,6 +351,7 @@ class Chat:
             prompt_generator=self.prompt_generator,
             embeddingModel=self.embeddingModel,
             disabled_game_events=disabled_events,
+            plugin_manager=self.plugin_manager,
         )
         self.quest_catalog_manager = QuestCatalogManager(
             reload_callback=self.assistant._load_quests,
@@ -403,7 +404,17 @@ class Chat:
         )
         if event.kind == "assistant":
             event = cast(ConversationEvent, event)
-            show_chat_message("covas", event.content)
+            if event.plugin_guid or event.character_name:
+                presentation = {
+                    key: value for key, value in {
+                        "display_name": event.character_name, "display_color": event.character_color,
+                        "avatar_url": event.avatar_url, "plugin_guid": event.plugin_guid,
+                        "plugin_event_name": event.plugin_event_name,
+                    }.items() if isinstance(value, str) and value.strip()
+                }
+                show_chat_message("plugin" if event.plugin_guid else "covas", event.content, **presentation)
+            else:
+                show_chat_message("covas", event.content)
         if event.kind == "user":
             event = cast(ConversationEvent, event)
             show_chat_message("cmdr", event.content)
@@ -436,7 +447,7 @@ class Chat:
         if event.kind == "memory":
             event = cast(MemoryEvent, event)
             show_chat_message("memory", event.content)
-        if event.kind == "plugin":
+        if isinstance(event, PluginEvent) and not event.has_conversation_line:
             event = cast(PluginEvent, event)
             plugin_content = event.plugin_event_content if isinstance(event.plugin_event_content, dict) else {}
             plugin_message = plugin_content.get("text")
@@ -1008,6 +1019,12 @@ class Chat:
             )
 
 
+def change_plugin_character(manager: PluginManager, data: dict) -> None:
+    saved = manager.update_plugin_character(data.get('plugin_guid'), data.get('character'))
+    if isinstance(data.get('request_id'), str):
+        emit_message('plugin_character_saved', request_id=data['request_id'], saved=saved)
+
+
 def read_stdin(chat: Chat):
     log("debug", "Reading stdin...")
     emit_message("command_ready")
@@ -1029,7 +1046,7 @@ def read_stdin(chat: Chat):
             if data.get("type") == "submit_input":
                 chat.submit_input(data["input"])
             if data.get("type") == "change_plugin_character":
-                chat.plugin_manager.update_plugin_character(data.get("plugin_guid"), data.get("character"))
+                change_plugin_character(chat.plugin_manager, data)
             if data.get("type") == "run_action":
                 chat.run_action(data["action"], data.get("arguments"))
             if data.get("type") == "plugin_settings_button":
@@ -1206,7 +1223,7 @@ if __name__ == "__main__":
                 if data.get("type") == "change_character":
                     config = update_character(config, data)
                 if data.get("type") == "change_plugin_character":
-                    plugin_manager.update_plugin_character(data.get("plugin_guid"), data.get("character"))
+                    change_plugin_character(plugin_manager, data)
                 if data.get("type") == "reset_game_events":
                     config = reset_game_events(config, data["character_index"])
                 if data.get("type") == "clear_history":

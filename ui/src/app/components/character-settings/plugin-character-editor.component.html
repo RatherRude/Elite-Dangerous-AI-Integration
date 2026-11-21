@@ -1,0 +1,39 @@
+<h2 mat-dialog-title>{{ data.profile.character.name || 'Plugin character' }}</h2>
+<mat-dialog-content>
+    @if (hasField('name')) {
+        <mat-form-field><mat-label>Display name</mat-label>
+            <input matInput [ngModel]="draft.name" (ngModelChange)="setField('name', $event)">
+        </mat-form-field>
+    }
+    @if (hasField('color')) {
+        <label>Chat name color <input type="color" [ngModel]="draft.color" (ngModelChange)="setField('color', $event)"></label>
+    }
+    @if (hasField('avatar')) {
+        <button mat-stroked-button (click)="chooseAvatar()">Choose avatar</button>
+    }
+    @if (hasField('tts_voice_settings')) {
+        @for (grid of data.provider?.voice_settings_config; track grid.key) {
+            <app-settings-grid [grid]="grid" [getValue]="getVoice" [setValue]="setVoice" />
+        }
+    }
+    @if (hasField('tts_voice') && data.provider && data.provider.voice_settings_config === undefined) {
+        <mat-form-field><mat-label>Voice</mat-label>
+            <input matInput [ngModel]="draft['tts_voice']" (ngModelChange)="setField('tts_voice', $event)">
+        </mat-form-field>
+    }
+    @if (hasField('tts_postprocessing')) {
+        <mat-form-field><mat-label>Speech volume (%)</mat-label>
+            <input matInput type="number" min="0" max="200" [ngModel]="(draft.tts_postprocessing?.volume ?? 1) * 100"
+                   (ngModelChange)="setVolume($event)">
+        </mat-form-field>
+    }
+    @for (grid of data.profile.settings_config; track grid.key) {
+        <app-settings-grid [grid]="grid" [getValue]="getField" [setValue]="setField" />
+    }
+    @if (error) { <p role="alert">{{ error }}</p> }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close [disabled]="saving">Cancel</button>
+    <button mat-flat-button color="primary" (click)="save()"
+            [disabled]="saving || (hasField('name') && !draft.name?.trim())">Save</button>
+</mat-dialog-actions>

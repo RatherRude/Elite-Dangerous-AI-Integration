@@ -2,7 +2,7 @@ from pydantic.main import BaseModel
 import os
 from typing import Any, Callable, TypeVar
 
-from .Models import LLMModel, STTModel, TTSModel, EmbeddingModel
+from .Models import LLMModel, LLMResponse, STTModel, TTSModel, EmbeddingModel
 from .Logger import log
 from .EDKeys import EDKeys
 from .EventManager import EventManager, Projection as _Projection
@@ -12,6 +12,7 @@ from .Config import Config, save_config
 from .Event import Event, PluginEvent as _PluginEvent
 from .PromptGenerator import PromptGenerator
 from .Assistant import Assistant
+from .TTS import TTSLine
 
 # Type alias for projected states dictionary
 ProjectedStates = dict[str, BaseModel]
@@ -29,7 +30,7 @@ EmbeddingModel = EmbeddingModel
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .PluginManager import PluginManager
-    from .PluginBase import PluginManifest
+    from .PluginBase import PluginBase, PluginManifest
 
 class PluginHelper():
     """Contains all built-inservices and managers that can be used by plugins"""
@@ -108,6 +109,22 @@ class PluginHelper():
         if not isinstance(event, PluginEvent):
             raise ValueError("Event must be of type PluginEvent")
         self._event_manager.incoming.put(event)
+
+    def queue_utterance(self, plugin: 'PluginBase', response: LLMResponse, *, reaction_event: PluginEvent | None = None,
+                        speak: bool = True, interrupt: bool = False, use_profile_voice: bool = True,
+                        profile_overrides: dict[str, Any] | None = None) -> TTSLine | None:
+        """Submit one line from a plugin without waiting for playback or another line."""
+        if not response.text or not response.text.strip():
+            return None
+        profile = {**(plugin.character or {}), **(profile_overrides or {})}
+        if not profile.get('avatar') and plugin.character_default_avatar:
+            profile['avatar'] = plugin.character_default_avatar
+        if interrupt and speak:
+            self._assistant.tts.abort()
+        return self._assistant.queue_utterance(
+            response, profile=profile, plugin_guid=plugin.plugin_manifest.guid,
+            reaction_event=reaction_event, speak=speak, use_profile_voice=use_profile_voice,
+        )
 
     def send_key(self, key_name: str, *args, **kwargs):
         """Send a key"""
