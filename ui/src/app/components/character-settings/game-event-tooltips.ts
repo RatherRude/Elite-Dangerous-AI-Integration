@@ -76,6 +76,8 @@ export const GameEventTooltips: Record<string, string> = {
   "SCADeactivated": "Occurs when Supercruise Assist stops actively controlling the ship.",
   "ApproachSettlement": "Occurs when you approach a planetary settlement, including proximity to surface installations.",
   "InDockingRange": "Occurs when your ship is in docking range.",
+  "VoiceDamaged": "Occurs when ship damage lowers voice module health to 75% or less, triggering damage-related speech distortion when enabled.",
+  "VoiceRepaired": "Occurs when a repair limpet or reboot/repair restores a damaged voice module, clearing damage-related speech distortion.",
   "GlideModeExited": "Occurs when your ship exits glide mode near a planet’s surface.",
   "GlideModeEntered": "Occurs when your ship enters a planet’s atmosphere after supercruise.",
   "Docked": "Occurs when your ship docks successfully at a station or planetary base.",
