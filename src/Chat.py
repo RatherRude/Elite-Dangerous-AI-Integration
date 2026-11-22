@@ -371,6 +371,7 @@ class Chat:
 
     def emit_runtime_state(self):
         _, projected_states = self.event_manager.get_current_state()
+        self.plugin_manager.broadcast_model_providers()
         emit_message("running_config", config=self.config)
         emit_message("system", system=get_system_info())
         emit_message("states", states=projected_states)
@@ -1239,6 +1240,7 @@ if __name__ == "__main__":
                 if data.get("type") == "refresh_system_info":
                     emit_message("system", system=get_system_info())
                 if data.get("type") == "init_overlay":
+                    plugin_manager.broadcast_model_providers()
                     update_config(config, {}) # Ensure that the overlay gets a new config on start
                 if data.get("type") == "get_quest_catalog":
                     results = quest_catalog_manager.get_catalog()

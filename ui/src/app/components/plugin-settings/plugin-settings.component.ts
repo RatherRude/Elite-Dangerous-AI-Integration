@@ -28,6 +28,8 @@ import {
   SettingsGrid,
 } from "../../services/plugin-settings";
 import { SettingsGridComponent } from "../settings-grid/settings-grid.component";
+import { PluginCharacterLinkComponent } from '../character-settings/plugin-character-link.component';
+import { map } from 'rxjs';
 
 @Component({
   selector: "app-plugin-settings",
@@ -51,11 +53,15 @@ import { SettingsGridComponent } from "../settings-grid/settings-grid.component"
     MatDialogModule,
     MatProgressSpinnerModule,
     SettingsGridComponent,
+    PluginCharacterLinkComponent,
   ],
   templateUrl: "./plugin-settings.component.html",
   styleUrls: ["../settings-menu/settings-menu.component.scss"],
 })
 export class PluginSettingsComponent implements OnInit, OnDestroy {
+  readonly charactersByPlugin$ = this.configService.activePluginCharacters$.pipe(
+    map(profiles => new Map(profiles.map(profile => [profile.plugin_guid, profile]))),
+  );
   config: Config | null = null;
   private configSubscription?: Subscription;
   private plugin_settings_message_subscription?: Subscription;

@@ -35,6 +35,8 @@ class MigratingPlugin(PluginBase):
 class CharacterPlugin(MigratingPlugin):
     character = {"name": "Default", "custom": {"enabled": False}}
     character_default_avatar = "default.svg"
+    character_description = 'Reports from the tower'
+    character_voice_condition = {'key': 'custom', 'operator': 'is_set'}
 
     def initialize_character(self, config):
         if "legacy_name" in self.settings:
@@ -69,6 +71,7 @@ def test_character_opt_in_migrates_persists_and_reloads(character_manager):
     emitted.assert_called_with("plugin_characters", characters=[{
         "plugin_guid": manifest.guid, "character": plugin.character, "active": False,
         "settings_config": [], "default_avatar": "default.svg",
+        "description": "Reports from the tower", "voice_condition": plugin.character_voice_condition,
     }])
 
     manager.on_settings_changed({"plugin_settings": {manifest.guid: {"enabled": True}}})

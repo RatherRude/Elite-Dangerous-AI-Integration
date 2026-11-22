@@ -142,6 +142,8 @@ class PluginManager:
                 'active': active,
                 'settings_config': plugin.character_settings_config or [],
                 'default_avatar': plugin.character_default_avatar,
+                'description': plugin.character_description,
+                'voice_condition': plugin.character_voice_condition,
             })
         if characters or self._has_broadcast_characters:
             emit_message('plugin_characters', characters=characters)
@@ -382,8 +384,11 @@ class PluginManager:
         )
         
         # Broadcast model providers to UI
-        emit_message("plugin_model_providers", providers=self.plugin_model_providers)
+        self.broadcast_model_providers()
         self.broadcast_characters()
+
+    def broadcast_model_providers(self) -> None:
+        emit_message("plugin_model_providers", providers=self.plugin_model_providers)
 
     def _persist_migrated_settings(self) -> None:
         if self.settings_migrated:

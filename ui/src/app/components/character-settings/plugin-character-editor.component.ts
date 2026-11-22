@@ -4,7 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatInputModule } from '@angular/material/input';
 import { ConfigService, PluginCharacter, PluginCharacterProfile } from '../../services/config.service';
-import { ModelProviderDefinition, voiceSettingsContext } from '../../services/plugin-settings';
+import { matchesSettingCondition, ModelProviderDefinition, voiceSettingsContext } from '../../services/plugin-settings';
 import { AvatarCatalogDialogComponent, AvatarCatalogResult } from '../avatar-catalog-dialog/avatar-catalog-dialog.component';
 import { SettingsGridComponent } from '../settings-grid/settings-grid.component';
 
@@ -12,6 +12,7 @@ interface EditorData {
     profile: PluginCharacter;
     provider: ModelProviderDefinition | null;
     providerDefaults?: Record<string, unknown>;
+    hostSpeech: boolean;
 }
 
 @Component({
@@ -32,6 +33,10 @@ export class PluginCharacterEditorComponent {
     }
 
     readonly getField = (key: string, fallback: any) => this.draft[key] ?? fallback;
+    get showVoice(): boolean {
+        const condition = this.data.profile.voice_condition;
+        return this.data.hostSpeech && (!condition || matchesSettingCondition(condition, this.draft[condition.key]));
+    }
     hasField(key: string): boolean {
         return Object.prototype.hasOwnProperty.call(this.data.profile.character, key);
     }

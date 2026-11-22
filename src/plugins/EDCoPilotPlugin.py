@@ -301,6 +301,8 @@ class EDCoPilotPlugin(PluginBase):
         self.listener_thread = None
         self.event_publication_queue: queue.Queue[ExternalChatNotification|ExternalBackgroundChatNotification] = queue.Queue()
         self.character_default_avatar = EDCOPILOT_AVATAR_URL
+        self.character_description = 'Commentary from EDCoPilot'
+        self.character_voice_condition = {'key': 'read_commentary', 'operator': 'eq', 'value': True}
         self.character = {
             'name': 'EDCoPilot', 'avatar': EDCOPILOT_AVATAR_URL, 'color': '#9c27b0',
             'tts_voice_settings': {}, 'tts_postprocessing': {}, 'tts_voice': '', 'tts_speed': '1.0',
@@ -308,9 +310,9 @@ class EDCoPilotPlugin(PluginBase):
         }
         self.character_settings_config = [SettingsGrid(
             key='commentary', label='Commentary', fields=[
-                ToggleSetting(key='read_commentary', label='Read out EDCoPilot commentary', type='toggle',
+                ToggleSetting(key='read_commentary', label='Read EDCoPilot messages aloud', type='toggle',
                               readonly=False, placeholder=None, default_value=False),
-                ToggleSetting(key='react_to_commentary', label='React to EDCoPilot commentary', type='toggle',
+                ToggleSetting(key='react_to_commentary', label='Let my assistant reply to EDCoPilot', type='toggle',
                               readonly=False, placeholder=None, default_value=False),
             ],
         )]
@@ -377,8 +379,6 @@ class EDCoPilotPlugin(PluginBase):
                                 placeholder=None,
                                 default_value=True
                             ),
-                            ParagraphSetting(key='character_settings_hint', label=None,
-                                             content='Edit commentary and voice in the EDCoPilot character settings.'),
                         ]
                     ),
                 ]
@@ -408,6 +408,7 @@ class EDCoPilotPlugin(PluginBase):
                         ),
                     ],
                     voice_settings_config=[],
+                    handles_speech_presentation=True,
                 ),
             ]
 

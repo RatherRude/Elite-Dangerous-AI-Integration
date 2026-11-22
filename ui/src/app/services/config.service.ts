@@ -1,9 +1,9 @@
 import { Injectable } from "@angular/core";
-import { BehaviorSubject, filter, firstValueFrom, Observable, timeout } from "rxjs";
+import { BehaviorSubject, filter, firstValueFrom, map, Observable, timeout } from "rxjs";
 import { BaseCommand, type BaseMessage, TauriService } from "./tauri.service";
 import { ModelProviderDefinition, PluginModelProvidersMessage, PluginSettings, PluginSettingsMessage } from "./plugin-settings";
 import { ScreenInfo } from "../models/screen-info";
-import type { SettingsGrid } from "./plugin-settings";
+import type { SettingCondition, SettingsGrid } from "./plugin-settings";
 import type { CharacterTTSPostprocessingConfig } from "./character.service";
 
 export interface PluginCharacterProfile extends Record<string, any> {
@@ -18,6 +18,8 @@ export interface PluginCharacter {
     plugin_guid: string;
     character: PluginCharacterProfile;
     default_avatar?: string | null;
+    description?: string;
+    voice_condition?: SettingCondition | null;
     active: boolean;
     settings_config: SettingsGrid[];
 }
@@ -216,6 +218,7 @@ export class ConfigService {
         .asObservable();
     private pluginCharactersSubject = new BehaviorSubject<PluginCharacter[]>([]);
     public pluginCharacters$ = this.pluginCharactersSubject.asObservable();
+    public activePluginCharacters$ = this.pluginCharacters$.pipe(map(profiles => profiles.filter(profile => profile.active)));
 
     constructor(private tauriService: TauriService) {
         this.tauriService.output$.pipe(filter(message => message.type === 'ready')).subscribe(() => {

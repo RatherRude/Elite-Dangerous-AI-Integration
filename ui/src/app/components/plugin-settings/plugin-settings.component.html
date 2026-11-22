@@ -22,6 +22,9 @@
                         [gridClass]="'settings-grid'">
                     </app-settings-grid>
                 }
+                @if ((charactersByPlugin$ | async)?.get(plugin_settings_config[0]); as profile) {
+                    <app-plugin-character-link [profile]="profile" />
+                }
             }
         </mat-expansion-panel>
     }

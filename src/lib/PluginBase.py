@@ -3,7 +3,7 @@ import json
 from typing import Any, ClassVar, cast
 
 
-from .PluginSettingDefinitions import PluginSettings, ModelProviderDefinition, SettingsGrid
+from .PluginSettingDefinitions import PluginSettings, ModelProviderDefinition, SettingCondition, SettingsGrid
 
 
 from typing import TYPE_CHECKING
@@ -58,6 +58,10 @@ class PluginBase(ABC):
 
     character_settings_config: list[SettingsGrid] | None = None
     """Optional control definitions for plugin-specific character fields."""
+
+    character_description: str = ''
+    character_voice_condition: SettingCondition | None = None
+    """Optional condition on profile fields for showing the standard voice controls."""
 
     character_default_avatar: str | None = None
     """Fallback avatar reference for this character."""

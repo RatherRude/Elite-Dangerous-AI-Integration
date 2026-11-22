@@ -23,7 +23,7 @@ export interface ChatMessage extends BaseMessage {
 export function chatSpeakerName(msg: ChatMessage): string {
     if (msg.display_name) return msg.display_name;
     if (msg.role?.toLowerCase() === 'plugin') {
-        return msg.plugin_event_name === 'EdCoPilotEvent' ? 'EDCoPilot' : msg.plugin_event_name || 'plugin';
+        return msg.plugin_event_name || 'plugin';
     }
     return msg.role;
 }

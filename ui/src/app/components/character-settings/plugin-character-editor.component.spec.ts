@@ -5,6 +5,9 @@ import { ConfigService, PluginCharacter } from '../../services/config.service';
 import { ModelProviderDefinition } from '../../services/plugin-settings';
 import { BaseMessage, TauriService } from '../../services/tauri.service';
 import { PluginCharacterEditorComponent } from './plugin-character-editor.component';
+import { PluginCharacterLinkComponent } from './plugin-character-link.component';
+import { hostPresentsSpeech, selectedSpeechProvider } from '../../services/plugin-settings';
+import { AvatarService } from '../../services/avatar.service';
 
 describe('Plugin character editing', () => {
     const providerRef = 'plugin:synth:tts';
@@ -20,7 +23,7 @@ describe('Plugin character editing', () => {
         const ref = jasmine.createSpyObj<MatDialogRef<PluginCharacterEditorComponent>>('ref', ['close']);
         const editor = new PluginCharacterEditorComponent({
             profile, provider: { plugin_guid: 'synth', id: 'tts' } as ModelProviderDefinition,
-            providerDefaults: { speed: 1.2 },
+            providerDefaults: { speed: 1.2 }, hostSpeech: true,
         }, config, dialog, ref);
         return { editor, config, ref, profile, dialog };
     }
@@ -57,12 +60,17 @@ describe('Plugin character editing', () => {
         const tauri = jasmine.createSpyObj<TauriService>('tauri', ['send_command'], { output$ });
         const config = new ConfigService(tauri);
         const snapshots: PluginCharacter[][] = [];
+        const visible: PluginCharacter[][] = [];
+        config.activePluginCharacters$.subscribe(profiles => visible.push(profiles));
         config.pluginCharacters$.subscribe(profiles => snapshots.push(profiles));
         const { profile } = setup();
         const broadcast = { type: 'plugin_characters', index: 0, timestamp: new Date().toISOString(), characters: [profile] };
         output$.next(broadcast);
+        output$.next({ ...broadcast, characters: [{...profile, active: false}] } as typeof broadcast);
+        output$.next(broadcast);
         output$.next({ type: 'ready' } as BaseMessage);
-        expect(snapshots).toEqual([[], [profile], []]);
+        expect(visible).toEqual([[], [profile], [], [profile], []]);
+        expect(snapshots[2][0].character).toEqual(profile.character);
         const result = config.updatePluginCharacter('copilot', { name: 'Tower' });
         const request = tauri.send_command.calls.mostRecent().args[0];
         output$.next({ ...broadcast, type: 'plugin_character_saved', request_id: request['request_id'], saved: true });
@@ -72,10 +80,38 @@ describe('Plugin character editing', () => {
         }));
     });
 
-    it('shows the speaker before falling back to a legacy plugin label or assistant role', () => {
-        const message = { role: 'plugin', plugin_event_name: 'EdCoPilotEvent' } as ChatMessage;
-        expect(chatSpeakerName(message)).toBe('EDCoPilot');
+    it('shows the speaker before falling back to the plugin event or assistant role', () => {
+        const message = { role: 'plugin', plugin_event_name: 'TowerNotice' } as ChatMessage;
+        expect(chatSpeakerName(message)).toBe('TowerNotice');
         expect(chatSpeakerName({ ...message, display_name: 'Tower' })).toBe('Tower');
         expect(chatSpeakerName({ ...message, role: 'covas', display_name: 'Pilot' })).toBe('Pilot');
+    });
+
+    it('uses the plugin’s draft condition without deleting hidden voice settings', () => {
+        const { editor, profile } = setup();
+        expect(editor.showVoice).toBeTrue();
+        editor.setVoice('voice', 'Tower');
+        profile.voice_condition = { key: 'name', operator: 'eq', value: 'Tower' };
+        expect(editor.showVoice).toBeFalse();
+        editor.setField('name', 'Tower');
+        expect(editor.showVoice).toBeTrue();
+        expect(editor.getVoice('voice', '')).toBe('Tower');
+        editor.data.hostSpeech = false;
+        expect(editor.showVoice).toBeFalse();
+    });
+
+    it('opens the shared editor using the selected provider, not the speaker’s plugin', async () => {
+        const { profile, dialog } = setup();
+        const provider = { plugin_guid: 'synth', id: 'tts', kind: 'tts', handles_speech_presentation: true } as ModelProviderDefinition;
+        const config = jasmine.createSpyObj<ConfigService>('config', ['getCurrentConfig'], {plugin_model_providers$: of([provider])});
+        config.getCurrentConfig.and.returnValue({tts_provider: providerRef} as any);
+        const entry = new PluginCharacterLinkComponent(config, dialog, {} as AvatarService);
+        entry.profile = profile;
+        await entry.edit();
+        expect(dialog.open).toHaveBeenCalledWith(PluginCharacterEditorComponent, jasmine.objectContaining({
+            data: jasmine.objectContaining({profile, provider, hostSpeech: false}),
+        }));
+        expect(hostPresentsSpeech('plugin:synth:other', selectedSpeechProvider('plugin:synth:other', [provider]))).toBeTrue();
+        expect(hostPresentsSpeech('none')).toBeFalse();
     });
 });

@@ -12,7 +12,6 @@ import { combineLatest, Subscription } from "rxjs";
 import {
     Config,
     ConfigService,
-    PluginCharacter,
 } from "../../services/config.service";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { FormsModule } from "@angular/forms";
@@ -43,7 +42,7 @@ import {MatSlideToggle} from "@angular/material/slide-toggle";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { ChatService } from "../../services/chat.service";
 import { SettingsGridComponent } from "../settings-grid/settings-grid.component";
-import { PluginCharacterEditorComponent } from './plugin-character-editor.component';
+import { PluginCharacterLinkComponent } from './plugin-character-link.component';
 
 import { ModelProviderDefinition, providerVoiceDisplayValue, SettingsGrid, voiceSettingsContext } from "../../services/plugin-settings";
 
@@ -110,20 +109,13 @@ interface LowHighPassPresetOption {
         MatSlideToggle,
         MatExpansionModule,
         SettingsGridComponent,
+        PluginCharacterLinkComponent,
     ],
     templateUrl: "./character-settings.component.html",
     styleUrl: "./character-settings.component.scss",
 })
 export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
-    readonly pluginCharacters$ = this.configService.pluginCharacters$;
-
-    editPluginCharacter(profile: PluginCharacter): void {
-        const provider = this.selectedTtsProvider;
-        this.dialog.open(PluginCharacterEditorComponent, {
-            width: '38rem', maxWidth: '95vw',
-            data: { profile, provider, providerDefaults: provider && this.config?.plugin_settings?.[provider.plugin_guid] },
-        });
-    }
+    readonly pluginCharacters$ = this.configService.activePluginCharacters$;
     @ViewChild("characterOverview") private characterOverview?: ElementRef<HTMLElement>;
     @ViewChildren("avatarPreviewSvg") private avatarPreviewSvgElements?: QueryList<ElementRef<HTMLDivElement>>;
     private readonly svgStateClasses = ["listening", "speaking", "thinking", "acting"];
