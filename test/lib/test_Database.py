@@ -12,8 +12,21 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 from src.lib.Database import EventStore, KeyValueStore, ModelUsageStore, VectorStore, set_connection_for_testing
-from src.lib.Event import ToolProcessingEvent
+from src.lib.Event import ConversationEvent, ToolProcessingEvent
 import sqlite_vec
+
+
+def test_conversation_history_loads_without_obsolete_character_index(mock_connection):
+    store = EventStore('test_events', [ConversationEvent])
+    mock_connection.execute(
+        'INSERT INTO test_events_v1 (class, data, processed_at) VALUES (?, ?, ?)',
+        ('ConversationEvent', '{"kind":"assistant","content":"Hello","character_name":"Tower","plugin_guid":"tower","character_index":2}', 1),
+    )
+    line, = store.get_latest()
+    assert (line.content, line.character_name, line.plugin_guid) == ('Hello', 'Tower', 'tower')
+    store.insert_event(line, 2)
+    data, = mock_connection.execute('SELECT data FROM test_events_v1 WHERE processed_at = 2').fetchone()
+    assert '"character_index"' not in data
 
 # Test event classes
 @dataclass

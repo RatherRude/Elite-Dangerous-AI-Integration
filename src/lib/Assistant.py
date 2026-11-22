@@ -234,7 +234,7 @@ class Assistant:
                 self.event_manager.add_conversation_event(
                     'assistant', text, processed_at=processed_at, reasons=reasons, character_name=character.name,
                     character_color=character.profile.get('color'), avatar_url=character.profile.get('avatar') if speak else None,
-                    character_index=character.crew_index, plugin_guid=character.plugin_guid,
+                    plugin_guid=character.plugin_guid,
                     plugin_event_name=reaction_event.plugin_event_name if reaction_event else None,
                 )
                 if reaction_event is not None:
@@ -728,7 +728,9 @@ class Assistant:
                 elif isinstance(event, ConversationEvent):
                     if event.kind not in ['user', 'assistant']:
                         continue
-                    chat.append(event.timestamp +' '+ event.kind +': '+ event.content)
+                    message = PromptGenerator.conversation_message(event)
+                    prefix = '' if event.kind == 'assistant' and (event.character_name or event.plugin_guid) else f'{event.kind}: '
+                    chat.append(f"{event.timestamp} {prefix}{message['content']}")
             for mem in self.short_term_memories:
                 chat.append(mem.timestamp +' [Previous Memory]: '+ mem.content)
 

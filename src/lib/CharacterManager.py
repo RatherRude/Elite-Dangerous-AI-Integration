@@ -20,7 +20,6 @@ if TYPE_CHECKING:
 class ResolvedCharacter:
     name: str | None
     profile: dict[str, Any]
-    crew_index: int | None = None
     plugin_guid: str | None = None
 
     @property
@@ -58,7 +57,7 @@ class CharacterManager:
     @property
     def active_crew(self) -> tuple[ResolvedCharacter, ...]:
         regular = {
-            index: ResolvedCharacter(self._name(profile.get('name')), profile, crew_index=index)
+            index: ResolvedCharacter(self._name(profile.get('name')), profile)
             for index, profile in enumerate(self.config.get('characters') or [])
             if isinstance(profile, dict) and not profile.get('plugin_guid') and not profile.get('externally_voiced')
         }

@@ -47,8 +47,8 @@ def characters():
 
 def test_active_prompts_are_primary_first_and_exclude_standby_external_and_duplicates(characters):
     assert characters.active_prompts == (('Pilot', 'Pilot the ship.'), ('Navigator', 'Navigate.'))
-    assert characters.resolve_model(' PILOT ').crew_index == 2
-    assert characters.resolve_model('Navigator').crew_index == 0
+    assert characters.resolve_model(' PILOT ').prompt == 'Pilot the ship.'
+    assert characters.resolve_model('Navigator').prompt == 'Navigate.'
     del characters.config['active_characters']
     assert characters.active_prompts == (('Pilot', 'Pilot the ship.'),)
     assert characters.resolve_model('Navigator') is None
@@ -98,9 +98,9 @@ def test_pilot_plugin_pilot_resolves_each_line_without_inheriting_primary_settin
     for call in calls:
         call.kwargs['on_start']()
     history = [event for event in list(events.incoming.queue) if event.kind == 'assistant']
-    assert [(line.character_name, line.character_index, line.plugin_guid, line.avatar_url) for line in history] == [
-        ('Pilot', 2, None, 'pilot.png'), ('External', None, 'test-commentary', 'external.png'),
-        ('Pilot', 2, None, 'pilot.png'),
+    assert [(line.character_name, line.plugin_guid, line.avatar_url) for line in history] == [
+        ('Pilot', None, 'pilot.png'), ('External', 'test-commentary', 'external.png'),
+        ('Pilot', None, 'pilot.png'),
     ]
 
 

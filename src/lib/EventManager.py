@@ -197,10 +197,9 @@ class EventManager:
 
     def add_conversation_event(self, role: Literal['user', 'assistant'], content: str, processed_at: float = 0.0,
                                reasons: list[str] | None = None, *, character_name: str | None = None,
-                               character_index: int | None = None,
                                character_color: str | None = None, avatar_url: str | None = None,
                                plugin_guid: str | None = None, plugin_event_name: str | None = None):
-        event = ConversationEvent(kind=role, content=content, reasons=reasons, character_name=character_name, character_index=character_index,
+        event = ConversationEvent(kind=role, content=content, reasons=reasons, character_name=character_name,
                                   character_color=character_color, avatar_url=avatar_url, plugin_guid=plugin_guid,
                                   plugin_event_name=plugin_event_name)
         if role == 'assistant' and plugin_guid is None:

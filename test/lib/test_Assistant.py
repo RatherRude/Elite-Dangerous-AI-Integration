@@ -86,6 +86,19 @@ def test_attributed_lines_queue_in_order_and_use_each_speakers_voice():
     ]
 
 
+def test_memory_summary_receives_recorded_speaker_names():
+    assistant = make_assistant([])
+    assistant.embeddingModel = MagicMock()
+    assistant.embeddingModel.create_embedding.return_value = ('model', [])
+    assistant.summarize_memory([
+        ConversationEvent(kind='assistant', character_name='Pilot', content='Standing by.'),
+        ConversationEvent(kind='assistant', character_name='Tower', plugin_guid='tower', content='Pad clear.'),
+    ])
+    transcript = assistant.llmModel.generate.call_args.kwargs['messages'][1]['content']
+    assert '[Speaker: Pilot] Standing by.' in transcript
+    assert '[Speaker: Tower] Pad clear.' in transcript
+
+
 @pytest.mark.parametrize("event", [
     GameEvent(content={"event": "FSDJump", "timestamp": ""}, historic=False),
     StatusEvent(status={"event": "InDanger"}),

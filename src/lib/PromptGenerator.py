@@ -42,6 +42,7 @@ from .Event import (
     GameEvent,
     Event,
     ConversationEvent,
+    PluginEvent,
     MemoryEvent,
     StatusEvent,
     ToolEvent,
@@ -2528,7 +2529,13 @@ class PromptGenerator:
         # log('info', f'ignored event', event)
         return None
 
-    def conversation_message(self, event: ConversationEvent):
+    @staticmethod
+    def conversation_message(event: ConversationEvent) -> dict[str, str]:
+        if event.kind == 'assistant':
+            name = (event.character_name or '').strip()
+            if name or event.plugin_guid:
+                return {'role': 'user' if event.plugin_guid else 'assistant',
+                        'content': f"[Speaker: {name or 'Unknown'}] {event.content}"}
         return {"role": event.kind, "content": event.content}
 
     def quest_conversation_message(self, event: QuestEvent):
@@ -3687,6 +3694,8 @@ class PromptGenerator:
         for event in events[::-1]:
             if len(conversational_pieces) >= 50:
                 break
+            if isinstance(event, PluginEvent) and event.has_conversation_line:
+                continue
 
             is_pending = event in pending_events
             event_time = datetime.fromisoformat(
@@ -3731,7 +3740,7 @@ class PromptGenerator:
                         piece = message
                         conversational_pieces.append(piece)
 
-            if isinstance(event, ConversationEvent) and event.kind in ['user', 'assistant'] and not event.plugin_event_name:
+            if isinstance(event, ConversationEvent) and event.kind in ['user', 'assistant']:
                 piece = self.conversation_message(event)
                 conversational_pieces.append(piece)
 
@@ -3805,6 +3814,7 @@ class PromptGenerator:
                     + "Your purpose is to provide information, status updates, and execute tools as required. Only use tools you are given from me. " \
                     + "Be specific about amounts and percentages for inquiries as the commander can not see the game events' text description but lives in the universe. " \
                     + "You do not ask questions or initiate conversations. You respond only when addressed and in a single sentence. " \
+                    + "Speaker labels in the history identify who spoke. Reply in your own voice without a speaker label. " \
                     + "Don't repeat the same words and sentences, mix it up. " \
                     + "Your character prompt is: " + primary_prompt.format(commander_name=self.commander_name)
             

@@ -42,6 +42,8 @@ def get_connection():
 def instantiate_class_by_name(classes: list[Any], class_name: str, data: dict[str, Any]) -> Any:
     for cls in classes:
         if cls.__name__ == class_name:
+            if class_name == 'ConversationEvent':
+                data.pop('character_index', None)
             return cls(**data)
     return None
 
