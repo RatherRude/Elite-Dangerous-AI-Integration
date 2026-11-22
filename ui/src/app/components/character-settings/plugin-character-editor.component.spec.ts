@@ -1,4 +1,6 @@
-import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { TestBed } from '@angular/core/testing';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { of, Subject } from 'rxjs';
 import { chatSpeakerName, ChatMessage } from '../../services/chat.service';
 import { ConfigService, PluginCharacter } from '../../services/config.service';
@@ -53,6 +55,41 @@ describe('Plugin character editing', () => {
         expect(ref.close).not.toHaveBeenCalled();
         expect(editor.draft.name).toBe('Tower');
         expect(editor.error).toBeTruthy();
+    });
+
+    it('displays the voice used by playback, including a migrated raw voice', () => {
+        const {editor} = setup();
+        editor.data.providerDefaults = {voice: 'Global'};
+        editor.draft['tts_voice'] = ' Legacy ';
+        expect(editor.getVoice('voice', 'Default')).toBe('Pilot');
+        editor.draft.tts_voice_settings = {};
+        expect(editor.getVoice('voice', 'Default')).toBe('Legacy');
+        editor.setVoice('voice', '');
+        expect(editor.getVoice('voice', 'Default')).toBe('');
+        editor.draft.tts_voice_settings = {};
+        editor.draft['tts_voice'] = '';
+        expect(editor.getVoice('voice', 'Default')).toBe('Global');
+    });
+
+    it('edits a schema-less provider voice even without a legacy field', async () => {
+        const {editor, config, ref} = setup();
+        await TestBed.configureTestingModule({
+            imports: [PluginCharacterEditorComponent, NoopAnimationsModule],
+            providers: [{provide: MAT_DIALOG_DATA, useValue: editor.data}, {provide: ConfigService, useValue: config},
+                        {provide: MatDialogRef, useValue: ref}],
+        }).compileComponents();
+        const fixture = TestBed.createComponent(PluginCharacterEditorComponent);
+        fixture.detectChanges();
+        await fixture.whenStable();
+        const fields = Array.from(fixture.nativeElement.querySelectorAll('mat-form-field')) as HTMLElement[];
+        const input = fields.find(field => field.querySelector('mat-label')?.textContent === 'Voice')!.querySelector('input')!;
+        expect(input.value).toBe('Pilot');
+        input.value = 'New voice';
+        input.dispatchEvent(new Event('input'));
+        await fixture.componentInstance.save();
+        expect(config.updatePluginCharacter).toHaveBeenCalledWith('copilot', {
+            tts_voice_settings: {[providerRef]: {voice: 'New voice'}, other: {voice: 'Other'}},
+        });
     });
 
     it('replaces profiles on broadcast, clears on backend restart, and sends a plugin-only patch', async () => {

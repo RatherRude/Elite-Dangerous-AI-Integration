@@ -54,6 +54,22 @@ def test_active_prompts_are_primary_first_and_exclude_standby_external_and_dupli
     assert characters.resolve_model('Navigator') is None
 
 
+def test_legacy_primary_does_not_select_first_saved_character(characters):
+    characters.config.update(active_character_index=-1, active_characters=[0])
+    assert [member.name for member in characters.active_crew] == ['Default', 'Navigator']
+    assert characters.resolve_model().name == 'Default'
+
+
+@pytest.mark.parametrize(('stored', 'expected'), [({}, 'Legacy'), ({'voice': None}, 'Legacy'),
+                                                   ({'voice': ''}, ''), ({'voice': 'Tower'}, 'Tower')])
+def test_plugin_playback_voice_precedence(characters, stored, expected):
+    plugin = CommentaryPlugin()
+    provider = characters.config['tts_provider']
+    plugin.character.update(tts_voice=' Legacy ', tts_voice_settings={provider: stored})
+    characters.config['plugin_settings'] = {'provider': {'voice': 'Global'}}
+    assert characters.playback(characters.resolve_plugin(plugin)).voice == expected
+
+
 @pytest.mark.parametrize('speaker', ['Standby', 'External', 'Plugin record', 'Unknown'])
 def test_rejected_labels_leave_history_and_tts_untouched(characters, speaker, monkeypatch):
     events, tts = MagicMock(), MagicMock()

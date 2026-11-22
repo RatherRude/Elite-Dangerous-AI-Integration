@@ -68,8 +68,8 @@ def test_attributed_lines_queue_in_order_and_use_each_speakers_voice():
     pilot_line, navigator_line = MagicMock(), MagicMock()
     assistant.tts.say.side_effect = [pilot_line, navigator_line]
 
-    assert assistant.queue_utterance(LLMResponse(text='Ready', character_name='Pilot')) is pilot_line
-    assert assistant.queue_utterance(LLMResponse(text='Departing', character_name='Navigator')) is navigator_line
+    assert assistant.queue_model_line(LLMResponse(text='Ready', character_name='Pilot')) is pilot_line
+    assert assistant.queue_model_line(LLMResponse(text='Departing', character_name='Navigator')) is navigator_line
     assert not pilot_line.mock_calls and not navigator_line.mock_calls
     assistant.event_manager.add_conversation_event.assert_not_called()
 
@@ -97,6 +97,17 @@ def test_memory_summary_receives_recorded_speaker_names():
     transcript = assistant.llmModel.generate.call_args.kwargs['messages'][1]['content']
     assert '[Speaker: Pilot] Standing by.' in transcript
     assert '[Speaker: Tower] Pad clear.' in transcript
+
+
+def test_screenshot_uses_selected_primary_reaction(monkeypatch):
+    assistant = make_assistant([])
+    assistant.config.update(characters=[{'event_reactions': {}}, {'event_reactions': {'Screenshot': 'on'}}],
+                            active_character_index=1, vision_provider='test')
+    assistant._process_active_quests = MagicMock()
+    describe = MagicMock(return_value='View of a station')
+    monkeypatch.setattr('src.lib.Assistant.get_visuals', describe)
+    assistant.on_event(GameEvent(content={'event': 'Screenshot'}, historic=False), {})
+    describe.assert_called_once()
 
 
 @pytest.mark.parametrize("event", [

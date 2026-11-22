@@ -554,20 +554,14 @@ class EDCoPilotPlugin(PluginBase):
 
         return [("EDCoPilot UI contents", status_message)]
 
-    def get_setting(self, key: str, default=None):
-        """Helper to get plugin settings"""
-        # This will be implemented via the PluginHelper in on_chat_start
-        return self.settings.get(key, default)
-
     def process_edcopilot_events(self):
         while True:
             if not self.client.pending_events.empty():
                 event = self.client.pending_events.get()
                 if isinstance(event, SpeakingPhraseEvent) and event.reason != 'covas':
                     text = event.text
-                    name = (self.character or {}).get('name') or 'EDCoPilot'
                     self._helper.queue_utterance(
-                        self, LLMResponse(text=text, character_name=name),
+                        self, LLMResponse(text=text),
                         reaction_event=PluginEvent(plugin_event_name='EdCoPilotEvent', plugin_event_content={'text': text}),
                         speak=self._commentary_setting('read_commentary') and event.duration == 0,
                         interrupt=event.interrupt, use_profile_voice=not self.is_edcopilot_dominant(),

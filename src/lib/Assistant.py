@@ -4,10 +4,9 @@ from collections.abc import Iterator
 from dataclasses import replace
 from pathlib import Path
 from datetime import datetime
-from openai.types.chat import ChatCompletion, ChatCompletionMessageToolCall
+from openai.types.chat import ChatCompletionMessageToolCall
 from time import time
 
-from pydantic import BaseModel
 from .Models import LLMModel, EmbeddingModel, LLMError, LLMResponse
 from .Logger import (
     CacheUsageStats,
@@ -118,7 +117,7 @@ class Assistant:
         # Auto action on Screenshot: get visual description
         try:
             if (isinstance(event, GameEvent) and event.content.get('event') == 'Screenshot' and
-                    self.config.get("vision_provider", '') != 'none') and self.config['characters'][0].get('event_reactions', {}).get('Screenshot') == 'on':
+                    self.config.get("vision_provider", '') != 'none') and self.characters.primary_profile.get('event_reactions', {}).get('Screenshot') == 'on':
 
                 visual_args = {"query": "Describe what you see in the game."}
                 visual_result = get_visuals(visual_args, projected_states)
@@ -190,8 +189,6 @@ class Assistant:
                 log('warn', f'Skipping utterance for inactive or unknown speaker: {response.character_name!r}')
                 return None
             return self._queue_line(response.text, character, projected_states, reasons=reasons, processed_at=processed_at)
-
-    queue_utterance = queue_model_line
 
     def queue_plugin_line(self, plugin: 'PluginBase', response: LLMResponse, *, reaction_event: PluginEvent | None = None,
                           speak: bool = True, interrupt: bool = False, use_profile_voice: bool = True,
@@ -990,7 +987,7 @@ class Assistant:
                 with self._turn_lock:
                     if not self._is_current(generation):
                         return
-                    response = response_text if isinstance(response_text, LLMResponse) else LLMResponse(text=response_text)
+                    response = LLMResponse(text=response_text)
                     line = self.queue_model_line(response, projected_states, reasons=reasons, processed_at=max_conversation_processed)
                 if line is not None:
                     line.wait_for_completion()

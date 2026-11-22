@@ -4,7 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatInputModule } from '@angular/material/input';
 import { ConfigService, PluginCharacter, PluginCharacterProfile } from '../../services/config.service';
-import { matchesSettingCondition, ModelProviderDefinition, voiceSettingsContext } from '../../services/plugin-settings';
+import { matchesSettingCondition, ModelProviderDefinition } from '../../services/plugin-settings';
 import { AvatarCatalogDialogComponent, AvatarCatalogResult } from '../avatar-catalog-dialog/avatar-catalog-dialog.component';
 import { SettingsGridComponent } from '../settings-grid/settings-grid.component';
 
@@ -52,12 +52,19 @@ export class PluginCharacterEditorComponent {
         return provider ? `plugin:${provider.plugin_guid}:${provider.id}` : '';
     }
 
-    readonly getVoice = (key: string, fallback: any) => voiceSettingsContext(
-        this.data.providerDefaults, this.draft.tts_voice_settings?.[this.providerRef],
-    )[key] ?? fallback;
+    readonly getVoice = (key: string, fallback: any) => {
+        const legacy = this.draft['tts_voice'];
+        return this.draft.tts_voice_settings?.[this.providerRef]?.[key]
+            ?? (key === 'voice' && typeof legacy === 'string' ? legacy.trim() || undefined : undefined)
+            ?? this.data.providerDefaults?.[key] ?? fallback;
+    };
 
     readonly setVoice = (key: string, value: any) => {
         if (!this.providerRef) return;
+        if (!this.hasField('tts_voice_settings')) {
+            if (key === 'voice') this.setField('tts_voice', value);
+            return;
+        }
         const settings = this.draft.tts_voice_settings ?? {};
         this.setField('tts_voice_settings', { ...settings, [this.providerRef]: { ...settings[this.providerRef], [key]: value } });
     };

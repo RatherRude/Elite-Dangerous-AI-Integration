@@ -13,7 +13,7 @@ from openai.types.audio.speech_create_params import SpeechCreateParams
 from openai import OpenAI, APIStatusError
 from openai.types.chat import ChatCompletion, ChatCompletionMessageFunctionToolCall, ChatCompletionMessageToolCall
 from openai.types import CreateEmbeddingResponse
-from .Logger import log, ModelUsageStats, PromptUsageStats
+from .Logger import log, ModelUsageStats
 
 class LLMError(Exception):
     def __init__(self, message: str, original_error: Exception | None = None):
@@ -22,13 +22,10 @@ class LLMError(Exception):
 
 @dataclass(kw_only=True)
 class LLMResponse:
-    """One complete utterance, tool-call batch, or usage update."""
+    """One complete line of dialogue, not a token delta."""
 
-    text: str | None = None
+    text: str
     character_name: str | None = None
-    tool_calls: list[Any] | None = None
-    model_usage: ModelUsageStats | None = None
-    prompt_usage: PromptUsageStats | None = None
 
 
 class LLMModel(ABC):

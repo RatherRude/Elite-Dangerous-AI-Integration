@@ -19,9 +19,9 @@
             <app-settings-grid [grid]="grid" [getValue]="getVoice" [setValue]="setVoice" />
         }
     }
-    @if (showVoice && hasField('tts_voice') && data.provider && data.provider.voice_settings_config === undefined) {
+    @if (showVoice && (hasField('tts_voice_settings') || hasField('tts_voice')) && data.provider && data.provider.voice_settings_config === undefined) {
         <mat-form-field><mat-label>Voice</mat-label>
-            <input matInput [ngModel]="draft['tts_voice']" (ngModelChange)="setField('tts_voice', $event)">
+            <input matInput [ngModel]="getVoice('voice', '')" (ngModelChange)="setVoice('voice', $event)">
         </mat-form-field>
     }
     @if (showVoice && hasField('tts_postprocessing')) {

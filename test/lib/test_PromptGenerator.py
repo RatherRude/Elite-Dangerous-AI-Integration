@@ -31,6 +31,7 @@ def test_history_uses_recorded_speakers_and_renders_external_dialogue_once(monke
                           plugin_event_name='TowerNotice', content='Pad clear.'),
         PluginEvent(plugin_event_name='TowerNotice', plugin_event_content={'text': 'Pad clear.'}, has_conversation_line=True),
         PluginEvent(plugin_event_name='TowerNotice', plugin_event_content={'text': 'Beacon offline.'}),
+        ConversationEvent(kind='assistant', plugin_guid='tower', character_name='Tower Seven', content='Good flight.'),
         ConversationEvent(kind='assistant', plugin_guid='tower', content='Channel closed.'),
     ]
     prompt, _ = generator.generate_prompt(events, {}, events, [])
@@ -41,6 +42,7 @@ def test_history_uses_recorded_speakers_and_renders_external_dialogue_once(monke
         {'role': 'assistant', 'content': '[Speaker: Navigator] Course set.'},
         {'role': 'user', 'content': '[Speaker: Tower Seven] Pad clear.'},
         {'role': 'user', 'content': '[External Event, less than a minute ago] Beacon offline.'},
+        {'role': 'user', 'content': '[Speaker: Tower Seven] Good flight.'},
         {'role': 'user', 'content': '[Speaker: Unknown] Channel closed.'},
     ]
 

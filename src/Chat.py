@@ -13,10 +13,6 @@ from pathlib import Path
 import yaml
 from openai.types.chat import ChatCompletionMessageFunctionToolCall
 
-from EDMesg.CovasNext import (
-    ExternalChatNotification,
-    ExternalBackgroundChatNotification,
-)
 from lib.Models import (
     LLMModel,
     EmbeddingModel,
@@ -346,7 +342,6 @@ class Chat:
         self.quest_catalog_manager = QuestCatalogManager(
             reload_callback=self.assistant._load_quests,
         )
-        self.is_replying = False
         self.listening = False
 
         log("debug", "Registering side effect...")

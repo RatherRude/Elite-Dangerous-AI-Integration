@@ -62,14 +62,16 @@ class CharacterManager:
             if isinstance(profile, dict) and not profile.get('plugin_guid') and not profile.get('externally_voiced')
         }
         primary = self.config.get('active_character_index', 0)
-        if type(primary) is not int or primary not in regular:
+        if type(primary) is not int or (primary != -1 and primary not in regular):
             primary = next(iter(regular), -1)
         if primary == -1:
             fallback = cast(dict[str, Any], getDefaultCharacter(self.config))
-            return (ResolvedCharacter(self._name(fallback.get('name')), fallback),)
+            leader = ResolvedCharacter(self._name(fallback.get('name')), fallback)
+        else:
+            leader = regular[primary]
 
         active = self.config.get('active_characters')
-        crew = [regular[primary]]
+        crew = [leader]
         names = {crew[0].name.casefold()} if crew[0].name else set()
         for index in active if isinstance(active, list) else []:
             if type(index) is not int or index == primary or index not in regular:
@@ -133,8 +135,8 @@ class CharacterManager:
         stored = references.get(provider_ref) if isinstance(references, dict) else None
         overrides = dict(stored) if isinstance(stored, dict) else {}
         legacy_voice = self._name(profile.get('tts_voice'))
-        if legacy_voice:
-            overrides.setdefault('voice', legacy_voice)
+        if legacy_voice and overrides.get('voice') is None:
+            overrides['voice'] = legacy_voice
         parts = provider_ref.split(':', 2)
         if len(parts) == 3 and parts[0] == 'plugin':
             provider = self.plugin_manager.get_plugin_provider(parts[1], parts[2]) if self.plugin_manager else None
