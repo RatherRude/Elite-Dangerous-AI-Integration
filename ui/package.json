@@ -22,6 +22,7 @@
     "@angular/platform-browser": "^17.0.0",
     "@angular/platform-browser-dynamic": "^17.0.0",
     "@angular/router": "^17.0.0",
+    "@ngx-translate/core": "^16.0.4",
     "@opentelemetry/exporter-metrics-otlp-http": "^0.202.0",
     "@opentelemetry/sdk-metrics": "^2.0.1",
     "@tauri-apps/api": "^2",

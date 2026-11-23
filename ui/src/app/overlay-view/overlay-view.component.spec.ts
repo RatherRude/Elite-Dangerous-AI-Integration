@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
+import { TranslateModule } from '@ngx-translate/core';
 import { OverlayViewComponent } from './overlay-view.component';
 
 describe('OverlayViewComponent', () => {
@@ -8,7 +9,7 @@ describe('OverlayViewComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [OverlayViewComponent]
+      imports: [OverlayViewComponent, TranslateModule.forRoot()]
     })
     .compileComponents();
     
