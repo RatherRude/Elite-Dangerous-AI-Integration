@@ -1,7 +1,7 @@
 import { AfterViewChecked, Component, ElementRef, Input, OnChanges, SimpleChanges, OnDestroy } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatCardModule } from "@angular/material/card";
-import { ChatMessage, ChatService } from "../../services/chat.service";
+import { ChatMessage, ChatService, chatSpeakerName } from "../../services/chat.service";
 import { Character, CharacterService } from "../../services/character.service";
 import { Subscription } from "rxjs";
 
@@ -156,12 +156,7 @@ export class ChatContainerComponent implements AfterViewChecked, OnChanges, OnDe
     }
   }
 
-  public getDisplayName(msg: ChatMessage): string {
-    if (msg.role?.toLowerCase() === "plugin") {
-      return msg.plugin_event_name === "EdCoPilotEvent" ? "EDCoPilot" : msg.plugin_event_name || "plugin";
-    }
-    return msg.display_name || msg.role;
-  }
+  readonly getDisplayName = chatSpeakerName;
 
   public getEventStatus(eventName: string): 'enabled' | 'disabled' | 'not-enabled' {
     if (!this.currentCharacter) {

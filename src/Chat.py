@@ -13,10 +13,6 @@ from pathlib import Path
 import yaml
 from openai.types.chat import ChatCompletionMessageFunctionToolCall
 
-from EDMesg.CovasNext import (
-    ExternalChatNotification,
-    ExternalBackgroundChatNotification,
-)
 from lib.Models import (
     LLMModel,
     EmbeddingModel,
@@ -41,7 +37,7 @@ from lib.Config import (
     reset_game_events,
 )
 from lib.PluginManager import PluginManager
-from lib.PluginSettingDefinitions import resolve_voice_settings
+from lib.CharacterManager import CharacterManager
 from lib.ActionManager import ActionManager
 
 
@@ -134,11 +130,10 @@ class Chat:
         self.plugin_manager = plugin_manager
         if self.config["api_key"] == "":
             self.config["api_key"] = "-"
-        self.character = self.config["characters"][
-            self.config["active_character_index"]
-        ]
+        self.characters = CharacterManager(config, plugin_manager)
+        self.character = self.characters.primary_profile
 
-        self.backstory = self.character["character"].replace(
+        self.backstory = self.characters.primary.prompt.replace(
             "{commander_name}", self.config["commander_name"]
         )
 
@@ -265,7 +260,7 @@ class Chat:
                 show_chat_message("warning", f"STT provider is not a registered plugin: {self.config['stt_provider']}")
 
         self.ttsModel: TTSModel | None = None
-        tts_voice_settings: dict[str, Any] | None = None
+        primary_playback = self.characters.playback(self.characters.primary)
         if self.config["tts_provider"] != "none":
             tts_plugin = parse_plugin_provider(self.config["tts_provider"])
             if tts_plugin:
@@ -279,28 +274,19 @@ class Chat:
                     )
                 else:
                     self.ttsModel = cast(TTSModel, model)
-                    provider = self.plugin_manager.get_plugin_provider(tts_plugin[0], tts_plugin[1])
-                    grids = provider.get("voice_settings_config", []) if provider else []
-                    stored = self.character.get("tts_voice_settings", {}).get(
-                        self.config["tts_provider"], {}
-                    )
-                    tts_voice_settings = resolve_voice_settings(
-                        grids, self.config.get("plugin_settings", {}).get(tts_plugin[0], {}),
-                        stored if isinstance(stored, dict) else {},
-                    )
             else:
                 show_chat_message("warning", f"TTS provider is not a registered plugin: {self.config['tts_provider']}")
 
         if self.ttsModel is not None:
             if hasattr(self.ttsModel, "speed"):
-                self.ttsModel.speed = float(self.character["tts_speed"])
+                self.ttsModel.speed = primary_playback.speed
 
         self.tts = TTS(
             tts_model=self.ttsModel,
-            voice=str((tts_voice_settings or {}).get("voice") or ""),
-            voice_settings=tts_voice_settings,
-            speed=float(self.character["tts_speed"]),
-            postprocessing_config=self.character.get("tts_postprocessing"),
+            voice=primary_playback.voice,
+            voice_settings=primary_playback.voice_settings,
+            speed=primary_playback.speed,
+            postprocessing_config=primary_playback.postprocessing_layers[0],
             output_device=self.config["output_device_name"],
             output_volume_multiplier=float(
                 self.config.get("output_volume_multiplier", 1.0)
@@ -328,7 +314,7 @@ class Chat:
         log("debug", "Initializing prompt generator...")
         self.prompt_generator = PromptGenerator(
             self.config["commander_name"],
-            self.character["character"],
+            self.characters,
             important_game_events=self.enabled_game_events,
             system_db=self.system_database,
             weapon_types=cast(list[dict], self.config.get("weapon_types", [])),
@@ -351,11 +337,11 @@ class Chat:
             prompt_generator=self.prompt_generator,
             embeddingModel=self.embeddingModel,
             disabled_game_events=disabled_events,
+            characters=self.characters,
         )
         self.quest_catalog_manager = QuestCatalogManager(
             reload_callback=self.assistant._load_quests,
         )
-        self.is_replying = False
         self.listening = False
 
         log("debug", "Registering side effect...")
@@ -380,6 +366,7 @@ class Chat:
 
     def emit_runtime_state(self):
         _, projected_states = self.event_manager.get_current_state()
+        self.plugin_manager.broadcast_model_providers()
         emit_message("running_config", config=self.config)
         emit_message("system", system=get_system_info())
         emit_message("states", states=projected_states)
@@ -403,9 +390,21 @@ class Chat:
         )
         if event.kind == "assistant":
             event = cast(ConversationEvent, event)
-            show_chat_message("covas", event.content)
+            if event.plugin_guid or event.character_name:
+                presentation = {
+                    key: value for key, value in {
+                        "display_name": event.character_name, "display_color": event.character_color,
+                        "avatar_url": event.avatar_url, "plugin_guid": event.plugin_guid,
+                        "plugin_event_name": event.plugin_event_name,
+                    }.items() if isinstance(value, str) and value.strip()
+                }
+                show_chat_message("plugin" if event.plugin_guid else "covas", event.content, **presentation)
+            else:
+                show_chat_message("covas", event.content)
         if event.kind == "user":
             event = cast(ConversationEvent, event)
+            if not self.listening:
+                self.assistant.interrupt_response()
             show_chat_message("cmdr", event.content)
         if event.kind == "tool":
             event = cast(ToolEvent, event)
@@ -436,16 +435,21 @@ class Chat:
         if event.kind == "memory":
             event = cast(MemoryEvent, event)
             show_chat_message("memory", event.content)
-        if event.kind == "plugin":
+        if isinstance(event, PluginEvent) and not event.has_conversation_line:
             event = cast(PluginEvent, event)
             plugin_content = event.plugin_event_content if isinstance(event.plugin_event_content, dict) else {}
             plugin_message = plugin_content.get("text")
             avatar_url = plugin_content.get("avatar_url")
+            presentation = {
+                key: value for key in ("display_name", "display_color")
+                if isinstance(value := plugin_content.get(key), str) and value.strip()
+            }
             show_chat_message(
                 "plugin",
                 plugin_message if isinstance(plugin_message, str) and plugin_message.strip() else event.plugin_event_name,
                 plugin_event_name=event.plugin_event_name,
                 avatar_url=avatar_url if isinstance(avatar_url, str) and avatar_url else None,
+                **presentation,
             )
         if event.kind == "quest":
             event = cast(QuestEvent, event)
@@ -523,6 +527,8 @@ class Chat:
             )
 
     def submit_input(self, input: str):
+        if not input.strip():
+            return
         self.event_manager.add_conversation_event("user", input)
 
     def query_memories(self, query: str, top_k: int = 5):
@@ -850,28 +856,23 @@ class Chat:
                     status = self.status_parser.status_queue.get()
                     self.event_manager.add_status_event(status)
 
-                # mute continuous listening during response
+                recording = self.stt.recording
                 self.stt.pause_continuous_listening_for_response(
                     bool(self.config.get("mute_during_response_var"))
+                    and not recording
                     and self.tts.get_is_playing()
                 )
 
-                # check STT recording
-                if self.stt.recording:
-                    if not self.listening:
-                        self.listening = True
-                        self.event_manager.add_user_speaking()
-                    if self.tts.get_is_playing():
-                        log("debug", "interrupting TTS")
-                        self.tts.abort()
-                else:
-                    self.listening = False
+                if recording and not self.listening:
+                    self.listening = True
+                    self.tts.set_playback_paused(True)
+                    self.assistant.interrupt_response()
+                    self.event_manager.add_user_speaking()
 
                 # check STT result queue
-                if not self.stt.resultQueue.empty():
+                while not self.stt.resultQueue.empty():
                     text = self.stt.resultQueue.get().text
-                    self.tts.abort()
-                    self.event_manager.add_conversation_event("user", text)
+                    self.submit_input(text)
 
                 # check EDJournal files for updates
                 while not self.jn.events.empty():
@@ -880,9 +881,14 @@ class Chat:
 
                 self.event_manager.process()
 
+                if self.listening and not recording:
+                    self.listening = False
+                    self.tts.set_playback_paused(False)
+
                 if (
                     self.assistant.reply_pending
                     and not self.assistant.is_replying
+                    and not self.listening
                     and not self.stt.recording
                     and not self.tts.get_is_playing()
                 ):
@@ -1003,6 +1009,12 @@ class Chat:
             )
 
 
+def change_plugin_character(manager: PluginManager, data: dict) -> None:
+    saved = manager.update_plugin_character(data.get('plugin_guid'), data.get('character'))
+    if isinstance(data.get('request_id'), str):
+        emit_message('plugin_character_saved', request_id=data['request_id'], saved=saved)
+
+
 def read_stdin(chat: Chat):
     log("debug", "Reading stdin...")
     emit_message("command_ready")
@@ -1016,6 +1028,8 @@ def read_stdin(chat: Chat):
                 if isinstance(partial, dict):
                     chat.config = update_config(chat.config, partial)
                     chat.assistant.config = chat.config
+                    chat.characters.config = chat.config
+                    chat.plugin_helper._config = chat.config
                     chat.plugin_manager.on_settings_changed(chat.config)
                     if "output_volume_multiplier" in partial:
                         chat.tts.set_output_volume_multiplier(
@@ -1023,6 +1037,8 @@ def read_stdin(chat: Chat):
                         )
             if data.get("type") == "submit_input":
                 chat.submit_input(data["input"])
+            if data.get("type") == "change_plugin_character":
+                change_plugin_character(chat.plugin_manager, data)
             if data.get("type") == "run_action":
                 chat.run_action(data["action"], data.get("arguments"))
             if data.get("type") == "plugin_settings_button":
@@ -1066,13 +1082,15 @@ def read_stdin(chat: Chat):
                     data=results,
                 )
             if data.get("type") == "clear_history":
-                chat.event_manager.clear_conversation_history()
-                chat.assistant.clear_conversation_state()
+                with chat.event_manager.processing_lock:
+                    chat.assistant.clear_conversation_state()
+                    chat.event_manager.clear_conversation_history()
                 emit_message("history_cleared", scope="conversation")
             if data.get("type") == "reset_state_machine":
-                chat.event_manager.reset_state_machine()
-                chat.assistant.reset_runtime_state()
-                chat.previous_states = {}
+                with chat.event_manager.processing_lock:
+                    chat.assistant.reset_runtime_state()
+                    chat.event_manager.reset_state_machine()
+                    chat.previous_states = {}
                 emit_message("history_cleared", scope="state_machine")
             if data.get("type") == "delete_current_logbook":
                 try:
@@ -1198,6 +1216,8 @@ if __name__ == "__main__":
                     )
                 if data.get("type") == "change_character":
                     config = update_character(config, data)
+                if data.get("type") == "change_plugin_character":
+                    change_plugin_character(plugin_manager, data)
                 if data.get("type") == "reset_game_events":
                     config = reset_game_events(config, data["character_index"])
                 if data.get("type") == "clear_history":
@@ -1215,6 +1235,7 @@ if __name__ == "__main__":
                 if data.get("type") == "refresh_system_info":
                     emit_message("system", system=get_system_info())
                 if data.get("type") == "init_overlay":
+                    plugin_manager.broadcast_model_providers()
                     update_config(config, {}) # Ensure that the overlay gets a new config on start
                 if data.get("type") == "get_quest_catalog":
                     results = quest_catalog_manager.get_catalog()

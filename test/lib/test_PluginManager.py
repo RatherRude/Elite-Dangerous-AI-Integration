@@ -32,6 +32,172 @@ class MigratingPlugin(PluginBase):
         settings[f"migration_{from_version}"] = True
 
 
+class CharacterPlugin(MigratingPlugin):
+    character = {"name": "Default", "custom": {"enabled": False}}
+    character_default_avatar = "default.svg"
+    character_description = 'Reports from the tower'
+    character_voice_condition = {'key': 'custom', 'operator': 'is_set'}
+
+    def initialize_character(self, config):
+        if "legacy_name" in self.settings:
+            self.character["name"] = self.settings.pop("legacy_name")
+
+    def is_character_active(self):
+        return self.settings.get("enabled", False)
+
+
+@pytest.fixture
+def character_manager(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "path", list(sys.path))
+    emitted = MagicMock()
+    monkeypatch.setattr("lib.PluginManager.emit_message", emitted)
+    monkeypatch.setattr("lib.PluginManager.save_config", MagicMock())
+    manager = PluginManager({"plugin_settings": {"character": {"legacy_name": "Migrated"}}})
+    path = tmp_path / "plugin_data" / "character" / "character.json"
+    return manager, emitted, path
+
+
+def test_character_opt_in_migrates_persists_and_reloads(character_manager):
+    manager, emitted, path = character_manager
+    manifest = PluginManifest('{"guid": "character", "name": "Character plugin"}')
+    plugin = manager._initialize_plugin_settings(CharacterPlugin(manifest))
+    manager.plugin_list[manifest.guid] = plugin
+
+    assert json.loads(path.read_text()) == {"name": "Migrated", "custom": {"enabled": False}}
+    assert "legacy_name" not in manager.config["plugin_settings"][manifest.guid]
+    assert plugin.character["custom"] is not CharacterPlugin.character["custom"]
+    manager.register_settings()
+    emitted.assert_called_with("plugin_characters", characters=[{
+        "plugin_guid": manifest.guid, "character": plugin.character, "active": False,
+        "settings_config": [], "default_avatar": "default.svg",
+        "description": "Reports from the tower", "voice_condition": plugin.character_voice_condition,
+    }])
+
+    manager.on_settings_changed({"plugin_settings": {manifest.guid: {"enabled": True}}})
+    assert emitted.call_args.kwargs["characters"][0]["active"] is True
+    assert plugin.character["name"] == "Migrated"
+
+    saved_at_notification = []
+    plugin.on_character_changed = MagicMock(
+        side_effect=lambda: saved_at_notification.append(json.loads(path.read_text()))
+    )
+    manager.update_plugin_character(manifest.guid, {"name": "Updated", "unknown": True})
+    plugin.on_character_changed.assert_called_once_with()
+    expected = {"name": "Updated", "custom": {"enabled": False}}
+    assert saved_at_notification == [expected]
+    assert json.loads(path.read_text()) == expected
+    assert emitted.call_args.kwargs["characters"][0]["character"] == plugin.character
+
+    reloaded = PluginManager(manager.config)._initialize_plugin_settings(CharacterPlugin(manifest))
+    assert reloaded.character == plugin.character
+
+
+def test_character_save_failure_keeps_previous_state(character_manager, monkeypatch):
+    manager, emitted, path = character_manager
+    manifest = PluginManifest('{"guid": "character"}')
+    plugin = manager._initialize_plugin_settings(CharacterPlugin(manifest))
+    manager.plugin_list[manifest.guid] = plugin
+    plugin.on_character_changed = MagicMock()
+    before = path.read_bytes()
+    monkeypatch.setattr(Path, "replace", MagicMock(side_effect=OSError("write failed")))
+    assert manager.update_plugin_character(manifest.guid, {"name": "Not saved"}) is False
+
+    assert plugin.character["name"] == "Migrated"
+    assert path.read_bytes() == before
+    assert list(path.parent.iterdir()) == [path]
+    plugin.on_character_changed.assert_not_called()
+    assert emitted.call_args.kwargs["characters"][0]["character"] == plugin.character
+
+
+def test_character_downgrade_preserves_newer_fields_without_exposing_them(character_manager):
+    manager, emitted, path = character_manager
+    manifest = PluginManifest('{"guid": "character"}')
+    path.parent.mkdir(parents=True)
+    original = b'{ "name": "Saved", "new_field": {"items": [1, 2]} }\n'
+    path.write_bytes(original)
+    plugin = manager._initialize_plugin_settings(CharacterPlugin(manifest))
+    manager.plugin_list[manifest.guid] = plugin
+    manager.register_settings()
+
+    assert path.read_bytes() == original
+    assert emitted.call_args.kwargs["characters"][0]["character"] == {
+        "name": "Saved", "custom": {"enabled": False},
+    }
+    manager.update_plugin_character(manifest.guid, {"name": "Edited", "new_field": "Ignored"})
+    assert "new_field" not in emitted.call_args.kwargs["characters"][0]["character"]
+    assert json.loads(path.read_text())["new_field"] == {"items": [1, 2]}
+
+    class NewerCharacterPlugin(CharacterPlugin):
+        character = {**CharacterPlugin.character, "new_field": {}}
+
+    reloaded = PluginManager(manager.config)._initialize_plugin_settings(NewerCharacterPlugin(manifest))
+    assert reloaded.character == {"name": "Edited", "custom": {"enabled": False}, "new_field": {"items": [1, 2]}}
+
+
+def test_character_load_failure_blocks_updates_until_successful_retry(character_manager):
+    manager, emitted, path = character_manager
+    manifest = PluginManifest('{"guid": "character"}')
+    path.parent.mkdir(parents=True)
+    unreadable = b'{bad JSON\n'
+    path.write_bytes(unreadable)
+    plugin = manager._initialize_plugin_settings(CharacterPlugin(manifest))
+    manager.plugin_list[manifest.guid] = plugin
+    plugin.on_character_changed = MagicMock()
+    manager.register_settings()
+    manager.update_plugin_character(manifest.guid, {"name": "Ignored"})
+
+    assert plugin.character["name"] == "Default"
+    assert plugin.settings["legacy_name"] == "Migrated"
+    assert path.read_bytes() == unreadable
+    assert all(call.args[0] != "plugin_characters" for call in emitted.call_args_list)
+    plugin.on_character_changed.assert_not_called()
+
+    repaired = b'{ "name": "Recovered", "custom": {"enabled": true} }\n'
+    path.write_bytes(repaired)
+    manager.on_settings_changed(manager.config)
+    assert path.read_bytes() == repaired
+    assert emitted.call_args.kwargs["characters"][0]["character"]["name"] == "Recovered"
+    manager.update_plugin_character(manifest.guid, {"name": "Edited"})
+    assert json.loads(path.read_bytes()) == {"name": "Edited", "custom": {"enabled": True}}
+    plugin.on_character_changed.assert_called_once_with()
+
+
+@pytest.mark.parametrize("patch", [{}, {"unknown": True}, {"name": "Migrated", "custom": {"enabled": False}}])
+def test_character_noop_updates_do_not_save_or_call_hook(character_manager, monkeypatch, patch):
+    manager, emitted, path = character_manager
+    manifest = PluginManifest('{"guid": "character"}')
+    plugin = manager._initialize_plugin_settings(CharacterPlugin(manifest))
+    manager.plugin_list[manifest.guid] = plugin
+    plugin.on_character_changed = MagicMock()
+    save = MagicMock(wraps=manager._save_character)
+    monkeypatch.setattr(manager, "_save_character", save)
+    original = path.read_bytes()
+
+    assert manager.update_plugin_character(manifest.guid, patch) is True
+
+    assert path.read_bytes() == original
+    save.assert_not_called()
+    plugin.on_character_changed.assert_not_called()
+    emitted.assert_not_called()
+
+
+def test_non_character_plugins_and_invalid_updates_are_unchanged(character_manager):
+    manager, emitted, path = character_manager
+    plugin = manager._initialize_plugin_settings(MigratingPlugin(PluginManifest('{"guid": "character"}')))
+    manager.plugin_list["character"] = plugin
+    manager.register_settings()
+    assert all(call.args[0] != "plugin_characters" for call in emitted.call_args_list)
+    emitted.reset_mock()
+    manager.update_plugin_character("character", {"name": "Ignored"})
+    manager.update_plugin_character("missing", {"name": "Ignored"})
+    manager.update_plugin_character(None, [])
+
+    assert plugin.character is None
+    assert not path.parent.exists()
+    emitted.assert_not_called()
+
+
 class CompatibleLLM(LLMModel):
     def __init__(self, prefix: str):
         super().__init__("compatible-model")

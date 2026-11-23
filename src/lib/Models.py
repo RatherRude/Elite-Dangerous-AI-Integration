@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import Any, List, Optional, Iterable
 import io
 import base64
@@ -18,6 +19,14 @@ class LLMError(Exception):
     def __init__(self, message: str, original_error: Exception | None = None):
         super().__init__(message)
         self.original_error = original_error
+
+@dataclass(kw_only=True)
+class LLMResponse:
+    """One complete line of dialogue, not a token delta."""
+
+    text: str
+    character_name: str | None = None
+
 
 class LLMModel(ABC):
     model_name: str

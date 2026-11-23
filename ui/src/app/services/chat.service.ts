@@ -17,6 +17,15 @@ export interface ChatMessage extends BaseMessage {
     display_name?: string;
     display_color?: string;
     plugin_event_name?: string;
+    plugin_guid?: string;
+}
+
+export function chatSpeakerName(msg: ChatMessage): string {
+    if (msg.display_name) return msg.display_name;
+    if (msg.role?.toLowerCase() === 'plugin') {
+        return msg.plugin_event_name || 'plugin';
+    }
+    return msg.role;
 }
 
 export interface ToolEvent {

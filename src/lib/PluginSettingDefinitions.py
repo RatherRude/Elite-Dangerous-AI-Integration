@@ -157,3 +157,6 @@ class ModelProviderDefinition(TypedDict):
     """Character voice settings use merged plugin globals with character values taking precedence.
     Use unique logical setting keys across the global and character schemas.
     """
+
+    handles_speech_presentation: NotRequired[bool]
+    """The TTS provider presents speech externally; omit host voice controls and overlay."""

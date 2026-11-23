@@ -42,6 +42,7 @@ import {MatSlideToggle} from "@angular/material/slide-toggle";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { ChatService } from "../../services/chat.service";
 import { SettingsGridComponent } from "../settings-grid/settings-grid.component";
+import { PluginCharacterLinkComponent } from './plugin-character-link.component';
 
 import { ModelProviderDefinition, providerVoiceDisplayValue, SettingsGrid, voiceSettingsContext } from "../../services/plugin-settings";
 
@@ -108,11 +109,13 @@ interface LowHighPassPresetOption {
         MatSlideToggle,
         MatExpansionModule,
         SettingsGridComponent,
+        PluginCharacterLinkComponent,
     ],
     templateUrl: "./character-settings.component.html",
     styleUrl: "./character-settings.component.scss",
 })
 export class CharacterSettingsComponent implements OnDestroy, AfterViewInit {
+    readonly pluginCharacters$ = this.configService.activePluginCharacters$;
     @ViewChild("characterOverview") private characterOverview?: ElementRef<HTMLElement>;
     @ViewChildren("avatarPreviewSvg") private avatarPreviewSvgElements?: QueryList<ElementRef<HTMLDivElement>>;
     private readonly svgStateClasses = ["listening", "speaking", "thinking", "acting"];

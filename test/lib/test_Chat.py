@@ -1,7 +1,7 @@
 from pathlib import Path
 import queue
 import sys
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, call
 
 import pytest
 
@@ -10,6 +10,7 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 import Chat as ChatModule
+from lib.Event import ConversationEvent, PluginEvent
 
 
 @pytest.fixture
@@ -32,6 +33,8 @@ def chat(monkeypatch):
     chat.character = {"tts_speed": "1.0"}
     chat.backstory = "Test backstory"
     chat.assistant.reply_pending = False
+    chat.listening = False
+    chat.submit_input.side_effect = lambda text: ChatModule.Chat.submit_input(chat, text)
     chat.stt = object.__new__(ChatModule.STT)
     chat.stt.continuous_listening_paused = False
     chat.stt.continuous_listening_paused_for_response = False
@@ -41,6 +44,83 @@ def chat(monkeypatch):
     chat.stt.listen_once_start = MagicMock()
     chat.stt.listen_once_end = MagicMock()
     return chat
+
+
+def test_typed_input_interrupts_when_user_event_is_processed(chat, monkeypatch):
+    monkeypatch.setattr(ChatModule, 'send_message', MagicMock())
+    ChatModule.Chat.submit_input(chat, ' ')
+    ChatModule.Chat.submit_input(chat, 'New orders')
+    chat.event_manager.add_conversation_event.assert_called_once_with('user', 'New orders')
+    ChatModule.Chat.on_event(chat, ConversationEvent(kind='user', content='New orders'), {})
+    chat.assistant.interrupt_response.assert_called_once_with()
+
+
+def test_speaking_interrupts_once_and_holds_playback_until_transcription(chat, monkeypatch):
+    monkeypatch.setattr(ChatModule, 'send_message', MagicMock())
+    chat.event_manager.add_conversation_event.side_effect = lambda kind, content: ChatModule.Chat.on_event(
+        chat, ConversationEvent(kind=kind, content=content), {},
+    )
+    chat.config['mute_during_response_var'] = True
+    chat.stt.recording = True
+    chat.tts.get_is_playing.return_value = True
+    ticks = 0
+
+    def tick(_duration):
+        nonlocal ticks
+        ticks += 1
+        if ticks <= 2:
+            assert not chat.stt.continuous_listening_paused_for_response
+        if ticks == 2:
+            chat.stt.recording = False
+            chat.stt.resultQueue.put(MagicMock(text='New orders'))
+        if ticks == 3:
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(ChatModule, 'sleep', tick)
+    ChatModule.Chat.run(chat)
+    chat.tts.set_playback_paused.assert_has_calls([call(True), call(False)])
+    chat.assistant.interrupt_response.assert_called_once_with()
+    chat.event_manager.add_user_speaking.assert_called_once_with()
+    chat.event_manager.add_conversation_event.assert_called_once_with('user', 'New orders')
+
+
+@pytest.mark.parametrize(("metadata", "expected"), [
+    ({}, {}),
+    ({"display_name": "Pilot", "display_color": "#123456"},
+     {"display_name": "Pilot", "display_color": "#123456"}),
+    ({"display_name": [], "display_color": " "}, {}),
+])
+def test_plugin_chat_presentation_is_optional(chat, monkeypatch, metadata, expected):
+    monkeypatch.setattr(ChatModule, "send_message", MagicMock())
+    event = PluginEvent(plugin_event_name="PluginNotice", plugin_event_content={"text": "Hello", **metadata})
+    ChatModule.Chat.on_event(chat, event, {})
+    ChatModule.show_chat_message.assert_called_once_with(
+        "plugin", "Hello", plugin_event_name="PluginNotice", avatar_url=None, **expected,
+    )
+
+
+def test_attributed_plugin_line_displays_once_with_its_origin(chat, monkeypatch):
+    monkeypatch.setattr(ChatModule, "send_message", MagicMock())
+    ChatModule.Chat.on_event(chat, ConversationEvent(
+        kind='assistant', content='Hello', character_name='Navigator', character_color='#123456',
+        avatar_url='navigator.png', plugin_guid='navigation', plugin_event_name='NavNotice',
+    ), {})
+    ChatModule.Chat.on_event(chat, PluginEvent(
+        plugin_event_name='NavNotice', plugin_event_content={'text': 'Hello'},
+        plugin_guid='navigation', has_conversation_line=True,
+    ), {})
+    ChatModule.show_chat_message.assert_called_once_with(
+        'plugin', 'Hello', display_name='Navigator', display_color='#123456',
+        avatar_url='navigator.png', plugin_guid='navigation', plugin_event_name='NavNotice',
+    )
+
+
+def test_silent_plugin_line_omits_avatar_from_chat(chat, monkeypatch):
+    monkeypatch.setattr(ChatModule, 'send_message', MagicMock())
+    ChatModule.Chat.on_event(chat, ConversationEvent(
+        kind='assistant', content='Telemetry only', character_name='Navigator', plugin_guid='navigation',
+    ), {})
+    assert 'avatar_url' not in ChatModule.show_chat_message.call_args.kwargs
 
 
 @pytest.mark.parametrize("start_muted", [False, True])

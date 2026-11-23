@@ -3,11 +3,12 @@ import json
 from typing import Any, ClassVar, cast
 
 
-from .PluginSettingDefinitions import PluginSettings, ModelProviderDefinition
+from .PluginSettingDefinitions import PluginSettings, ModelProviderDefinition, SettingCondition, SettingsGrid
 
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
+    from .Config import Config
     from .PluginHelper import PluginHelper
     from .Models import LLMModel, STTModel, TTSModel, EmbeddingModel
 
@@ -47,6 +48,38 @@ class PluginBase(ABC):
     """
     The current settings for this plugin.
     """
+
+    character: dict[str, Any] | None = None
+    """Optional JSON-compatible presentation and voice profile.
+
+    Set a dictionary to opt in. Its keys declare the available fields; the
+    manager persists their values in plugin_data/<guid>/character.json.
+    """
+
+    character_settings_config: list[SettingsGrid] | None = None
+    """Optional control definitions for plugin-specific character fields."""
+
+    character_description: str = ''
+    character_voice_condition: SettingCondition | None = None
+    """Optional condition on profile fields for showing the standard voice controls."""
+
+    character_default_avatar: str | None = None
+    """Fallback avatar reference for this character."""
+
+    def initialize_character(self, config: 'Config') -> None:
+        """Seed fields or migrate settings before reading saved character values.
+
+        Called on plugin load and settings refresh; migrations should be idempotent.
+        """
+        pass
+
+    def is_character_active(self) -> bool:
+        """Report whether the plugin's character is currently available."""
+        return True
+
+    def on_character_changed(self) -> None:
+        """Handle a client update after it has been saved successfully."""
+        pass
     
     model_providers: list[ModelProviderDefinition] | None = None
     """

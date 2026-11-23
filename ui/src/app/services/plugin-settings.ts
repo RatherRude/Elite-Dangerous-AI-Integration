@@ -265,6 +265,15 @@ export interface ModelProviderDefinition {
     slots?: ProviderSlot[];
     api_key_detection?: ApiKeyDetection;
     voice_settings_config?: SettingsGrid[];
+    handles_speech_presentation?: boolean;
+}
+
+export function selectedSpeechProvider(ref: string | undefined, providers: ModelProviderDefinition[]) {
+    return providers.find(provider => provider.kind === 'tts' && ref === `plugin:${provider.plugin_guid}:${provider.id}`);
+}
+
+export function hostPresentsSpeech(ref: string | undefined, provider?: ModelProviderDefinition): boolean {
+    return ref !== 'none' && !provider?.handles_speech_presentation;
 }
 
 export interface PluginModelProvidersMessage extends BaseMessage {

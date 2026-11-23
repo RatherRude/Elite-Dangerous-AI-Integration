@@ -75,7 +75,6 @@ class STT:
         log('debug', 'listen_once_thread start')
         source = None
         self.recording = True
-        text = None
         try:
             source = self._get_microphone()
             timestamp = time()
@@ -90,6 +89,8 @@ class STT:
             audio_raw = b''.join(frames)
             audio_data = sr.AudioData(audio_raw, self.rate, self.sample_width)
             text = self._transcribe(audio_data)
+            if text:
+                self.resultQueue.put(STTResult(text, audio_data, timestamp))
         except Exception as error:
             log('error', 'Speech recognition error', error, traceback.format_exc())
             show_chat_message('error', 'Speech recognition error:', error)
@@ -100,9 +101,6 @@ class STT:
             finally:
                 self.listening = False
                 self.recording = False
-        
-        if text:
-            self.resultQueue.put(STTResult(text, audio_data, timestamp))
         
         log('debug', 'listen_once_thread end')
 

@@ -348,6 +348,30 @@ Existing implementations only need `synthesize(text, voice)`. Providers that req
 
 The `PluginHelper` class provides several methods for interacting with the COVAS:NEXT system:
 
+### Plugin characters and speech
+
+Set `self.character` to a dictionary on your `PluginBase` instance to opt in. Declare the fields you use, such as `name`, `avatar`, `color`, `tts_voice_settings` (keyed by `plugin:<guid>:<provider>`), `tts_speed`, and `tts_postprocessing`. `character_settings_config` can describe additional fields. The manager stores the profile separately in `plugin_data/<guid>/character.json`. Plugin profiles default to normal speed and neutral effects, not the active model character's settings. They can explicitly opt into each environment effect using `tts_environment_damage_effects_var`, `tts_environment_helmet_effects_var`, and `tts_environment_srv_effects_var`.
+
+```python
+from lib.PluginHelper import LLMResponse
+
+helper.queue_utterance(self, LLMResponse(text="Ready to depart"))
+```
+
+Submit each complete line as it arrives; playback does not block the caller. The line is recorded with its speaker and plugin GUID when playback starts, or immediately without a speaking avatar with `speak=False` if the plugin already plays it. To let the assistant react, pass a `reaction_event` registered with `register_event`. Do not also dispatch it yourself: the helper emits it once, separately from chat display.
+
+The model sees that line once, with the same speaker label as any other character: `[Speaker: Tower] Pad clear.` The name is the one recorded when the line was spoken. A paired reaction event controls whether to reply; it does not add a second description to the prompt. Standalone plugin events still use their registered prompt formatter.
+
+An active profile appears under **Characters → Other speakers** and in its plugin’s settings panel, if it has one. Both open the same editor. Return `False` from `is_character_active()` to hide both entry points without deleting the profile. Supply `character_description` for a short caption explaining who supplies the lines. The host renders the avatar, standard fields and any `character_settings_config` grids; no plugin-specific frontend is needed.
+
+For example, a tower plugin can declare a boolean `announce` in its profile, expose a toggle for it in `character_settings_config`, and set `character_voice_condition = {"key": "announce", "operator": "eq", "value": True}`. The editor evaluates the condition on the current draft. Turning the toggle off hides the voice, speed and volume controls without erasing their values. The plugin still decides whether to speak when submitting a line (`speak=self.character["announce"]`). Omit the condition to show the standard controls whenever the host presents speech.
+
+A TTS provider that owns presentation outside COVAS:NEXT can declare `handles_speech_presentation=True` in its provider definition. While selected, the host hides its chat/avatar overlay and the plugin-character editor’s speech controls; main-window chat is unaffected. Other providers need not declare anything.
+
+Spoken lines do not interrupt an active reply unless `interrupt=True`. Interrupting discards the obsolete reply; generation waits for a fresh reply-triggering event. Pass `retain_on_interrupt=True` only for plugin lines that should stay queued across later interruptions. This does not replay audio that has already started, and clearing or resetting history discards retained lines. These options do not change text-only playback (`speak=False`).
+
+The plugin GUID identifies the source, and the profile name is the display label. A plugin's `LLMResponse.character_name` does not select a model crew member. The helper routes plugin lines through `Assistant.queue_plugin_line()`. For model callers, `CharacterManager.active_prompts` exposes the primary-first active roster; `Assistant.queue_model_line()` uses the primary for unnamed responses and warns and drops explicit labels not in that roster. The current model still generates only a primary response.
+
 ### Event Management
 
 - `helper.register_event(name: str, should_reply_check: Callable[[PluginEvent], bool], prompt_generator: Callable[[PluginEvent], str])`:  

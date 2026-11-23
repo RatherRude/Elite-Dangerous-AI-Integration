@@ -4,12 +4,13 @@ import { TauriService } from "../services/tauri.service";
 import { Subscription, combineLatest } from "rxjs";
 import { CommonModule } from "@angular/common";
 import {PngTuberService} from "../services/pngtuber.service";
-import {ChatMessage, ChatService} from "../services/chat.service";
+import {ChatMessage, ChatService, chatSpeakerName} from "../services/chat.service";
 import {AvatarService} from "../services/avatar.service";
 import {CharacterService} from "../services/character.service";
 import {Config, ConfigService} from "../services/config.service";
 import {GenUiRenderComponent} from "../components/gen-ui-render/gen-ui-render.component";
 import { EventService } from "../services/event.service";
+import { hostPresentsSpeech, selectedSpeechProvider } from '../services/plugin-settings';
 
 @Component({
   selector: "app-overlay-view",
@@ -102,7 +103,7 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
           return;
         }
         const avatarRef = msg.avatar_id ?? msg.avatar_url;
-        if (msg.role === "npc_message" || (msg.plugin_event_name === "EdCoPilotEvent" && avatarRef)) {
+        if (msg.role === "npc_message" || msg.role === 'covas' || (msg.role === 'plugin' && avatarRef)) {
           void this.setScriptedAvatar(avatarRef);
         }
       }),
@@ -121,11 +122,12 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
 
     // Subscribe to config changes to get overlay settings
     this.subscriptions.push(
-      configService.config$.subscribe(config => {
+      combineLatest([configService.config$, configService.plugin_model_providers$]).subscribe(([config, providers]) => {
         if (config) {
           this.setAvatarDisplayFromPosition(config.overlay_position || 'right');
-          this.updateAvatarShowStatus(config);
-          this.updateChatShowStatus(config);
+          const hostSpeech = hostPresentsSpeech(config.tts_provider, selectedSpeechProvider(config.tts_provider, providers));
+          this.avatarShow = hostSpeech && config.overlay_show_avatar !== false;
+          this.chatShow = hostSpeech && config.overlay_show_chat !== false;
           this.refreshAvatarDisplay();
           this.isInitialized = true;
         } else if (!this.isInitialized) {
@@ -134,16 +136,6 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
           this.avatarShow = true;
           this.chatShow = true;
           this.refreshAvatarDisplay();
-        }
-      })
-    );
-
-    // Subscribe to config changes to update overlay visibility settings
-    this.subscriptions.push(
-      configService.config$.subscribe(config => {
-        if (config) {
-          this.updateAvatarShowStatus(config);
-          this.updateChatShowStatus(config);
         }
       })
     );
@@ -184,34 +176,6 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     }
   }
   
-  private updateAvatarShowStatus(config: Config): void {
-    // Use global overlay setting
-    this.avatarShow = true;
-    if (config?.overlay_show_avatar === false) {
-      this.avatarShow = false;
-    }
-    if (config?.tts_provider === 'none') {
-      this.avatarShow = false;
-    }
-    if (config?.tts_provider === 'plugin:ec3eee66-8c4c-4ede-be36-b8612b14a5c0:edcopilot-dominant') {
-      this.avatarShow = false;
-    }
-  }
-
-  private updateChatShowStatus(config: Config): void {
-    // Use global overlay setting for chat
-    this.chatShow = true;
-    if (config?.overlay_show_chat === false) {
-      this.chatShow = false;
-    } 
-    if (config?.tts_provider === 'none') {
-      this.chatShow = false;
-    }
-    if (config?.tts_provider === 'plugin:ec3eee66-8c4c-4ede-be36-b8612b14a5c0:edcopilot-dominant') {
-      this.chatShow = false;
-    }
-  }
-
   /** SVG avatars are embedded so internal style state selectors (e.g. `.listening .eye-base`) apply. */
   get avatarUsesInlineSvg(): boolean {
     return this.effectiveAvatarMimePrimary() === "image/svg+xml";
@@ -411,10 +375,5 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     }
   }
 
-  public getDisplayName(msg: ChatMessage): string {
-    if (msg.role?.toLowerCase() === "plugin") {
-      return msg.plugin_event_name === "EdCoPilotEvent" ? "EDCoPilot" : msg.plugin_event_name || "plugin";
-    }
-    return msg.display_name || msg.role;
-  }
+  readonly getDisplayName = chatSpeakerName;
 }

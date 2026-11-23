@@ -5,6 +5,8 @@ import random
 import threading
 import traceback
 from collections import deque
+from contextlib import closing
+from copy import deepcopy
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
@@ -126,6 +128,7 @@ class TTS:
         
         self._shutdown = threading.Event()
         self._queue_lock = threading.Lock()
+        self._playback_paused = False
         self.output_device = output_device
         self.output_volume_multiplier = max(0.0, min(1.5, float(output_volume_multiplier)))
         self.read_queue = queue.Queue()
@@ -171,11 +174,13 @@ class TTS:
                 "file_path": item.get("file_path"),
                 "voice": item.get("voice"),
                 "voice_settings": item.get("voice_settings"),
+                "speed": item.get("speed"),
                 "postprocessing": item.get("postprocessing"),
                 "postprocessing_layers": item.get("postprocessing_layers"),
                 "on_start": item.get("on_start"),
                 "on_complete": item.get("on_complete"),
                 "drop_if": item.get("drop_if"),
+                "retain_on_interrupt": item.get("retain_on_interrupt", False),
                 "line": item.get("line"),
             }
         return {
@@ -226,7 +231,7 @@ class TTS:
                 if self._shutdown.is_set():
                     break
                 try:
-                    queued_item = self.read_queue.get_nowait()
+                    queued_item = None if self._playback_paused else self.read_queue.get_nowait()
                 except queue.Empty:
                     queued_item = None
                 if queued_item is not None:
@@ -277,6 +282,7 @@ class TTS:
                         cast(CharacterTTSPostprocessingConfig | None, postprocessing if isinstance(postprocessing, dict) else None),
                         cast(list[CharacterTTSPostprocessingConfig | None] | None, postprocessing_layers if isinstance(postprocessing_layers, list) else None),
                         voice_settings_override=voice_settings if isinstance(voice_settings, dict) else None,
+                        speed=item.get('speed'),
                     )
                 stream.finish()
             except Exception as e:
@@ -308,6 +314,7 @@ class TTS:
         postprocessing_override: CharacterTTSPostprocessingConfig | None = None,
         postprocessing_layers: list[CharacterTTSPostprocessingConfig | None] | None = None,
         voice_settings_override: dict[str, Any] | None = None,
+        speed: float | None = None,
     ):
         # Fix numberformatting for different providers
         text = re.sub(r"\d+(,\d{3})*(\.\d+)?", self._number_to_text, text)
@@ -325,18 +332,16 @@ class TTS:
             "response_ms": None,
             "time_to_first_byte_ms": None,
         }
-        audio_stream = self._stream_audio(text, voice_override, stream_metrics, voice_settings_override)
-        if postprocessing:
-            audio_stream = self._postprocess_audio(audio_stream, postprocessing)
-
-        for chunk in audio_stream:
-            total_audio_bytes += len(chunk)
-            if first_byte_time is None:
-                first_byte_time = time()
-                log('debug', f'Response time TTS', first_byte_time - start_time)
-            if self.is_aborted:
-                break
-            stream.write(self._apply_output_gain_pcm16(chunk))
+        with closing(self._stream_audio(text, voice_override, stream_metrics, voice_settings_override, speed)) as source:
+            audio_stream = self._postprocess_audio(source, postprocessing) if postprocessing else source
+            for chunk in audio_stream:
+                total_audio_bytes += len(chunk)
+                if first_byte_time is None:
+                    first_byte_time = time()
+                    log('debug', f'Response time TTS', first_byte_time - start_time)
+                if self.is_aborted:
+                    break
+                stream.write(self._apply_output_gain_pcm16(chunk))
 
         output_audio_duration_ms = 0.0
         if total_audio_bytes > 0:
@@ -375,7 +380,7 @@ class TTS:
         postprocessing_override: CharacterTTSPostprocessingConfig | None,
         postprocessing_layers: list[CharacterTTSPostprocessingConfig | None] | None = None,
     ) -> CharacterTTSPostprocessingConfig:
-        if postprocessing_override is None and not postprocessing_layers:
+        if postprocessing_override is None and postprocessing_layers is None:
             return self.postprocessing_config
 
         settings: list[CharacterTTSPostprocessingConfig | None] = []
@@ -517,11 +522,12 @@ class TTS:
         voice_override: str | None = None,
         metrics: dict[str, float | None] | None = None,
         voice_settings_override: dict[str, Any] | None = None,
+        speed: float | None = None,
     ):
         started_at = time()
         if self.tts_model is None:
             word_count = len(text.split())
-            words_per_minute = 150 * float(self.speed)
+            words_per_minute = 150 * float(self.speed if speed is None else speed)
             audio_duration = word_count / words_per_minute * 60
             # generate silent audio for the duration of the text
             for _ in range(int(audio_duration * 24_000 / 1024)):
@@ -531,16 +537,20 @@ class TTS:
             if metrics is not None:
                 metrics["response_ms"] = (time() - started_at) * 1000
         else:
+            model = self.tts_model
+            previous_speed = getattr(model, 'speed', None)
             try:
-                selected_voice = voice_override if voice_override else self.voice
+                if speed is not None and previous_speed is not None:
+                    setattr(model, 'speed', speed)
+                selected_voice = self.voice if voice_override is None else voice_override
                 selected_settings = voice_settings_override if voice_settings_override is not None else self.voice_settings
                 if selected_settings is not None:
                     settings = dict(selected_settings)
                     if voice_override is not None and "voice" in settings:
                         settings["voice"] = voice_override
-                    audio = self.tts_model.synthesize_with_settings(text, settings)
+                    audio = model.synthesize_with_settings(text, settings)
                 else:
-                    audio = self.tts_model.synthesize(text, selected_voice)
+                    audio = model.synthesize(text, selected_voice)
                 for chunk in audio:
                     if metrics is not None and metrics.get("time_to_first_byte_ms") is None:
                         metrics["time_to_first_byte_ms"] = (time() - started_at) * 1000
@@ -550,6 +560,9 @@ class TTS:
             except Exception as e:
                 log('error', 'TTS synthesis error', e, traceback.format_exc())
                 show_chat_message('error', 'TTS synthesis error:', str(e))
+            finally:
+                if speed is not None and previous_speed is not None:
+                    setattr(model, 'speed', previous_speed)
 
     @observe()
     def _playback_audio_file(self, file_path: str, stream: PCMOutput):
@@ -1339,11 +1352,13 @@ class TTS:
         context: str = "speech",
         voice: str | None = None,
         voice_settings: dict[str, Any] | None = None,
+        speed: float | None = None,
         postprocessing: CharacterTTSPostprocessingConfig | None = None,
         postprocessing_layers: list[CharacterTTSPostprocessingConfig | None] | None = None,
         on_start: Callable[[], None] | None = None,
         on_complete: Callable[[], None] | None = None,
         drop_if: Callable[[], bool] | None = None,
+        retain_on_interrupt: bool = False,
     ) -> TTSLine:
         line = TTSLine()
         with self._queue_lock:
@@ -1355,12 +1370,14 @@ class TTS:
                     "text": text,
                     "context": context,
                     "voice": voice,
-                    "voice_settings": dict(voice_settings) if voice_settings is not None else None,
-                    "postprocessing": postprocessing,
-                    "postprocessing_layers": postprocessing_layers,
+                    "voice_settings": deepcopy(voice_settings),
+                    "speed": speed,
+                    "postprocessing": deepcopy(postprocessing),
+                    "postprocessing_layers": deepcopy(postprocessing_layers),
                     "on_start": on_start,
                     "on_complete": on_complete,
                     "drop_if": drop_if,
+                    "retain_on_interrupt": retain_on_interrupt,
                     "line": line,
                 },
             )
@@ -1397,17 +1414,27 @@ class TTS:
             postprocessing_config or get_default_character_tts_postprocessing(),
         )
 
-    def abort(self):
+    def set_playback_paused(self, paused: bool) -> None:
+        with self._queue_lock:
+            self._playback_paused = paused
+
+    def abort(self, *, preserve_retained: bool = False) -> None:
         with self._queue_lock:
             self.is_aborted = True
+            retained = []
             while True:
                 try:
                     item = self._normalize_queue_item(self.read_queue.get_nowait())
                 except queue.Empty:
                     break
+                if preserve_retained and item.get("retain_on_interrupt") and not self._shutdown.is_set():
+                    retained.append(item)
+                    continue
                 line = item.get("line")
                 if isinstance(line, TTSLine):
                     line.mark_completed()
+            for item in retained:
+                self.read_queue.put(item)
 
     def get_is_playing(self):
         return self._is_playing or not self.read_queue.empty()

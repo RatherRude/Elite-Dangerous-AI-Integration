@@ -1,4 +1,14 @@
 <div class="settings-grid">
+    @if (pluginCharacters$ | async; as profiles) {
+        @if (profiles.length && !editMode) {
+            <section class="character-management-section" aria-label="Other speakers">
+                <h3>Other speakers</h3>
+                @for (profile of profiles; track profile.plugin_guid) {
+                    <app-plugin-character-link [profile]="profile" />
+                }
+            </section>
+        }
+    }
     @if (config && activeCharacter) {
         <div [class.editing-active]="editMode">
             <!-- Character Management Section -->
