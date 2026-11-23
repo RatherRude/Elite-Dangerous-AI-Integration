@@ -8,19 +8,43 @@
             <mat-expansion-panel-header>
                 <mat-panel-title>
                     <mat-icon class="tab-icon">{{ plugin_settings_config[1].icon }}</mat-icon>
-                    {{ plugin_settings_config[1].label }}
+                    {{ resolve(plugin_settings_config[1].label) }}
                 </mat-panel-title>
             </mat-expansion-panel-header>
             @if (config) {
-                @for (grid of plugin_settings_config[1].grids; track grid.key) {
-                    <app-settings-grid
-                        [grid]="grid"
-                        [getValue]="createGetValueFn(plugin_settings_config[0])"
-                        [setValue]="createSetValueFn(plugin_settings_config[0])"
-                        [onButtonClick]="createButtonClickFn(plugin_settings_config[0])"
-                        [headerLevel]="'h2'"
-                        [gridClass]="'settings-grid'">
-                    </app-settings-grid>
+                @if (plugin_settings_config[1].header_link; as link) {
+                    <app-settings-header-link [link]="link" />
+                }
+                @if (getPluginTabs(plugin_settings_config[1]); as tabs) {
+                    <mat-tab-group>
+                        @for (tab of tabs; track tab.key) {
+                            <mat-tab [label]="resolve(tab.label)">
+                                @for (grid of tab.grids; track grid.key) {
+                                    <app-settings-grid
+                                        [grid]="grid"
+                                        [getValue]="createGetValueFn(plugin_settings_config[0])"
+                                        [setValue]="createSetValueFn(plugin_settings_config[0])"
+                                        [onButtonClick]="createButtonClickFn(plugin_settings_config[0])"
+                                        (uiAction)="invoke(plugin_settings_config[0], $event.action, $event.payload)"
+                                        [headerLevel]="'h2'"
+                                        [gridClass]="'settings-grid'">
+                                    </app-settings-grid>
+                                }
+                            </mat-tab>
+                        }
+                    </mat-tab-group>
+                } @else {
+                    @for (grid of plugin_settings_config[1].grids; track grid.key) {
+                        <app-settings-grid
+                            [grid]="grid"
+                            [getValue]="createGetValueFn(plugin_settings_config[0])"
+                            [setValue]="createSetValueFn(plugin_settings_config[0])"
+                            [onButtonClick]="createButtonClickFn(plugin_settings_config[0])"
+                            (uiAction)="invoke(plugin_settings_config[0], $event.action, $event.payload)"
+                            [headerLevel]="'h2'"
+                            [gridClass]="'settings-grid'">
+                        </app-settings-grid>
+                    }
                 }
             }
         </mat-expansion-panel>

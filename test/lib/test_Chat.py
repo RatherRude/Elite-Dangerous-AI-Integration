@@ -22,6 +22,7 @@ def chat(monkeypatch):
         "load_hud_color_matrix",
     ):
         monkeypatch.setattr(ChatModule, name, MagicMock())
+    monkeypatch.setattr("lib.actions.actions_ui.configure_plugin_ui", MagicMock())
 
     chat = MagicMock()
     chat.config = {
