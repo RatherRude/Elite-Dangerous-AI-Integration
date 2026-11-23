@@ -115,7 +115,7 @@ You can read more about the AIServer [here](./AIServer.md).
 The Agent is a search sub-LLM that answers queries posed by the main LLM. It chains web and knowledge actions in a loop to find answers. Higher accuracy matters more here than for the main chat LLM—consider using an online LLM for the Agent even if the main LLM is local. You can use the same provider as the main LLM (e.g. LM Studio, Ollama), but set the main LLM to no reasoning effort and the Agent LLM to at least Low reasoning effort for better search accuracy. The Agent is served the same way as the main LLM (LM Studio, Ollama, cloud, etc.); configure it in the same style as section 1.
 
 ## 3. STT Configuration
-The Speech-to-Text (STT) component is responsible for converting your voice into text that the LLM can understand. No cloud service is available that provides free STT, so you will need to run it locally. Luckily it requires a little less resources and can be run on a weaker GPU or even a CPU.
+The Speech-to-Text (STT) component is responsible for converting your voice into text that the LLM can understand. You can run it locally for free, or use Groq's cloud free tier. Local STT requires a little less resources than an LLM and can be run on a weaker GPU or even a CPU.
 
 ### 3.1 Using Parakeet plugin (local, recommended)
 The [Parakeet STT plugin](../plugins/index.md#first-official-plugins) is the official free local STT from COVAS Labs. Download from [Releases](https://github.com/COVAS-Labs/plugin-parakeet-stt/releases), extract to your `plugins` folder, and select it in COVAS:NEXT. Multilingual, minimal configuration.
@@ -145,6 +145,20 @@ You can read more about the AIServer [here](./AIServer.md).
 - Tricky to set up, as it is still highly experimental
 - May struggle with multilingual input/output
 - Higher latency than cloud services
+
+### 3.3 Using Groq (cloud-based)
+[Groq](https://console.groq.com) hosts Whisper with a free tier. Create an API key, select **Groq** as STT provider in COVAS:NEXT and paste the key. `whisper-large-v3-turbo` (default) is the fastest option, while `whisper-large-v3` is more accurate. Set the language (for example `fr`) to improve accuracy and latency.
+
+*Upsides:*
+
+- Very low latency and high accuracy
+- Multilingual
+- No local resources required
+
+*Downsides:*
+
+- Requires an account and an internet connection
+- Free tier is rate-limited
 
 ## 4. TTS Configuration
 The Text-to-Speech (TTS) component is responsible for reading out the responses of the LLM. Edge-TTS is a free cloud service and is used by default. Alternatively, you can use the official Supertonic plugin or the AIServer to run TTS locally.

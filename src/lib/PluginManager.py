@@ -175,6 +175,7 @@ class PluginManager:
 
         from plugins.EdgeTTSPlugin import EDGE_TTS_PLUGIN_GUID, EdgeTTSPlugin
         from plugins.GoogleAIStudioPlugin import GOOGLE_AI_STUDIO_PLUGIN_GUID, GoogleAIStudioPlugin
+        from plugins.GroqPlugin import GROQ_PLUGIN_GUID, GroqPlugin
         from plugins.OpenAICompatiblePlugin import OPENAI_COMPATIBLE_PLUGIN_GUID, OpenAICompatiblePlugin
         from plugins.OpenAIPlugin import OPENAI_PLUGIN_GUID, OpenAIPlugin
         from plugins.OpenRouterPlugin import OPENROUTER_PLUGIN_GUID, OpenRouterPlugin
@@ -182,6 +183,7 @@ class PluginManager:
         bundled_providers = [
             (EDGE_TTS_PLUGIN_GUID, "Edge TTS Plugin", EdgeTTSPlugin),
             (GOOGLE_AI_STUDIO_PLUGIN_GUID, "Google AI Studio Plugin", GoogleAIStudioPlugin),
+            (GROQ_PLUGIN_GUID, "Groq Plugin", GroqPlugin),
             (OPENAI_COMPATIBLE_PLUGIN_GUID, "OpenAI-compatible Plugin", OpenAICompatiblePlugin),
             (OPENAI_PLUGIN_GUID, "OpenAI Plugin", OpenAIPlugin),
             (OPENROUTER_PLUGIN_GUID, "OpenRouter Plugin", OpenRouterPlugin),
