@@ -25,7 +25,7 @@ function getOverlayRotation(tiltDegrees = 0, yawDegrees = 0) {
 
 export function getOverlayPlacement(vrAnchor, vrSizeMeters, horizontalOffset = 0, verticalOffset = 0, distanceOffset = 0, tiltDegrees = 0, yawDegrees = 0) {
   const rotation = getOverlayRotation(tiltDegrees, yawDegrees);
-  if (vrAnchor === 'world') {
+  if (vrAnchor === 'world' || vrAnchor === 'seated') {
     const distance = Math.max(0.1, 2.0 + distanceOffset);
     const widthOffset = 0.5;
     const heightOffset = (720 / 1280) / 2;

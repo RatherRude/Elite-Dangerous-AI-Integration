@@ -202,7 +202,7 @@ export interface OverlayCreateOptions {
     standaloneTransparent?: boolean;
     standaloneBackgroundColor?: string;
     vrSizeMeters?: number;
-    vrAnchor?: "head" | "world";
+    vrAnchor?: "head" | "world" | "seated";
     vrHorizontalOffset?: number;
     vrVerticalOffset?: number;
     vrDistanceOffset?: number;
