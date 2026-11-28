@@ -98,6 +98,25 @@ Thank you for your interest in contributing! Here's how to set up your developme
 
     This installs the necessary packages for the UI and Electron development.
 
+## Linux Flatpak Runtime Maintenance
+
+`com.covasnext.ui.yml` pins the Freedesktop Platform/SDK and Electron BaseApp to
+the stable `26.08` branch. Keep `runtime-version` and `base-version` aligned and
+quoted as strings. The Linux CI workflow installs dependencies directly from this
+manifest, so it does not need separate runtime version pins.
+
+[Freedesktop runtime branches](https://docs.flatpak.org/en/latest/available-runtimes.html#freedesktop)
+receive two years of support, not indefinite LTS support. Before the selected
+branch reaches end-of-life, move both version fields to a supported stable branch
+that also has a matching
+[Electron BaseApp](https://github.com/flathub/org.electronjs.Electron2.BaseApp)
+release. Flatpak manages the matching graphics extensions automatically.
+
+After building the Linux application artifacts, run `npm run package:flatpak` on
+Linux to build a bundle with the selected runtime. Existing installations must
+install the rebuilt bundle to switch runtimes; `flatpak update` alone cannot
+change the runtime required by an old application bundle.
+
 ## Running the Application in Development Mode
 
 1.  **Run the Electron App in Development mode:**
