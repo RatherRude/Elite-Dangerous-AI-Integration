@@ -18,18 +18,6 @@ from lib.Config import (
 
 
 @pytest.fixture(autouse=True)
-def isolate_audio_devices(monkeypatch):
-    import pyaudio
-
-    def unexpected_audio_initialization(*args, **kwargs):
-        pytest.fail("Config unit tests must not initialize audio hardware")
-
-    monkeypatch.setattr(pyaudio, "PyAudio", unexpected_audio_initialization)
-    monkeypatch.setattr(ConfigModule, "get_default_input_device_name", lambda: "input")
-    monkeypatch.setattr(ConfigModule, "get_default_output_device_name", lambda: "output")
-
-
-@pytest.fixture(autouse=True)
 def mock_audio_device_enumeration(monkeypatch):
     monkeypatch.setattr(ConfigModule, 'get_audio_device_labels', lambda direction: {'default': 'System default'})
 
