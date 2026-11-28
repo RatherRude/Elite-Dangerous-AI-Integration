@@ -54,8 +54,13 @@ a = Analysis(
         get_audiostretchy_binary(),
         get_samplerate_binary(),
     ],
-    datas=collect_data_files('soundcard') + [('./src', '.'), (str(Path(pysilero_vad.__file__).resolve().parent / 'models' / 'silero_vad.onnx'), './pysilero_vad/models')],
-    hiddenimports=['comtypes.stream', 'audiostretchy.stretch', 'audiostretchy.interface.tdhs', 'samplerate'],
+    # RapidOCR loads config.yaml and its ONNX models relative to the package.
+    datas=collect_data_files('soundcard') + [
+        ('./src', '.'),
+        (str(Path(pysilero_vad.__file__).resolve().parent / 'models' / 'silero_vad.onnx'), './pysilero_vad/models'),
+    ] + collect_data_files('rapidocr_onnxruntime')
+    + collect_data_files('setuptools', includes=['_vendor/jaraco/text/*.txt']),
+    hiddenimports=['comtypes.stream', 'audiostretchy.stretch', 'audiostretchy.interface.tdhs', 'samplerate', 'rapidocr_onnxruntime'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

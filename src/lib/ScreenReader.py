@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import argparse
+import json
 import math
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from time import sleep
@@ -371,6 +372,29 @@ def binary_template(rows: tuple[str, ...]) -> np.ndarray:
     return np.array([[1.0 if char == "#" else 0.0 for char in row] for row in normalized_rows], dtype=np.float32)
 
 
+def icon_glyph_mask(
+    inner_hsv: np.ndarray,
+    *,
+    hue_deg: float,
+    hue_tolerance_deg: float,
+    selected_saturation_min: int,
+    selected_saturation_max: int | None,
+    selected_value_min: int,
+) -> np.ndarray:
+    # A transformed HUD profile can clamp the candidate threshold to 255.
+    # Resampling makes even the bright background slightly darker than that;
+    # leave headroom so it is not mistaken for part of the dark glyph.
+    background_value = float(np.percentile(inner_hsv[:, :, 2], 90))
+    value_min = min(selected_value_min, max(1, round(background_value * 0.9)))
+    selected_color = (
+        (hue_distance_deg(inner_hsv[:, :, 0], hue_deg) <= hue_tolerance_deg)
+        & (inner_hsv[:, :, 1] >= selected_saturation_min)
+        & (inner_hsv[:, :, 1] <= (255 if selected_saturation_max is None else selected_saturation_max))
+        & (inner_hsv[:, :, 2] >= value_min)
+    )
+    return ~selected_color
+
+
 def match_binary_icon_template(
     roi_hsv: np.ndarray,
     template_rows: tuple[str, ...],
@@ -383,7 +407,9 @@ def match_binary_icon_template(
     selected_saturation_min: int = 180,
     selected_saturation_max: int | None = None,
     selected_value_min: int = 100,
+    diagnostics_out: dict[str, Any] | None = None,
 ) -> float | None:
+    """Match a glyph at any reliable scale within an icon-sized button."""
     height, width = roi_hsv.shape[:2]
     if width > max_size or height > max_size or abs(width - height) > 8:
         return None
@@ -392,28 +418,80 @@ def match_binary_icon_template(
 
     inner = roi_hsv[border_px : height - border_px, border_px : width - border_px]
     template = binary_template(template_rows)
-    if inner.shape[0] < template.shape[0] or inner.shape[1] < template.shape[1]:
+    glyph_y, glyph_x = np.nonzero(template)
+    if not glyph_y.size:
+        return None
+    # Padding is not part of the icon's shape or scale.
+    glyph_template = template[
+        glyph_y.min() : glyph_y.max() + 1,
+        glyph_x.min() : glyph_x.max() + 1,
+    ]
+    if not np.ptp(glyph_template):
         return None
 
-    inner_hue = inner[:, :, 0]
-    inner_sat = inner[:, :, 1]
-    inner_val = inner[:, :, 2]
-    selected_saturation_max = 255 if selected_saturation_max is None else selected_saturation_max
-    selected_color = (
-        (hue_distance_deg(inner_hue, hue_deg) <= hue_tolerance_deg)
-        & (inner_sat >= selected_saturation_min)
-        & (inner_sat <= selected_saturation_max)
-        & (inner_val >= selected_value_min)
-    )
-    glyph_mask = (~selected_color).astype(np.float32)
-    result = cv2.matchTemplate(glyph_mask, template, cv2.TM_CCOEFF_NORMED)
-    if result.size == 0:
+    glyph_mask = icon_glyph_mask(
+        inner,
+        hue_deg=hue_deg,
+        hue_tolerance_deg=hue_tolerance_deg,
+        selected_saturation_min=selected_saturation_min,
+        selected_saturation_max=selected_saturation_max,
+        selected_value_min=selected_value_min,
+    ).astype(np.float32)
+    glyph_pixels = float(glyph_mask.sum())
+    if glyph_pixels == 0 or glyph_pixels == glyph_mask.size:
         return None
 
-    score = float(result.max())
-    if score < match_required:
+    # Retain the original comparison, then search uniformly scaled glyphs at
+    # pixel-sized height steps. Preserve aspect ratio rather than stretching
+    # every icon to the button's dimensions.
+    candidates = [template]
+    template_height, template_width = glyph_template.shape
+    for scaled_height in range(8, inner.shape[0] + 1):
+        scaled_width = round(template_width * scaled_height / template_height)
+        if scaled_width < 8 or scaled_width > inner.shape[1]:
+            continue
+        candidates.append(cv2.resize(
+            glyph_template, (scaled_width, scaled_height), interpolation=cv2.INTER_NEAREST,
+        ))
+
+    integral = cv2.integral(glyph_mask)
+    best_score = -1.0
+    best_details: dict[str, Any] = {}
+    for candidate in candidates:
+        candidate_height, candidate_width = candidate.shape
+        if candidate_height > inner.shape[0] or candidate_width > inner.shape[1]:
+            continue
+        if not np.ptp(candidate):
+            continue
+        result = cv2.matchTemplate(glyph_mask, candidate, cv2.TM_CCOEFF_NORMED)
+        # A tiny matching fragment of a different icon must not win. Compare
+        # windows containing most of the observed glyph, allowing some noise.
+        window_pixels = (
+            integral[candidate_height:, candidate_width:]
+            - integral[:-candidate_height, candidate_width:]
+            - integral[candidate_height:, :-candidate_width]
+            + integral[:-candidate_height, :-candidate_width]
+        )
+        valid = window_pixels >= glyph_pixels * 0.8
+        if valid.any():
+            scores = np.where(valid, result, -1.0)
+            score = float(scores.max())
+            if score > best_score:
+                best_score = score
+                if diagnostics_out is not None:
+                    match_y, match_x = np.unravel_index(scores.argmax(), scores.shape)
+                    best_details = {
+                        "x": int(match_x), "y": int(match_y),
+                        "w": candidate_width, "h": candidate_height,
+                        "trimmed": candidate is not template,
+                    }
+
+    if diagnostics_out is not None:
+        diagnostics_out.update(score=best_score, required=match_required, **best_details)
+
+    if best_score < match_required:
         return None
-    return score
+    return best_score
 
 
 def match_exit_icon_template(
@@ -452,11 +530,13 @@ def identify_icon_template(
     selected_saturation_min: int = 180,
     selected_saturation_max: int | None = None,
     selected_value_min: int = 100,
+    diagnostics_out: list[dict[str, Any]] | None = None,
 ) -> tuple[str | None, float | None]:
     best_name: str | None = None
     best_score: float | None = None
 
     for template_name, (template_rows, match_required) in ICON_TEMPLATES.items():
+        details: dict[str, Any] = {"name": template_name, "score": None, "required": match_required}
         score = match_binary_icon_template(
             roi_hsv,
             template_rows,
@@ -468,7 +548,10 @@ def identify_icon_template(
             selected_saturation_min=selected_saturation_min,
             selected_saturation_max=selected_saturation_max,
             selected_value_min=selected_value_min,
+            diagnostics_out=details if diagnostics_out is not None else None,
         )
+        if diagnostics_out is not None:
+            diagnostics_out.append(details)
         if score is None:
             continue
         if best_score is None or score > best_score:
@@ -663,6 +746,7 @@ def find_detection(
                 candidate_diagnostics.append(candidate_diagnostic)
                 continue
 
+            icon_diagnostics: list[dict[str, Any]] = []
             icon_template, icon_match = identify_icon_template(
                 roi_hsv,
                 hue_deg=hue_deg,
@@ -671,7 +755,10 @@ def find_detection(
                 selected_saturation_min=round(profile.content_saturation_min * 255.0),
                 selected_saturation_max=round(profile.content_saturation_max * 255.0),
                 selected_value_min=round(profile.candidate_value_min * 255.0),
+                diagnostics_out=icon_diagnostics if diagnostics_out is not None else None,
             )
+            if diagnostics_out is not None:
+                candidate_diagnostic["icons"] = icon_diagnostics
 
             detection = Detection(
                 profile=profile.name,
@@ -800,6 +887,7 @@ class ScreenReader:
         hue_tolerance_deg: float = 10.0,
         min_width: int = 20,
         min_height: int = 20,
+        debug_directory: str | Path | None = None,
     ):
         self.hud_color_matrix = normalize_hud_color_matrix(hud_color_matrix)
         self.profiles = build_profiles(
@@ -816,6 +904,7 @@ class ScreenReader:
         self.min_width = min_width
         self.min_height = min_height
         self._ocr: object | None = None
+        self.debug_directory = Path(debug_directory) if debug_directory is not None else None
 
     def detect_selected_area(self, image: np.ndarray | None = None) -> Detection | None:
         if image is None:
@@ -857,12 +946,123 @@ class ScreenReader:
         if image is None:
             raise Exception("Unable to capture screen for OCR")
 
-        detection = self.detect_selected_area(image)
+        diagnostics: list[dict[str, Any]] = []
+        if self.debug_directory is not None:
+            detection, diagnostics = self.detect_selected_area_with_diagnostics(image)
+        else:
+            detection = self.detect_selected_area(image)
         if detection is None:
-            self.save_debug_image(image, "no-selected-area")
+            if self.debug_directory is not None:
+                self.save_debug_bundle(image, None, [], diagnostics, error="No selected area detected")
+            else:
+                self.save_debug_image(image, "no-selected-area")
             raise Exception("No selected area detected")
 
-        return ScreenReadResult(detection=detection, ocr_lines=self.read_detection_text(image, detection))
+        lines: list[OcrLine] = []
+        error: str | None = None
+        try:
+            lines = self.read_detection_text(image, detection)
+            return ScreenReadResult(detection=detection, ocr_lines=lines)
+        except Exception as exc:
+            error = str(exc)
+            raise
+        finally:
+            if self.debug_directory is not None:
+                self.save_debug_bundle(image, detection, lines, diagnostics, error=error)
+
+    def save_debug_bundle(
+        self,
+        image: np.ndarray,
+        detection: Detection | None,
+        lines: list[OcrLine],
+        diagnostics: list[dict[str, Any]],
+        *,
+        error: str | None = None,
+        stage: str = "read",
+    ) -> Path | None:
+        """Save the exact frame used for a read, not a later screenshot."""
+        if self.debug_directory is None:
+            return None
+        try:
+            self.debug_directory.mkdir(parents=True, exist_ok=True)
+            stem = datetime.now(UTC).strftime("%Y%m%dT%H%M%S.%fZ") + f"-{stage}"
+
+            def write_image(suffix: str, pixels: np.ndarray) -> None:
+                path = self.debug_directory / f"{stem}-{suffix}.png"
+                if not cv2.imwrite(str(path), pixels):
+                    raise OSError(f"OpenCV could not write {path}")
+
+            write_image("source", image)
+            annotated = image.copy()
+            for profile in diagnostics:
+                for candidate in profile["candidates"]:
+                    x, y, w, h = (candidate[key] for key in ("x", "y", "w", "h"))
+                    color = (0, 180, 0) if candidate.get("accepted") else (0, 0, 180)
+                    cv2.rectangle(annotated, (x, y), (x + w - 1, y + h - 1), color, 1)
+            if detection is not None:
+                x, y, w, h = detection.x, detection.y, detection.w, detection.h
+                cv2.rectangle(annotated, (x, y), (x + w - 1, y + h - 1), (0, 255, 255), 2)
+                label = f"{detection.icon_template or 'unknown'} {detection.icon_match or 0:.3f}"
+                cv2.putText(annotated, label, (x, max(18, y - 6)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
+                crop = crop_detection(image, detection)
+                write_image("selection", cv2.resize(crop, None, fx=8, fy=8, interpolation=cv2.INTER_NEAREST))
+                profile = next(p for p in self.profiles if p.name == detection.profile)
+                hsv = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)[self.border_px:-self.border_px, self.border_px:-self.border_px]
+                mask = icon_glyph_mask(
+                    hsv,
+                    hue_deg=detection.hue_deg,
+                    hue_tolerance_deg=self.hue_tolerance_deg,
+                    selected_saturation_min=round(profile.content_saturation_min * 255),
+                    selected_saturation_max=round(profile.content_saturation_max * 255),
+                    selected_value_min=round(profile.candidate_value_min * 255),
+                )
+                glyph = np.uint8(mask) * 255
+                write_image("glyph", cv2.resize(glyph, None, fx=8, fy=8, interpolation=cv2.INTER_NEAREST))
+                # Show the winning template at its actual scale and position.
+                candidate = next((
+                    c for p in diagnostics if p["profile"] == detection.profile
+                    for c in p["candidates"] if (c["x"], c["y"], c["w"], c["h"]) == (x, y, w, h)
+                ), {})
+                scored = [i for i in candidate.get("icons", []) if i.get("w") is not None]
+                if scored:
+                    best = max(scored, key=lambda i: i["score"])
+                    template = binary_template(ICON_TEMPLATES[best["name"]][0])
+                    if best["trimmed"]:
+                        ty, tx = np.nonzero(template)
+                        template = template[ty.min():ty.max() + 1, tx.min():tx.max() + 1]
+                    template = cv2.resize(template, (best["w"], best["h"]), interpolation=cv2.INTER_NEAREST)
+                    overlay = np.zeros((*glyph.shape, 3), dtype=np.uint8)
+                    overlay[:, :, 1] = glyph
+                    overlay[best["y"]:best["y"] + best["h"], best["x"]:best["x"] + best["w"], 2] = np.uint8(template * 255)
+                    write_image("comparison", cv2.resize(overlay, None, fx=8, fy=8, interpolation=cv2.INTER_NEAREST))
+            write_image("annotated", annotated)
+            metadata_path = self.debug_directory / f"{stem}-read.json"
+            metadata_path.write_text(json.dumps({
+                "stage": stage,
+                "detection": asdict(detection) if detection else None,
+                "ocr_lines": [asdict(line) for line in lines],
+                "error": error,
+                "profiles": diagnostics,
+            }, indent=2), encoding="utf-8")
+            log("debug", "ScreenReader debug read", str(metadata_path), detection, [line.text for line in lines])
+            return metadata_path
+        except Exception as exc:
+            log("warn", "Unable to save ScreenReader debug bundle", exc)
+            return None
+
+    def capture_debug_state(self, stage: str) -> Path | None:
+        if self.debug_directory is None:
+            return None
+        try:
+            image = self.get_screen()
+            if image is None:
+                log("warn", "Unable to capture debug state", stage)
+                return None
+            detection, diagnostics = self.detect_selected_area_with_diagnostics(image)
+            return self.save_debug_bundle(image, detection, [], diagnostics, stage=stage)
+        except Exception as error:
+            log("warn", "Unable to capture debug state", stage, error)
+            return None
 
     @staticmethod
     def save_debug_image(image: np.ndarray, reason: str) -> Path | None:

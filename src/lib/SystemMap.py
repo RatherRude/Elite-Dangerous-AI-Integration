@@ -53,12 +53,25 @@ class SystemMap:
         return cls._levenshtein_distance(target, candidate) <= max_distance
 
     def run(self, category: str = "LANDFALL PLANETS", entry: str = "HIP 58412 8 D") -> ScreenReadResult:
+        if category not in self.categories:
+            raise ValueError(f"Unknown system map category: {category}")
         log("debug", "Navigating system map", category, entry)
-        self.ed_keys.send("UI_Down")
-        time.sleep(self.wait_time)
-        back = self.screen_reader.read_selected_area()
-        if not back.detection or not back.detection.icon_template == 'exit':
-            raise Exception(f"Unexpected ScreenReader Result: {str(back)}")
+        # The map remembers its selection between runs. Find the exit anchor
+        # instead of assuming that a single Down always lands on it.
+        for step in range(21):
+            try:
+                back = self.screen_reader.read_selected_area()
+            except Exception as error:
+                if str(error) != "No selected area detected":
+                    raise
+                back = ScreenReadResult(detection=None, ocr_lines=[])
+            log("debug", "System map exit anchor", step, back)
+            if back.detection and back.detection.icon_template == "exit":
+                break
+            if step == 20:
+                raise Exception(f"Could not find system map exit anchor: {back}")
+            self.ed_keys.send("UI_Down")
+            time.sleep(self.wait_time)
 
         self.ed_keys.send("UI_Up")
         time.sleep(self.wait_time)
@@ -77,16 +90,30 @@ class SystemMap:
         self.ed_keys.send("UI_Select")
         time.sleep(self.wait_time)
         match = None
-        while not match:
+        seen_entries: set[str] = set()
+        unreadable = 0
+        for _ in range(100):
             selection = self.screen_reader.read_selected_area()
             log("info", selection)
             if not selection.detection or selection.detection.icon_template == 'exit':
                 raise Exception(f"Unexpected ScreenReader Result Exit: {str(selection)}")
             if self.selection_matches_entry(selection, entry):
                 match = selection
-            if not match:
-                self.ed_keys.send("UI_Down")
-                time.sleep(self.wait_time)
+                break
+            if len(selection.ocr_lines) >= 2:
+                name = self._normalize_search_text(selection.ocr_lines[1].text)
+                if name in seen_entries:
+                    raise Exception(f"System map target {entry!r} not found; selection repeated: {selection}")
+                seen_entries.add(name)
+                unreadable = 0
+            else:
+                unreadable += 1
+                if unreadable >= 3:
+                    raise Exception(f"Cannot read system map target list: {selection}")
+            self.ed_keys.send("UI_Down")
+            time.sleep(self.wait_time)
+        if match is None:
+            raise Exception(f"System map target {entry!r} not found after 100 selections")
         log("info", "System map target matched", match)
         time.sleep(self.wait_time)
         self.ed_keys.send("UI_Select", hold=2)
